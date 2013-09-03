@@ -78,7 +78,7 @@ const (
 	userSelect      = "SELECT id, name FROM users WHERE id=?"
 	participantInsert      = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	MaxConnectionCount = 100
-	UrlBase            = "/api/v0.3"
+	UrlBase            = "/api/v0.5"
 )
 
 var (
