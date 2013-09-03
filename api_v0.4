@@ -1,0 +1,202 @@
+API/V0.4
+
+Note: Only available over HTTPS
+
+URL: https://gleepost.com/api/v0.4/
+
+POST /register
+required parameters: user, pass, email
+
+example responses:
+{"success":true}
+{"success":false, "error":"Invalid email"}
+
+
+POST /login
+required parameters: user, pass
+
+example responses:
+{"success":true, "token":{"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-08-26 12:52:51.174460521 +0000 UTC"}}
+{"success":"false", "error":"Bad username/password"}
+
+
+GET /posts?id=[user-id]&token=[token]
+returns a list of 20 most recent posts
+
+example responses:
+{"success":true, 
+"posts":[
+		{
+			"id":2,
+			"by": {
+				"id":9,
+				"username":"Patrick"
+			}
+			"timestamp":"2013-08-26 12:52:51.174460521 +0000 UTC",
+			"text":"This is a cool post for cool people!"
+			"comments":4,
+			"likes":5,
+			"hates":3
+		},
+		{
+			"id":1,
+			"by": {
+				"id":23,
+				"username":"PeterGatsby"
+			}
+			"timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC",
+			"text":"Sailor Moon FTW!"
+		},
+		//.... and so on
+	]
+}
+
+
+POST /posts
+required parameters: id, token, text
+
+example responses:
+{"success":true, "id":3}
+
+
+GET /posts/[post-id]/comments?id=[user-id]&token=[token]
+
+example responses:
+{"success":true,
+"comments":[
+	{
+		"id":51341,
+		"by": {
+			"id":9,
+			"username":"Patrick"
+		},
+		"timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC",
+		"text":"I concur."
+	},
+	{
+		"id":4362346,
+		"by": {
+			"id":545,
+			"username":"SomeoneElse"
+		},
+		"timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC",
+		"text":"Have you ever / ever felt like this? / How strange things happen / like you're going round the twist?"
+	},
+	
+	....
+]
+}
+
+
+POST /posts/[post-id]/comments
+required parameters: id, token, text
+
+example responses:
+{"success":true, "id":234}
+
+
+GET /conversations?id=[user-id]&token=[token]
+returns a list of your conversations by most recent message
+
+{"success":true, 
+"conversations": [
+	{"participants": [
+		{"id":9, "username":"Patrick"},
+		{"id":23, "username":"PeterGatsby"}
+	],
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
+	},
+	{"participants" [
+		{"id":99999, "username":"Lukas"},
+		{"id":232515, "username":"Ling"}
+	],
+	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false}
+	}
+	]
+}
+	
+
+
+GET /conversations/[conversation-id]?id=[user-id]&token=[token]
+
+example responses:
+{"success":true,
+"conversation": {
+	"participants": [
+		{"id":9, "username":"Patrick"},
+		{"id":23, "username":"PeterGatsby"}
+	],
+	"messages": [
+		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
+		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
+		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false}
+	]
+}
+
+
+GET /conversations/[conversation-id/messages?id=[user-id]&token=[token]
+
+example responses:
+{"success":true,
+"messages": [
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false}
+	]
+}
+
+
+POST /conversations/[conversation-id]/messages
+required parameters: id, token, text
+
+example responses:
+{"success":true, "id":1356}
+
+
+GET /user/[user-id]?id=[user-id]&token=[token]
+
+example responses:
+{"success":true,
+"user":{
+	"id":9,
+	"username":"Patrick",
+	"tagline":"I like computers"
+	//not sure what else will be in the profile yet
+}
+}
+
+
+POST /newconversation
+required parameters: id, token
+
+note: POST so it doesn't get accidentally repeated :)
+This will return a conversation with two participants.
+
+example responses:
+{"success":true,
+"conversation": {
+	"participants": [
+		{"id":9, "username":"Patrick"},
+		{"id":23, "username":"PeterGatsby"}
+	]
+}
+}
+
+
+POST /newgroupconversation
+required parameters: id, token
+
+note: POST so it doesn't get accidentally repeated :)
+This will return a conversation with more than two participants.
+
+example responses:
+{"success":true,
+"conversation": {
+	"participants": [
+		{"id":9, "username":"Patrick"},
+		{"id":23, "username":"PeterGatsby"},
+		{"id":1351, "username":"Someone"},
+		{"id":6124, "username":"SomeoneElse"}
+	]
+}
+}

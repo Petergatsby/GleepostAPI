@@ -1,0 +1,26 @@
+-Register
+--validate email
+--bcrypt&store pass
+--send verification email
+
+-Login
+--bcrypt validate pass
+--generate token
+--issue token
+--store token:user pair in redis
+
+-Validate Token
+--does it exist in redis?
+--if yes, we're okay
+
+-Send
+--validate token
+--validate message
+--persist message
+--publish to redis
+
+-Wall
+--validate token
+--Get all ze posts
+
+
