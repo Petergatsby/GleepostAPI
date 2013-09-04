@@ -26,7 +26,6 @@
 
 -POST posts
 --validate token
---stick it in db
 --stick it in redis
 --stick it in local cache?
 
