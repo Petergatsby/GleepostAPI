@@ -149,11 +149,11 @@ func createToken(userid uint64) Token {
 	if err == nil {
 		hash.Write(random)
 		digest := hex.EncodeToString(hash.Sum(nil))
-		expiry := time.Now().Add(time.Duration(24) * time.Hour)
+		expiry := time.Now().Add(time.Duration(24) * time.Hour).UTC()
 		token := Token{userid, digest, expiry}
 		return (token)
 	} else {
-		return (Token{userid, "foo", time.Now()})
+		return (Token{userid, "foo", time.Now().UTC()})
 	}
 }
 
@@ -260,8 +260,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("{\"success\":false}"))
 			} else {
 				token := createToken(id)
+				tokenJSON, _ := json.Marshal(token)
 				tokens = append(tokens, token)
-				w.Write([]byte("{\"success\":true, \"token\":{\"id\":\"" + strconv.FormatUint(id, 10) + "\", \"value\":\"" + token.Token + "\", \"expiry\":\"" + token.Expiry.UTC().String() + "\"}}"))
+				w.Write([]byte("{\"success\":true, \"token\":"))
+				w.Write(tokenJSON)
+				w.Write([]byte("}"))
 			}
 		}
 	} else {
