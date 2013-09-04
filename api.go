@@ -24,6 +24,11 @@ type User struct {
 	Name string
 }
 
+type Network struct {
+	Id   uint64
+	Name string
+}
+
 type Message struct {
 	Sender  string    `json:"sender"`
 	Time    time.Time `json:"time"`
@@ -47,8 +52,20 @@ type Topic struct {
 }
 
 type Post struct {
-	Topic     Topic      `json:"topic"`
+	Id        uint64     `json:"id"`
+	By        uint64     `json:"by"`
+	Time      time.Time  `json:"timestamp"`
+	Text      string     `json:"text"`
+	Comments  []Comment  `json:"comments"`
 	LikeHates []LikeHate `json:"like_hate"`
+}
+
+type Comment struct {
+	Id   uint64    `json:"id"`
+	Post uint64    `json:"-"`
+	By   uint64    `json:"by"`
+	Time time.Time `json:"timestamp"`
+	Text string    `json:"text"`
 }
 
 type LikeHate struct {
@@ -63,7 +80,7 @@ type Rule struct {
 }
 
 type Conversation struct {
-	Id	int64	`json:"id"`
+	Id           int64  `json:"id"`
 	Participants []User `json:"participants"`
 }
 
@@ -73,27 +90,31 @@ const (
 	ConnectionString   = "gp:PnOaw3XzP6Tlq6fWvvVv@tcp(localhost:3306)/gleepost?charset=utf8"
 	PassSelect         = "SELECT id, password FROM users WHERE name = ?"
 	messageInsert      = "INSERT INTO new_messages(`by`, conversation_id, text) VALUES (?,?,?)"
-	randomSelect      = "SELECT id, name FROM users ORDER BY RAND()"
-	conversationInsert      = "INSERT INTO conversations (initiator) VALUES (?)"
-	userSelect      = "SELECT id, name FROM users WHERE id=?"
-	participantInsert      = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
+	randomSelect       = "SELECT id, name FROM users ORDER BY RAND()"
+	conversationInsert = "INSERT INTO conversations (initiator) VALUES (?)"
+	userSelect         = "SELECT id, name FROM users WHERE id=?"
+	participantInsert  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
+	postInsert  = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
+	networkSelect  = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network_id WHERE user_id = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
 )
 
 var (
-	messages          = make([]*Message, 10)
-	tokens            = make([]Token, 10)
-	posts             = make([]*Post, 10)
-	topics            = make([]*Topic, 10)
-	ruleStatement     *sql.Stmt
-	registerStatement *sql.Stmt
-	passStatement     *sql.Stmt
-	messageStatement  *sql.Stmt
-	randomStatement	  *sql.Stmt
-	userStatement	  *sql.Stmt
-	conversationStatement	  *sql.Stmt
-	participantStatement	  *sql.Stmt
+	messages              = make([]*Message, 10)
+	tokens                = make([]Token, 10)
+	posts                 = make([]*Post, 10)
+	topics                = make([]*Topic, 10)
+	ruleStatement         *sql.Stmt
+	registerStatement     *sql.Stmt
+	passStatement         *sql.Stmt
+	messageStatement      *sql.Stmt
+	randomStatement       *sql.Stmt
+	userStatement         *sql.Stmt
+	conversationStatement *sql.Stmt
+	participantStatement  *sql.Stmt
+	networkStatement  *sql.Stmt
+	postStatement  *sql.Stmt
 )
 
 func main() {
@@ -135,10 +156,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	postStatement, err = db.Prepare(postInsert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	networkStatement, err = db.Prepare(networkSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/messages", messageHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
+	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.ListenAndServe("dev.gleepost.com:8080", nil)
 }
 
@@ -218,9 +249,16 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				_, err := registerStatement.Exec(user, hash, email)
 				if err != nil {
-					if strings.HasPrefix(err.Error(), "Error 1062") {
-						errMsg := "Username or email already registered"
-						w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+					if strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
+						response := struct {
+							success bool
+							Error   string
+						}{
+							false,
+							"Username or email already registered",
+						}
+						responseJSON, _ := json.Marshal(response)
+						w.Write(responseJSON)
 					} else {
 						errMsg := err.Error()
 						w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
@@ -272,6 +310,25 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getUserNetworks(id uint64) ([]Network) {
+	rows, err := networkStatement.Query(id)
+	nets := make([]Network, 5)
+	if err != nil {
+		log.Fatalf("Error preparing statement: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var network Network
+		err = rows.Scan(&network.Id, &network.Name)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v", err)
+		} else {
+			nets = append(nets, network)
+		}
+	}
+	return(nets)
+}
+
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method == "GET" {
@@ -286,9 +343,19 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == "POST" {
 		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 		token := r.FormValue("token")
+		text := r.FormValue("text")
 		if !validateToken(id, token) {
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+		} else {
+			networks := getUserNetworks(id)
+			res, err := postStatement.Exec(id, text, networks[0].Id)
+			if err != nil {
+				log.Fatalf("Error executing: %v", err)
+
+			}
+			postId, _ := res.LastInsertId()
+			w.Write([]byte("{\"success\":true, \"id\":"+strconv.FormatInt(postId, 10)+"}"))
 		}
 	}
 }
@@ -316,14 +383,14 @@ func createConversation(id uint64, nParticipants int) Conversation {
 			nParticipants--
 		}
 	}
-	for _, u := range(participants) {
-		_,err := participantStatement.Exec(conversation.Id, u.Id)
+	for _, u := range participants {
+		_, err := participantStatement.Exec(conversation.Id, u.Id)
 		if err != nil {
 			log.Fatalf("Error adding user to conversation: %v", err)
 		}
 	}
 	conversation.Participants = participants
-	return(conversation)
+	return (conversation)
 }
 
 func getUser(id uint64) User {
@@ -334,7 +401,7 @@ func getUser(id uint64) User {
 	} else {
 		//
 	}
-	return(user)
+	return (user)
 }
 
 func newConversationHandler(w http.ResponseWriter, r *http.Request) {
