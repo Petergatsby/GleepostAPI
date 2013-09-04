@@ -1,16 +1,16 @@
 -Register
---validate email
---bcrypt&store pass
 --send verification email
+--log registration event
 
 -Login
---bcrypt validate pass
---generate token
---issue token
---store token:user pair in redis
+--store token:user:expiry in db
+--store token:user:expiry in redis
+--log login attempt
 
 -Validate Token
+--Have I seen it recently?
 --does it exist in redis?
+--does it exist in db?
 --if yes, we're okay
 
 -Send
@@ -19,8 +19,54 @@
 --persist message
 --publish to redis
 
--Wall
+-GET posts
 --validate token
---Get all ze posts
+--What's the user's network?
+--Get all ze posts for that network
+
+-POST posts
+--validate token
+--stick it in db
+--stick it in redis
+--stick it in local cache?
+
+-GET posts/id/comments
+--validate token
+--get all the comments ordered by time
+
+-POST posts/id/comments
+--validate token
+--stick it in db
+
+-GET conversations
+--validate token
+--Get a list of your conversations by time of most recent message
+
+-GET conversations/id
+--validate token
+--get participants
+--get messages
+
+-GET conversations/id/messages
+--validate token
+--get last 20 messages from redis
+--get last 20 messages from db
+
+-GET user/id
+--validate token
+--retrieve from redis
+--retrieve from db
+--put in redis
+
+-get partners
+--More sophisticated than random pl0x!
+
+-POST newconversation
+--Store in redis
+
+-POST newgroup
+--validate token
+--store in redis
+--store in db
 
 
