@@ -95,7 +95,7 @@ const (
 	userSelect         = "SELECT id, name FROM users WHERE id=?"
 	participantInsert  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	postInsert  = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
-	networkSelect  = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network_id WHERE user_id = ?"
+	networkSelect  = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
 )
@@ -312,7 +312,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func getUserNetworks(id uint64) ([]Network) {
 	rows, err := networkStatement.Query(id)
-	nets := make([]Network, 5)
+	nets := make([]Network,0, 5)
 	if err != nil {
 		log.Fatalf("Error preparing statement: %v", err)
 	}
