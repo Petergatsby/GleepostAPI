@@ -32,7 +32,7 @@ example responses:
 				"id":9,
 				"username":"Patrick"
 			}
-			"timestamp":"2013-08-26 12:52:51.174460521 +0000 UTC",
+			"timestamp":"2013-09-05T13:09:38Z",
 			"text":"This is a cool post for cool people!"
 			"comments":4,
 			"likes":5,
@@ -44,7 +44,7 @@ example responses:
 				"id":23,
 				"username":"PeterGatsby"
 			}
-			"timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC",
+			"timestamp":"2013-09-05T13:09:38Z",
 			"text":"Sailor Moon FTW!"
 		},
 		//.... and so on
@@ -70,7 +70,7 @@ example responses:
 			"id":9,
 			"username":"Patrick"
 		},
-		"timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC",
+		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"I concur."
 	},
 	{
@@ -79,7 +79,7 @@ example responses:
 			"id":545,
 			"username":"SomeoneElse"
 		},
-		"timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC",
+		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"Have you ever / ever felt like this? / How strange things happen / like you're going round the twist?"
 	},
 	
@@ -104,13 +104,13 @@ returns a list of your conversations by most recent message
 		{"id":9, "username":"Patrick"},
 		{"id":23, "username":"PeterGatsby"}
 	],
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 	},
 	{"participants" [
 		{"id":99999, "username":"Lukas"},
 		{"id":232515, "username":"Ling"}
 	],
-	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false}
+	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	}
 	]
 }
@@ -127,9 +127,9 @@ example responses:
 		{"id":23, "username":"PeterGatsby"}
 	],
 	"messages": [
-		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
-		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
-		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false}
+		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	]
 }
 
@@ -139,9 +139,9 @@ GET /conversations/[conversation-id/messages?id=[user-id]&token=[token]
 example responses:
 {"success":true,
 "messages": [
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false},
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-08-25 12:50:51.174460521 +0000 UTC", "seen":false}
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	]
 }
 
