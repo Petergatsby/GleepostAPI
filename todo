@@ -21,8 +21,11 @@
 
 -GET posts
 --validate token
---What's the user's network?
---Get all ze posts for that network
+--Stick in redis
+--stick in local cache
+
+-get user networks
+--Either return an error when looking for someone non-existent, or when returning no networks, or check the user exists before using, or check output has at least one network!
 
 -POST posts
 --validate token

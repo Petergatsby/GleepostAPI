@@ -95,6 +95,7 @@ const (
 	userSelect         = "SELECT id, name FROM users WHERE id=?"
 	participantInsert  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	postInsert  = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
+	wallSelect  = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT 20"
 	networkSelect  = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
@@ -115,6 +116,7 @@ var (
 	participantStatement  *sql.Stmt
 	networkStatement  *sql.Stmt
 	postStatement  *sql.Stmt
+	wallSelectStatement  *sql.Stmt
 )
 
 func main() {
@@ -157,6 +159,10 @@ func main() {
 		log.Fatal(err)
 	}
 	postStatement, err = db.Prepare(postInsert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	wallSelectStatement, err = db.Prepare(wallSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -255,7 +261,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 							Error   string
 						}{
 							false,
-							"Username or email already registered",
+							"Username or email address already taken",
 						}
 						responseJSON, _ := json.Marshal(response)
 						w.Write(responseJSON)
@@ -314,7 +320,7 @@ func getUserNetworks(id uint64) ([]Network) {
 	rows, err := networkStatement.Query(id)
 	nets := make([]Network,0, 5)
 	if err != nil {
-		log.Fatalf("Error preparing statement: %v", err)
+		log.Fatalf("Error querying db: %v", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -338,7 +344,33 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		} else {
-			//
+			networks := getUserNetworks(id)
+			rows, err := wallSelectStatement.Query(networks[0].Id)
+			if err != nil {
+				log.Fatalf("Error querying db: %v", err)
+			}
+			defer rows.Close()
+			posts := make([]Post, 0, 20)
+			for rows.Next() {
+				var post Post
+				var t string
+				err = rows.Scan(&post.Id, &post.By, &t, &post.Text)
+				if err != nil {
+					log.Fatalf("Error scanning row: %v", err)
+				}
+				post.Time, err = time.Parse("2006-01-02 15:04:05", t)
+				if err != nil {
+					log.Fatalf("Something went wrong with the timestamp: %v", err)
+				}
+				posts = append(posts, post)
+			}
+			postsJSON, err := json.Marshal(posts)
+			if err != nil {
+				log.Fatalf("Something went wrong with json parsing: %v", err)
+			}
+			w.Write([]byte("{\"success\":true, \"posts\":"))
+			w.Write(postsJSON)
+			w.Write([]byte("}"))
 		}
 	} else if r.Method == "POST" {
 		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
@@ -436,21 +468,6 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 		if len(user) > 0 && len(topic) > 0 && len(message) > 0 {
 			m := Message{user, time.Now(), message, topicID}
 			messages = append(messages, &m)
-			w.Write([]byte("{\"success\":true}"))
-		} else {
-			w.Write([]byte("{\"success\":false}"))
-		}
-	}
-}
-
-func createPostHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "POST" {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
-	} else {
-		text := r.FormValue("text")
-		if len(text) > 0 {
-			//Create a topic yo
 			w.Write([]byte("{\"success\":true}"))
 		} else {
 			w.Write([]byte("{\"success\":false}"))
