@@ -42,7 +42,7 @@
 
 -GET conversations
 --validate token
---Get a list of your conversations by time of most recent message
+--Add last_message
 
 -GET conversations/id
 --validate token
@@ -52,7 +52,6 @@
 -GET conversations/id/messages
 --validate token
 --get last 20 messages from redis
---get last 20 messages from db
 
 -GET user/id
 --validate token

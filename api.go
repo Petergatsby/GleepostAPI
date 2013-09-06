@@ -29,7 +29,7 @@ type Network struct {
 }
 
 type Message struct {
-	Id      uint64    `json:"sender"`
+	Id      uint64    `json:"id"`
 	By	uint64    `json:"by"`
 	Text    string    `json:"text"`
 	Time    time.Time `json:"timestamp"`
@@ -99,6 +99,7 @@ const (
 	conversationSelect = "SELECT conversation_participants.conversation_id FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT 20"
 	participantSelect = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	messageInsert     = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
+	messageSelect     = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 20"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
 )
@@ -121,6 +122,7 @@ var (
 	conversationSelectStatement *sql.Stmt
 	participantSelectStatement  *sql.Stmt
 	messageInsertStatement      *sql.Stmt
+	messageSelectStatement      *sql.Stmt
 )
 
 func main() {
@@ -179,6 +181,10 @@ func main() {
 		log.Fatal(err)
 	}
 	messageInsertStatement, err = db.Prepare(messageInsert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	messageSelectStatement, err = db.Prepare(messageSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -530,7 +536,29 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if convIdString != nil {
 			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 			if r.Method == "GET" {
-				w.Write([]byte("foo"))
+				rows, err := messageSelectStatement.Query(convId)
+				if err != nil {
+					http.Error(w, err.Error(), 500)
+				}
+				defer rows.Close()
+				messages := make([]Message, 0, 20)
+				for rows.Next() {
+					var message Message
+					var timeString string
+					err := rows.Scan(&message.Id, &message.By, &message.Text, &timeString, &message.Seen)
+					if err != nil {
+						http.Error(w, err.Error(), 500)
+					}
+					message.Time, err = time.Parse("2006-01-02 15:04:05", timeString)
+					if err != nil {
+						http.Error(w, err.Error(), 500)
+					}
+					messages = append(messages, message)
+				}
+				messagesJSON, _ := json.Marshal(messages)
+				w.Write([]byte("{\"success\":true, \"messages\":"))
+				w.Write(messagesJSON)
+				w.Write([]byte("}"))
 			} else if r.Method == "POST" {
 				text := r.FormValue("text")
 				res, err := messageInsertStatement.Exec(convId, id, text)
