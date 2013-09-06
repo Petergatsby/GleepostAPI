@@ -10,7 +10,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"log"
-	"math/big"
 	"net/http"
 	"regexp"
 	"runtime"
@@ -30,10 +29,11 @@ type Network struct {
 }
 
 type Message struct {
-	Sender  string    `json:"sender"`
-	Time    time.Time `json:"time"`
+	Id      uint64    `json:"sender"`
+	By	uint64    `json:"by"`
 	Text    string    `json:"text"`
-	TopicID uint64    `json:"topic"`
+	Time    time.Time `json:"timestamp"`
+	Seen    bool      `json:"seen"`
 }
 
 type Token struct {
@@ -89,34 +89,38 @@ const (
 	createUser         = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
 	ConnectionString   = "gp:PnOaw3XzP6Tlq6fWvvVv@tcp(localhost:3306)/gleepost?charset=utf8"
 	PassSelect         = "SELECT id, password FROM users WHERE name = ?"
-	messageInsert      = "INSERT INTO new_messages(`by`, conversation_id, text) VALUES (?,?,?)"
 	randomSelect       = "SELECT id, name FROM users ORDER BY RAND()"
-	conversationInsert = "INSERT INTO conversations (initiator) VALUES (?)"
+	conversationInsert = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	userSelect         = "SELECT id, name FROM users WHERE id=?"
 	participantInsert  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
-	postInsert  = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
-	wallSelect  = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT 20"
-	networkSelect  = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
+	postInsert         = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
+	wallSelect         = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT 20"
+	networkSelect      = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
+	conversationSelect = "SELECT conversation_participants.conversation_id FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT 20"
+	participantSelect = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
+	messageInsert     = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
 )
 
 var (
-	messages              = make([]*Message, 10)
-	tokens                = make([]Token, 10)
-	posts                 = make([]*Post, 10)
-	topics                = make([]*Topic, 10)
-	ruleStatement         *sql.Stmt
-	registerStatement     *sql.Stmt
-	passStatement         *sql.Stmt
-	messageStatement      *sql.Stmt
-	randomStatement       *sql.Stmt
-	userStatement         *sql.Stmt
-	conversationStatement *sql.Stmt
-	participantStatement  *sql.Stmt
-	networkStatement  *sql.Stmt
-	postStatement  *sql.Stmt
-	wallSelectStatement  *sql.Stmt
+	messages                    = make([]*Message, 10)
+	tokens                      = make([]Token, 10)
+	posts                       = make([]*Post, 10)
+	topics                      = make([]*Topic, 10)
+	ruleStatement               *sql.Stmt
+	registerStatement           *sql.Stmt
+	passStatement               *sql.Stmt
+	randomStatement             *sql.Stmt
+	userStatement               *sql.Stmt
+	conversationStatement       *sql.Stmt
+	participantStatement        *sql.Stmt
+	networkStatement            *sql.Stmt
+	postStatement               *sql.Stmt
+	wallSelectStatement         *sql.Stmt
+	conversationSelectStatement *sql.Stmt
+	participantSelectStatement  *sql.Stmt
+	messageInsertStatement      *sql.Stmt
 )
 
 func main() {
@@ -135,10 +139,6 @@ func main() {
 		log.Fatal(err)
 	}
 	passStatement, err = db.Prepare(PassSelect)
-	if err != nil {
-		log.Fatal(err)
-	}
-	messageStatement, err = db.Prepare(messageInsert)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -170,11 +170,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	conversationSelectStatement, err = db.Prepare(conversationSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+	participantSelectStatement, err = db.Prepare(participantSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+	messageInsertStatement, err = db.Prepare(messageInsert)
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
-	http.HandleFunc(UrlBase+"/messages", messageHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
+	http.HandleFunc(UrlBase+"/conversations", conversationHandler)
+	http.HandleFunc(UrlBase+"/conversations/", anotherConversationHandler)
 	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.ListenAndServe("dev.gleepost.com:8080", nil)
 }
@@ -316,9 +328,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getUserNetworks(id uint64) ([]Network) {
+func getUserNetworks(id uint64) []Network {
 	rows, err := networkStatement.Query(id)
-	nets := make([]Network,0, 5)
+	nets := make([]Network, 0, 5)
 	if err != nil {
 		log.Fatalf("Error querying db: %v", err)
 	}
@@ -332,7 +344,7 @@ func getUserNetworks(id uint64) ([]Network) {
 			nets = append(nets, network)
 		}
 	}
-	return(nets)
+	return (nets)
 }
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
@@ -387,7 +399,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 			}
 			postId, _ := res.LastInsertId()
-			w.Write([]byte("{\"success\":true, \"id\":"+strconv.FormatInt(postId, 10)+"}"))
+			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(postId, 10) + "}"))
 		}
 	}
 }
@@ -456,48 +468,95 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func messageHandler(w http.ResponseWriter, r *http.Request) {
+func getParticipants(conv int64) ([]User) {
+	rows, err := participantSelectStatement.Query(conv)
+	if err != nil {
+		log.Fatalf("Error getting participant: %v", err)
+	}
+	defer rows.Close()
+	participants := make([]User, 0, 5)
+	for rows.Next() {
+		var user User
+		err = rows.Scan(&user.Id, &user.Name)
+		participants = append(participants, user)
+	}
+	return(participants)
+}
+
+func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "POST" {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+	if r.Method != "GET" {
+		http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
 	} else {
-		user := r.FormValue("user")
-		topic := r.FormValue("topic")
-		topicID, _ := strconv.ParseUint(r.FormValue("topicid"), 10, 16)
-		message := r.FormValue("message")
-		if len(user) > 0 && len(topic) > 0 && len(message) > 0 {
-			m := Message{user, time.Now(), message, topicID}
-			messages = append(messages, &m)
-			w.Write([]byte("{\"success\":true}"))
+		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+		token := r.FormValue("token")
+		if !validateToken(id, token) {
+			errMsg := "Invalid credentials"
+			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		} else {
-			w.Write([]byte("{\"success\":false}"))
+			rows, err := conversationSelectStatement.Query(id)
+			if err != nil {
+				log.Fatalf("Error querying db: %v", err)
+			}
+			defer rows.Close()
+			conversations := make([]Conversation, 0,20)
+			for rows.Next() {
+				var conv Conversation
+				err = rows.Scan(&conv.Id)
+				if err != nil {
+					log.Fatalf("Error getting conversation: %v", err)
+				}
+				conv.Participants = getParticipants(conv.Id)
+				conversations = append(conversations, conv)
+			}
+			conversationsJSON, _ := json.Marshal(conversations)
+			w.Write([]byte("{\"success\":true, \"conversations\":"))
+			w.Write(conversationsJSON)
+			w.Write([]byte("}"))
 		}
 	}
 }
 
-func createTopicHandler(w http.ResponseWriter, r *http.Request) {
+func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "POST" {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	if !validateToken(id, token) {
+		errMsg := "Invalid credentials"
+		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 	} else {
-		text := r.FormValue("text")
-
-		usrs := make([]uint64, 0, 100)
-		err := json.Unmarshal([]byte(r.FormValue("to")), usrs)
-		if err != nil {
-			//malformed json lol
-		} else {
-			if len(text) > 0 {
-				//Create a topic yo
-				bigid, _ := rand.Int(rand.Reader, big.NewInt(int64(^uint(0)>>1)))
-				id := bigid.Uint64()
-				t := time.Now().UTC()
-				messages := make([]*Message, 0, 100)
-				topic := Topic{id, t, messages, text, usrs, false}
-				topics = append(topics, &topic)
-				w.Write([]byte("{\"success\":true}"))
+		regex, _ := regexp.Compile("conversations/(\\d+)/messages/?$")
+		convIdString := regex.FindStringSubmatch(r.URL.Path)
+		if convIdString != nil {
+			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
+			if r.Method == "GET" {
+				w.Write([]byte("foo"))
+			} else if r.Method == "POST" {
+				text := r.FormValue("text")
+				res, err := messageInsertStatement.Exec(convId, id, text)
+				if err != nil {
+					http.Error(w, err.Error(), 500)
+				}
+				messageId, _ := res.LastInsertId()
+				w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 			} else {
-				w.Write([]byte("{\"success\":false}"))
+				http.Error(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
+			}
+		} else {
+			regex, _ = regexp.Compile("conversations/(\\d+)/?$")
+			convIdString = regex.FindStringSubmatch(r.URL.Path)
+			if convIdString != nil {
+				convId, _ := strconv.ParseInt(convIdString[1], 10, 16)
+				if r.Method != "GET" {
+					http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
+				} else {
+					var conv Conversation
+					conv.Id = convId
+					conv.Participants = getParticipants(conv.Id)
+					w.Write([]byte("quux"))
+				}
+			} else {
+				http.Error(w, "404 not found", 404)
 			}
 		}
 	}
@@ -505,17 +564,4 @@ func createTopicHandler(w http.ResponseWriter, r *http.Request) {
 
 func profileHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: get /profile listing topics by time new/old
-}
-
-func recvHandler(w http.ResponseWriter, r *http.Request) {
-	topicstring := r.URL.Path[6:]
-	topicID, _ := strconv.ParseUint(topicstring, 10, 16)
-	history := make([]*Message, 0, 100)
-	for _, m := range messages {
-		if m.TopicID == topicID {
-			history = append(history, m)
-		}
-	}
-	resp, _ := json.Marshal(history)
-	w.Write(resp)
 }

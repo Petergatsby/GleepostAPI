@@ -100,13 +100,15 @@ returns a list of your conversations by most recent message
 
 {"success":true, 
 "conversations": [
-	{"participants": [
+	{"id":1,
+	"participants": [
 		{"id":9, "username":"Patrick"},
 		{"id":23, "username":"PeterGatsby"}
 	],
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 	},
-	{"participants" [
+	{"id":2,
+	"participants" [
 		{"id":99999, "username":"Lukas"},
 		{"id":232515, "username":"Ling"}
 	],
@@ -122,6 +124,7 @@ GET /conversations/[conversation-id]?id=[user-id]&token=[token]
 example responses:
 {"success":true,
 "conversation": {
+	{"id":1,
 	"participants": [
 		{"id":9, "username":"Patrick"},
 		{"id":23, "username":"PeterGatsby"}
