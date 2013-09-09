@@ -3,24 +3,19 @@
 --log registration event
 
 -Login
---store token:user:expiry in db
 --store token:user:expiry in redis
 --log login attempt
 
 -Validate Token
 --Have I seen it recently?
 --does it exist in redis?
---does it exist in db?
---if yes, we're okay
 
 -Send
---validate token
 --validate message
 --persist message
 --publish to redis
 
 -GET posts
---validate token
 --Stick in redis
 --stick in local cache
 
@@ -28,7 +23,6 @@
 --Either return an error when looking for someone non-existent, or when returning no networks, or check the user exists before using, or check output has at least one network!
 
 -POST posts
---validate token
 --stick it in redis
 --stick it in local cache?
 
@@ -41,16 +35,13 @@
 --stick it in db
 
 -GET conversations
---validate token
 --Add last_message
 
 -GET conversations/id
---validate token
 --get participants
 --get messages
 
 -GET conversations/id/messages
---validate token
 --get last 20 messages from redis
 
 -GET user/id
@@ -66,8 +57,6 @@
 --Store in redis
 
 -POST newgroup
---validate token
 --store in redis
---store in db
 
 

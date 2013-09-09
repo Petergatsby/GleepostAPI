@@ -100,8 +100,12 @@ const (
 	participantSelect = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	messageInsert     = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	messageSelect     = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 20"
+	tokenInsert	  = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
+	tokenSelect	  = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
+	LoginOverride      = true
+	MysqlTime	   = "2006-01-02 15:04:05"
 )
 
 var (
@@ -123,6 +127,8 @@ var (
 	participantSelectStatement  *sql.Stmt
 	messageInsertStatement      *sql.Stmt
 	messageSelectStatement      *sql.Stmt
+	tokenInsertStatement        *sql.Stmt
+	tokenSelectStatement        *sql.Stmt
 )
 
 func main() {
@@ -188,9 +194,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	tokenInsertStatement, err = db.Prepare(tokenInsert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tokenSelectStatement, err = db.Prepare(tokenSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
+	http.HandleFunc(UrlBase+"/newgroupconversation", newGroupConversationHandler)
 	http.HandleFunc(UrlBase+"/conversations", conversationHandler)
 	http.HandleFunc(UrlBase+"/conversations/", anotherConversationHandler)
 	http.HandleFunc(UrlBase+"/posts", postHandler)
@@ -297,7 +312,21 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateToken(id uint64, token string) bool {
-	return (true)
+	if (LoginOverride) {
+		return (true)
+	} else {
+		var expiry string
+		err := tokenSelectStatement.QueryRow(id, token).Scan(&expiry)
+		if err != nil {
+			return(false)
+		} else {
+			t, _ := time.Parse(MysqlTime, expiry)
+			if t.After(time.Now()) {
+				return(true)
+			}
+			return (false)
+		}
+	}
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -322,6 +351,10 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("{\"success\":false}"))
 			} else {
 				token := createToken(id)
+				_, err := tokenInsertStatement.Exec(token.UserId, token.Token, token.Expiry)
+				if err != nil {
+					http.Error(w, err.Error(), 500)
+				}
 				tokenJSON, _ := json.Marshal(token)
 				tokens = append(tokens, token)
 				w.Write([]byte("{\"success\":true, \"token\":"))
@@ -376,7 +409,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					log.Fatalf("Error scanning row: %v", err)
 				}
-				post.Time, err = time.Parse("2006-01-02 15:04:05", t)
+				post.Time, err = time.Parse(MysqlTime, t)
 				if err != nil {
 					log.Fatalf("Something went wrong with the timestamp: %v", err)
 				}
@@ -474,6 +507,26 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != "POST" {
+		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+	} else {
+		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+		token := r.FormValue("token")
+		if !validateToken(id, token) {
+			errMsg := "Invalid credentials"
+			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+		} else {
+			conversation := createConversation(id, 4)
+			conversationJSON, _ := json.Marshal(conversation)
+			w.Write([]byte("{\"success\":true, \"conversation\":"))
+			w.Write(conversationJSON)
+			w.Write([]byte("}"))
+		}
+	}
+}
+
 func getParticipants(conv int64) ([]User) {
 	rows, err := participantSelectStatement.Query(conv)
 	if err != nil {
@@ -549,7 +602,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 					if err != nil {
 						http.Error(w, err.Error(), 500)
 					}
-					message.Time, err = time.Parse("2006-01-02 15:04:05", timeString)
+					message.Time, err = time.Parse(MysqlTime, timeString)
 					if err != nil {
 						http.Error(w, err.Error(), 500)
 					}
