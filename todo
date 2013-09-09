@@ -12,7 +12,6 @@
 
 -Send
 --validate message
---persist message
 --publish to redis
 
 -GET posts
@@ -38,8 +37,7 @@
 --Add last_message
 
 -GET conversations/id
---get participants
---get messages
+--put messages in redis
 
 -GET conversations/id/messages
 --get last 20 messages from redis
@@ -58,5 +56,3 @@
 
 -POST newgroup
 --store in redis
-
-

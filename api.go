@@ -29,11 +29,11 @@ type Network struct {
 }
 
 type Message struct {
-	Id      uint64    `json:"id"`
-	By	uint64    `json:"by"`
-	Text    string    `json:"text"`
-	Time    time.Time `json:"timestamp"`
-	Seen    bool      `json:"seen"`
+	Id   uint64    `json:"id"`
+	By   uint64    `json:"by"`
+	Text string    `json:"text"`
+	Time time.Time `json:"timestamp"`
+	Seen bool      `json:"seen"`
 }
 
 type Token struct {
@@ -84,6 +84,12 @@ type Conversation struct {
 	Participants []User `json:"participants"`
 }
 
+type ConversationAndMessages struct {
+	Id           int64  `json:"id"`
+	Participants []User `json:"participants"`
+	Messages []Message `json:"messages"`
+}
+
 const (
 	ruleSelect         = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	createUser         = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
@@ -97,15 +103,16 @@ const (
 	wallSelect         = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT 20"
 	networkSelect      = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
 	conversationSelect = "SELECT conversation_participants.conversation_id FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT 20"
-	participantSelect = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
-	messageInsert     = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	messageSelect     = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 20"
-	tokenInsert	  = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
-	tokenSelect	  = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
+	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
+	messageInsert      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
+	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 20"
+	tokenInsert        = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
+	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
+	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
 	LoginOverride      = true
-	MysqlTime	   = "2006-01-02 15:04:05"
+	MysqlTime          = "2006-01-02 15:04:05"
 )
 
 var (
@@ -129,6 +136,7 @@ var (
 	messageSelectStatement      *sql.Stmt
 	tokenInsertStatement        *sql.Stmt
 	tokenSelectStatement        *sql.Stmt
+	conversationUpdateStatement *sql.Stmt
 )
 
 func main() {
@@ -202,6 +210,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	vonversationUpdateStatement, err = db.Prepare(conversationUpdate)
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
@@ -234,6 +246,13 @@ func looksLikeEmail(email string) bool {
 		return (false)
 	} else {
 		return (true)
+	}
+}
+
+func updateConversation(id uint64) {
+	_, err := conversationUpdateStatement.Exec(id)
+	if err != nil {
+		log.Printf("Error: %v", err)
 	}
 }
 
@@ -312,17 +331,17 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateToken(id uint64, token string) bool {
-	if (LoginOverride) {
+	if LoginOverride {
 		return (true)
 	} else {
 		var expiry string
 		err := tokenSelectStatement.QueryRow(id, token).Scan(&expiry)
 		if err != nil {
-			return(false)
+			return (false)
 		} else {
 			t, _ := time.Parse(MysqlTime, expiry)
 			if t.After(time.Now()) {
-				return(true)
+				return (true)
 			}
 			return (false)
 		}
@@ -527,7 +546,7 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getParticipants(conv int64) ([]User) {
+func getParticipants(conv int64) []User {
 	rows, err := participantSelectStatement.Query(conv)
 	if err != nil {
 		log.Fatalf("Error getting participant: %v", err)
@@ -539,7 +558,30 @@ func getParticipants(conv int64) ([]User) {
 		err = rows.Scan(&user.Id, &user.Name)
 		participants = append(participants, user)
 	}
-	return(participants)
+	return (participants)
+}
+
+func getMessages(convId uint64) ([]Message) {
+	rows, err := messageSelectStatement.Query(convId)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	defer rows.Close()
+	messages := make([]Message, 0, 20)
+	for rows.Next() {
+		var message Message
+		var timeString string
+		err := rows.Scan(&message.Id, &message.By, &message.Text, &timeString, &message.Seen)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		message.Time, err = time.Parse(MysqlTime, timeString)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		messages = append(messages, message)
+	}
+	return(messages)
 }
 
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
@@ -558,7 +600,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 				log.Fatalf("Error querying db: %v", err)
 			}
 			defer rows.Close()
-			conversations := make([]Conversation, 0,20)
+			conversations := make([]Conversation, 0, 20)
 			for rows.Next() {
 				var conv Conversation
 				err = rows.Scan(&conv.Id)
@@ -589,25 +631,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if convIdString != nil {
 			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 			if r.Method == "GET" {
-				rows, err := messageSelectStatement.Query(convId)
-				if err != nil {
-					http.Error(w, err.Error(), 500)
-				}
-				defer rows.Close()
-				messages := make([]Message, 0, 20)
-				for rows.Next() {
-					var message Message
-					var timeString string
-					err := rows.Scan(&message.Id, &message.By, &message.Text, &timeString, &message.Seen)
-					if err != nil {
-						http.Error(w, err.Error(), 500)
-					}
-					message.Time, err = time.Parse(MysqlTime, timeString)
-					if err != nil {
-						http.Error(w, err.Error(), 500)
-					}
-					messages = append(messages, message)
-				}
+				messages := getMessages(convId)
 				messagesJSON, _ := json.Marshal(messages)
 				w.Write([]byte("{\"success\":true, \"messages\":"))
 				w.Write(messagesJSON)
@@ -619,6 +643,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 					http.Error(w, err.Error(), 500)
 				}
 				messageId, _ := res.LastInsertId()
+				go updateConversation(convId)
 				w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 			} else {
 				http.Error(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
@@ -631,10 +656,14 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 				if r.Method != "GET" {
 					http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
 				} else {
-					var conv Conversation
+					var conv ConversationAndMessages
 					conv.Id = convId
 					conv.Participants = getParticipants(conv.Id)
-					w.Write([]byte("quux"))
+					conv.Messages = getMessages(uint64(convId))
+					conversationJSON, _ := json.Marshal(conv)
+					w.Write([]byte("{\"success\":true, \"conversation\":"))
+					w.Write(conversationJSON)
+					w.Write([]byte("}"))
 				}
 			} else {
 				http.Error(w, "404 not found", 404)
