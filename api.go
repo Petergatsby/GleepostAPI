@@ -23,6 +23,12 @@ type User struct {
 	Name string `json:"username"`
 }
 
+type Profile struct {
+	Id   uint64 `json:"id"`
+	Name string `json:"username"`
+	Desc string `json:"tagline"`
+}
+
 type Network struct {
 	Id   uint64
 	Name string
@@ -115,6 +121,7 @@ const (
 	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC"
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
+	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.7"
 	LoginOverride      = true
@@ -143,6 +150,7 @@ var (
 	commentSelectStmt      *sql.Stmt
 	lastMessageSelectStmt  *sql.Stmt
 	commentCountSelectStmt *sql.Stmt
+	profileSelectStmt      *sql.Stmt
 )
 
 func main() {
@@ -236,6 +244,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	profileSelectStmt, err = db.Prepare(profileSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
@@ -244,6 +256,7 @@ func main() {
 	http.HandleFunc(UrlBase+"/conversations/", anotherConversationHandler)
 	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
+	http.HandleFunc(UrlBase+"/user/", userHandler)
 	http.ListenAndServe("dev.gleepost.com:8081", nil)
 }
 
@@ -790,6 +803,31 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func profileHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: get /profile listing topics by time new/old
+func userHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	regexUser, _ := regexp.Compile("user/(\\d+)/?$")
+	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
+	switch {
+		case !validateToken(id, token):
+			errMsg := "Invalid credentials"
+			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+		case r.Method != "GET":
+			http.Error(w, "Method not supported", 405)
+		case userIdString != nil:
+			var user Profile
+			userId, _ := strconv.ParseUint(userIdString[1], 10, 16)
+			err := profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
+			user.Id = userId
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+			}
+			userjson, _ := json.Marshal(user)
+			w.Write([]byte("{\"success\":true, \"user\":"))
+			w.Write(userjson)
+			w.Write([]byte("}"))
+		default:
+			http.Error(w, "404 not found", 404)
+	}
 }

@@ -42,9 +42,7 @@
 --get last 20 messages from redis
 
 -GET user/id
---validate token
 --retrieve from redis
---retrieve from db
 --put in redis
 
 -get partners
