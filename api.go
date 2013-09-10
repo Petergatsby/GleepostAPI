@@ -633,43 +633,48 @@ func getMessages(convId uint64) []Message {
 	return (messages)
 }
 
+func getConversations(user_id uint64) ([]Conversation, error) {
+	conversations := make([]Conversation, 0, 20)
+	rows, err := conversationSelectStmt.Query(user_id)
+	if err != nil {
+		return conversations, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var conv Conversation
+		err = rows.Scan(&conv.Id)
+		if err != nil {
+			return conversations, err
+		}
+		conv.Participants = getParticipants(conv.Id)
+		LastMessage, err := getLastMessage(uint64(conv.Id))
+		if err == nil {
+			conv.LastMessage = &LastMessage
+		}
+		conversations = append(conversations, conv)
+	}
+	return conversations, nil
+}
+
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "GET" {
-		http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
-	} else {
-		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-		token := r.FormValue("token")
-		if !validateToken(id, token) {
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+		case r.Method != "GET":
+			http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
+		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else {
-			rows, err := conversationSelectStmt.Query(id)
+		default:
+			conversations, err := getConversations(id)
 			if err != nil {
-				log.Fatalf("Error querying db: %v", err)
-			}
-			defer rows.Close()
-			conversations := make([]Conversation, 0, 20)
-			for rows.Next() {
-				var conv Conversation
-				err = rows.Scan(&conv.Id)
-				if err != nil {
-					log.Fatalf("Error getting conversation: %v", err)
-				}
-				conv.Participants = getParticipants(conv.Id)
-				LastMessage, err := getLastMessage(uint64(conv.Id))
-				if err == nil {
-					conv.LastMessage = &LastMessage
-				} else {
-					log.Printf("error: %v", err)
-				}
-				conversations = append(conversations, conv)
+				http.Error(w, err.Error(), 500)
 			}
 			conversationsJSON, _ := json.Marshal(conversations)
 			w.Write([]byte("{\"success\":true, \"conversations\":"))
 			w.Write(conversationsJSON)
 			w.Write([]byte("}"))
-		}
 	}
 }
 
@@ -679,8 +684,8 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	token := r.FormValue("token")
 	regex, _ := regexp.Compile("conversations/(\\d+)/messages/?$")
 	convIdString := regex.FindStringSubmatch(r.URL.Path)
-	regex2, _ = regexp.Compile("conversations/(\\d+)/?$")
-	convIdString2 = regex.FindStringSubmatch(r.URL.Path)
+	regex2, _ := regexp.Compile("conversations/(\\d+)/?$")
+	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
 	switch {
 		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
