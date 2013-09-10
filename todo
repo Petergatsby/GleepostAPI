@@ -53,3 +53,13 @@
 
 -POST newgroup
 --store in redis
+
+-Some way to like/hate
+
+-Some way to paginate
+
+-Some way to mark message read
+
+-Long polling
+
+-Websockets

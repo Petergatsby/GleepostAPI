@@ -20,8 +20,8 @@ example responses:
 {"success":"false", "error":"Bad username/password"}
 
 
-GET /posts?id=[user-id]&token=[token]
-returns a list of 20 most recent posts
+GET /posts?id=[user-id]&token=[token]&start=[count]
+returns a list of 20 posts ordered by time, starting at count
 
 example responses:
 {"success":true, 
@@ -95,8 +95,8 @@ example responses:
 {"success":true, "id":234}
 
 
-GET /conversations?id=[user-id]&token=[token]
-returns a list of your conversations by most recent message
+GET /conversations?id=[user-id]&token=[token]&start=[count]
+returns a list of 20 of your conversations ordered by most recent message, starting at count
 
 {"success":true, 
 "conversations": [
@@ -137,7 +137,8 @@ example responses:
 }
 
 
-GET /conversations/[conversation-id/messages?id=[user-id]&token=[token]
+GET /conversations/[conversation-id/messages?id=[user-id]&token=[token]&start=[count]
+Returns a list of 20 messages ordered by time, starting at count
 
 example responses:
 {"success":true,
