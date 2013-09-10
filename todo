@@ -33,7 +33,7 @@
 --stick in local cache
 
 -GET conversations
---Add last_message
+-- stick in redis
 
 -GET conversations/id
 --put messages in redis

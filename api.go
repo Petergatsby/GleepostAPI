@@ -116,7 +116,7 @@ const (
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	MaxConnectionCount = 100
-	UrlBase            = "/api/v0.6"
+	UrlBase            = "/api/v0.7"
 	LoginOverride      = true
 	MysqlTime          = "2006-01-02 15:04:05"
 )
@@ -244,7 +244,7 @@ func main() {
 	http.HandleFunc(UrlBase+"/conversations/", anotherConversationHandler)
 	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
-	http.ListenAndServe("dev.gleepost.com:8080", nil)
+	http.ListenAndServe("dev.gleepost.com:8081", nil)
 }
 
 func createToken(userid uint64) Token {
