@@ -26,12 +26,11 @@
 --stick it in local cache?
 
 -GET posts/id/comments
---validate token
---get all the comments ordered by time
+--Stick in redis
 
 -POST posts/id/comments
---validate token
---stick it in db
+--stick in redis
+--stick in local cache
 
 -GET conversations
 --Add last_message

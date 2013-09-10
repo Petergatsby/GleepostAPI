@@ -19,8 +19,8 @@ import (
 )
 
 type User struct {
-	Id   uint64
-	Name string
+	Id   uint64 `json:"id"`
+	Name string `json:"username"`
 }
 
 type Network struct {
@@ -30,7 +30,7 @@ type Network struct {
 
 type Message struct {
 	Id   uint64    `json:"id"`
-	By   uint64    `json:"by"`
+	By   User      `json:"by"`
 	Text string    `json:"text"`
 	Time time.Time `json:"timestamp"`
 	Seen bool      `json:"seen"`
@@ -42,28 +42,29 @@ type Token struct {
 	Expiry time.Time `json:"expiry"`
 }
 
-type Topic struct {
-	TopicID      uint64     `json:"id"`
-	Time         time.Time  `json:"time"`
-	Messages     []*Message `json:"messages"`
-	Text         string     `json:"text"`
-	Participants []uint64   `json:"users"`
-	IsPost       bool
-}
-
 type Post struct {
 	Id        uint64     `json:"id"`
-	By        uint64     `json:"by"`
+	By        User       `json:"by"`
 	Time      time.Time  `json:"timestamp"`
 	Text      string     `json:"text"`
 	Comments  []Comment  `json:"comments"`
 	LikeHates []LikeHate `json:"like_hate"`
 }
 
+type PostSmall struct {
+	Id           uint64    `json:"id"`
+	By           User      `json:"by"`
+	Time         time.Time `json:"timestamp"`
+	Text         string    `json:"text"`
+	CommentCount int       `json:"comments"`
+	LikeCount    int       `json:"likes"`
+	HateCount    int       `json:"hates"`
+}
+
 type Comment struct {
 	Id   uint64    `json:"id"`
 	Post uint64    `json:"-"`
-	By   uint64    `json:"by"`
+	By   User      `json:"by"`
 	Time time.Time `json:"timestamp"`
 	Text string    `json:"text"`
 }
@@ -80,14 +81,15 @@ type Rule struct {
 }
 
 type Conversation struct {
-	Id           int64  `json:"id"`
-	Participants []User `json:"participants"`
+	Id           int64    `json:"id"`
+	Participants []User   `json:"participants"`
+	LastMessage  *Message `json:"mostRecentMessage"`
 }
 
 type ConversationAndMessages struct {
-	Id           int64  `json:"id"`
-	Participants []User `json:"participants"`
-	Messages []Message `json:"messages"`
+	Id           int64     `json:"id"`
+	Participants []User    `json:"participants"`
+	Messages     []Message `json:"messages"`
 }
 
 const (
@@ -109,6 +111,10 @@ const (
 	tokenInsert        = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
+	commentInsert      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
+	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC"
+	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
+	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	MaxConnectionCount = 100
 	UrlBase            = "/api/v0.6"
 	LoginOverride      = true
@@ -116,27 +122,27 @@ const (
 )
 
 var (
-	messages                    = make([]*Message, 10)
-	tokens                      = make([]Token, 10)
-	posts                       = make([]*Post, 10)
-	topics                      = make([]*Topic, 10)
-	ruleStatement               *sql.Stmt
-	registerStatement           *sql.Stmt
-	passStatement               *sql.Stmt
-	randomStatement             *sql.Stmt
-	userStatement               *sql.Stmt
-	conversationStatement       *sql.Stmt
-	participantStatement        *sql.Stmt
-	networkStatement            *sql.Stmt
-	postStatement               *sql.Stmt
-	wallSelectStatement         *sql.Stmt
-	conversationSelectStatement *sql.Stmt
-	participantSelectStatement  *sql.Stmt
-	messageInsertStatement      *sql.Stmt
-	messageSelectStatement      *sql.Stmt
-	tokenInsertStatement        *sql.Stmt
-	tokenSelectStatement        *sql.Stmt
-	conversationUpdateStatement *sql.Stmt
+	ruleStmt               *sql.Stmt
+	registerStmt           *sql.Stmt
+	passStmt               *sql.Stmt
+	randomStmt             *sql.Stmt
+	userStmt               *sql.Stmt
+	conversationStmt       *sql.Stmt
+	participantStmt        *sql.Stmt
+	networkStmt            *sql.Stmt
+	postStmt               *sql.Stmt
+	wallSelectStmt         *sql.Stmt
+	conversationSelectStmt *sql.Stmt
+	participantSelectStmt  *sql.Stmt
+	messageInsertStmt      *sql.Stmt
+	messageSelectStmt      *sql.Stmt
+	tokenInsertStmt        *sql.Stmt
+	tokenSelectStmt        *sql.Stmt
+	conversationUpdateStmt *sql.Stmt
+	commentInsertStmt      *sql.Stmt
+	commentSelectStmt      *sql.Stmt
+	lastMessageSelectStmt  *sql.Stmt
+	commentCountSelectStmt *sql.Stmt
 )
 
 func main() {
@@ -146,71 +152,87 @@ func main() {
 		log.Fatalf("Error opening database: %v", err)
 	}
 	db.SetMaxIdleConns(MaxConnectionCount)
-	ruleStatement, err = db.Prepare(ruleSelect)
+	ruleStmt, err = db.Prepare(ruleSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	registerStatement, err = db.Prepare(createUser)
+	registerStmt, err = db.Prepare(createUser)
 	if err != nil {
 		log.Fatal(err)
 	}
-	passStatement, err = db.Prepare(PassSelect)
+	passStmt, err = db.Prepare(PassSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	randomStatement, err = db.Prepare(randomSelect)
+	randomStmt, err = db.Prepare(randomSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	conversationStatement, err = db.Prepare(conversationInsert)
+	conversationStmt, err = db.Prepare(conversationInsert)
 	if err != nil {
 		log.Fatal(err)
 	}
-	userStatement, err = db.Prepare(userSelect)
+	userStmt, err = db.Prepare(userSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	participantStatement, err = db.Prepare(participantInsert)
+	participantStmt, err = db.Prepare(participantInsert)
 	if err != nil {
 		log.Fatal(err)
 	}
-	postStatement, err = db.Prepare(postInsert)
+	postStmt, err = db.Prepare(postInsert)
 	if err != nil {
 		log.Fatal(err)
 	}
-	wallSelectStatement, err = db.Prepare(wallSelect)
+	wallSelectStmt, err = db.Prepare(wallSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	networkStatement, err = db.Prepare(networkSelect)
+	networkStmt, err = db.Prepare(networkSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	conversationSelectStatement, err = db.Prepare(conversationSelect)
+	conversationSelectStmt, err = db.Prepare(conversationSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	participantSelectStatement, err = db.Prepare(participantSelect)
+	participantSelectStmt, err = db.Prepare(participantSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	messageInsertStatement, err = db.Prepare(messageInsert)
+	messageInsertStmt, err = db.Prepare(messageInsert)
 	if err != nil {
 		log.Fatal(err)
 	}
-	messageSelectStatement, err = db.Prepare(messageSelect)
+	messageSelectStmt, err = db.Prepare(messageSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tokenInsertStatement, err = db.Prepare(tokenInsert)
+	tokenInsertStmt, err = db.Prepare(tokenInsert)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tokenSelectStatement, err = db.Prepare(tokenSelect)
+	tokenSelectStmt, err = db.Prepare(tokenSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
-	vonversationUpdateStatement, err = db.Prepare(conversationUpdate)
+	conversationUpdateStmt, err = db.Prepare(conversationUpdate)
+	if err != nil {
+		log.Fatal(err)
+	}
+	commentInsertStmt, err = db.Prepare(commentInsert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	commentSelectStmt, err = db.Prepare(commentSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+	lastMessageSelectStmt, err = db.Prepare(lastMessageSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+	commentCountSelectStmt, err = db.Prepare(commentCountSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -221,6 +243,7 @@ func main() {
 	http.HandleFunc(UrlBase+"/conversations", conversationHandler)
 	http.HandleFunc(UrlBase+"/conversations/", anotherConversationHandler)
 	http.HandleFunc(UrlBase+"/posts", postHandler)
+	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
 	http.ListenAndServe("dev.gleepost.com:8080", nil)
 }
 
@@ -250,17 +273,39 @@ func looksLikeEmail(email string) bool {
 }
 
 func updateConversation(id uint64) {
-	_, err := conversationUpdateStatement.Exec(id)
+	_, err := conversationUpdateStmt.Exec(id)
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
+}
+
+func getCommentCount(id uint64) int {
+	var count int
+	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
+	if err != nil {
+		return 0
+	}
+	return count
+}
+
+func getLastMessage(id uint64) (message Message, err error) {
+	var timeString string
+	var by uint64
+	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+	if err != nil {
+		return message, err
+	}
+	message.By = getUser(by)
+	message.Time, _ = time.Parse(MysqlTime, timeString)
+
+	return message, nil
 }
 
 func validateEmail(email string) bool {
 	if !looksLikeEmail(email) {
 		return (false)
 	} else {
-		rows, err := ruleStatement.Query()
+		rows, err := ruleStmt.Query()
 		if err != nil {
 			log.Fatalf("Error preparing statement: %v", err)
 		}
@@ -305,7 +350,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 				errMsg := "Password hashing failure"
 				w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 			} else {
-				_, err := registerStatement.Exec(user, hash, email)
+				_, err := registerStmt.Exec(user, hash, email)
 				if err != nil {
 					if strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
 						response := struct {
@@ -335,7 +380,7 @@ func validateToken(id uint64, token string) bool {
 		return (true)
 	} else {
 		var expiry string
-		err := tokenSelectStatement.QueryRow(id, token).Scan(&expiry)
+		err := tokenSelectStmt.QueryRow(id, token).Scan(&expiry)
 		if err != nil {
 			return (false)
 		} else {
@@ -355,7 +400,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		pass := []byte(r.FormValue("pass"))
 		hash := make([]byte, 256)
 		var id uint64
-		err := passStatement.QueryRow(user).Scan(&id, &hash)
+		err := passStmt.QueryRow(user).Scan(&id, &hash)
 		if err != nil {
 			/*
 				if (err.(sql.ErrNoRows)) {
@@ -370,12 +415,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte("{\"success\":false}"))
 			} else {
 				token := createToken(id)
-				_, err := tokenInsertStatement.Exec(token.UserId, token.Token, token.Expiry)
+				_, err := tokenInsertStmt.Exec(token.UserId, token.Token, token.Expiry)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
 				}
 				tokenJSON, _ := json.Marshal(token)
-				tokens = append(tokens, token)
 				w.Write([]byte("{\"success\":true, \"token\":"))
 				w.Write(tokenJSON)
 				w.Write([]byte("}"))
@@ -387,7 +431,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserNetworks(id uint64) []Network {
-	rows, err := networkStatement.Query(id)
+	rows, err := networkStmt.Query(id)
 	nets := make([]Network, 0, 5)
 	if err != nil {
 		log.Fatalf("Error querying db: %v", err)
@@ -415,16 +459,17 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		} else {
 			networks := getUserNetworks(id)
-			rows, err := wallSelectStatement.Query(networks[0].Id)
+			rows, err := wallSelectStmt.Query(networks[0].Id)
 			if err != nil {
 				log.Fatalf("Error querying db: %v", err)
 			}
 			defer rows.Close()
-			posts := make([]Post, 0, 20)
+			posts := make([]PostSmall, 0, 20)
 			for rows.Next() {
-				var post Post
+				var post PostSmall
 				var t string
-				err = rows.Scan(&post.Id, &post.By, &t, &post.Text)
+				var by uint64
+				err = rows.Scan(&post.Id, &by, &t, &post.Text)
 				if err != nil {
 					log.Fatalf("Error scanning row: %v", err)
 				}
@@ -432,6 +477,8 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					log.Fatalf("Something went wrong with the timestamp: %v", err)
 				}
+				post.By = getUser(by)
+				post.CommentCount = getCommentCount(post.Id)
 				posts = append(posts, post)
 			}
 			postsJSON, err := json.Marshal(posts)
@@ -451,7 +498,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		} else {
 			networks := getUserNetworks(id)
-			res, err := postStatement.Exec(id, text, networks[0].Id)
+			res, err := postStmt.Exec(id, text, networks[0].Id)
 			if err != nil {
 				log.Fatalf("Error executing: %v", err)
 
@@ -463,7 +510,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createConversation(id uint64, nParticipants int) Conversation {
-	r, _ := conversationStatement.Exec(id)
+	r, _ := conversationStmt.Exec(id)
 	conversation := Conversation{}
 	conversation.Id, _ = r.LastInsertId()
 	participants := make([]User, 0, 10)
@@ -471,7 +518,7 @@ func createConversation(id uint64, nParticipants int) Conversation {
 	participants = append(participants, user)
 	nParticipants--
 
-	rows, err := randomStatement.Query()
+	rows, err := randomStmt.Query()
 	if err != nil {
 		log.Fatalf("Error preparing statement: %v", err)
 	}
@@ -486,7 +533,7 @@ func createConversation(id uint64, nParticipants int) Conversation {
 		}
 	}
 	for _, u := range participants {
-		_, err := participantStatement.Exec(conversation.Id, u.Id)
+		_, err := participantStmt.Exec(conversation.Id, u.Id)
 		if err != nil {
 			log.Fatalf("Error adding user to conversation: %v", err)
 		}
@@ -497,7 +544,7 @@ func createConversation(id uint64, nParticipants int) Conversation {
 
 func getUser(id uint64) User {
 	user := User{}
-	err := userStatement.QueryRow(id).Scan(&user.Id, &user.Name)
+	err := userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
 	if err != nil {
 		log.Fatalf("Error getting user: %v", err)
 	} else {
@@ -547,7 +594,7 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getParticipants(conv int64) []User {
-	rows, err := participantSelectStatement.Query(conv)
+	rows, err := participantSelectStmt.Query(conv)
 	if err != nil {
 		log.Fatalf("Error getting participant: %v", err)
 	}
@@ -561,8 +608,8 @@ func getParticipants(conv int64) []User {
 	return (participants)
 }
 
-func getMessages(convId uint64) ([]Message) {
-	rows, err := messageSelectStatement.Query(convId)
+func getMessages(convId uint64) []Message {
+	rows, err := messageSelectStmt.Query(convId)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -571,7 +618,8 @@ func getMessages(convId uint64) ([]Message) {
 	for rows.Next() {
 		var message Message
 		var timeString string
-		err := rows.Scan(&message.Id, &message.By, &message.Text, &timeString, &message.Seen)
+		var by uint64
+		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
@@ -579,9 +627,10 @@ func getMessages(convId uint64) ([]Message) {
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
+		message.By = getUser(by)
 		messages = append(messages, message)
 	}
-	return(messages)
+	return (messages)
 }
 
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
@@ -595,7 +644,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		} else {
-			rows, err := conversationSelectStatement.Query(id)
+			rows, err := conversationSelectStmt.Query(id)
 			if err != nil {
 				log.Fatalf("Error querying db: %v", err)
 			}
@@ -608,6 +657,12 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 					log.Fatalf("Error getting conversation: %v", err)
 				}
 				conv.Participants = getParticipants(conv.Id)
+				LastMessage, err := getLastMessage(uint64(conv.Id))
+				if err == nil {
+					conv.LastMessage = &LastMessage
+				} else {
+					log.Printf("error: %v", err)
+				}
 				conversations = append(conversations, conv)
 			}
 			conversationsJSON, _ := json.Marshal(conversations)
@@ -638,7 +693,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 				w.Write([]byte("}"))
 			} else if r.Method == "POST" {
 				text := r.FormValue("text")
-				res, err := messageInsertStatement.Exec(convId, id, text)
+				res, err := messageInsertStmt.Exec(convId, id, text)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
 				}
@@ -669,6 +724,62 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 				http.Error(w, "404 not found", 404)
 			}
 		}
+	}
+}
+
+func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	regexComments, _ := regexp.Compile("posts/(\\d+)/comments/?$")
+	regexNoComments, _ := regexp.Compile("posts/(\\d+)/?$")
+	commIdStringA := regexComments.FindStringSubmatch(r.URL.Path)
+	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
+	switch {
+	case !validateToken(id, token):
+		errMsg := "Invalid credentials"
+		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+	case commIdStringA != nil && r.Method == "GET":
+		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
+		rows, err := commentSelectStmt.Query(commId)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+		}
+		defer rows.Close()
+		comments := make([]Comment, 0, 20)
+		for rows.Next() {
+			var comment Comment
+			comment.Post = commId
+			var timeString string
+			var by uint64
+			err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+			}
+			comment.Time, _ = time.Parse(MysqlTime, timeString)
+			comment.By = getUser(by)
+			comments = append(comments, comment)
+		}
+		jsonComments, _ := json.Marshal(comments)
+		w.Write([]byte("{\"success\":true, \"comments\":"))
+		w.Write(jsonComments)
+		w.Write([]byte("}"))
+	case commIdStringA != nil && r.Method == "POST":
+		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
+		text := r.FormValue("text")
+		res, err := commentInsertStmt.Exec(commId, id, text)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+		} else {
+			commentId, _ := res.LastInsertId()
+			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(commentId, 10) + "}"))
+		}
+	case commIdStringB != nil && r.Method == "GET":
+		commId, _ := strconv.ParseUint(commIdStringB[1], 10, 16)
+		log.Printf("%d", commId)
+		//implement getting a specific post
+	default:
+		http.Error(w, "Method not supported", 405)
 	}
 }
 
