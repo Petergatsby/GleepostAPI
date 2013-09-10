@@ -677,54 +677,71 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
-	if !validateToken(id, token) {
-		errMsg := "Invalid credentials"
-		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-	} else {
-		regex, _ := regexp.Compile("conversations/(\\d+)/messages/?$")
-		convIdString := regex.FindStringSubmatch(r.URL.Path)
-		if convIdString != nil {
+	regex, _ := regexp.Compile("conversations/(\\d+)/messages/?$")
+	convIdString := regex.FindStringSubmatch(r.URL.Path)
+	regex2, _ = regexp.Compile("conversations/(\\d+)/?$")
+	convIdString2 = regex.FindStringSubmatch(r.URL.Path)
+	switch {
+		case !validateToken(id, token):
+			errMsg := "Invalid credentials"
+			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+		case convIdString != nil && r.Method == "GET":
 			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
-			if r.Method == "GET" {
-				messages := getMessages(convId)
-				messagesJSON, _ := json.Marshal(messages)
-				w.Write([]byte("{\"success\":true, \"messages\":"))
-				w.Write(messagesJSON)
-				w.Write([]byte("}"))
-			} else if r.Method == "POST" {
-				text := r.FormValue("text")
-				res, err := messageInsertStmt.Exec(convId, id, text)
-				if err != nil {
-					http.Error(w, err.Error(), 500)
-				}
-				messageId, _ := res.LastInsertId()
-				go updateConversation(convId)
-				w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
-			} else {
-				http.Error(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
+			messages := getMessages(convId)
+			messagesJSON, _ := json.Marshal(messages)
+			w.Write([]byte("{\"success\":true, \"messages\":"))
+			w.Write(messagesJSON)
+			w.Write([]byte("}"))
+		case convIdString != nil && r.Method == "POST":
+			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
+			text := r.FormValue("text")
+			res, err := messageInsertStmt.Exec(convId, id, text)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
 			}
-		} else {
-			regex, _ = regexp.Compile("conversations/(\\d+)/?$")
-			convIdString = regex.FindStringSubmatch(r.URL.Path)
-			if convIdString != nil {
-				convId, _ := strconv.ParseInt(convIdString[1], 10, 16)
-				if r.Method != "GET" {
-					http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
-				} else {
-					var conv ConversationAndMessages
-					conv.Id = convId
-					conv.Participants = getParticipants(conv.Id)
-					conv.Messages = getMessages(uint64(convId))
-					conversationJSON, _ := json.Marshal(conv)
-					w.Write([]byte("{\"success\":true, \"conversation\":"))
-					w.Write(conversationJSON)
-					w.Write([]byte("}"))
-				}
-			} else {
-				http.Error(w, "404 not found", 404)
-			}
-		}
+			messageId, _ := res.LastInsertId()
+			go updateConversation(convId)
+			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
+		case convIdString != nil: //Unsuported method
+			http.Error(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
+		case convIdString2 != nil && r.Method != "GET":
+			http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
+		case convIdString2 != nil:
+			convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
+			var conv ConversationAndMessages
+			conv.Id = convId
+			conv.Participants = getParticipants(conv.Id)
+			conv.Messages = getMessages(uint64(convId))
+			conversationJSON, _ := json.Marshal(conv)
+			w.Write([]byte("{\"success\":true, \"conversation\":"))
+			w.Write(conversationJSON)
+			w.Write([]byte("}"))
+		default:
+			http.Error(w, "404 not found", 404)
 	}
+}
+
+func getComments(id uint64) ([]Comment, error) {
+	rows, err := commentSelectStmt.Query(id)
+	comments := make([]Comment, 0, 20)
+	if err != nil {
+		return comments, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var comment Comment
+		comment.Post = id
+		var timeString string
+		var by uint64
+		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+		if err != nil {
+			return comments, err
+		}
+		comment.Time, _ = time.Parse(MysqlTime, timeString)
+		comment.By = getUser(by)
+		comments = append(comments, comment)
+	}
+	return comments, nil
 }
 
 func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -741,24 +758,9 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 	case commIdStringA != nil && r.Method == "GET":
 		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
-		rows, err := commentSelectStmt.Query(commId)
+		comments, err := getComments(commId)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
-		}
-		defer rows.Close()
-		comments := make([]Comment, 0, 20)
-		for rows.Next() {
-			var comment Comment
-			comment.Post = commId
-			var timeString string
-			var by uint64
-			err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
-			if err != nil {
-				http.Error(w, err.Error(), 500)
-			}
-			comment.Time, _ = time.Parse(MysqlTime, timeString)
-			comment.By = getUser(by)
-			comments = append(comments, comment)
 		}
 		jsonComments, _ := json.Marshal(comments)
 		w.Write([]byte("{\"success\":true, \"comments\":"))
