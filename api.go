@@ -125,7 +125,7 @@ const (
 	postInsert         = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	wallSelect         = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT 20"
 	networkSelect      = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
-	conversationSelect = "SELECT conversation_participants.conversation_id FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT 20"
+	conversationSelect = "SELECT conversation_participants.conversation_id FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
 	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	messageInsert      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, 20"
@@ -672,9 +672,9 @@ func getMessages(convId uint64, offset int64) []Message {
 	return (messages)
 }
 
-func getConversations(user_id uint64) ([]Conversation, error) {
+func getConversations(user_id uint64, start int64) ([]Conversation, error) {
 	conversations := make([]Conversation, 0, 20)
-	rows, err := conversationSelectStmt.Query(user_id)
+	rows, err := conversationSelectStmt.Query(user_id, start)
 	if err != nil {
 		return conversations, err
 	}
@@ -706,7 +706,11 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		default:
-			conversations, err := getConversations(id)
+			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+			if err != nil {
+				start = 0
+			}
+			conversations, err := getConversations(id, 0)
 			if err != nil {
 				jsonError(w, err.Error(), 500)
 			}
