@@ -128,7 +128,7 @@ const (
 	conversationSelect = "SELECT conversation_participants.conversation_id FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT 20"
 	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	messageInsert      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 20"
+	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, 20"
 	tokenInsert        = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -647,8 +647,8 @@ func getParticipants(conv int64) []User {
 	return (participants)
 }
 
-func getMessages(convId uint64) []Message {
-	rows, err := messageSelectStmt.Query(convId)
+func getMessages(convId uint64, offset int64) []Message {
+	rows, err := messageSelectStmt.Query(convId, offset)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -731,7 +731,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		case convIdString != nil && r.Method == "GET":
 			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
-			messages := getMessages(convId)
+			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+			if err != nil {
+				start = 0
+			}
+			messages := getMessages(convId, start)
 			messagesJSON, _ := json.Marshal(messages)
 			w.Write([]byte("{\"success\":true, \"messages\":"))
 			w.Write(messagesJSON)
@@ -752,10 +756,14 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			jsonError(w, "{\"error\":\"Must be a GET request!\"}", 405)
 		case convIdString2 != nil:
 			convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
+			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+			if err != nil {
+				start = 0
+			}
 			var conv ConversationAndMessages
 			conv.Id = convId
 			conv.Participants = getParticipants(conv.Id)
-			conv.Messages = getMessages(uint64(convId))
+			conv.Messages = getMessages(uint64(convId), start)
 			conversationJSON, _ := json.Marshal(conv)
 			w.Write([]byte("{\"success\":true, \"conversation\":"))
 			w.Write(conversationJSON)
