@@ -98,6 +98,14 @@ type ConversationAndMessages struct {
 	Messages     []Message `json:"messages"`
 }
 
+type RegisterError struct {
+	Text	string
+}
+
+func (r RegisterError) Error() string {
+	return r.Text
+}
+
 const (
 	ruleSelect         = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	createUser         = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
@@ -153,7 +161,29 @@ var (
 	profileSelectStmt      *sql.Stmt
 )
 
-func prepare() {
+
+func keepalive(db *sql.DB) {
+	tick := time.Tick(1*time.Hour)
+	for {
+		<-tick
+		err := db.Ping()
+		if err != nil {
+			log.Print(err)
+			db, err = sql.Open("mysql", ConnectionString)
+			if err != nil {
+				log.Fatalf("Error opening database: %v", err)
+			}
+		}
+	}
+}
+
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	db, err := sql.Open("mysql", ConnectionString)
+	if err != nil {
+		log.Fatalf("Error opening database: %v", err)
+	}
+	db.SetMaxIdleConns(MaxConnectionCount)
 	ruleStmt, err = db.Prepare(ruleSelect)
 	if err != nil {
 		log.Fatal(err)
@@ -242,31 +272,7 @@ func prepare() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func keepalive() {
-	tick := time.Tick(1*time.Hour)
-	for <-tick {
-		err := db.Ping()
-		if err != nil {
-			log.Print(err)
-			db, err = sql.Open("mysql", ConnectionString)
-			if err != nil {
-				log.Fatalf("Error opening database: %v", err)
-			}
-		}
-	}
-}
-
-func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	db, err := sql.Open("mysql", ConnectionString)
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	db.SetMaxIdleConns(MaxConnectionCount)
-	prepare()
-	go keepalive()
+	go keepalive(db)
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
@@ -355,6 +361,22 @@ func validateEmail(email string) bool {
 	}
 }
 
+func registerUser(user string, pass string, email string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
+	if err != nil {
+		return err
+	} else {
+		_, err := registerStmt.Exec(user, hash, email)
+		if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
+			return(RegisterError{"Username or email address already taken"})
+		} else if err != nil {
+			return err
+		} else {
+			return nil
+		}
+	}
+}
+
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	user := r.FormValue("user")
@@ -376,31 +398,11 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg := "Invalid email"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		default:
-			hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
+			err := registerUser(user, pass, email)
 			if err != nil {
-				errMsg := "Password hashing failure"
-				w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+				w.Write([]byte("{\"success\":false, \"error\":\"" + err.Error() + "\"}"))
 			} else {
-				_, err := registerStmt.Exec(user, hash, email)
-				if err != nil {
-					if strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-						response := struct {
-							success bool
-							Error   string
-						}{
-							false,
-							"Username or email address already taken",
-						}
-						responseJSON, _ := json.Marshal(response)
-						w.Write(responseJSON)
-					} else {
-						errMsg := err.Error()
-						w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-					}
-				} else {
-					w.Write([]byte("{\"success\":true}"))
-					//also send activation email!
-				}
+				w.Write([]byte("{\"success\":true}"))
 			}
 	}
 }
