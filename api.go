@@ -338,26 +338,25 @@ func validateEmail(email string) bool {
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "POST" {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
-	} else {
-		user := r.FormValue("user")
-		pass := r.FormValue("pass")
-		email := r.FormValue("email")
-		if len(user) == 0 {
+	user := r.FormValue("user")
+	pass := r.FormValue("pass")
+	email := r.FormValue("email")
+	switch {
+		case r.Method != "POST":
+			http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+		case len(user) == 0:
 			errMsg := "Missing parameter: user"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else if len(pass) == 0 {
+		case len(pass) == 0:
 			errMsg := "Missing parameter: pass"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else if len(email) == 0 {
+		case len(email) == 0:
 			errMsg := "Missing parameter: email"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else if !validateEmail(email) {
+		case !validateEmail(email):
 			errMsg := "Invalid email"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else {
-
+		default:
 			hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 			if err != nil {
 				errMsg := "Password hashing failure"
@@ -384,7 +383,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 					//also send activation email!
 				}
 			}
-		}
 	}
 }
 
@@ -464,13 +462,13 @@ func getUserNetworks(id uint64) []Network {
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method == "GET" {
-		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-		token := r.FormValue("token")
-		if !validateToken(id, token) {
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else {
+		case r.Method == "GET":
 			networks := getUserNetworks(id)
 			rows, err := wallSelectStmt.Query(networks[0].Id)
 			if err != nil {
@@ -501,24 +499,17 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("{\"success\":true, \"posts\":"))
 			w.Write(postsJSON)
 			w.Write([]byte("}"))
-		}
-	} else if r.Method == "POST" {
-		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-		token := r.FormValue("token")
-		text := r.FormValue("text")
-		if !validateToken(id, token) {
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else {
+		case r.Method == "POST":
+			id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 			networks := getUserNetworks(id)
 			res, err := postStmt.Exec(id, text, networks[0].Id)
 			if err != nil {
 				log.Fatalf("Error executing: %v", err)
-
 			}
 			postId, _ := res.LastInsertId()
 			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(postId, 10) + "}"))
-		}
+		default:
+			http.Error(w, "{\"error\":\"Must be a POST or GET request!\"}", 405)
 	}
 }
 
@@ -568,41 +559,39 @@ func getUser(id uint64) User {
 
 func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "POST" {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
-	} else {
-		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-		token := r.FormValue("token")
-		if !validateToken(id, token) {
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+		case r.Method != "POST":
+			http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else {
+		default:
 			conversation := createConversation(id, 2)
 			conversationJSON, _ := json.Marshal(conversation)
 			w.Write([]byte("{\"success\":true, \"conversation\":"))
 			w.Write(conversationJSON)
 			w.Write([]byte("}"))
-		}
 	}
 }
 
 func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != "POST" {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
-	} else {
-		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-		token := r.FormValue("token")
-		if !validateToken(id, token) {
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+		case r.Method != "POST":
+			http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
-		} else {
+		default:
 			conversation := createConversation(id, 4)
 			conversationJSON, _ := json.Marshal(conversation)
 			w.Write([]byte("{\"success\":true, \"conversation\":"))
 			w.Write(conversationJSON)
 			w.Write([]byte("}"))
-		}
 	}
 }
 
