@@ -460,6 +460,32 @@ func getUserNetworks(id uint64) []Network {
 	return (nets)
 }
 
+func getPosts(net_id uint64) ([]PostSmall, error) {
+	rows, err := wallSelectStmt.Query(net_id)
+	posts := make([]PostSmall, 0, 20)
+	if err != nil {
+		return posts, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post PostSmall
+		var t string
+		var by uint64
+		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(MysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By = getUser(by)
+		post.CommentCount = getCommentCount(post.Id)
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
@@ -470,27 +496,9 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		case r.Method == "GET":
 			networks := getUserNetworks(id)
-			rows, err := wallSelectStmt.Query(networks[0].Id)
+			posts, err := getPosts(networks[0].Id)
 			if err != nil {
-				log.Fatalf("Error querying db: %v", err)
-			}
-			defer rows.Close()
-			posts := make([]PostSmall, 0, 20)
-			for rows.Next() {
-				var post PostSmall
-				var t string
-				var by uint64
-				err = rows.Scan(&post.Id, &by, &t, &post.Text)
-				if err != nil {
-					log.Fatalf("Error scanning row: %v", err)
-				}
-				post.Time, err = time.Parse(MysqlTime, t)
-				if err != nil {
-					log.Fatalf("Something went wrong with the timestamp: %v", err)
-				}
-				post.By = getUser(by)
-				post.CommentCount = getCommentCount(post.Id)
-				posts = append(posts, post)
+				http.Error(w, err.Error(), 500)
 			}
 			postsJSON, err := json.Marshal(posts)
 			if err != nil {
