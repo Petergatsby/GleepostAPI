@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"fmt"
 )
 
 type User struct {
@@ -106,7 +107,7 @@ func (r RegisterError) Error() string {
 	return r.Text
 }
 
-func jsonError(w ResponseWriter, error string, code int) {
+func jsonError(w http.ResponseWriter, error string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	fmt.Fprintln(w, error)
@@ -288,7 +289,7 @@ func main() {
 	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
 	http.HandleFunc(UrlBase+"/user/", userHandler)
-	http.ListenAndServe("dev.gleepost.com:8081", nil)
+	http.ListenAndServe(":8081", nil)
 }
 
 func createToken(userid uint64) Token {
