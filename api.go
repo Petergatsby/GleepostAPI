@@ -106,6 +106,12 @@ func (r RegisterError) Error() string {
 	return r.Text
 }
 
+func jsonError(w ResponseWriter, error string, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	fmt.Fprintln(w, error)
+}
+
 const (
 	ruleSelect         = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	createUser         = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
@@ -384,7 +390,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	switch {
 		case r.Method != "POST":
-			http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
 		case len(user) == 0:
 			errMsg := "Missing parameter: user"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
@@ -449,7 +455,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				token := createToken(id)
 				_, err := tokenInsertStmt.Exec(token.UserId, token.Token, token.Expiry)
 				if err != nil {
-					http.Error(w, err.Error(), 500)
+					jsonError(w, err.Error(), 500)
 				}
 				tokenJSON, _ := json.Marshal(token)
 				w.Write([]byte("{\"success\":true, \"token\":"))
@@ -458,7 +464,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+		jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
 	}
 }
 
@@ -519,7 +525,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			networks := getUserNetworks(id)
 			posts, err := getPosts(networks[0].Id)
 			if err != nil {
-				http.Error(w, err.Error(), 500)
+				jsonError(w, err.Error(), 500)
 			}
 			postsJSON, err := json.Marshal(posts)
 			if err != nil {
@@ -539,7 +545,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			postId, _ := res.LastInsertId()
 			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(postId, 10) + "}"))
 		default:
-			http.Error(w, "{\"error\":\"Must be a POST or GET request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a POST or GET request!\"}", 405)
 	}
 }
 
@@ -593,7 +599,7 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case r.Method != "POST":
-			http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
 		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
@@ -612,7 +618,7 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case r.Method != "POST":
-			http.Error(w, "{\"error\":\"Must be a POST request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
 		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
@@ -694,14 +700,14 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case r.Method != "GET":
-			http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a GET request!\"}", 405)
 		case !validateToken(id, token):
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		default:
 			conversations, err := getConversations(id)
 			if err != nil {
-				http.Error(w, err.Error(), 500)
+				jsonError(w, err.Error(), 500)
 			}
 			conversationsJSON, _ := json.Marshal(conversations)
 			w.Write([]byte("{\"success\":true, \"conversations\":"))
@@ -734,15 +740,15 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			text := r.FormValue("text")
 			res, err := messageInsertStmt.Exec(convId, id, text)
 			if err != nil {
-				http.Error(w, err.Error(), 500)
+				jsonError(w, err.Error(), 500)
 			}
 			messageId, _ := res.LastInsertId()
 			go updateConversation(convId)
 			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 		case convIdString != nil: //Unsuported method
-			http.Error(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
 		case convIdString2 != nil && r.Method != "GET":
-			http.Error(w, "{\"error\":\"Must be a GET request!\"}", 405)
+			jsonError(w, "{\"error\":\"Must be a GET request!\"}", 405)
 		case convIdString2 != nil:
 			convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
 			var conv ConversationAndMessages
@@ -754,7 +760,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			w.Write(conversationJSON)
 			w.Write([]byte("}"))
 		default:
-			http.Error(w, "404 not found", 404)
+			jsonError(w, "404 not found", 404)
 	}
 }
 
@@ -797,7 +803,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
 		comments, err := getComments(commId)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			jsonError(w, err.Error(), 500)
 		}
 		jsonComments, _ := json.Marshal(comments)
 		w.Write([]byte("{\"success\":true, \"comments\":"))
@@ -808,7 +814,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("text")
 		res, err := commentInsertStmt.Exec(commId, id, text)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			jsonError(w, err.Error(), 500)
 		} else {
 			commentId, _ := res.LastInsertId()
 			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(commentId, 10) + "}"))
@@ -818,7 +824,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%d", commId)
 		//implement getting a specific post
 	default:
-		http.Error(w, "Method not supported", 405)
+		jsonError(w, "Method not supported", 405)
 	}
 }
 
@@ -833,20 +839,20 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg := "Invalid credentials"
 			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 		case r.Method != "GET":
-			http.Error(w, "Method not supported", 405)
+			jsonError(w, "Method not supported", 405)
 		case userIdString != nil:
 			var user Profile
 			userId, _ := strconv.ParseUint(userIdString[1], 10, 16)
 			err := profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
 			user.Id = userId
 			if err != nil {
-				http.Error(w, err.Error(), 500)
+				jsonError(w, err.Error(), 500)
 			}
 			userjson, _ := json.Marshal(user)
 			w.Write([]byte("{\"success\":true, \"user\":"))
 			w.Write(userjson)
 			w.Write([]byte("}"))
 		default:
-			http.Error(w, "404 not found", 404)
+			jsonError(w, "404 not found", 404)
 	}
 }
