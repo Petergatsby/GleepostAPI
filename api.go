@@ -153,13 +153,7 @@ var (
 	profileSelectStmt      *sql.Stmt
 )
 
-func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	db, err := sql.Open("mysql", ConnectionString)
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	db.SetMaxIdleConns(MaxConnectionCount)
+func prepare() {
 	ruleStmt, err = db.Prepare(ruleSelect)
 	if err != nil {
 		log.Fatal(err)
@@ -248,6 +242,31 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func keepalive() {
+	tick := time.Tick(1*time.Hour)
+	for <-tick {
+		err := db.Ping()
+		if err != nil {
+			log.Print(err)
+			db, err = sql.Open("mysql", ConnectionString)
+			if err != nil {
+				log.Fatalf("Error opening database: %v", err)
+			}
+		}
+	}
+}
+
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	db, err := sql.Open("mysql", ConnectionString)
+	if err != nil {
+		log.Fatalf("Error opening database: %v", err)
+	}
+	db.SetMaxIdleConns(MaxConnectionCount)
+	prepare()
+	go keepalive()
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
@@ -509,6 +528,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("}"))
 		case r.Method == "POST":
 			id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+			text := r.FormValue("text")
 			networks := getUserNetworks(id)
 			res, err := postStmt.Exec(id, text, networks[0].Id)
 			if err != nil {
