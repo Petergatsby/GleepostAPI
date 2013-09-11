@@ -133,7 +133,7 @@ const (
 	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	commentInsert      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC"
+	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, 20"
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
@@ -773,8 +773,8 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	}
 }
 
-func getComments(id uint64) ([]Comment, error) {
-	rows, err := commentSelectStmt.Query(id)
+func getComments(id uint64, offset int64) ([]Comment, error) {
+	rows, err := commentSelectStmt.Query(id, offset)
 	comments := make([]Comment, 0, 20)
 	if err != nil {
 		return comments, err
@@ -810,7 +810,11 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
 	case commIdStringA != nil && r.Method == "GET":
 		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
-		comments, err := getComments(commId)
+		offset, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		if err != nil {
+			offset = 0
+		}
+		comments, err := getComments(commId, offset)
 		if err != nil {
 			jsonError(w, err.Error(), 500)
 		}
