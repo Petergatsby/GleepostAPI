@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 )
 
 type User struct {
@@ -41,6 +42,11 @@ type Message struct {
 	Text string    `json:"text"`
 	Time time.Time `json:"timestamp"`
 	Seen bool      `json:"seen"`
+}
+
+type RedisMessage struct {
+	Message
+	Conversation uint64 `json:"conversation_id"`
 }
 
 type Token struct {
@@ -138,9 +144,11 @@ const (
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
 	MaxConnectionCount = 100
-	UrlBase            = "/api/v0.7"
+	UrlBase            = "/api/v0.8"
 	LoginOverride      = true
 	MysqlTime          = "2006-01-02 15:04:05"
+	RedisProto         = "tcp"
+	RedisAddress       = "146.185.138.53:6379"
 )
 
 var (
@@ -166,6 +174,7 @@ var (
 	lastMessageSelectStmt  *sql.Stmt
 	commentCountSelectStmt *sql.Stmt
 	profileSelectStmt      *sql.Stmt
+	pool *redis.Pool
 )
 
 
@@ -280,6 +289,7 @@ func main() {
 		log.Fatal(err)
 	}
 	go keepalive(db)
+	pool = redis.NewPool(RedisDial, 100)
 	http.HandleFunc(UrlBase+"/login", loginHandler)
 	http.HandleFunc(UrlBase+"/register", registerHandler)
 	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
@@ -289,7 +299,8 @@ func main() {
 	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
 	http.HandleFunc(UrlBase+"/user/", userHandler)
-	http.ListenAndServe(":8081", nil)
+	http.HandleFunc(UrlBase+"/longpoll", longPollHandler)
+	http.ListenAndServe(":8080", nil)
 }
 
 func createToken(userid uint64) Token {
@@ -710,7 +721,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				start = 0
 			}
-			conversations, err := getConversations(id, 0)
+			conversations, err := getConversations(id, start)
 			if err != nil {
 				jsonError(w, err.Error(), 500)
 			}
@@ -752,6 +763,10 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 				jsonError(w, err.Error(), 500)
 			}
 			messageId, _ := res.LastInsertId()
+			participants := getParticipants(int64(convId))
+			user := getUser(id)
+			msg := RedisMessage{Message{uint64(messageId), user, text, time.Now().UTC(), false}, convId}
+			go redisPublish(participants, msg)
 			go updateConversation(convId)
 			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 		case convIdString != nil: //Unsuported method
@@ -871,5 +886,44 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("}"))
 		default:
 			jsonError(w, "404 not found", 404)
+	}
+}
+
+func redisPublish(recipients []User, msg RedisMessage) {
+	conn := pool.Get()
+	defer conn.Close()
+	JSONmsg, _ := json.Marshal(msg)
+	for _, user := range(recipients) {
+		conn.Send("PUBLISH", user.Id, JSONmsg)
+	}
+	conn.Flush()
+}
+
+func RedisDial() (redis.Conn, error) {
+	conn, err := redis.Dial(RedisProto, RedisAddress)
+	return conn, err
+}
+
+func longPollHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	if !validateToken(id, token) {
+		errMsg := "Invalid credentials"
+		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+	} else {
+		conn := pool.Get()
+		defer conn.Close()
+		psc := redis.PubSubConn{conn}
+		psc.Subscribe(id)
+		for {
+			switch n := psc.Receive().(type) {
+				case redis.Message:
+					w.Write([]byte(n.Data))
+					return
+				case redis.Subscription:
+					fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
+			}
+		}
 	}
 }
