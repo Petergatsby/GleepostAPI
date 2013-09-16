@@ -110,7 +110,7 @@ type APIerror struct {
 }
 
 func (e APIerror) Error() string {
-	return e.Text
+	return e.Reason
 }
 
 func jsonError(w http.ResponseWriter, error string, code int) {
@@ -388,15 +388,15 @@ func validateEmail(email string) bool {
 func registerUser(user string, pass string, email string) (uint64, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
-		return err
+		return 0, err
 	} else {
 		res, err := registerStmt.Exec(user, hash, email)
 		if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-			return nil, APIerror{"Username or email address already taken"}
+			return 0, APIerror{"Username or email address already taken"}
 		} else if err != nil {
-			return nil, err
+			return 0, err
 		} else {
-			id, _ := LastInsertId()
+			id, _ := res.LastInsertId()
 			return uint64(id), nil
 		}
 	}
@@ -413,23 +413,29 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResp(w, errorJSON, 405)
 		case len(user) == 0:
 			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: user"})
-			jsonResp(w, errorJSON, "400")
+			jsonResp(w, errorJSON, 400)
 		case len(pass) == 0:
 			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: pass"})
-			jsonResp(w, errorJSON, "400")
+			jsonResp(w, errorJSON, 400)
 		case len(email) == 0:
 			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: email"})
-			jsonResp(w, errorJSON, "400")
+			jsonResp(w, errorJSON, 400)
 		case !validateEmail(email):
 			errorJSON, _ := json.Marshal(APIerror{"Invalid Email"})
-			jsonResp(w, errorJSON, "400")
+			jsonResp(w, errorJSON, 400)
 		default:
 			id, err := registerUser(user, pass, email)
 			if err != nil {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, "500")
+				_, ok := err.(APIerror)
+				if ok {//Duplicate user/email
+					errorJSON, _ := json.Marshal(err)
+					jsonResp(w, errorJSON, 400)
+				} else {
+					errorJSON, _ := json.Marshal(APIerror{err.Error()})
+					jsonResp(w, errorJSON, 500)
+				}
 			} else {
-				w.Write([]byte("{\"id\":"+ strconv.FormatInt(id)+"}"))
+				w.Write([]byte("{\"id\":"+ strconv.FormatUint(id, 10)+"}"))
 			}
 	}
 }
@@ -452,40 +458,58 @@ func validateToken(id uint64, token string) bool {
 	}
 }
 
+func validatePass(user string, pass string) (id uint64, err error) {
+	hash := make([]byte, 256)
+	passBytes := []byte(pass)
+	err = passStmt.QueryRow(user).Scan(&id, &hash)
+	if err != nil {
+		return 0, err
+	} else {
+		err := bcrypt.CompareHashAndPassword(hash, passBytes)
+		if err != nil {
+			return 0, err
+		} else {
+			return id, nil
+		}
+	}
+}
+
+func createAndStoreToken(id uint64) (Token, error) {
+	token := createToken(id)
+	_, err := tokenInsertStmt.Exec(token.UserId, token.Token, token.Expiry)
+	if err != nil {
+		return token, err
+	} else {
+		return token, nil
+	}
+}
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method == "POST" {
-		user := r.FormValue("user")
-		pass := []byte(r.FormValue("pass"))
-		hash := make([]byte, 256)
-		var id uint64
-		err := passStmt.QueryRow(user).Scan(&id, &hash)
-		if err != nil {
-			/*
-				if (err.(sql.ErrNoRows)) {
-					w.Write([]byte("{\"success\":false}"))
-				} else {
-					w.Write([]byte("{\"success\":false}"))
-				}*/
-			w.Write([]byte("{\"success\":false}"))
-		} else {
-			err := bcrypt.CompareHashAndPassword(hash, pass)
-			if err != nil {
-				w.Write([]byte("{\"success\":false}"))
-			} else {
-				token := createToken(id)
-				_, err := tokenInsertStmt.Exec(token.UserId, token.Token, token.Expiry)
-				if err != nil {
-					jsonError(w, err.Error(), 500)
-				}
+	user := r.FormValue("user")
+	pass := r.FormValue("pass")
+	id, err := validatePass(user, pass)
+	switch {
+		case r.Method != "POST":
+			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
+			jsonResp(w, errorJSON, 405)
+		case err == nil:
+			token, err := createAndStoreToken(id)
+			if err == nil {
 				tokenJSON, _ := json.Marshal(token)
-				w.Write([]byte("{\"success\":true, \"token\":"))
 				w.Write(tokenJSON)
-				w.Write([]byte("}"))
+			} else {
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
 			}
-		}
-	} else {
-		jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
+		default:
+			if strings.HasPrefix(err.Error(), "crypto/bcrypt") { //Again, there must be a better way
+				errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
+				jsonResp(w, errorJSON, 400)
+			} else {
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
+			}
 	}
 }
 
