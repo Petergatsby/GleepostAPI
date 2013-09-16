@@ -105,18 +105,24 @@ type ConversationAndMessages struct {
 	Messages     []Message `json:"messages"`
 }
 
-type RegisterError struct {
-	Text	string
+type APIerror struct {
+	Reason string  `json:"error"`
 }
 
-func (r RegisterError) Error() string {
-	return r.Text
+func (e APIerror) Error() string {
+	return e.Text
 }
 
 func jsonError(w http.ResponseWriter, error string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	fmt.Fprintln(w, error)
+}
+
+func jsonResp(w http.ResponseWriter, resp []byte, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	w.Write(resp)
 }
 
 const (
@@ -379,18 +385,19 @@ func validateEmail(email string) bool {
 	}
 }
 
-func registerUser(user string, pass string, email string) error {
+func registerUser(user string, pass string, email string) (uint64, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
 		return err
 	} else {
-		_, err := registerStmt.Exec(user, hash, email)
+		res, err := registerStmt.Exec(user, hash, email)
 		if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-			return(RegisterError{"Username or email address already taken"})
+			return nil, APIerror{"Username or email address already taken"}
 		} else if err != nil {
-			return err
+			return nil, err
 		} else {
-			return nil
+			id, _ := LastInsertId()
+			return uint64(id), nil
 		}
 	}
 }
@@ -402,25 +409,27 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	switch {
 		case r.Method != "POST":
-			jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
+			jsonResp(w, errorJSON, 405)
 		case len(user) == 0:
-			errMsg := "Missing parameter: user"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: user"})
+			jsonResp(w, errorJSON, "400")
 		case len(pass) == 0:
-			errMsg := "Missing parameter: pass"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: pass"})
+			jsonResp(w, errorJSON, "400")
 		case len(email) == 0:
-			errMsg := "Missing parameter: email"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: email"})
+			jsonResp(w, errorJSON, "400")
 		case !validateEmail(email):
-			errMsg := "Invalid email"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid Email"})
+			jsonResp(w, errorJSON, "400")
 		default:
-			err := registerUser(user, pass, email)
+			id, err := registerUser(user, pass, email)
 			if err != nil {
-				w.Write([]byte("{\"success\":false, \"error\":\"" + err.Error() + "\"}"))
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, "500")
 			} else {
-				w.Write([]byte("{\"success\":true}"))
+				w.Write([]byte("{\"id\":"+ strconv.FormatInt(id)+"}"))
 			}
 	}
 }
