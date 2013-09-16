@@ -503,13 +503,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResp(w, errorJSON, 500)
 			}
 		default:
-			if strings.HasPrefix(err.Error(), "crypto/bcrypt") { //Again, there must be a better way
-				errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
-				jsonResp(w, errorJSON, 400)
-			} else {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, 500)
-			}
+			errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
+			jsonResp(w, errorJSON, 400)
 	}
 }
 
@@ -564,33 +559,35 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case !validateToken(id, token):
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+			jsonResp(w, errorJSON, 400)
 		case r.Method == "GET":
 			networks := getUserNetworks(id)
 			posts, err := getPosts(networks[0].Id)
 			if err != nil {
-				jsonError(w, err.Error(), 500)
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
 			}
 			postsJSON, err := json.Marshal(posts)
 			if err != nil {
-				log.Fatalf("Something went wrong with json parsing: %v", err)
+				log.Printf("Something went wrong with json parsing: %v", err)
 			}
-			w.Write([]byte("{\"success\":true, \"posts\":"))
 			w.Write(postsJSON)
-			w.Write([]byte("}"))
 		case r.Method == "POST":
 			id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 			text := r.FormValue("text")
 			networks := getUserNetworks(id)
 			res, err := postStmt.Exec(id, text, networks[0].Id)
 			if err != nil {
-				log.Fatalf("Error executing: %v", err)
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
+			} else {
+				postId, _ := res.LastInsertId()
+				w.Write([]byte("{\"id\":" + strconv.FormatInt(postId, 10) + "}"))
 			}
-			postId, _ := res.LastInsertId()
-			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(postId, 10) + "}"))
 		default:
-			jsonError(w, "{\"error\":\"Must be a POST or GET request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a POST or GET request"})
+			jsonResp(w, errorJSON, 405)
 	}
 }
 
@@ -631,7 +628,7 @@ func getUser(id uint64) User {
 	user := User{}
 	err := userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
 	if err != nil {
-		log.Fatalf("Error getting user: %v", err)
+		log.Printf("Error getting user: %v", err)
 	} else {
 		//
 	}
@@ -644,16 +641,15 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case r.Method != "POST":
-			jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
+			jsonResp(w, errorJSON, 405)
 		case !validateToken(id, token):
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+			jsonResp(w, errorJSON, 400)
 		default:
 			conversation := createConversation(id, 2)
 			conversationJSON, _ := json.Marshal(conversation)
-			w.Write([]byte("{\"success\":true, \"conversation\":"))
 			w.Write(conversationJSON)
-			w.Write([]byte("}"))
 	}
 }
 
@@ -663,16 +659,15 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case r.Method != "POST":
-			jsonError(w, "{\"error\":\"Must be a POST request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
+			jsonResp(w, errorJSON, 405)
 		case !validateToken(id, token):
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+			jsonResp(w, errorJSON, 400)
 		default:
 			conversation := createConversation(id, 4)
 			conversationJSON, _ := json.Marshal(conversation)
-			w.Write([]byte("{\"success\":true, \"conversation\":"))
 			w.Write(conversationJSON)
-			w.Write([]byte("}"))
 	}
 }
 
@@ -745,10 +740,11 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 		case r.Method != "GET":
-			jsonError(w, "{\"error\":\"Must be a GET request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a GET request"})
+			jsonResp(w, errorJSON, 405)
 		case !validateToken(id, token):
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+			jsonResp(w, errorJSON, 400)
 		default:
 			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
 			if err != nil {
@@ -759,9 +755,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 				jsonError(w, err.Error(), 500)
 			}
 			conversationsJSON, _ := json.Marshal(conversations)
-			w.Write([]byte("{\"success\":true, \"conversations\":"))
 			w.Write(conversationsJSON)
-			w.Write([]byte("}"))
 	}
 }
 
@@ -775,8 +769,8 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
 	switch {
 		case !validateToken(id, token):
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+			jsonResp(w, errorJSON, 400)
 		case convIdString != nil && r.Method == "GET":
 			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
@@ -785,9 +779,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			}
 			messages := getMessages(convId, start)
 			messagesJSON, _ := json.Marshal(messages)
-			w.Write([]byte("{\"success\":true, \"messages\":"))
 			w.Write(messagesJSON)
-			w.Write([]byte("}"))
 		case convIdString != nil && r.Method == "POST":
 			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 			text := r.FormValue("text")
@@ -801,11 +793,13 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			msg := RedisMessage{Message{uint64(messageId), user, text, time.Now().UTC(), false}, convId}
 			go redisPublish(participants, msg)
 			go updateConversation(convId)
-			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(messageId, 10) + "}"))
+			w.Write([]byte("{\"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 		case convIdString != nil: //Unsuported method
-			jsonError(w, "{\"error\":\"Must be a GET or POST request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a GET or POST request"})
+			jsonResp(w, errorJSON, 405)
 		case convIdString2 != nil && r.Method != "GET":
-			jsonError(w, "{\"error\":\"Must be a GET request!\"}", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Must be a GET request"})
+			jsonResp(w, errorJSON, 405)
 		case convIdString2 != nil:
 			convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
 			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
@@ -817,9 +811,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			conv.Participants = getParticipants(conv.Id)
 			conv.Messages = getMessages(uint64(convId), start)
 			conversationJSON, _ := json.Marshal(conv)
-			w.Write([]byte("{\"success\":true, \"conversation\":"))
 			w.Write(conversationJSON)
-			w.Write([]byte("}"))
 		default:
 			jsonError(w, "404 not found", 404)
 	}
@@ -858,8 +850,8 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(id, token):
-		errMsg := "Invalid credentials"
-		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
 	case commIdStringA != nil && r.Method == "GET":
 		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
 		offset, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
@@ -868,28 +860,30 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		comments, err := getComments(commId, offset)
 		if err != nil {
-			jsonError(w, err.Error(), 500)
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			jsonComments, _ := json.Marshal(comments)
+			w.Write(jsonComments)
 		}
-		jsonComments, _ := json.Marshal(comments)
-		w.Write([]byte("{\"success\":true, \"comments\":"))
-		w.Write(jsonComments)
-		w.Write([]byte("}"))
 	case commIdStringA != nil && r.Method == "POST":
 		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
 		text := r.FormValue("text")
 		res, err := commentInsertStmt.Exec(commId, id, text)
 		if err != nil {
-			jsonError(w, err.Error(), 500)
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
 		} else {
 			commentId, _ := res.LastInsertId()
-			w.Write([]byte("{\"success\":true, \"id\":" + strconv.FormatInt(commentId, 10) + "}"))
+			w.Write([]byte("{\"id\":" + strconv.FormatInt(commentId, 10) + "}"))
 		}
 	case commIdStringB != nil && r.Method == "GET":
 		commId, _ := strconv.ParseUint(commIdStringB[1], 10, 16)
 		log.Printf("%d", commId)
 		//implement getting a specific post
 	default:
-		jsonError(w, "Method not supported", 405)
+		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+		jsonResp(w, errorJSON, 405)
 	}
 }
 
@@ -901,24 +895,25 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
 		case !validateToken(id, token):
-			errMsg := "Invalid credentials"
-			w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+			jsonResp(w, errorJSON, 400)
 		case r.Method != "GET":
-			jsonError(w, "Method not supported", 405)
+			errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+			jsonResp(w, errorJSON, 405)
 		case userIdString != nil:
 			var user Profile
 			userId, _ := strconv.ParseUint(userIdString[1], 10, 16)
 			err := profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
 			user.Id = userId
 			if err != nil {
-				jsonError(w, err.Error(), 500)
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
 			}
 			userjson, _ := json.Marshal(user)
-			w.Write([]byte("{\"success\":true, \"user\":"))
 			w.Write(userjson)
-			w.Write([]byte("}"))
 		default:
-			jsonError(w, "404 not found", 404)
+			errorJSON, _ := json.Marshal(APIerror{"User not found"})
+			jsonResp(w, errorJSON, 404)
 	}
 }
 
@@ -942,8 +937,8 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
 	if !validateToken(id, token) {
-		errMsg := "Invalid credentials"
-		w.Write([]byte("{\"success\":false, \"error\":\"" + errMsg + "\"}"))
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
 	} else {
 		conn := pool.Get()
 		defer conn.Close()

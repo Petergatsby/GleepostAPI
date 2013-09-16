@@ -8,9 +8,9 @@ POST /register
 required parameters: user, pass, email
 
 example responses:
-HTTP 200 
+(HTTP 200)
 {"id":143423424}
-HTTP 400 
+(HTTP 400)
 {"error":"Invalid email"}
 
 
@@ -18,9 +18,9 @@ POST /login
 required parameters: user, pass
 
 example responses:
-HTTP 200 
+(HTTP 200) 
 {"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
-HTTP 400 
+(HTTP 400)
 {"error":"Bad username/password"}
 
 
@@ -28,46 +28,45 @@ GET /posts?id=[user-id]&token=[token]&start=[count]
 returns a list of 20 posts ordered by time, starting at count
 
 example responses:
-{"success":true, 
-"posts":[
-		{
-			"id":2,
-			"by": {
-				"id":9,
-				"username":"Patrick"
-			}
-			"timestamp":"2013-09-05T13:09:38Z",
-			"text":"This is a cool post for cool people!"
-			"comments":4,
-			"likes":5,
-			"hates":3
-		},
-		{
-			"id":1,
-			"by": {
-				"id":23,
-				"username":"PeterGatsby"
-			}
-			"timestamp":"2013-09-05T13:09:38Z",
-			"text":"Sailor Moon FTW!"
-		},
-		//.... and so on
-	]
-}
+(HTTP 200)
+[
+	{
+		"id":2,
+		"by": {
+			"id":9,
+			"username":"Patrick"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"This is a cool post for cool people!"
+		"comments":4,
+		"likes":5,
+		"hates":3
+	},
+	{
+		"id":1,
+		"by": {
+			"id":23,
+			"username":"PeterGatsby"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"Sailor Moon FTW!"
+	}
+]
 
 
 POST /posts
 required parameters: id, token, text
 
 example responses:
-{"success":true, "id":3}
+(http 200)
+{"id":3}
 
 
 GET /posts/[post-id]/comments?id=[user-id]&token=[token]&start=[count]
 
 example responses:
-{"success":true,
-"comments":[
+(http 200)
+[
 	{
 		"id":51341,
 		"by": {
@@ -89,21 +88,20 @@ example responses:
 	
 	....
 ]
-}
 
 
 POST /posts/[post-id]/comments
 required parameters: id, token, text
 
 example responses:
-{"success":true, "id":234}
+(http 200)
+{"id":234}
 
 
 GET /conversations?id=[user-id]&token=[token]&start=[count]
 returns a list of 20 of your conversations ordered by most recent message, starting at count
 
-{"success":true, 
-"conversations": [
+[
 	{"id":1,
 	"participants": [
 		{"id":9, "username":"Patrick"},
@@ -118,17 +116,15 @@ returns a list of 20 of your conversations ordered by most recent message, start
 	],
 	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	}
-	]
-}
-	
+]
 
 
 GET /conversations/[conversation-id]?id=[user-id]&token=[token]
 
 example responses:
-{"success":true,
-"conversation": {
-	{"id":1,
+(HTTP 200)
+{
+	"id":1,
 	"participants": [
 		{"id":9, "username":"Patrick"},
 		{"id":23, "username":"PeterGatsby"}
@@ -145,32 +141,28 @@ GET /conversations/[conversation-id/messages?id=[user-id]&token=[token]&start=[c
 Returns a list of 20 messages ordered by time, starting at count
 
 example responses:
-{"success":true,
-"messages": [
+[
 		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
-	]
-}
+]
 
 
 POST /conversations/[conversation-id]/messages
 required parameters: id, token, text
 
 example responses:
-{"success":true, "id":1356}
+{"id":1356}
 
 
 GET /user/[user-id]?id=[user-id]&token=[token]
 
 example responses:
-{"success":true,
-"user":{
+{
 	"id":9,
 	"username":"Patrick",
 	"tagline":"I like computers"
 	//not sure what else will be in the profile yet
-}
 }
 
 
@@ -181,14 +173,12 @@ note: POST so it doesn't get accidentally repeated :)
 This will return a conversation with two participants.
 
 example responses:
-{"success":true,
-"conversation": {
+{
 	"id":2342342,
 	"participants": [
 		{"id":9, "username":"Patrick"},
 		{"id":23, "username":"PeterGatsby"}
 	]
-}
 }
 
 
@@ -199,8 +189,8 @@ note: POST so it doesn't get accidentally repeated :)
 This will return a conversation with more than two participants.
 
 example responses:
-{"success":true,
-"conversation": {
+{
+	"id":2342342,
 	"participants": [
 		{"id":9, "username":"Patrick"},
 		{"id":23, "username":"PeterGatsby"},
@@ -208,4 +198,18 @@ example responses:
 		{"id":6124, "username":"SomeoneElse"}
 	]
 }
+
+GET /longpoll?id=[user-id]&token=[token]
+Gets a single message for the current user
+
+note: Will not respond until a message arrives for the current user or 60 seconds passes!
+
+example responses:
+{
+	"id":53,
+	"by": {"id":9,"username":"Patrick"},
+	"text":"sup",
+	"timestamp":"2013-09-16T16:58:30.771905595Z",
+	"seen":false,
+	"conversation_id":5
 }
