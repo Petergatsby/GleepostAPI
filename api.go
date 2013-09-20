@@ -710,7 +710,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				start = 0
 			}
-			conversations, err := getConversations(id, 0)
+			conversations, err := getConversations(id, start)
 			if err != nil {
 				jsonError(w, err.Error(), 500)
 			}
