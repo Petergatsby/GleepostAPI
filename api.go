@@ -289,7 +289,7 @@ func main() {
 	http.HandleFunc(UrlBase+"/posts", postHandler)
 	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
 	http.HandleFunc(UrlBase+"/user/", userHandler)
-	http.ListenAndServe(":8081", nil)
+	http.ListenAndServe(":8082", nil)
 }
 
 func createToken(userid uint64) Token {
