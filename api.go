@@ -443,6 +443,9 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 func validateToken(id uint64, token string) bool {
 	if LoginOverride {
 		return (true)
+	} else if redisTokenExists(id, token) {
+		fmt.Println("Cache hit!")
+		return(true)
 	} else {
 		var expiry string
 		err := tokenSelectStmt.QueryRow(id, token).Scan(&expiry)
@@ -477,11 +480,36 @@ func validatePass(user string, pass string) (id uint64, err error) {
 func createAndStoreToken(id uint64) (Token, error) {
 	token := createToken(id)
 	_, err := tokenInsertStmt.Exec(token.UserId, token.Token, token.Expiry)
+	redisPutToken(token)
 	if err != nil {
 		return token, err
 	} else {
 		return token, nil
 	}
+}
+
+func redisPutToken(token Token) {
+	/* Set a session token in redis.
+	We use the token value as part of the redis key
+        so that a user may have more than one concurrent session
+	(eg: signed in on the web and mobile at once */
+	conn := pool.Get()
+	defer conn.Close()
+	expiry := int(token.Expiry.Sub(time.Now()).Seconds())
+	fmt.Println(expiry)
+	conn.Send("SETEX", "users:"+strconv.FormatUint(token.UserId, 10)+":token:"+token.Token, expiry, token.Expiry)
+	conn.Flush()
+}
+
+func redisTokenExists(id uint64, token string) bool {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "users:"+strconv.FormatUint(id, 10)+":token:"+token
+	exists, err := redis.Bool(conn.Do("EXISTS", key))
+	if err != nil {
+		return false
+	}
+	return exists
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
