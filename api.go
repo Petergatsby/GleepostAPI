@@ -308,6 +308,21 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+func redisPublish(recipients []User, msg RedisMessage) {
+	conn := pool.Get()
+	defer conn.Close()
+	JSONmsg, _ := json.Marshal(msg)
+	for _, user := range recipients {
+		conn.Send("PUBLISH", user.Id, JSONmsg)
+	}
+	conn.Flush()
+}
+
+func RedisDial() (redis.Conn, error) {
+	conn, err := redis.Dial(RedisProto, RedisAddress)
+	return conn, err
+}
+
 func createToken(userid uint64) Token {
 	hash := sha256.New()
 	random := make([]byte, 10)
@@ -460,44 +475,6 @@ func registerUser(user string, pass string, email string) (uint64, error) {
 	}
 }
 
-func registerHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	user := r.FormValue("user")
-	pass := r.FormValue("pass")
-	email := r.FormValue("email")
-	switch {
-	case r.Method != "POST":
-		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
-		jsonResp(w, errorJSON, 405)
-	case len(user) == 0:
-		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: user"})
-		jsonResp(w, errorJSON, 400)
-	case len(pass) == 0:
-		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: pass"})
-		jsonResp(w, errorJSON, 400)
-	case len(email) == 0:
-		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: email"})
-		jsonResp(w, errorJSON, 400)
-	case !validateEmail(email):
-		errorJSON, _ := json.Marshal(APIerror{"Invalid Email"})
-		jsonResp(w, errorJSON, 400)
-	default:
-		id, err := registerUser(user, pass, email)
-		if err != nil {
-			_, ok := err.(APIerror)
-			if ok { //Duplicate user/email
-				errorJSON, _ := json.Marshal(err)
-				jsonResp(w, errorJSON, 400)
-			} else {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, 500)
-			}
-		} else {
-			w.Write([]byte("{\"id\":" + strconv.FormatUint(id, 10) + "}"))
-		}
-	}
-}
-
 func validateToken(id uint64, token string) bool {
 	if LoginOverride {
 		return (true)
@@ -569,30 +546,6 @@ func redisTokenExists(id uint64, token string) bool {
 	return exists
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	user := r.FormValue("user")
-	pass := r.FormValue("pass")
-	id, err := validatePass(user, pass)
-	switch {
-	case r.Method != "POST":
-		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
-		jsonResp(w, errorJSON, 405)
-	case err == nil:
-		token, err := createAndStoreToken(id)
-		if err == nil {
-			tokenJSON, _ := json.Marshal(token)
-			w.Write(tokenJSON)
-		} else {
-			errorJSON, _ := json.Marshal(APIerror{err.Error()})
-			jsonResp(w, errorJSON, 500)
-		}
-	default:
-		errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
-		jsonResp(w, errorJSON, 400)
-	}
-}
-
 func getUserNetworks(id uint64) []Network {
 	rows, err := networkStmt.Query(id)
 	nets := make([]Network, 0, 5)
@@ -641,42 +594,10 @@ func getPosts(net_id uint64) ([]PostSmall, error) {
 	return posts, nil
 }
 
-func postHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	token := r.FormValue("token")
-	switch {
-	case !validateToken(id, token):
-		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-		jsonResp(w, errorJSON, 400)
-	case r.Method == "GET":
-		networks := getUserNetworks(id)
-		posts, err := getPosts(networks[0].Id)
-		if err != nil {
-			errorJSON, _ := json.Marshal(APIerror{err.Error()})
-			jsonResp(w, errorJSON, 500)
-		}
-		postsJSON, err := json.Marshal(posts)
-		if err != nil {
-			log.Printf("Something went wrong with json parsing: %v", err)
-		}
-		w.Write(postsJSON)
-	case r.Method == "POST":
-		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-		text := r.FormValue("text")
-		networks := getUserNetworks(id)
-		res, err := postStmt.Exec(id, text, networks[0].Id)
-		if err != nil {
-			errorJSON, _ := json.Marshal(APIerror{err.Error()})
-			jsonResp(w, errorJSON, 500)
-		} else {
-			postId, _ := res.LastInsertId()
-			w.Write([]byte("{\"id\":" + strconv.FormatInt(postId, 10) + "}"))
-		}
-	default:
-		errorJSON, _ := json.Marshal(APIerror{"Must be a POST or GET request"})
-		jsonResp(w, errorJSON, 405)
-	}
+func getProfile(id uint64) (user Profile, err error) {
+	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
+	user.Id = id
+	return user, err
 }
 
 func createConversation(id uint64, nParticipants int) Conversation {
@@ -748,42 +669,6 @@ func redisGetUser(id uint64) (user User, err error) {
 	return user, nil
 }
 
-func newConversationHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	token := r.FormValue("token")
-	switch {
-	case r.Method != "POST":
-		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
-		jsonResp(w, errorJSON, 405)
-	case !validateToken(id, token):
-		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-		jsonResp(w, errorJSON, 400)
-	default:
-		conversation := createConversation(id, 2)
-		conversationJSON, _ := json.Marshal(conversation)
-		w.Write(conversationJSON)
-	}
-}
-
-func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	token := r.FormValue("token")
-	switch {
-	case r.Method != "POST":
-		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
-		jsonResp(w, errorJSON, 405)
-	case !validateToken(id, token):
-		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-		jsonResp(w, errorJSON, 400)
-	default:
-		conversation := createConversation(id, 4)
-		conversationJSON, _ := json.Marshal(conversation)
-		w.Write(conversationJSON)
-	}
-}
-
 func getParticipants(conv int64) []User {
 	rows, err := participantSelectStmt.Query(conv)
 	if err != nil {
@@ -850,6 +735,182 @@ func getConversations(user_id uint64, start int64) ([]Conversation, error) {
 		conversations = append(conversations, conv)
 	}
 	return conversations, nil
+}
+
+func getComments(id uint64, offset int64) ([]Comment, error) {
+	rows, err := commentSelectStmt.Query(id, offset)
+	comments := make([]Comment, 0, 20)
+	if err != nil {
+		return comments, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var comment Comment
+		comment.Post = id
+		var timeString string
+		var by uint64
+		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+		if err != nil {
+			return comments, err
+		}
+		comment.Time, _ = time.Parse(MysqlTime, timeString)
+		comment.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+		comments = append(comments, comment)
+	}
+	return comments, nil
+}
+
+/*********************************************************************************
+
+Begin http handlers!
+
+*********************************************************************************/
+
+
+func registerHandler(w http.ResponseWriter, r *http.Request) {
+	/*
+	POST /register
+	requires parameters: user, pass, email
+	note to
+	*/
+	w.Header().Set("Content-Type", "application/json")
+	user := r.FormValue("user")
+	pass := r.FormValue("pass")
+	email := r.FormValue("email")
+	switch {
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
+		jsonResp(w, errorJSON, 405)
+	case len(user) == 0:
+		//Note to future self : would be neater if
+		//we returned _all_ errors not just the first
+		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: user"})
+		jsonResp(w, errorJSON, 400)
+	case len(pass) == 0:
+		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: pass"})
+		jsonResp(w, errorJSON, 400)
+	case len(email) == 0:
+		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: email"})
+		jsonResp(w, errorJSON, 400)
+	case !validateEmail(email):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid Email"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		id, err := registerUser(user, pass, email)
+		if err != nil {
+			_, ok := err.(APIerror)
+			if ok { //Duplicate user/email
+				errorJSON, _ := json.Marshal(err)
+				jsonResp(w, errorJSON, 400)
+			} else {
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
+			}
+		} else {
+			w.Write([]byte("{\"id\":" + strconv.FormatUint(id, 10) + "}"))
+		}
+	}
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	user := r.FormValue("user")
+	pass := r.FormValue("pass")
+	id, err := validatePass(user, pass)
+	switch {
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
+		jsonResp(w, errorJSON, 405)
+	case err == nil:
+		token, err := createAndStoreToken(id)
+		if err == nil {
+			tokenJSON, _ := json.Marshal(token)
+			w.Write(tokenJSON)
+		} else {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
+		jsonResp(w, errorJSON, 400)
+	}
+}
+
+func postHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case r.Method == "GET":
+		networks := getUserNetworks(id)
+		posts, err := getPosts(networks[0].Id)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
+		postsJSON, err := json.Marshal(posts)
+		if err != nil {
+			log.Printf("Something went wrong with json parsing: %v", err)
+		}
+		w.Write(postsJSON)
+	case r.Method == "POST":
+		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+		text := r.FormValue("text")
+		networks := getUserNetworks(id)
+		res, err := postStmt.Exec(id, text, networks[0].Id)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			postId, _ := res.LastInsertId()
+			w.Write([]byte("{\"id\":" + strconv.FormatInt(postId, 10) + "}"))
+		}
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST or GET request"})
+		jsonResp(w, errorJSON, 405)
+	}
+}
+
+func newConversationHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
+		jsonResp(w, errorJSON, 405)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		conversation := createConversation(id, 2)
+		conversationJSON, _ := json.Marshal(conversation)
+		w.Write(conversationJSON)
+	}
+}
+
+func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	token := r.FormValue("token")
+	switch {
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
+		jsonResp(w, errorJSON, 405)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		conversation := createConversation(id, 4)
+		conversationJSON, _ := json.Marshal(conversation)
+		w.Write(conversationJSON)
+	}
 }
 
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
@@ -943,32 +1004,6 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	}
 }
 
-func getComments(id uint64, offset int64) ([]Comment, error) {
-	rows, err := commentSelectStmt.Query(id, offset)
-	comments := make([]Comment, 0, 20)
-	if err != nil {
-		return comments, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var comment Comment
-		comment.Post = id
-		var timeString string
-		var by uint64
-		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
-		if err != nil {
-			return comments, err
-		}
-		comment.Time, _ = time.Parse(MysqlTime, timeString)
-		comment.By, err = getUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-		comments = append(comments, comment)
-	}
-	return comments, nil
-}
-
 func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
@@ -1016,12 +1051,6 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getProfile(id uint64) (user Profile, err error) {
-	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
-	user.Id = userId
-	return user, err
-}
-
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
@@ -1048,21 +1077,6 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		errorJSON, _ := json.Marshal(APIerror{"User not found"})
 		jsonResp(w, errorJSON, 404)
 	}
-}
-
-func redisPublish(recipients []User, msg RedisMessage) {
-	conn := pool.Get()
-	defer conn.Close()
-	JSONmsg, _ := json.Marshal(msg)
-	for _, user := range recipients {
-		conn.Send("PUBLISH", user.Id, JSONmsg)
-	}
-	conn.Flush()
-}
-
-func RedisDial() (redis.Conn, error) {
-	conn, err := redis.Dial(RedisProto, RedisAddress)
-	return conn, err
 }
 
 func longPollHandler(w http.ResponseWriter, r *http.Request) {
