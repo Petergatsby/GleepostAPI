@@ -26,8 +26,7 @@ type User struct {
 }
 
 type Profile struct {
-	Id   uint64 `json:"id"`
-	Name string `json:"username"`
+	User
 	Desc string `json:"tagline"`
 }
 
@@ -111,12 +110,6 @@ type APIerror struct {
 
 func (e APIerror) Error() string {
 	return e.Reason
-}
-
-func jsonError(w http.ResponseWriter, error string, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(code)
-	fmt.Fprintln(w, error)
 }
 
 func jsonResp(w http.ResponseWriter, resp []byte, code int) {
@@ -308,20 +301,9 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func redisPublish(recipients []User, msg RedisMessage) {
-	conn := pool.Get()
-	defer conn.Close()
-	JSONmsg, _ := json.Marshal(msg)
-	for _, user := range recipients {
-		conn.Send("PUBLISH", user.Id, JSONmsg)
-	}
-	conn.Flush()
-}
-
-func RedisDial() (redis.Conn, error) {
-	conn, err := redis.Dial(RedisProto, RedisAddress)
-	return conn, err
-}
+/********************************************************************
+Top-level functions
+********************************************************************/
 
 func createToken(userid uint64) Token {
 	hash := sha256.New()
@@ -348,131 +330,12 @@ func looksLikeEmail(email string) bool {
 	}
 }
 
-func updateConversation(id uint64) {
-	_, err := conversationUpdateStmt.Exec(id)
-	if err != nil {
-		log.Printf("Error: %v", err)
-	}
-}
-
-func getCommentCount(id uint64) int {
-	var count int
-	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
-	if err != nil {
-		return 0
-	}
-	return count
-}
-
 func getLastMessage(id uint64) (message Message, err error) {
 	message, err = redisGetLastMessage(id)
 	if err != nil {
 		message, err = dbGetLastMessage(id)
 	}
 	return
-}
-
-func redisGetLastMessage(id uint64) (message Message, err error) {
-	conn := pool.Get()
-	defer conn.Close()
-	BaseKey := "conversations:" + strconv.FormatUint(id, 10) + ":lastmessage:"
-	reply, err := redis.Values(conn.Do("MGET", BaseKey+"id", BaseKey+"by", BaseKey+"text", BaseKey+"time", BaseKey+"seen"))
-	if err != nil {
-		//should reach this if there is no last message
-		log.Printf("error getting message in redis %v", err)
-		return message, err
-	}
-	var postId int64
-	var by int64
-	var timeString string
-	if _, err = redis.Scan(reply, &postId, &by, &message.Text, &timeString, &message.Seen); err != nil {
-		return message, err
-	}
-	message.Id = uint64(postId)
-	if by != 0 {
-		message.By, err = getUser(uint64(by))
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-	}
-	message.Time, err = time.Parse(time.RFC3339, timeString)
-	return message, err
-}
-
-func dbGetLastMessage(id uint64) (message Message, err error) {
-	var timeString string
-	var by uint64
-	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-	if err != nil {
-		return message, err
-	} else {
-		message.By, err = getUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-		message.Time, _ = time.Parse(MysqlTime, timeString)
-
-		return message, nil
-	}
-}
-
-func redisSetLastMessage(convId uint64, message Message) {
-	conn := pool.Get()
-	defer conn.Close()
-	BaseKey := "conversations:" + strconv.FormatUint(convId, 10) + ":lastmessage:"
-	conn.Send("SET", BaseKey+"id", strconv.FormatUint(message.Id, 10))
-	conn.Send("SET", BaseKey+"by", strconv.FormatUint(message.By.Id, 10))
-	conn.Send("SET", BaseKey+"text", message.Text)
-	conn.Send("SET", BaseKey+"time", message.Time.Format(time.RFC3339))
-	conn.Send("SET", BaseKey+"seen", strconv.FormatBool(message.Seen))
-	conn.Flush()
-}
-
-func redisSetUser(user User) {
-	conn := pool.Get()
-	defer conn.Close()
-	BaseKey := "users:" + strconv.FormatUint(user.Id, 10) + ":"
-	conn.Send("SET", BaseKey+"name", user.Name)
-	conn.Flush()
-}
-
-func validateEmail(email string) bool {
-	if !looksLikeEmail(email) {
-		return (false)
-	} else {
-		rows, err := ruleStmt.Query()
-		if err != nil {
-			log.Fatalf("Error preparing statement: %v", err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			rule := new(Rule)
-			if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
-				log.Fatalf("Error getting rule: %v", err)
-			}
-			if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
-				return (true)
-			}
-		}
-		return (false)
-	}
-}
-
-func registerUser(user string, pass string, email string) (uint64, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
-	if err != nil {
-		return 0, err
-	} else {
-		res, err := registerStmt.Exec(user, hash, email)
-		if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-			return 0, APIerror{"Username or email address already taken"}
-		} else if err != nil {
-			return 0, err
-		} else {
-			id, _ := res.LastInsertId()
-			return uint64(id), nil
-		}
-	}
 }
 
 func validateToken(id uint64, token string) bool {
@@ -522,28 +385,93 @@ func createAndStoreToken(id uint64) (Token, error) {
 	}
 }
 
-func redisPutToken(token Token) {
-	/* Set a session token in redis.
-		We use the token value as part of the redis key
-	        so that a user may have more than one concurrent session
-		(eg: signed in on the web and mobile at once */
-	conn := pool.Get()
-	defer conn.Close()
-	expiry := int(token.Expiry.Sub(time.Now()).Seconds())
-	key := "users:" + strconv.FormatUint(token.UserId, 10) + ":token:" + token.Token
-	conn.Send("SETEX", key, expiry, token.Expiry)
-	conn.Flush()
+func getUser(id uint64) (user User, err error) {
+	/* Hits the cache then the db
+	only I'm not 100% confident yet with what
+	happens when you attempt to get a redis key
+	that doesn't exist in redigo! */
+	user, err = redisGetUser(id)
+	if err != nil {
+		user, err = dbGetUser(id)
+		redisSetUser(user)
+	}
+	return user, err
 }
 
-func redisTokenExists(id uint64, token string) bool {
-	conn := pool.Get()
-	defer conn.Close()
-	key := "users:" + strconv.FormatUint(id, 10) + ":token:" + token
-	exists, err := redis.Bool(conn.Do("EXISTS", key))
+/********************************************************************
+Database functions
+********************************************************************/
+
+func updateConversation(id uint64) {
+	_, err := conversationUpdateStmt.Exec(id)
 	if err != nil {
-		return false
+		log.Printf("Error: %v", err)
 	}
-	return exists
+}
+
+func getCommentCount(id uint64) int {
+	var count int
+	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
+	if err != nil {
+		return 0
+	}
+	return count
+}
+
+func dbGetLastMessage(id uint64) (message Message, err error) {
+	var timeString string
+	var by uint64
+	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+	if err != nil {
+		return message, err
+	} else {
+		message.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+		message.Time, _ = time.Parse(MysqlTime, timeString)
+
+		return message, nil
+	}
+}
+
+func validateEmail(email string) bool {
+	if !looksLikeEmail(email) {
+		return (false)
+	} else {
+		rows, err := ruleStmt.Query()
+		if err != nil {
+			log.Fatalf("Error preparing statement: %v", err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			rule := new(Rule)
+			if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
+				log.Fatalf("Error getting rule: %v", err)
+			}
+			if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
+				return (true)
+			}
+		}
+		return (false)
+	}
+}
+
+func registerUser(user string, pass string, email string) (uint64, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
+	if err != nil {
+		return 0, err
+	} else {
+		res, err := registerStmt.Exec(user, hash, email)
+		if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
+			return 0, APIerror{"Username or email address already taken"}
+		} else if err != nil {
+			return 0, err
+		} else {
+			id, _ := res.LastInsertId()
+			return uint64(id), nil
+		}
+	}
 }
 
 func getUserNetworks(id uint64) []Network {
@@ -563,110 +491,6 @@ func getUserNetworks(id uint64) []Network {
 		}
 	}
 	return (nets)
-}
-
-func getPosts(net_id uint64) ([]PostSmall, error) {
-	rows, err := wallSelectStmt.Query(net_id)
-	posts := make([]PostSmall, 0, 20)
-	if err != nil {
-		return posts, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var post PostSmall
-		var t string
-		var by uint64
-		err = rows.Scan(&post.Id, &by, &t, &post.Text)
-		if err != nil {
-			return posts, err
-		}
-		post.Time, err = time.Parse(MysqlTime, t)
-		if err != nil {
-			return posts, err
-		}
-		post.By, err = getUser(by)
-		if err != nil {
-			return posts, err
-		}
-		post.CommentCount = getCommentCount(post.Id)
-		posts = append(posts, post)
-	}
-	return posts, nil
-}
-
-func getProfile(id uint64) (user Profile, err error) {
-	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
-	user.Id = id
-	return user, err
-}
-
-func createConversation(id uint64, nParticipants int) Conversation {
-	r, _ := conversationStmt.Exec(id)
-	conversation := Conversation{}
-	conversation.Id, _ = r.LastInsertId()
-	participants := make([]User, 0, 10)
-	user, err := getUser(id)
-	if err != nil {
-		log.Printf("error getting user: %d %v", id, err)
-	}
-	participants = append(participants, user)
-	nParticipants--
-
-	rows, err := randomStmt.Query()
-	if err != nil {
-		log.Fatalf("Error preparing statement: %v", err)
-	}
-	defer rows.Close()
-	for nParticipants > 0 {
-		rows.Next()
-		if err = rows.Scan(&user.Id, &user.Name); err != nil {
-			log.Fatalf("Error getting user: %v", err)
-		} else {
-			participants = append(participants, user)
-			nParticipants--
-		}
-	}
-	for _, u := range participants {
-		_, err := participantStmt.Exec(conversation.Id, u.Id)
-		if err != nil {
-			log.Fatalf("Error adding user to conversation: %v", err)
-		}
-	}
-	conversation.Participants = participants
-	return (conversation)
-}
-
-func getUser(id uint64) (user User, err error) {
-	/* Hits the cache then the db
-	only I'm not 100% confident yet with what
-	happens when you attempt to get a redis key
-	that doesn't exist in redigo! */
-	user, err = redisGetUser(id)
-	if err != nil {
-		user, err = dbGetUser(id)
-		redisSetUser(user)
-	}
-	return user, err
-}
-
-func dbGetUser(id uint64) (user User, err error) {
-	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
-	if err != nil {
-		return user, err
-	} else {
-		return user, nil
-	}
-}
-
-func redisGetUser(id uint64) (user User, err error) {
-	conn := pool.Get()
-	defer conn.Close()
-	user.Name, err = redis.String(conn.Do("GET", "users:"+strconv.FormatUint(id, 10)+":name"))
-	if err != nil {
-		return user, err
-	}
-	user.Id = id
-	return user, nil
 }
 
 func getParticipants(conv int64) []User {
@@ -763,6 +587,188 @@ func getComments(id uint64, offset int64) ([]Comment, error) {
 	return comments, nil
 }
 
+func createConversation(id uint64, nParticipants int) Conversation {
+	r, _ := conversationStmt.Exec(id)
+	conversation := Conversation{}
+	conversation.Id, _ = r.LastInsertId()
+	participants := make([]User, 0, 10)
+	user, err := getUser(id)
+	if err != nil {
+		log.Printf("error getting user: %d %v", id, err)
+	}
+	participants = append(participants, user)
+	nParticipants--
+
+	rows, err := randomStmt.Query()
+	if err != nil {
+		log.Fatalf("Error preparing statement: %v", err)
+	}
+	defer rows.Close()
+	for nParticipants > 0 {
+		rows.Next()
+		if err = rows.Scan(&user.Id, &user.Name); err != nil {
+			log.Fatalf("Error getting user: %v", err)
+		} else {
+			participants = append(participants, user)
+			nParticipants--
+		}
+	}
+	for _, u := range participants {
+		_, err := participantStmt.Exec(conversation.Id, u.Id)
+		if err != nil {
+			log.Fatalf("Error adding user to conversation: %v", err)
+		}
+	}
+	conversation.Participants = participants
+	return (conversation)
+}
+
+func dbGetUser(id uint64) (user User, err error) {
+	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
+	if err != nil {
+		return user, err
+	} else {
+		return user, nil
+	}
+}
+
+func getPosts(net_id uint64) ([]PostSmall, error) {
+	rows, err := wallSelectStmt.Query(net_id)
+	posts := make([]PostSmall, 0, 20)
+	if err != nil {
+		return posts, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post PostSmall
+		var t string
+		var by uint64
+		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(MysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By, err = getUser(by)
+		if err != nil {
+			return posts, err
+		}
+		post.CommentCount = getCommentCount(post.Id)
+		posts = append(posts, post)
+	}
+	return posts, nil
+}
+
+func getProfile(id uint64) (user Profile, err error) {
+	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc)
+	user.User.Id = id
+	return user, err
+}
+
+
+/********************************************************************
+redis functions
+********************************************************************/
+
+func redisPublish(recipients []User, msg RedisMessage) {
+	conn := pool.Get()
+	defer conn.Close()
+	JSONmsg, _ := json.Marshal(msg)
+	for _, user := range recipients {
+		conn.Send("PUBLISH", user.Id, JSONmsg)
+	}
+	conn.Flush()
+}
+
+func RedisDial() (redis.Conn, error) {
+	conn, err := redis.Dial(RedisProto, RedisAddress)
+	return conn, err
+}
+
+func redisGetLastMessage(id uint64) (message Message, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	BaseKey := "conversations:" + strconv.FormatUint(id, 10) + ":lastmessage:"
+	reply, err := redis.Values(conn.Do("MGET", BaseKey+"id", BaseKey+"by", BaseKey+"text", BaseKey+"time", BaseKey+"seen"))
+	if err != nil {
+		//should reach this if there is no last message
+		log.Printf("error getting message in redis %v", err)
+		return message, err
+	}
+	var postId int64
+	var by int64
+	var timeString string
+	if _, err = redis.Scan(reply, &postId, &by, &message.Text, &timeString, &message.Seen); err != nil {
+		return message, err
+	}
+	message.Id = uint64(postId)
+	if by != 0 {
+		message.By, err = getUser(uint64(by))
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+	}
+	message.Time, err = time.Parse(time.RFC3339, timeString)
+	return message, err
+}
+
+func redisSetLastMessage(convId uint64, message Message) {
+	conn := pool.Get()
+	defer conn.Close()
+	BaseKey := "conversations:" + strconv.FormatUint(convId, 10) + ":lastmessage:"
+	conn.Send("SET", BaseKey+"id", strconv.FormatUint(message.Id, 10))
+	conn.Send("SET", BaseKey+"by", strconv.FormatUint(message.By.Id, 10))
+	conn.Send("SET", BaseKey+"text", message.Text)
+	conn.Send("SET", BaseKey+"time", message.Time.Format(time.RFC3339))
+	conn.Send("SET", BaseKey+"seen", strconv.FormatBool(message.Seen))
+	conn.Flush()
+}
+
+func redisSetUser(user User) {
+	conn := pool.Get()
+	defer conn.Close()
+	BaseKey := "users:" + strconv.FormatUint(user.Id, 10) + ":"
+	conn.Send("SET", BaseKey+"name", user.Name)
+	conn.Flush()
+}
+
+func redisPutToken(token Token) {
+	/* Set a session token in redis.
+		We use the token value as part of the redis key
+	        so that a user may have more than one concurrent session
+		(eg: signed in on the web and mobile at once */
+	conn := pool.Get()
+	defer conn.Close()
+	expiry := int(token.Expiry.Sub(time.Now()).Seconds())
+	key := "users:" + strconv.FormatUint(token.UserId, 10) + ":token:" + token.Token
+	conn.Send("SETEX", key, expiry, token.Expiry)
+	conn.Flush()
+}
+
+func redisTokenExists(id uint64, token string) bool {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "users:" + strconv.FormatUint(id, 10) + ":token:" + token
+	exists, err := redis.Bool(conn.Do("EXISTS", key))
+	if err != nil {
+		return false
+	}
+	return exists
+}
+
+func redisGetUser(id uint64) (user User, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	user.Name, err = redis.String(conn.Do("GET", "users:"+strconv.FormatUint(id, 10)+":name"))
+	if err != nil {
+		return user, err
+	}
+	user.Id = id
+	return user, nil
+}
+
 /*********************************************************************************
 
 Begin http handlers!
@@ -771,12 +777,16 @@ Begin http handlers!
 
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-	/*
-	POST /register
-	requires parameters: user, pass, email
-	note to
+	/* POST /register
+	requires parameters: user, pass, email 
+        example responses:
+        HTTP 201
+	{"id":2397}
+	HTTP 400
+	{"error":"Invalid email"}
 	*/
-	w.Header().Set("Content-Type", "application/json")
+
+	//Note to self: maybe check cache for user before trying to register
 	user := r.FormValue("user")
 	pass := r.FormValue("pass")
 	email := r.FormValue("email")
@@ -810,13 +820,25 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResp(w, errorJSON, 500)
 			}
 		} else {
-			w.Write([]byte("{\"id\":" + strconv.FormatUint(id, 10) + "}"))
+			resp := []byte("{\"id\":" + strconv.FormatUint(id, 10) + "}")
+			jsonResp(w, resp, 201)
 		}
 	}
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	/* POST /login
+	requires parameters: user, pass
+	example responses:
+	HTTP 200  
+        {
+            "id":2397,
+            "value":"552e5a9687ec04418b3b4da61a8b062dbaf5c7937f068341f36a4b4fcbd4ed45",
+            "expiry":"2013-09-25T14:43:17.664646892Z"
+        }
+	HTTP 400  
+	{"error":"Bad username/password"}
+	*/
 	user := r.FormValue("user")
 	pass := r.FormValue("pass")
 	id, err := validatePass(user, pass)
@@ -840,6 +862,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
+	/* GET /posts
+	   requires parameters: id, token
+	   
+           POST /posts
+	   requires parameters: id, token
+
+        */
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
@@ -931,10 +960,12 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		conversations, err := getConversations(id, start)
 		if err != nil {
-			jsonError(w, err.Error(), 500)
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			conversationsJSON, _ := json.Marshal(conversations)
+			w.Write(conversationsJSON)
 		}
-		conversationsJSON, _ := json.Marshal(conversations)
-		w.Write(conversationsJSON)
 	}
 }
 
@@ -964,7 +995,8 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		text := r.FormValue("text")
 		res, err := messageInsertStmt.Exec(convId, id, text)
 		if err != nil {
-			jsonError(w, err.Error(), 500)
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
 		}
 		messageId, _ := res.LastInsertId()
 		participants := getParticipants(int64(convId))
@@ -973,7 +1005,8 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			//Should only happen if the conversation has non-existent
 			//participants. Or the db has just died.
 			log.Println(err)
-			jsonError(w, err.Error(), 500)
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
 		}
 		msgSmall := Message{uint64(messageId), user, text, time.Now().UTC(), false}
 		redisSetLastMessage(convId, msgSmall)
@@ -1000,7 +1033,8 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		conversationJSON, _ := json.Marshal(conv)
 		w.Write(conversationJSON)
 	default:
-		jsonError(w, "404 not found", 404)
+		errorJSON, _ := json.Marshal(APIerror{"404 not found"})
+		jsonResp(w, errorJSON, 404)
 	}
 }
 
