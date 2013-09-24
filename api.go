@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"log"
@@ -16,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
-	"github.com/garyburd/redigo/redis"
 )
 
 type User struct {
@@ -106,7 +106,7 @@ type ConversationAndMessages struct {
 }
 
 type APIerror struct {
-	Reason string  `json:"error"`
+	Reason string `json:"error"`
 }
 
 func (e APIerror) Error() string {
@@ -150,8 +150,8 @@ const (
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
 	MaxConnectionCount = 100
-	UrlBase            = "/api/v0.8"
-	LoginOverride      = true
+	UrlBase            = "/api/v0.9"
+	LoginOverride      = false
 	MysqlTime          = "2006-01-02 15:04:05"
 	RedisProto         = "tcp"
 	RedisAddress       = "146.185.138.53:6379"
@@ -180,12 +180,11 @@ var (
 	lastMessageSelectStmt  *sql.Stmt
 	commentCountSelectStmt *sql.Stmt
 	profileSelectStmt      *sql.Stmt
-	pool *redis.Pool
+	pool                   *redis.Pool
 )
 
-
 func keepalive(db *sql.DB) {
-	tick := time.Tick(1*time.Hour)
+	tick := time.Tick(1 * time.Hour)
 	for {
 		<-tick
 		err := db.Ping()
@@ -351,16 +350,75 @@ func getCommentCount(id uint64) int {
 }
 
 func getLastMessage(id uint64) (message Message, err error) {
+	message, err = redisGetLastMessage(id)
+	if err != nil {
+		message, err = dbGetLastMessage(id)
+	}
+	return
+}
+
+func redisGetLastMessage(id uint64) (message Message, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	BaseKey := "conversations:" + strconv.FormatUint(id, 10) + ":lastmessage:"
+	reply, err := redis.Values(conn.Do("MGET", BaseKey+"id", BaseKey+"by", BaseKey+"text", BaseKey+"time", BaseKey+"seen"))
+	if err != nil {
+		//should reach this if there is no last message
+		log.Printf("error getting message in redis %v", err)
+		return message, err
+	}
+	var postId int64
+	var by int64
+	var timeString string
+	if _, err = redis.Scan(reply, &postId, &by, &message.Text, &timeString, &message.Seen); err != nil {
+		return message, err
+	}
+	message.Id = uint64(postId)
+	if by != 0 {
+		message.By, err = getUser(uint64(by))
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+	}
+	message.Time, err = time.Parse(time.RFC3339, timeString)
+	return message, err
+}
+
+func dbGetLastMessage(id uint64) (message Message, err error) {
 	var timeString string
 	var by uint64
 	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 	if err != nil {
 		return message, err
-	}
-	message.By = getUser(by)
-	message.Time, _ = time.Parse(MysqlTime, timeString)
+	} else {
+		message.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+		message.Time, _ = time.Parse(MysqlTime, timeString)
 
-	return message, nil
+		return message, nil
+	}
+}
+
+func redisSetLastMessage(convId uint64, message Message) {
+	conn := pool.Get()
+	defer conn.Close()
+	BaseKey := "conversations:" + strconv.FormatUint(convId, 10) + ":lastmessage:"
+	conn.Send("SET", BaseKey+"id", strconv.FormatUint(message.Id, 10))
+	conn.Send("SET", BaseKey+"by", strconv.FormatUint(message.By.Id, 10))
+	conn.Send("SET", BaseKey+"text", message.Text)
+	conn.Send("SET", BaseKey+"time", message.Time.Format(time.RFC3339))
+	conn.Send("SET", BaseKey+"seen", strconv.FormatBool(message.Seen))
+	conn.Flush()
+}
+
+func redisSetUser(user User) {
+	conn := pool.Get()
+	defer conn.Close()
+	BaseKey := "users:" + strconv.FormatUint(user.Id, 10) + ":"
+	conn.Send("SET", BaseKey+"name", user.Name)
+	conn.Flush()
 }
 
 func validateEmail(email string) bool {
@@ -408,35 +466,35 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	pass := r.FormValue("pass")
 	email := r.FormValue("email")
 	switch {
-		case r.Method != "POST":
-			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
-			jsonResp(w, errorJSON, 405)
-		case len(user) == 0:
-			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: user"})
-			jsonResp(w, errorJSON, 400)
-		case len(pass) == 0:
-			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: pass"})
-			jsonResp(w, errorJSON, 400)
-		case len(email) == 0:
-			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: email"})
-			jsonResp(w, errorJSON, 400)
-		case !validateEmail(email):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid Email"})
-			jsonResp(w, errorJSON, 400)
-		default:
-			id, err := registerUser(user, pass, email)
-			if err != nil {
-				_, ok := err.(APIerror)
-				if ok {//Duplicate user/email
-					errorJSON, _ := json.Marshal(err)
-					jsonResp(w, errorJSON, 400)
-				} else {
-					errorJSON, _ := json.Marshal(APIerror{err.Error()})
-					jsonResp(w, errorJSON, 500)
-				}
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
+		jsonResp(w, errorJSON, 405)
+	case len(user) == 0:
+		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: user"})
+		jsonResp(w, errorJSON, 400)
+	case len(pass) == 0:
+		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: pass"})
+		jsonResp(w, errorJSON, 400)
+	case len(email) == 0:
+		errorJSON, _ := json.Marshal(APIerror{"Missing parameter: email"})
+		jsonResp(w, errorJSON, 400)
+	case !validateEmail(email):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid Email"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		id, err := registerUser(user, pass, email)
+		if err != nil {
+			_, ok := err.(APIerror)
+			if ok { //Duplicate user/email
+				errorJSON, _ := json.Marshal(err)
+				jsonResp(w, errorJSON, 400)
 			} else {
-				w.Write([]byte("{\"id\":"+ strconv.FormatUint(id, 10)+"}"))
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
 			}
+		} else {
+			w.Write([]byte("{\"id\":" + strconv.FormatUint(id, 10) + "}"))
+		}
 	}
 }
 
@@ -444,8 +502,7 @@ func validateToken(id uint64, token string) bool {
 	if LoginOverride {
 		return (true)
 	} else if redisTokenExists(id, token) {
-		fmt.Println("Cache hit!")
-		return(true)
+		return (true)
 	} else {
 		var expiry string
 		err := tokenSelectStmt.QueryRow(id, token).Scan(&expiry)
@@ -490,21 +547,21 @@ func createAndStoreToken(id uint64) (Token, error) {
 
 func redisPutToken(token Token) {
 	/* Set a session token in redis.
-	We use the token value as part of the redis key
-        so that a user may have more than one concurrent session
-	(eg: signed in on the web and mobile at once */
+		We use the token value as part of the redis key
+	        so that a user may have more than one concurrent session
+		(eg: signed in on the web and mobile at once */
 	conn := pool.Get()
 	defer conn.Close()
 	expiry := int(token.Expiry.Sub(time.Now()).Seconds())
-	fmt.Println(expiry)
-	conn.Send("SETEX", "users:"+strconv.FormatUint(token.UserId, 10)+":token:"+token.Token, expiry, token.Expiry)
+	key := "users:" + strconv.FormatUint(token.UserId, 10) + ":token:" + token.Token
+	conn.Send("SETEX", key, expiry, token.Expiry)
 	conn.Flush()
 }
 
 func redisTokenExists(id uint64, token string) bool {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "users:"+strconv.FormatUint(id, 10)+":token:"+token
+	key := "users:" + strconv.FormatUint(id, 10) + ":token:" + token
 	exists, err := redis.Bool(conn.Do("EXISTS", key))
 	if err != nil {
 		return false
@@ -518,21 +575,21 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	pass := r.FormValue("pass")
 	id, err := validatePass(user, pass)
 	switch {
-		case r.Method != "POST":
-			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
-			jsonResp(w, errorJSON, 405)
-		case err == nil:
-			token, err := createAndStoreToken(id)
-			if err == nil {
-				tokenJSON, _ := json.Marshal(token)
-				w.Write(tokenJSON)
-			} else {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, 500)
-			}
-		default:
-			errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
-			jsonResp(w, errorJSON, 400)
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request!"})
+		jsonResp(w, errorJSON, 405)
+	case err == nil:
+		token, err := createAndStoreToken(id)
+		if err == nil {
+			tokenJSON, _ := json.Marshal(token)
+			w.Write(tokenJSON)
+		} else {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Bad username/password"})
+		jsonResp(w, errorJSON, 400)
 	}
 }
 
@@ -574,7 +631,10 @@ func getPosts(net_id uint64) ([]PostSmall, error) {
 		if err != nil {
 			return posts, err
 		}
-		post.By = getUser(by)
+		post.By, err = getUser(by)
+		if err != nil {
+			return posts, err
+		}
 		post.CommentCount = getCommentCount(post.Id)
 		posts = append(posts, post)
 	}
@@ -586,36 +646,36 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
 	switch {
-		case !validateToken(id, token):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-			jsonResp(w, errorJSON, 400)
-		case r.Method == "GET":
-			networks := getUserNetworks(id)
-			posts, err := getPosts(networks[0].Id)
-			if err != nil {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, 500)
-			}
-			postsJSON, err := json.Marshal(posts)
-			if err != nil {
-				log.Printf("Something went wrong with json parsing: %v", err)
-			}
-			w.Write(postsJSON)
-		case r.Method == "POST":
-			id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-			text := r.FormValue("text")
-			networks := getUserNetworks(id)
-			res, err := postStmt.Exec(id, text, networks[0].Id)
-			if err != nil {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, 500)
-			} else {
-				postId, _ := res.LastInsertId()
-				w.Write([]byte("{\"id\":" + strconv.FormatInt(postId, 10) + "}"))
-			}
-		default:
-			errorJSON, _ := json.Marshal(APIerror{"Must be a POST or GET request"})
-			jsonResp(w, errorJSON, 405)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case r.Method == "GET":
+		networks := getUserNetworks(id)
+		posts, err := getPosts(networks[0].Id)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
+		postsJSON, err := json.Marshal(posts)
+		if err != nil {
+			log.Printf("Something went wrong with json parsing: %v", err)
+		}
+		w.Write(postsJSON)
+	case r.Method == "POST":
+		id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+		text := r.FormValue("text")
+		networks := getUserNetworks(id)
+		res, err := postStmt.Exec(id, text, networks[0].Id)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			postId, _ := res.LastInsertId()
+			w.Write([]byte("{\"id\":" + strconv.FormatInt(postId, 10) + "}"))
+		}
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST or GET request"})
+		jsonResp(w, errorJSON, 405)
 	}
 }
 
@@ -624,7 +684,10 @@ func createConversation(id uint64, nParticipants int) Conversation {
 	conversation := Conversation{}
 	conversation.Id, _ = r.LastInsertId()
 	participants := make([]User, 0, 10)
-	user := getUser(id)
+	user, err := getUser(id)
+	if err != nil {
+		log.Printf("error getting user: %d %v", id, err)
+	}
 	participants = append(participants, user)
 	nParticipants--
 
@@ -652,15 +715,37 @@ func createConversation(id uint64, nParticipants int) Conversation {
 	return (conversation)
 }
 
-func getUser(id uint64) User {
-	user := User{}
-	err := userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
+func getUser(id uint64) (user User, err error) {
+	/* Hits the cache then the db
+	only I'm not 100% confident yet with what
+	happens when you attempt to get a redis key
+	that doesn't exist in redigo! */
+	user, err = redisGetUser(id)
 	if err != nil {
-		log.Printf("Error getting user: %v", err)
-	} else {
-		//
+		user, err = dbGetUser(id)
+		redisSetUser(user)
 	}
-	return (user)
+	return user, err
+}
+
+func dbGetUser(id uint64) (user User, err error) {
+	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
+	if err != nil {
+		return user, err
+	} else {
+		return user, nil
+	}
+}
+
+func redisGetUser(id uint64) (user User, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	user.Name, err = redis.String(conn.Do("GET", "users:"+strconv.FormatUint(id, 10)+":name"))
+	if err != nil {
+		return user, err
+	}
+	user.Id = id
+	return user, nil
 }
 
 func newConversationHandler(w http.ResponseWriter, r *http.Request) {
@@ -668,16 +753,16 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
 	switch {
-		case r.Method != "POST":
-			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
-			jsonResp(w, errorJSON, 405)
-		case !validateToken(id, token):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-			jsonResp(w, errorJSON, 400)
-		default:
-			conversation := createConversation(id, 2)
-			conversationJSON, _ := json.Marshal(conversation)
-			w.Write(conversationJSON)
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
+		jsonResp(w, errorJSON, 405)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		conversation := createConversation(id, 2)
+		conversationJSON, _ := json.Marshal(conversation)
+		w.Write(conversationJSON)
 	}
 }
 
@@ -686,16 +771,16 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
 	switch {
-		case r.Method != "POST":
-			errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
-			jsonResp(w, errorJSON, 405)
-		case !validateToken(id, token):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-			jsonResp(w, errorJSON, 400)
-		default:
-			conversation := createConversation(id, 4)
-			conversationJSON, _ := json.Marshal(conversation)
-			w.Write(conversationJSON)
+	case r.Method != "POST":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a POST request"})
+		jsonResp(w, errorJSON, 405)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		conversation := createConversation(id, 4)
+		conversationJSON, _ := json.Marshal(conversation)
+		w.Write(conversationJSON)
 	}
 }
 
@@ -733,7 +818,12 @@ func getMessages(convId uint64, offset int64) []Message {
 		if err != nil {
 			log.Fatalf("%v", err)
 		}
-		message.By = getUser(by)
+		message.By, err = getUser(by)
+		if err != nil {
+			//should only happen if a message is from a non-existent user
+			//(or the db is fucked :))
+			log.Println(err)
+		}
 		messages = append(messages, message)
 	}
 	return (messages)
@@ -767,23 +857,23 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
 	switch {
-		case r.Method != "GET":
-			errorJSON, _ := json.Marshal(APIerror{"Must be a GET request"})
-			jsonResp(w, errorJSON, 405)
-		case !validateToken(id, token):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-			jsonResp(w, errorJSON, 400)
-		default:
-			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
-			if err != nil {
-				start = 0
-			}
-			conversations, err := getConversations(id, start)
-			if err != nil {
-				jsonError(w, err.Error(), 500)
-			}
-			conversationsJSON, _ := json.Marshal(conversations)
-			w.Write(conversationsJSON)
+	case r.Method != "GET":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a GET request"})
+		jsonResp(w, errorJSON, 405)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	default:
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		if err != nil {
+			start = 0
+		}
+		conversations, err := getConversations(id, start)
+		if err != nil {
+			jsonError(w, err.Error(), 500)
+		}
+		conversationsJSON, _ := json.Marshal(conversations)
+		w.Write(conversationsJSON)
 	}
 }
 
@@ -796,52 +886,60 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	regex2, _ := regexp.Compile("conversations/(\\d+)/?$")
 	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
 	switch {
-		case !validateToken(id, token):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-			jsonResp(w, errorJSON, 400)
-		case convIdString != nil && r.Method == "GET":
-			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
-			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
-			if err != nil {
-				start = 0
-			}
-			messages := getMessages(convId, start)
-			messagesJSON, _ := json.Marshal(messages)
-			w.Write(messagesJSON)
-		case convIdString != nil && r.Method == "POST":
-			convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
-			text := r.FormValue("text")
-			res, err := messageInsertStmt.Exec(convId, id, text)
-			if err != nil {
-				jsonError(w, err.Error(), 500)
-			}
-			messageId, _ := res.LastInsertId()
-			participants := getParticipants(int64(convId))
-			user := getUser(id)
-			msg := RedisMessage{Message{uint64(messageId), user, text, time.Now().UTC(), false}, convId}
-			go redisPublish(participants, msg)
-			go updateConversation(convId)
-			w.Write([]byte("{\"id\":" + strconv.FormatInt(messageId, 10) + "}"))
-		case convIdString != nil: //Unsuported method
-			errorJSON, _ := json.Marshal(APIerror{"Must be a GET or POST request"})
-			jsonResp(w, errorJSON, 405)
-		case convIdString2 != nil && r.Method != "GET":
-			errorJSON, _ := json.Marshal(APIerror{"Must be a GET request"})
-			jsonResp(w, errorJSON, 405)
-		case convIdString2 != nil:
-			convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
-			start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
-			if err != nil {
-				start = 0
-			}
-			var conv ConversationAndMessages
-			conv.Id = convId
-			conv.Participants = getParticipants(conv.Id)
-			conv.Messages = getMessages(uint64(convId), start)
-			conversationJSON, _ := json.Marshal(conv)
-			w.Write(conversationJSON)
-		default:
-			jsonError(w, "404 not found", 404)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case convIdString != nil && r.Method == "GET":
+		convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		if err != nil {
+			start = 0
+		}
+		messages := getMessages(convId, start)
+		messagesJSON, _ := json.Marshal(messages)
+		w.Write(messagesJSON)
+	case convIdString != nil && r.Method == "POST":
+		convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
+		text := r.FormValue("text")
+		res, err := messageInsertStmt.Exec(convId, id, text)
+		if err != nil {
+			jsonError(w, err.Error(), 500)
+		}
+		messageId, _ := res.LastInsertId()
+		participants := getParticipants(int64(convId))
+		user, err := getUser(id)
+		if err != nil {
+			//Should only happen if the conversation has non-existent
+			//participants. Or the db has just died.
+			log.Println(err)
+			jsonError(w, err.Error(), 500)
+		}
+		msgSmall := Message{uint64(messageId), user, text, time.Now().UTC(), false}
+		redisSetLastMessage(convId, msgSmall)
+		msg := RedisMessage{msgSmall, convId}
+		go redisPublish(participants, msg)
+		go updateConversation(convId)
+		w.Write([]byte("{\"id\":" + strconv.FormatInt(messageId, 10) + "}"))
+	case convIdString != nil: //Unsuported method
+		errorJSON, _ := json.Marshal(APIerror{"Must be a GET or POST request"})
+		jsonResp(w, errorJSON, 405)
+	case convIdString2 != nil && r.Method != "GET":
+		errorJSON, _ := json.Marshal(APIerror{"Must be a GET request"})
+		jsonResp(w, errorJSON, 405)
+	case convIdString2 != nil:
+		convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		if err != nil {
+			start = 0
+		}
+		var conv ConversationAndMessages
+		conv.Id = convId
+		conv.Participants = getParticipants(conv.Id)
+		conv.Messages = getMessages(uint64(convId), start)
+		conversationJSON, _ := json.Marshal(conv)
+		w.Write(conversationJSON)
+	default:
+		jsonError(w, "404 not found", 404)
 	}
 }
 
@@ -862,7 +960,10 @@ func getComments(id uint64, offset int64) ([]Comment, error) {
 			return comments, err
 		}
 		comment.Time, _ = time.Parse(MysqlTime, timeString)
-		comment.By = getUser(by)
+		comment.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
 		comments = append(comments, comment)
 	}
 	return comments, nil
@@ -915,6 +1016,12 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getProfile(id uint64) (user Profile, err error) {
+	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
+	user.Id = userId
+	return user, err
+}
+
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
@@ -922,26 +1029,24 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	regexUser, _ := regexp.Compile("user/(\\d+)/?$")
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
-		case !validateToken(id, token):
-			errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
-			jsonResp(w, errorJSON, 400)
-		case r.Method != "GET":
-			errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
-			jsonResp(w, errorJSON, 405)
-		case userIdString != nil:
-			var user Profile
-			userId, _ := strconv.ParseUint(userIdString[1], 10, 16)
-			err := profileSelectStmt.QueryRow(id).Scan(&user.Name, &user.Desc)
-			user.Id = userId
-			if err != nil {
-				errorJSON, _ := json.Marshal(APIerror{err.Error()})
-				jsonResp(w, errorJSON, 500)
-			}
-			userjson, _ := json.Marshal(user)
-			w.Write(userjson)
-		default:
-			errorJSON, _ := json.Marshal(APIerror{"User not found"})
-			jsonResp(w, errorJSON, 404)
+	case !validateToken(id, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case r.Method != "GET":
+		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+		jsonResp(w, errorJSON, 405)
+	case userIdString != nil:
+		userId, _ := strconv.ParseUint(userIdString[1], 10, 16)
+		user, err := getProfile(userId)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
+		userjson, _ := json.Marshal(user)
+		w.Write(userjson)
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"User not found"})
+		jsonResp(w, errorJSON, 404)
 	}
 }
 
@@ -949,7 +1054,7 @@ func redisPublish(recipients []User, msg RedisMessage) {
 	conn := pool.Get()
 	defer conn.Close()
 	JSONmsg, _ := json.Marshal(msg)
-	for _, user := range(recipients) {
+	for _, user := range recipients {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
 	}
 	conn.Flush()
@@ -974,11 +1079,11 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 		psc.Subscribe(id)
 		for {
 			switch n := psc.Receive().(type) {
-				case redis.Message:
-					w.Write([]byte(n.Data))
-					return
-				case redis.Subscription:
-					fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
+			case redis.Message:
+				w.Write([]byte(n.Data))
+				return
+			case redis.Subscription:
+				fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
 			}
 		}
 	}
