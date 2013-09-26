@@ -4,11 +4,11 @@ import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"crypto/rand"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"log"
@@ -93,13 +93,13 @@ type Rule struct {
 }
 
 type Conversation struct {
-	Id           int64    `json:"id"`
+	Id           uint64    `json:"id"`
 	Participants []User   `json:"participants"`
 	LastMessage  *Message `json:"mostRecentMessage"`
 }
 
 type ConversationAndMessages struct {
-	Id           int64     `json:"id"`
+	Id           uint64     `json:"id"`
 	Participants []User    `json:"participants"`
 	Messages     []Message `json:"messages"`
 }
@@ -185,7 +185,23 @@ func looksLikeEmail(email string) bool {
 func getLastMessage(id uint64) (message Message, err error) {
 	message, err = redisGetLastMessage(id)
 	if err != nil {
-		message, err = dbGetLastMessage(id)
+		// Last message is not in redis
+		count , err := redisGetConversationMessageCount(id)
+		if err != nil {
+			//and the number of messages that exist is not in redis
+			message, err = dbGetLastMessage(id)
+			if err != nil {
+				//this won't wipe the cache since if we're here it's already missing
+				redisSetConversationMessageCount(id, 0)
+			}
+		} else {
+			//and the number of messages we should have is in redis
+			if count != 0 { // this number currently is probably completely wrong!
+					// but it should be correct in zero vs non-zero terms
+				message, err = dbGetLastMessage(id)
+				redisSetLastMessage(id, message)
+			}
+		}
 	}
 	return
 }
@@ -250,19 +266,53 @@ func getUser(id uint64) (user User, err error) {
 	return user, err
 }
 
+func getCommentCount(id uint64) (count int) {
+	count, err := redisGetCommentCount(id)
+	if err != nil {
+		count = dbGetCommentCount(id)
+		go redisSetCommentCount(id, count)
+	}
+	return count
+}
+
+func createComment(postId uint64, userId uint64, text string) (commId uint64, err error) {
+	commId, err = dbCreateComment(postId, userId, text)
+	if err == nil {
+		err = redisIncCommentCount(postId)
+	}
+	return commId, err
+}
+
+func getUserNetworks(id uint64) (nets []Network) {
+	nets, err := redisGetUserNetwork(id)
+	if err != nil {
+		nets = dbGetUserNetworks(id)
+		redisSetUserNetwork(id, nets[0])
+	}
+	return (nets)
+}
+
+func getParticipants(convId uint64) []User {
+	participants, err := redisGetConversationParticipants(convId)
+	if err != nil {
+		participants = dbGetParticipants(convId)
+	}
+	return participants
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
 
 func updateConversation(id uint64) {
 	_, err := conversationUpdateStmt.Exec(id)
+	log.Println("DB hit: updateConversation convid ")
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
 }
 
-func getCommentCount(id uint64) int {
-	var count int
+func dbGetCommentCount(id uint64) (count int) {
 	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
 	if err != nil {
 		return 0
@@ -274,6 +324,7 @@ func dbGetLastMessage(id uint64) (message Message, err error) {
 	var timeString string
 	var by uint64
 	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+	log.Println("DB hit: dbGetLastMessage convid (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		return message, err
 	} else {
@@ -292,6 +343,7 @@ func validateEmail(email string) bool {
 		return (false)
 	} else {
 		rows, err := ruleStmt.Query()
+		log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
 		if err != nil {
 			log.Fatalf("Error preparing statement: %v", err)
 		}
@@ -326,8 +378,9 @@ func registerUser(user string, pass string, email string) (uint64, error) {
 	}
 }
 
-func getUserNetworks(id uint64) []Network {
+func dbGetUserNetworks(id uint64) []Network {
 	rows, err := networkStmt.Query(id)
+	log.Println("DB hit: getUserNetworks userid (network.id, network.name)")
 	nets := make([]Network, 0, 5)
 	if err != nil {
 		log.Fatalf("Error querying db: %v", err)
@@ -345,8 +398,9 @@ func getUserNetworks(id uint64) []Network {
 	return (nets)
 }
 
-func getParticipants(conv int64) []User {
+func dbGetParticipants(conv uint64) []User {
 	rows, err := participantSelectStmt.Query(conv)
+	log.Println("DB hit: getParticipants convid (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Fatalf("Error getting participant: %v", err)
 	}
@@ -362,6 +416,7 @@ func getParticipants(conv int64) []User {
 
 func getMessages(convId uint64, offset int64) []Message {
 	rows, err := messageSelectStmt.Query(convId, offset)
+	log.Println("DB hit: getMessages convid, offset (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -393,6 +448,7 @@ func getMessages(convId uint64, offset int64) []Message {
 func getConversations(user_id uint64, start int64) ([]Conversation, error) {
 	conversations := make([]Conversation, 0, 20)
 	rows, err := conversationSelectStmt.Query(user_id, start)
+	log.Println("DB hit: getConversations user_id, offset (conversation.id)")
 	if err != nil {
 		return conversations, err
 	}
@@ -403,7 +459,7 @@ func getConversations(user_id uint64, start int64) ([]Conversation, error) {
 		if err != nil {
 			return conversations, err
 		}
-		conv.Participants = getParticipants(conv.Id)
+		conv.Participants = getParticipants(uint64(conv.Id))
 		LastMessage, err := getLastMessage(uint64(conv.Id))
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -415,6 +471,7 @@ func getConversations(user_id uint64, start int64) ([]Conversation, error) {
 
 func getComments(id uint64, offset int64) ([]Comment, error) {
 	rows, err := commentSelectStmt.Query(id, offset)
+	log.Println("DB hit: getComments postid, offset(comment.id, comment.by, comment.text, comment.time)")
 	comments := make([]Comment, 0, 20)
 	if err != nil {
 		return comments, err
@@ -442,7 +499,8 @@ func getComments(id uint64, offset int64) ([]Comment, error) {
 func createConversation(id uint64, nParticipants int) Conversation {
 	r, _ := conversationStmt.Exec(id)
 	conversation := Conversation{}
-	conversation.Id, _ = r.LastInsertId()
+	cId, _ := r.LastInsertId()
+	conversation.Id = uint64(cId)
 	participants := make([]User, 0, 10)
 	user, err := getUser(id)
 	if err != nil {
@@ -452,6 +510,7 @@ func createConversation(id uint64, nParticipants int) Conversation {
 	nParticipants--
 
 	rows, err := randomStmt.Query()
+	log.Println("DB hit: createConversation (user.Name, user.Id)")
 	if err != nil {
 		log.Fatalf("Error preparing statement: %v", err)
 	}
@@ -477,6 +536,7 @@ func createConversation(id uint64, nParticipants int) Conversation {
 
 func dbGetUser(id uint64) (user User, err error) {
 	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
+	log.Println("DB hit: dbGetUser id(user.Name, user.Id)")
 	if err != nil {
 		return user, err
 	} else {
@@ -486,6 +546,7 @@ func dbGetUser(id uint64) (user User, err error) {
 
 func getPosts(net_id uint64) ([]PostSmall, error) {
 	rows, err := wallSelectStmt.Query(net_id)
+	log.Println("DB hit: getPosts net_id(post.id, post.by, post.time, post.texts)")
 	posts := make([]PostSmall, 0, 20)
 	if err != nil {
 		return posts, err
@@ -515,8 +576,19 @@ func getPosts(net_id uint64) ([]PostSmall, error) {
 
 func getProfile(id uint64) (user Profile, err error) {
 	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc)
+	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	user.User.Id = id
 	return user, err
+}
+
+func dbCreateComment(postId uint64, userId uint64, text string) (commId uint64, err error) {
+	if res, err := commentInsertStmt.Exec(commId, userId, text); err != nil {
+		cId, err := res.LastInsertId()
+		commId  = uint64(cId)
+		return commId, err
+	} else {
+		return 0, err
+	}
 }
 
 
@@ -537,6 +609,65 @@ func redisPublish(recipients []User, msg RedisMessage) {
 func RedisDial() (redis.Conn, error) {
 	conn, err := redis.Dial(RedisProto, RedisAddress)
 	return conn, err
+}
+
+func redisGetCommentCount(id uint64) (count int, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "posts:"+strconv.FormatUint(id, 10)+ ":comment_count"
+	count, err = redis.Int(conn.Do("GET", key))
+	if err != nil {
+		return 0, err
+	} else {
+		return count, nil
+	}
+}
+
+func redisSetCommentCount(id uint64, count int) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "posts:"+strconv.FormatUint(id, 10)+ ":comment_count"
+	conn.Send("SET", key, count)
+	conn.Flush()
+}
+
+func redisGetUserNetwork(userId uint64) (networks []Network, err error) {
+	/* Part 1 of the transition to one network per user (why did I ever allow more :| */
+	//this returns a slice of 1 network to keep compatible with dbGetNetworks
+	conn := pool.Get()
+	defer conn.Close()
+	baseKey := "users:"+strconv.FormatUint(userId, 10)+":network"
+	reply, err := redis.Values(conn.Do("MGET", baseKey+":id", baseKey+":name"))
+	if err != nil {
+		return networks, err
+	}
+	net := Network{}
+	if _, err = redis.Scan(reply, &net.Id, &net.Name); err != nil {
+		return networks, err
+	} else if net.Id == 0 {
+		//there must be a neater way?
+		err = redis.Error("Cache miss")
+		return networks, err
+	}
+	networks = append(networks, net)
+	return networks, nil
+}
+
+func redisSetUserNetwork(userId uint64, network Network) {
+	conn := pool.Get()
+	defer conn.Close()
+	baseKey := "users:"+strconv.FormatUint(userId, 10)+":network"
+	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name)
+	conn.Flush()
+}
+
+func redisIncCommentCount(id uint64) (err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "posts:"+strconv.FormatUint(id, 10)+ ":comment_count"
+	conn.Send("INCR", key)
+	conn.Flush()
+	return nil
 }
 
 func redisGetLastMessage(id uint64) (message Message, err error) {
@@ -576,6 +707,62 @@ func redisSetLastMessage(convId uint64, message Message) {
 	conn.Send("SET", BaseKey+"time", message.Time.Format(time.RFC3339))
 	conn.Send("SET", BaseKey+"seen", strconv.FormatBool(message.Seen))
 	conn.Flush()
+}
+
+func redisGetConversationMessageCount(convId uint64) (count int, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:"+strconv.FormatUint(convId, 10)+":messagecount"
+	count, err = redis.Int(conn.Do("GET", key))
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func redisSetConversationMessageCount(convId uint64, count int) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:"+strconv.FormatUint(convId, 10)+":messagecount"
+	conn.Send("SET", key, count)
+	conn.Flush()
+}
+
+func redisIncConversationMessageCount(convId uint64) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:"+strconv.FormatUint(convId, 10)+":messagecount"
+	conn.Send("INCR", key)
+	conn.Flush()
+}
+
+func redisSetConversationParticipants(convId uint64, participants []User) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:"+strconv.FormatUint(convId, 10)+":participants"
+	for _, user := range(participants) {
+		conn.Send("HSET", key, user.Id, user.Name)
+	}
+	conn.Flush()
+}
+
+func redisGetConversationParticipants(convId uint64) (participants []User, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:"+strconv.FormatUint(convId, 10)+":participants"
+	values, err := redis.Values(conn.Do("HGETALL", key))
+	if err != nil {
+		return
+	}
+	for len(values) > 0 {
+		user := User{}
+		values, err = redis.Scan(values, &user.Id, &user.Name)
+		if err != nil {
+			return
+		}
+		participants = append(participants, user)
+	}
+	return
 }
 
 func redisSetUser(user User) {
@@ -851,7 +1038,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			jsonResp(w, errorJSON, 500)
 		}
 		messageId, _ := res.LastInsertId()
-		participants := getParticipants(int64(convId))
+		participants := getParticipants(uint64(convId))
 		user, err := getUser(id)
 		if err != nil {
 			//Should only happen if the conversation has non-existent
@@ -864,6 +1051,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		redisSetLastMessage(convId, msgSmall)
 		msg := RedisMessage{msgSmall, convId}
 		go redisPublish(participants, msg)
+		go redisIncConversationMessageCount(convId)
 		go updateConversation(convId)
 		w.Write([]byte("{\"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 	case convIdString != nil: //Unsuported method
@@ -879,7 +1067,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			start = 0
 		}
 		var conv ConversationAndMessages
-		conv.Id = convId
+		conv.Id = uint64(convId)
 		conv.Participants = getParticipants(conv.Id)
 		conv.Messages = getMessages(uint64(convId), start)
 		conversationJSON, _ := json.Marshal(conv)
@@ -919,13 +1107,12 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	case commIdStringA != nil && r.Method == "POST":
 		commId, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
 		text := r.FormValue("text")
-		res, err := commentInsertStmt.Exec(commId, id, text)
+		commentId, err := createComment(commId, id, text)
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		} else {
-			commentId, _ := res.LastInsertId()
-			w.Write([]byte("{\"id\":" + strconv.FormatInt(commentId, 10) + "}"))
+			w.Write([]byte("{\"id\":" + strconv.FormatUint(commentId, 10) + "}"))
 		}
 	case commIdStringB != nil && r.Method == "GET":
 		commId, _ := strconv.ParseUint(commIdStringB[1], 10, 16)
