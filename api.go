@@ -300,6 +300,19 @@ func getParticipants(convId uint64) []User {
 	return participants
 }
 
+func getMessages(convId uint64, offset int64) []Message {
+	return dbGetMessages(convId, offset)
+}
+
+func getConversations(user_id uint64, start int64) (conversations []Conversation, err error) {
+	conversations, err = redisGetConversations(user_id, start)
+	if err != nil {
+		conversations, err = dbGetConversations(user_id, start)
+		return
+	}
+	return
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
@@ -345,13 +358,13 @@ func validateEmail(email string) bool {
 		rows, err := ruleStmt.Query()
 		log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
 		if err != nil {
-			log.Fatalf("Error preparing statement: %v", err)
+			log.Printf("Error preparing statement: %v", err)
 		}
 		defer rows.Close()
 		for rows.Next() {
 			rule := new(Rule)
 			if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
-				log.Fatalf("Error getting rule: %v", err)
+				log.Printf("Error getting rule: %v", err)
 			}
 			if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
 				return (true)
@@ -380,17 +393,17 @@ func registerUser(user string, pass string, email string) (uint64, error) {
 
 func dbGetUserNetworks(id uint64) []Network {
 	rows, err := networkStmt.Query(id)
+	defer rows.Close()
 	log.Println("DB hit: getUserNetworks userid (network.id, network.name)")
 	nets := make([]Network, 0, 5)
 	if err != nil {
-		log.Fatalf("Error querying db: %v", err)
+		log.Printf("Error querying db: %v", err)
 	}
-	defer rows.Close()
 	for rows.Next() {
 		var network Network
 		err = rows.Scan(&network.Id, &network.Name)
 		if err != nil {
-			log.Fatalf("Error scanning row: %v", err)
+			log.Printf("Error scanning row: %v", err)
 		} else {
 			nets = append(nets, network)
 		}
@@ -402,7 +415,7 @@ func dbGetParticipants(conv uint64) []User {
 	rows, err := participantSelectStmt.Query(conv)
 	log.Println("DB hit: getParticipants convid (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
-		log.Fatalf("Error getting participant: %v", err)
+		log.Printf("Error getting participant: %v", err)
 	}
 	defer rows.Close()
 	participants := make([]User, 0, 5)
@@ -414,11 +427,11 @@ func dbGetParticipants(conv uint64) []User {
 	return (participants)
 }
 
-func getMessages(convId uint64, offset int64) []Message {
+func dbGetMessages(convId uint64, offset int64) []Message {
 	rows, err := messageSelectStmt.Query(convId, offset)
 	log.Println("DB hit: getMessages convid, offset (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Printf("%v", err)
 	}
 	defer rows.Close()
 	messages := make([]Message, 0, 20)
@@ -428,11 +441,11 @@ func getMessages(convId uint64, offset int64) []Message {
 		var by uint64
 		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 		if err != nil {
-			log.Fatalf("%v", err)
+			log.Printf("%v", err)
 		}
 		message.Time, err = time.Parse(MysqlTime, timeString)
 		if err != nil {
-			log.Fatalf("%v", err)
+			log.Printf("%v", err)
 		}
 		message.By, err = getUser(by)
 		if err != nil {
@@ -445,7 +458,7 @@ func getMessages(convId uint64, offset int64) []Message {
 	return (messages)
 }
 
-func getConversations(user_id uint64, start int64) ([]Conversation, error) {
+func dbGetConversations(user_id uint64, start int64) ([]Conversation, error) {
 	conversations := make([]Conversation, 0, 20)
 	rows, err := conversationSelectStmt.Query(user_id, start)
 	log.Println("DB hit: getConversations user_id, offset (conversation.id)")
@@ -512,13 +525,13 @@ func createConversation(id uint64, nParticipants int) Conversation {
 	rows, err := randomStmt.Query()
 	log.Println("DB hit: createConversation (user.Name, user.Id)")
 	if err != nil {
-		log.Fatalf("Error preparing statement: %v", err)
+		log.Printf("Error preparing statement: %v", err)
 	}
 	defer rows.Close()
 	for nParticipants > 0 {
 		rows.Next()
 		if err = rows.Scan(&user.Id, &user.Name); err != nil {
-			log.Fatalf("Error getting user: %v", err)
+			log.Printf("Error getting user: %v", err)
 		} else {
 			participants = append(participants, user)
 			nParticipants--
@@ -527,7 +540,7 @@ func createConversation(id uint64, nParticipants int) Conversation {
 	for _, u := range participants {
 		_, err := participantStmt.Exec(conversation.Id, u.Id)
 		if err != nil {
-			log.Fatalf("Error adding user to conversation: %v", err)
+			log.Printf("Error adding user to conversation: %v", err)
 		}
 	}
 	conversation.Participants = participants
@@ -808,9 +821,40 @@ func redisGetUser(id uint64) (user User, err error) {
 	return user, nil
 }
 
+func redisGetConversations(id uint64, start int64) (conversations []Conversation, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "users:"+strconv.FormatUint(id, 10)+":conversations"
+	values, err := redis.Values(conn.Do("ZRANGE", key, start, start+19))//may need to ba zrevrange
+	if err != nil {
+		return
+	}
+	for len(values) > 0 {
+		curr := 0
+		values, err = redis.Scan(values, &curr)
+		if err != nil {
+			return
+		}
+		conv := Conversation{}
+		conv.Id = uint64(curr)
+		conv.Participants = getParticipants(uint64(curr))
+		LastMessage, err := getLastMessage(uint64(conv.Id))
+		if err == nil {
+			conv.LastMessage = &LastMessage
+		}
+		conversations = append(conversations, conv)
+	}
+	return
+}
+
+func redisAddConversation(conv Conversation, time int64) {
+	
+}
+
 /*********************************************************************************
 
 Begin http handlers!
+
 
 *********************************************************************************/
 
