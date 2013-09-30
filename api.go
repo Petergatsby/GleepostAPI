@@ -4,11 +4,11 @@ import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"io"
 	"log"
@@ -93,13 +93,13 @@ type Rule struct {
 }
 
 type Conversation struct {
-	Id           uint64    `json:"id"`
+	Id           uint64   `json:"id"`
 	Participants []User   `json:"participants"`
 	LastMessage  *Message `json:"mostRecentMessage"`
 }
 
 type ConversationAndMessages struct {
-	Id           uint64     `json:"id"`
+	Id           uint64    `json:"id"`
 	Participants []User    `json:"participants"`
 	Messages     []Message `json:"messages"`
 }
@@ -119,15 +119,15 @@ func jsonResp(w http.ResponseWriter, resp []byte, code int) {
 }
 
 const (
-	UrlBase            = "/api/v0.9"
-	LoginOverride      = false
-	MysqlTime          = "2006-01-02 15:04:05"
-	RedisProto         = "tcp"
-	RedisAddress       = "146.185.138.53:6379"
+	UrlBase       = "/api/v0.9"
+	LoginOverride = false
+	MysqlTime     = "2006-01-02 15:04:05"
+	RedisProto    = "tcp"
+	RedisAddress  = "146.185.138.53:6379"
 )
 
 var (
-	pool                   *redis.Pool
+	pool *redis.Pool
 )
 
 func main() {
@@ -186,7 +186,7 @@ func getLastMessage(id uint64) (message Message, err error) {
 	message, err = redisGetLastMessage(id)
 	if err != nil {
 		// Last message is not in redis
-		count , err := redisGetConversationMessageCount(id)
+		count, err := redisGetConversationMessageCount(id)
 		if err != nil {
 			//and the number of messages that exist is not in redis
 			message, err = dbGetLastMessage(id)
@@ -197,7 +197,7 @@ func getLastMessage(id uint64) (message Message, err error) {
 		} else {
 			//and the number of messages we should have is in redis
 			if count != 0 { // this number currently is probably completely wrong!
-					// but it should be correct in zero vs non-zero terms
+				// but it should be correct in zero vs non-zero terms
 				message, err = dbGetLastMessage(id)
 				redisSetLastMessage(id, message)
 			}
@@ -597,13 +597,12 @@ func getProfile(id uint64) (user Profile, err error) {
 func dbCreateComment(postId uint64, userId uint64, text string) (commId uint64, err error) {
 	if res, err := commentInsertStmt.Exec(commId, userId, text); err != nil {
 		cId, err := res.LastInsertId()
-		commId  = uint64(cId)
+		commId = uint64(cId)
 		return commId, err
 	} else {
 		return 0, err
 	}
 }
-
 
 /********************************************************************
 redis functions
@@ -627,7 +626,7 @@ func RedisDial() (redis.Conn, error) {
 func redisGetCommentCount(id uint64) (count int, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "posts:"+strconv.FormatUint(id, 10)+ ":comment_count"
+	key := "posts:" + strconv.FormatUint(id, 10) + ":comment_count"
 	count, err = redis.Int(conn.Do("GET", key))
 	if err != nil {
 		return 0, err
@@ -639,7 +638,7 @@ func redisGetCommentCount(id uint64) (count int, err error) {
 func redisSetCommentCount(id uint64, count int) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "posts:"+strconv.FormatUint(id, 10)+ ":comment_count"
+	key := "posts:" + strconv.FormatUint(id, 10) + ":comment_count"
 	conn.Send("SET", key, count)
 	conn.Flush()
 }
@@ -649,7 +648,7 @@ func redisGetUserNetwork(userId uint64) (networks []Network, err error) {
 	//this returns a slice of 1 network to keep compatible with dbGetNetworks
 	conn := pool.Get()
 	defer conn.Close()
-	baseKey := "users:"+strconv.FormatUint(userId, 10)+":network"
+	baseKey := "users:" + strconv.FormatUint(userId, 10) + ":network"
 	reply, err := redis.Values(conn.Do("MGET", baseKey+":id", baseKey+":name"))
 	if err != nil {
 		return networks, err
@@ -669,7 +668,7 @@ func redisGetUserNetwork(userId uint64) (networks []Network, err error) {
 func redisSetUserNetwork(userId uint64, network Network) {
 	conn := pool.Get()
 	defer conn.Close()
-	baseKey := "users:"+strconv.FormatUint(userId, 10)+":network"
+	baseKey := "users:" + strconv.FormatUint(userId, 10) + ":network"
 	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name)
 	conn.Flush()
 }
@@ -677,7 +676,7 @@ func redisSetUserNetwork(userId uint64, network Network) {
 func redisIncCommentCount(id uint64) (err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "posts:"+strconv.FormatUint(id, 10)+ ":comment_count"
+	key := "posts:" + strconv.FormatUint(id, 10) + ":comment_count"
 	conn.Send("INCR", key)
 	conn.Flush()
 	return nil
@@ -725,7 +724,7 @@ func redisSetLastMessage(convId uint64, message Message) {
 func redisGetConversationMessageCount(convId uint64) (count int, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "conversations:"+strconv.FormatUint(convId, 10)+":messagecount"
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":messagecount"
 	count, err = redis.Int(conn.Do("GET", key))
 	if err != nil {
 		return 0, err
@@ -736,7 +735,7 @@ func redisGetConversationMessageCount(convId uint64) (count int, err error) {
 func redisSetConversationMessageCount(convId uint64, count int) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "conversations:"+strconv.FormatUint(convId, 10)+":messagecount"
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":messagecount"
 	conn.Send("SET", key, count)
 	conn.Flush()
 }
@@ -744,7 +743,7 @@ func redisSetConversationMessageCount(convId uint64, count int) {
 func redisIncConversationMessageCount(convId uint64) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "conversations:"+strconv.FormatUint(convId, 10)+":messagecount"
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":messagecount"
 	conn.Send("INCR", key)
 	conn.Flush()
 }
@@ -752,8 +751,8 @@ func redisIncConversationMessageCount(convId uint64) {
 func redisSetConversationParticipants(convId uint64, participants []User) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "conversations:"+strconv.FormatUint(convId, 10)+":participants"
-	for _, user := range(participants) {
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":participants"
+	for _, user := range participants {
 		conn.Send("HSET", key, user.Id, user.Name)
 	}
 	conn.Flush()
@@ -762,7 +761,7 @@ func redisSetConversationParticipants(convId uint64, participants []User) {
 func redisGetConversationParticipants(convId uint64) (participants []User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "conversations:"+strconv.FormatUint(convId, 10)+":participants"
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":participants"
 	values, err := redis.Values(conn.Do("HGETALL", key))
 	if err != nil {
 		return
@@ -824,8 +823,8 @@ func redisGetUser(id uint64) (user User, err error) {
 func redisGetConversations(id uint64, start int64) (conversations []Conversation, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "users:"+strconv.FormatUint(id, 10)+":conversations"
-	values, err := redis.Values(conn.Do("ZRANGE", key, start, start+19))//may need to ba zrevrange
+	key := "users:" + strconv.FormatUint(id, 10) + ":conversations"
+	values, err := redis.Values(conn.Do("ZRANGE", key, start, start+19)) //may need to ba zrevrange
 	if err != nil {
 		return
 	}
@@ -848,7 +847,7 @@ func redisGetConversations(id uint64, start int64) (conversations []Conversation
 }
 
 func redisAddConversation(conv Conversation, time int64) {
-	
+
 }
 
 /*********************************************************************************
@@ -858,15 +857,14 @@ Begin http handlers!
 
 *********************************************************************************/
 
-
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	/* POST /register
-	requires parameters: user, pass, email 
-        example responses:
-        HTTP 201
-	{"id":2397}
-	HTTP 400
-	{"error":"Invalid email"}
+		requires parameters: user, pass, email
+	        example responses:
+	        HTTP 201
+		{"id":2397}
+		HTTP 400
+		{"error":"Invalid email"}
 	*/
 
 	//Note to self: maybe check cache for user before trying to register
@@ -911,16 +909,16 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	/* POST /login
-	requires parameters: user, pass
-	example responses:
-	HTTP 200  
-        {
-            "id":2397,
-            "value":"552e5a9687ec04418b3b4da61a8b062dbaf5c7937f068341f36a4b4fcbd4ed45",
-            "expiry":"2013-09-25T14:43:17.664646892Z"
-        }
-	HTTP 400  
-	{"error":"Bad username/password"}
+		requires parameters: user, pass
+		example responses:
+		HTTP 200
+	        {
+	            "id":2397,
+	            "value":"552e5a9687ec04418b3b4da61a8b062dbaf5c7937f068341f36a4b4fcbd4ed45",
+	            "expiry":"2013-09-25T14:43:17.664646892Z"
+	        }
+		HTTP 400
+		{"error":"Bad username/password"}
 	*/
 	user := r.FormValue("user")
 	pass := r.FormValue("pass")
@@ -946,12 +944,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	/* GET /posts
-	   requires parameters: id, token
-	   
-           POST /posts
-	   requires parameters: id, token
+		   requires parameters: id, token
 
-        */
+	           POST /posts
+		   requires parameters: id, token
+
+	*/
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	token := r.FormValue("token")
