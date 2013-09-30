@@ -2,6 +2,7 @@ package main
 
 import "testing"
 import "time"
+import "regexp"
 
 func TestCreateToken(t *testing.T) {
 	token := createToken(9)
@@ -43,5 +44,14 @@ func TestLooksLikeEmail(t *testing.T) {
 	couldBeEmail = looksLikeEmail("@")
 	if couldBeEmail == true {
 		t.Fail()
+	}
+}
+
+func BenchmarkLooksLikeEmail(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		couldBeEmail := looksLikeEmail("patrick@gleepost.com")
+		if couldBeEmail != true {
+			b.Fail()
+		}
 	}
 }

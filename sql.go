@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"time"
 	"log"
+	"time"
 )
 
 const (
@@ -74,7 +74,7 @@ func keepalive(db *sql.DB) {
 	}
 }
 
-func prepare (db *sql.DB) {
+func prepare(db *sql.DB) {
 	var err error
 	ruleStmt, err = db.Prepare(ruleSelect)
 	if err != nil {
