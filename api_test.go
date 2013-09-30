@@ -16,6 +16,21 @@ func TestCreateToken(t *testing.T) {
 	}
 }
 
+func BenchmarkCreateToken(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		token := createToken(9)
+		if token.UserId != 9 {
+			b.Fail()
+		}
+		if len(token.Token) < 64 {
+			b.Fail()
+		}
+		if !time.Now().Before(token.Expiry) {
+			b.Fail()
+		}
+	}
+}
+
 func TestLooksLikeEmail(t *testing.T) {
 	couldBeEmail := looksLikeEmail("patrick@gleepost.com")
 	if couldBeEmail != true {
