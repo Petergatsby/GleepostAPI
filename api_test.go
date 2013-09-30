@@ -15,3 +15,18 @@ func TestCreateToken(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestLooksLikeEmail(t *testing.T) {
+	couldBeEmail := looksLikeEmail("patrick@gleepost.com")
+	if couldBeEmail != true {
+		t.Fail()
+	}
+	couldBeEmail = looksLikeEmail("lol dongs")
+	if couldBeEmail == true {
+		t.Fail()
+	}
+	couldBeEmail = looksLikeEmail("@")
+	if couldBeEmail == true {
+		t.Fail()
+	}
+}
