@@ -2,7 +2,6 @@ package main
 
 import "testing"
 import "time"
-import "regexp"
 
 func TestCreateToken(t *testing.T) {
 	token := createToken(9)

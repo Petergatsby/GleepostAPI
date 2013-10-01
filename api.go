@@ -18,6 +18,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os"
+	"sync"
+	"os/signal"
+	"io/ioutil"
+	"syscall"
 )
 
 type User struct {
@@ -104,6 +109,22 @@ type ConversationAndMessages struct {
 	Messages     []Message `json:"messages"`
 }
 
+type Config struct {
+	UrlBase string
+	LoginOverride bool
+	RedisProto string
+	RedisAddress string
+	MysqlMaxConnectionCount int
+	MysqlUser string
+	MysqlPass string
+	MysqlHost string
+	MysqlPort string
+}
+
+func (c *Config) ConnectionString() string {
+	return c.MysqlUser+":"+c.MysqlPass+"@tcp("+c.MysqlHost+":"+c.MysqlPort+")/gleepost?charset=utf8"
+}
+
 type APIerror struct {
 	Reason string `json:"error"`
 }
@@ -119,37 +140,73 @@ func jsonResp(w http.ResponseWriter, resp []byte, code int) {
 }
 
 const (
-	UrlBase       = "/api/v0.9"
-	LoginOverride = false
 	MysqlTime     = "2006-01-02 15:04:05"
-	RedisProto    = "tcp"
-	RedisAddress  = "146.185.138.53:6379"
 )
 
 var (
 	pool *redis.Pool
+	config *Config
+	configLock = new(sync.RWMutex)
 )
+
+func loadConfig(fail bool) {
+	file, err := ioutil.ReadFile("conf.json")
+	if err != nil {
+		log.Println("Opening config failed: ", err)
+		if fail { os.Exit(1) }
+	}
+
+	c := new(Config)
+	if err = json.Unmarshal(file, c); err != nil {
+		log.Println("Parsing config failed: ", err)
+		if fail { os.Exit(1) }
+	}
+	configLock.Lock()
+	config = c
+	configLock.Unlock()
+}
+
+func GetConfig() *Config {
+	configLock.RLock()
+	defer configLock.RUnlock()
+	return config
+}
+
+func configInit() {
+	loadConfig(true)
+	s := make (chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGUSR2)
+	go func() {
+		for {
+			<-s
+			loadConfig(false)
+			log.Println("Reloaded")
+		}
+	}()
+}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	db, err := sql.Open("mysql", ConnectionString)
+	configInit()
+	conf := GetConfig()
+	db, err := sql.Open("mysql", conf.ConnectionString())
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
-	db.SetMaxIdleConns(MaxConnectionCount)
+	db.SetMaxIdleConns(conf.MysqlMaxConnectionCount)
 	prepare(db)
 	go keepalive(db)
 	pool = redis.NewPool(RedisDial, 100)
-	http.HandleFunc(UrlBase+"/login", loginHandler)
-	http.HandleFunc(UrlBase+"/register", registerHandler)
-	http.HandleFunc(UrlBase+"/newconversation", newConversationHandler)
-	http.HandleFunc(UrlBase+"/newgroupconversation", newGroupConversationHandler)
-	http.HandleFunc(UrlBase+"/conversations", conversationHandler)
-	http.HandleFunc(UrlBase+"/conversations/", anotherConversationHandler)
-	http.HandleFunc(UrlBase+"/posts", postHandler)
-	http.HandleFunc(UrlBase+"/posts/", anotherPostHandler)
-	http.HandleFunc(UrlBase+"/user/", userHandler)
-	http.HandleFunc(UrlBase+"/longpoll", longPollHandler)
+	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
+	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
+	http.HandleFunc(conf.UrlBase+"/newconversation", newConversationHandler)
+	http.HandleFunc(conf.UrlBase+"/newgroupconversation", newGroupConversationHandler)
+	http.HandleFunc(conf.UrlBase+"/conversations", conversationHandler)
+	http.HandleFunc(conf.UrlBase+"/conversations/", anotherConversationHandler)
+	http.HandleFunc(conf.UrlBase+"/posts", postHandler)
+	http.HandleFunc(conf.UrlBase+"/posts/", anotherPostHandler)
+	http.HandleFunc(conf.UrlBase+"/user/", userHandler)
+	http.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -207,7 +264,8 @@ func getLastMessage(id uint64) (message Message, err error) {
 }
 
 func validateToken(id uint64, token string) bool {
-	if LoginOverride {
+	conf := GetConfig()
+	if conf.LoginOverride {
 		return (true)
 	} else if redisTokenExists(id, token) {
 		return (true)
@@ -619,7 +677,8 @@ func redisPublish(recipients []User, msg RedisMessage) {
 }
 
 func RedisDial() (redis.Conn, error) {
-	conn, err := redis.Dial(RedisProto, RedisAddress)
+	conf := GetConfig()
+	conn, err := redis.Dial(conf.RedisProto, conf.RedisAddress)
 	return conn, err
 }
 

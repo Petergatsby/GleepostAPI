@@ -10,7 +10,6 @@ import (
 const (
 	ruleSelect         = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	createUser         = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	ConnectionString   = "gp:PnOaw3XzP6Tlq6fWvvVv@tcp(localhost:3306)/gleepost?charset=utf8"
 	PassSelect         = "SELECT id, password FROM users WHERE name = ?"
 	randomSelect       = "SELECT id, name FROM users ORDER BY RAND()"
 	conversationInsert = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
@@ -31,7 +30,6 @@ const (
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
-	MaxConnectionCount = 100
 )
 
 var (
@@ -61,12 +59,13 @@ var (
 
 func keepalive(db *sql.DB) {
 	tick := time.Tick(1 * time.Hour)
+	conf := GetConfig()
 	for {
 		<-tick
 		err := db.Ping()
 		if err != nil {
 			log.Print(err)
-			db, err = sql.Open("mysql", ConnectionString)
+			db, err = sql.Open("mysql", conf.ConnectionString())
 			if err != nil {
 				log.Fatalf("Error opening database: %v", err)
 			}

@@ -1,0 +1,11 @@
+{
+	"UrlBase":"/api/v0.9",
+	"LoginOverride":false,
+	"RedisProto":"tcp",
+	"RedisAddress":"146.185.138.53:6379",
+	"MysqlMaxConnectionCount":100,
+	"MysqlUser":"gp",
+	"MysqlPass":"PnOaw3XzP6Tlq6fWvvVv",
+	"MysqlHost":"localhost",
+	"MysqlPort":"3306"
+}
