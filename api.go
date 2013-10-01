@@ -354,6 +354,7 @@ func getParticipants(convId uint64) []User {
 	participants, err := redisGetConversationParticipants(convId)
 	if err != nil {
 		participants = dbGetParticipants(convId)
+		go redisSetConversationParticipants(convId, participants)
 	}
 	return participants
 }
@@ -366,6 +367,19 @@ func getConversations(user_id uint64, start int64) (conversations []Conversation
 	conversations, err = redisGetConversations(user_id, start)
 	if err != nil {
 		conversations, err = dbGetConversations(user_id, start)
+		if err == nil {
+			for _, conv := range conversations {
+				if conv.LastMessage != nil {
+					go redisAddConversation(conv, conv.LastMessage.Time.Unix())
+				} else {
+					// This is wrong. Should be the actual conversation last modified time.
+					// However this Should Never Happen (TM)
+					// (actually will happen every time an empty cache gets filled 
+					// with a new (no-messages) conversation)
+					go redisAddConversation(conv, 0)
+				}
+			}
+		}
 		return
 	}
 	return
@@ -825,6 +839,9 @@ func redisGetConversationParticipants(convId uint64) (participants []User, err e
 	if err != nil {
 		return
 	}
+	if len(values) == 0 {
+		return participants, redis.Error("Nothing in redis")
+	}
 	for len(values) > 0 {
 		user := User{}
 		values, err = redis.Scan(values, &user.Id, &user.Name)
@@ -883,14 +900,20 @@ func redisGetConversations(id uint64, start int64) (conversations []Conversation
 	conn := pool.Get()
 	defer conn.Close()
 	key := "users:" + strconv.FormatUint(id, 10) + ":conversations"
-	values, err := redis.Values(conn.Do("ZRANGE", key, start, start+19)) //may need to ba zrevrange
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19)) //may need to ba zrevrange
 	if err != nil {
 		return
 	}
+	if len(values) == 0 {
+		return conversations, redis.Error("No conversations for this user in redis.")
+	}
 	for len(values) > 0 {
-		curr := 0
+		curr := -1
 		values, err = redis.Scan(values, &curr)
 		if err != nil {
+			return
+		}
+		if curr == -1 {
 			return
 		}
 		conv := Conversation{}
@@ -906,13 +929,18 @@ func redisGetConversations(id uint64, start int64) (conversations []Conversation
 }
 
 func redisAddConversation(conv Conversation, time int64) {
-
+	conn := pool.Get()
+	defer conn.Close()
+	for _, participant := range conv.Participants {
+		key := "users:" + strconv.FormatUint(participant.Id, 10) + ":conversations"
+		conn.Send("ZADD", key, time, conv.Id)
+	}
+	conn.Flush()
 }
 
 /*********************************************************************************
 
 Begin http handlers!
-
 
 *********************************************************************************/
 
