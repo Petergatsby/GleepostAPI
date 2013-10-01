@@ -100,6 +100,7 @@ type Rule struct {
 type Conversation struct {
 	Id           uint64   `json:"id"`
 	Participants []User   `json:"participants"`
+	LastActivity time.Time `json:"-"`
 	LastMessage  *Message `json:"mostRecentMessage"`
 }
 
@@ -369,15 +370,7 @@ func getConversations(user_id uint64, start int64) (conversations []Conversation
 		conversations, err = dbGetConversations(user_id, start)
 		if err == nil {
 			for _, conv := range conversations {
-				if conv.LastMessage != nil {
-					go redisAddConversation(conv, conv.LastMessage.Time.Unix())
-				} else {
-					// This is wrong. Should be the actual conversation last modified time.
-					// However this Should Never Happen (TM)
-					// (actually will happen every time an empty cache gets filled 
-					// with a new (no-messages) conversation)
-					go redisAddConversation(conv, 0)
-				}
+				go redisAddConversation(conv)
 			}
 		}
 		return
@@ -540,10 +533,12 @@ func dbGetConversations(user_id uint64, start int64) ([]Conversation, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var conv Conversation
-		err = rows.Scan(&conv.Id)
+		var t string
+		err = rows.Scan(&conv.Id, &t)
 		if err != nil {
 			return conversations, err
 		}
+		conv.LastActivity, _ = time.Parse(MysqlTime, t)
 		conv.Participants = getParticipants(uint64(conv.Id))
 		LastMessage, err := getLastMessage(uint64(conv.Id))
 		if err == nil {
@@ -928,12 +923,12 @@ func redisGetConversations(id uint64, start int64) (conversations []Conversation
 	return
 }
 
-func redisAddConversation(conv Conversation, time int64) {
+func redisAddConversation(conv Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
 	for _, participant := range conv.Participants {
 		key := "users:" + strconv.FormatUint(participant.Id, 10) + ":conversations"
-		conn.Send("ZADD", key, time, conv.Id)
+		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.Id)
 	}
 	conn.Flush()
 }
