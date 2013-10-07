@@ -392,16 +392,26 @@ func getMessage(msgId uint64) (message Message, err error) {
 	return message, err
 }
 
+
+func updateConversation(id uint64) {
+	err := dbUpdateConversation(id)
+	if err != nil {
+		return err
+	}
+	go redisUpdateConversation(id)
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
 
-func updateConversation(id uint64) {
-	_, err := conversationUpdateStmt.Exec(id)
+func dbUpdateConversation(id uint64) (err error) {
+	_, err = conversationUpdateStmt.Exec(id)
 	log.Println("DB hit: updateConversation convid ")
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
+	return err
 }
 
 func dbGetCommentCount(id uint64) (count int) {
@@ -688,6 +698,21 @@ func dbCreateComment(postId uint64, userId uint64, text string) (commId uint64, 
 /********************************************************************
 redis functions
 ********************************************************************/
+
+func redisUpdateConversation(id uint64) {
+	conn := pool.Get()
+	defer conn.Close()
+	participants := getParticipants(id)
+	for _, user := range participants {
+		key := "users:" + user.Id + ":conversations"
+		//nb: this means that the last activity time for a conversation will
+		//differ slightly from the db to the cache (and even from user to user)
+		//but I think this is okay because it's only for ordering purposes
+		//(the actual last message timestamp will be consistent)
+		conn.Send("ZADD", key, time.Now().Unix(), id)
+	}
+	conn.Flush()
+}
 
 func redisPublish(recipients []User, msg RedisMessage) {
 	conn := pool.Get()
