@@ -1427,10 +1427,14 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
 	userId := UserId(id)
 	token := r.FormValue("token")
-	if !validateToken(userId, token) {
+	switch {
+	case !validateToken(userId, token) :
 		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
 		jsonResp(w, errorJSON, 400)
-	} else {
+	case r.Method != "GET":
+		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+		jsonResp(w, errorJSON, 405)
+	default:
 		conn := pool.Get()
 		defer conn.Close()
 		psc := redis.PubSubConn{conn}
