@@ -393,7 +393,7 @@ func getMessage(msgId uint64) (message Message, err error) {
 }
 
 
-func updateConversation(id uint64) {
+func updateConversation(id uint64) (err error) {
 	err := dbUpdateConversation(id)
 	if err != nil {
 		return err
@@ -401,9 +401,35 @@ func updateConversation(id uint64) {
 	go redisUpdateConversation(id)
 }
 
+func addMessage(convId uint64, userId uint64, text string) (id uint64, err error) {
+	id, err = dbAddMessage(convId, userId, text)
+	if err != nil {
+		return
+	}
+	user, err := getUser(id)
+	if err != nil {
+		return
+	}
+	msgSmall := Message{uint64(id), userId, text, time.Now().UTC(), false}
+	go redisSetLastMessage(convId, msgSmall)
+	msg := RedisMessage{msgSmall, convId}
+	go redisPublish(msg)
+	go redisIncConversationMessageCount(convId)
+	go updateConversation(convId)
+	return
+}
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbAddMessage(convId uint64, userId uint64, text string) (id uint64, err error) {
+	res, err := messageInsertStmt.Exec(convId, userId, text)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	return
+}
 
 func dbUpdateConversation(id uint64) (err error) {
 	_, err = conversationUpdateStmt.Exec(id)
@@ -714,9 +740,10 @@ func redisUpdateConversation(id uint64) {
 	conn.Flush()
 }
 
-func redisPublish(recipients []User, msg RedisMessage) {
+func redisPublish(msg RedisMessage) {
 	conn := pool.Get()
 	defer conn.Close()
+	participants := getParticipants(msg.Conversation)
 	JSONmsg, _ := json.Marshal(msg)
 	for _, user := range recipients {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
@@ -1272,27 +1299,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	case convIdString != nil && r.Method == "POST":
 		convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 		text := r.FormValue("text")
-		res, err := messageInsertStmt.Exec(convId, id, text)
+		messageId, err := addMessage(convId, id, text)
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		}
-		messageId, _ := res.LastInsertId()
-		participants := getParticipants(uint64(convId))
-		user, err := getUser(id)
-		if err != nil {
-			//Should only happen if the conversation has non-existent
-			//participants. Or the db has just died.
-			log.Println(err)
-			errorJSON, _ := json.Marshal(APIerror{err.Error()})
-			jsonResp(w, errorJSON, 500)
-		}
-		msgSmall := Message{uint64(messageId), user, text, time.Now().UTC(), false}
-		redisSetLastMessage(convId, msgSmall)
-		msg := RedisMessage{msgSmall, convId}
-		go redisPublish(participants, msg)
-		go redisIncConversationMessageCount(convId)
-		go updateConversation(convId)
 		w.Write([]byte("{\"id\":" + strconv.FormatInt(messageId, 10) + "}"))
 	case convIdString != nil: //Unsuported method
 		errorJSON, _ := json.Marshal(APIerror{"Must be a GET or POST request"})
