@@ -1,11 +1,11 @@
-API/V0.8
+API/V0.9
 
 Note: Only available over HTTPS
 
 Parameters can be form-encoded in a POST body, or sent as a query string
 
 
-URL: https://gleepost.com/api/v0.8/
+URL: https://gleepost.com/api/v0.9/
 
 POST /register
 required parameters: user, pass, email
@@ -40,10 +40,11 @@ example responses:
 			"username":"Patrick"
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
-		"text":"This is a cool post for cool people!"
+		"text":"This is a cool post for cool people!",
 		"comments":4,
 		"likes":5,
-		"hates":3
+		"hates":3,
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
 	},
 	{
 		"id":1,
@@ -53,6 +54,10 @@ example responses:
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"Sailor Moon FTW!"
+		"comments":9,
+		"likes":0,
+		"hates":3,
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
 	}
 ]
 
@@ -87,9 +92,7 @@ example responses:
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"Have you ever / ever felt like this? / How strange things happen / like you're going round the twist?"
-	},
-	
-	....
+	}
 ]
 
 
@@ -164,8 +167,10 @@ example responses:
 {
 	"id":9,
 	"username":"Patrick",
-	"tagline":"I like computers"
-	//not sure what else will be in the profile yet
+	"tagline":"I like computers",
+	"profile_image":"https://gleepost.com/uploads/7951a3e5209d28c99f7afb2fbf39b79f.gif",
+	"network": { "id":1, "name":"University of Leeds" },
+	"course":"Computer Science"
 }
 
 
@@ -205,7 +210,10 @@ example responses:
 GET /longpoll?id=[user-id]&token=[token]
 Gets a single message for the current user
 
-note: Will not respond until a message arrives for the current user or 60 seconds passes!
+This message could be from any conversation.
+
+note: Will not respond until a message arrives for the current user or 60 seconds passes
+at which point it will timeout
 
 example responses:
 {

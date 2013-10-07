@@ -1,3 +1,8 @@
+db structure for anuj
+device id on register
+clarify api docs for longpoll
+
+
 -Register
 --send verification email
 --log registration event

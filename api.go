@@ -11,18 +11,18 @@ import (
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
-	"os"
 	"sync"
-	"os/signal"
-	"io/ioutil"
 	"syscall"
+	"time"
 )
 
 type User struct {
@@ -98,10 +98,10 @@ type Rule struct {
 }
 
 type Conversation struct {
-	Id           uint64   `json:"id"`
-	Participants []User   `json:"participants"`
+	Id           uint64    `json:"id"`
+	Participants []User    `json:"participants"`
 	LastActivity time.Time `json:"-"`
-	LastMessage  *Message `json:"mostRecentMessage"`
+	LastMessage  *Message  `json:"mostRecentMessage"`
 }
 
 type ConversationAndMessages struct {
@@ -111,19 +111,19 @@ type ConversationAndMessages struct {
 }
 
 type Config struct {
-	UrlBase string
-	LoginOverride bool
-	RedisProto string
-	RedisAddress string
+	UrlBase                 string
+	LoginOverride           bool
+	RedisProto              string
+	RedisAddress            string
 	MysqlMaxConnectionCount int
-	MysqlUser string
-	MysqlPass string
-	MysqlHost string
-	MysqlPort string
+	MysqlUser               string
+	MysqlPass               string
+	MysqlHost               string
+	MysqlPort               string
 }
 
 func (c *Config) ConnectionString() string {
-	return c.MysqlUser+":"+c.MysqlPass+"@tcp("+c.MysqlHost+":"+c.MysqlPort+")/gleepost?charset=utf8"
+	return c.MysqlUser + ":" + c.MysqlPass + "@tcp(" + c.MysqlHost + ":" + c.MysqlPort + ")/gleepost?charset=utf8"
 }
 
 type APIerror struct {
@@ -141,12 +141,12 @@ func jsonResp(w http.ResponseWriter, resp []byte, code int) {
 }
 
 const (
-	MysqlTime     = "2006-01-02 15:04:05"
+	MysqlTime = "2006-01-02 15:04:05"
 )
 
 var (
-	pool *redis.Pool
-	config *Config
+	pool       *redis.Pool
+	config     *Config
 	configLock = new(sync.RWMutex)
 )
 
@@ -154,13 +154,17 @@ func loadConfig(fail bool) {
 	file, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		log.Println("Opening config failed: ", err)
-		if fail { os.Exit(1) }
+		if fail {
+			os.Exit(1)
+		}
 	}
 
 	c := new(Config)
 	if err = json.Unmarshal(file, c); err != nil {
 		log.Println("Parsing config failed: ", err)
-		if fail { os.Exit(1) }
+		if fail {
+			os.Exit(1)
+		}
 	}
 	configLock.Lock()
 	config = c
@@ -175,7 +179,7 @@ func GetConfig() *Config {
 
 func configInit() {
 	loadConfig(true)
-	s := make (chan os.Signal, 1)
+	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGUSR2)
 	go func() {
 		for {
@@ -361,7 +365,12 @@ func getParticipants(convId uint64) []User {
 }
 
 func getMessages(convId uint64, offset int64) []Message {
-	return dbGetMessages(convId, offset)
+	messages, err := redisGetMessages(convId, offset)
+	if err != nil {
+		messages = dbGetMessages(convId, offset)
+		go redisAddMessages(convId, messages)
+	}
+	return messages
 }
 
 func getConversations(user_id uint64, start int64) (conversations []Conversation, err error) {
@@ -376,6 +385,11 @@ func getConversations(user_id uint64, start int64) (conversations []Conversation
 		return
 	}
 	return
+}
+
+func getMessage(msgId uint64) (message Message, err error) {
+	message, err = redisGetMessage(msgId)
+	return message, err
 }
 
 /********************************************************************
@@ -895,7 +909,7 @@ func redisGetConversations(id uint64, start int64) (conversations []Conversation
 	conn := pool.Get()
 	defer conn.Close()
 	key := "users:" + strconv.FormatUint(id, 10) + ":conversations"
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19)) //may need to ba zrevrange
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19))
 	if err != nil {
 		return
 	}
@@ -931,6 +945,83 @@ func redisAddConversation(conv Conversation) {
 		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.Id)
 	}
 	conn.Flush()
+}
+
+func redisAddMessages(convId uint64, messages []Message) {
+	//expecting messages ordered b
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":messages"
+	for _, message := range messages {
+		conn.Send("ZADD", key, message.Time.Unix(), message.Id)
+		go redisSetMessage(message)
+	}
+	conn.Flush()
+}
+
+func redisSetMessage(message Message) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "messages:" + strconv.FormatUint(message.Id, 10)
+	conn.Send("MSET", key + ":by", message.By.Id, key + ":text", message.Text, key + ":time", message.Time.Format(time.RFC3339), key + ":seen", message.Seen)
+	conn.Flush()
+}
+
+func redisGetMessages(convId uint64, start int64) (messages []Message, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "conversations:" + strconv.FormatUint(convId, 10) + ":messages"
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19))
+	if err != nil {
+		return
+	}
+	if len(values) == 0 {
+		return messages, redis.Error("No messages for this conversation in redis.")
+	}
+	for len(values) > 0 {
+		curr := -1
+		values, err = redis.Scan(values, &curr)
+		if err != nil {
+			return
+		}
+		if curr == -1 {
+			return
+		}
+		if curr != 0 {
+			message, errGettingMessage := getMessage(uint64(curr))
+			if errGettingMessage != nil {
+				return messages, errGettingMessage
+			} else {
+				go redisSetMessage(message)
+			}
+			messages = append(messages, message)
+		}
+	}
+	return
+}
+
+func redisGetMessage(msgId uint64) (message Message, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := "messages:" + strconv.FormatUint(msgId, 10)
+	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":timestamp", key+":seen"))
+	if err != nil {
+		return message, err
+	}
+	message.Id = msgId
+	var timeString string
+	var by int64
+	if _, err = redis.Scan(reply, &by, &message.Text, &timeString, &message.Seen); err != nil {
+		return message, err
+	}
+	if by != 0 {
+		message.By, err = getUser(uint64(by))
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+	}
+	message.Time, err = time.Parse(time.RFC3339, timeString)
+	return message, err
 }
 
 /*********************************************************************************
