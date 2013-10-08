@@ -426,6 +426,13 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 	return
 }
 
+func getFullConversation(convId ConversationId, start int) (conv ConversationAndMessages) {
+	conv.Id = convId
+	conv.Participants = getParticipants(convId)
+	conv.Messages = getMessages(convId, start)
+	return
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
@@ -1326,14 +1333,12 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		jsonResp(w, errorJSON, 405)
 	case convIdString2 != nil:
 		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
-		var conv ConversationAndMessages
-		conv.Id = ConversationId(_convId)
+		convId := ConversationId(_convId)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
 		if err != nil {
 			start = 0
 		}
-		conv.Participants = getParticipants(conv.Id)
-		conv.Messages = getMessages(conv.Id, start)
+		conv := getFullConversation(convId, start)
 		conversationJSON, _ := json.Marshal(conv)
 		w.Write(conversationJSON)
 	default:
@@ -1428,7 +1433,7 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	userId := UserId(id)
 	token := r.FormValue("token")
 	switch {
-	case !validateToken(userId, token) :
+	case !validateToken(userId, token):
 		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
 		jsonResp(w, errorJSON, 400)
 	case r.Method != "GET":
