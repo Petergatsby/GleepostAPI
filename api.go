@@ -124,7 +124,7 @@ type ConversationAndMessages struct {
 
 type Config struct {
 	UrlBase                 string
-	Port			string
+	Port                    string
 	LoginOverride           bool
 	RedisProto              string
 	RedisAddress            string
@@ -449,7 +449,7 @@ func getProfile(id UserId) (user Profile, err error) {
 	return
 }
 
-func awaitOneMessage(userId UserId) ([]byte) {
+func awaitOneMessage(userId UserId) []byte {
 	conn := pool.Get()
 	defer conn.Close()
 	psc := redis.PubSubConn{conn}
@@ -464,9 +464,27 @@ func awaitOneMessage(userId UserId) ([]byte) {
 	}
 }
 
+func addPost(userId UserId, text string) (postId PostId, err error) {
+	return dbAddPost(userId, text)
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbAddPost(userId UserId, text string) (postId PostId, err error) {
+	networks := getUserNetworks(userId)
+	res, err := postStmt.Exec(userId, text, networks[0].Id)
+	if err != nil {
+		return 0, err
+	}
+	_postId, err := res.LastInsertId()
+	postId = PostId(_postId)
+	if err != nil {
+		return 0, err
+	}
+	return postId, nil
+}
 
 func dbAddMessage(convId ConversationId, userId UserId, text string) (id MessageId, err error) {
 	res, err := messageInsertStmt.Exec(convId, userId, text)
@@ -774,7 +792,7 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	user.User.Id = id
 	//at the moment all the urls in the db aren't real ones :/
-	user.Avatar = "https://gleepost.com/"+ user.Avatar
+	user.Avatar = "https://gleepost.com/" + user.Avatar
 	nets := getUserNetworks(user.User.Id)
 	user.Network = nets[0]
 	return user, err
@@ -1264,13 +1282,11 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(postsJSON)
 	case r.Method == "POST":
 		text := r.FormValue("text")
-		networks := getUserNetworks(userId)
-		res, err := postStmt.Exec(userId, text, networks[0].Id)
+		postId, err := addPost(userId, text)
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		} else {
-			postId, _ := res.LastInsertId()
 			w.Write([]byte(fmt.Sprintf("{\"id\":%d}", postId)))
 		}
 	default:
