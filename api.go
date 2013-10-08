@@ -757,6 +757,8 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc, &user.Avatar)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	user.User.Id = id
+	//at the moment all the urls in the db aren't real ones :/
+	user.Avatar = "https://gleepost.com/"+ user.Avatar
 	nets := getUserNetworks(user.User.Id)
 	user.Network = nets[0]
 	return user, err
