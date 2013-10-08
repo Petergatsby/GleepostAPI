@@ -67,22 +67,24 @@ type Token struct {
 }
 
 type Post struct {
-	Id        PostId     `json:"id"`
-	By        User       `json:"by"`
-	Time      time.Time  `json:"timestamp"`
-	Text      string     `json:"text"`
-	Comments  []Comment  `json:"comments"`
-	LikeHates []LikeHate `json:"like_hate"`
+	Id     PostId    `json:"id"`
+	By     User      `json:"by"`
+	Time   time.Time `json:"timestamp"`
+	Text   string    `json:"text"`
+	Images []string  `json:"images"`
 }
 
 type PostSmall struct {
-	Id           PostId    `json:"id"`
-	By           User      `json:"by"`
-	Time         time.Time `json:"timestamp"`
-	Text         string    `json:"text"`
-	CommentCount int       `json:"comments"`
-	LikeCount    int       `json:"likes"`
-	HateCount    int       `json:"hates"`
+	Post
+	CommentCount int `json:"comments"`
+	LikeCount    int `json:"likes"`
+	HateCount    int `json:"hates"`
+}
+
+type PostFull struct {
+	Post
+	Comments  []Comment  `json:"comments"`
+	LikeHates []LikeHate `json:"like_hate"`
 }
 
 type Comment struct {
@@ -426,10 +428,15 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 	return
 }
 
-func getFullConversation(convId ConversationId, start int) (conv ConversationAndMessages) {
+func getFullConversation(convId ConversationId, start int64) (conv ConversationAndMessages) {
 	conv.Id = convId
 	conv.Participants = getParticipants(convId)
 	conv.Messages = getMessages(convId, start)
+	return
+}
+
+func getPostImages(postId PostId) (images []string) {
+	images, _ = dbGetPostImages(postId)
 	return
 }
 
@@ -690,14 +697,13 @@ func dbGetUser(id UserId) (user User, err error) {
 	}
 }
 
-func getPosts(net_id NetworkId) ([]PostSmall, error) {
+func getPosts(net_id NetworkId) (posts []PostSmall, err error) {
 	rows, err := wallSelectStmt.Query(net_id)
-	log.Println("DB hit: getPosts net_id(post.id, post.by, post.time, post.texts)")
-	posts := make([]PostSmall, 0, 20)
-	if err != nil {
-		return posts, err
-	}
 	defer rows.Close()
+	log.Println("DB hit: getPosts net_id(post.id, post.by, post.time, post.texts)")
+	if err != nil {
+		return
+	}
 	for rows.Next() {
 		var post PostSmall
 		var t string
@@ -715,9 +721,28 @@ func getPosts(net_id NetworkId) ([]PostSmall, error) {
 			return posts, err
 		}
 		post.CommentCount = getCommentCount(post.Id)
+		post.Images = getPostImages(post.Id)
 		posts = append(posts, post)
 	}
-	return posts, nil
+	return
+}
+
+func dbGetPostImages(postId PostId) (images []string, err error) {
+	rows, err := imageSelectStmt.Query(postId)
+	defer rows.Close()
+	log.Println("DB hit: getImages postId(image)")
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var image string
+		err = rows.Scan(&image)
+		if err != nil {
+			return
+		}
+		images = append(images, image)
+	}
+	return
 }
 
 func getProfile(id UserId) (user Profile, err error) {

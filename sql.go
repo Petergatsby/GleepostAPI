@@ -30,6 +30,7 @@ const (
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
+	imageSelect        = "SELECT url FROM post_images WHERE post_id = ?"
 )
 
 var (
@@ -55,6 +56,7 @@ var (
 	lastMessageSelectStmt  *sql.Stmt
 	commentCountSelectStmt *sql.Stmt
 	profileSelectStmt      *sql.Stmt
+	imageSelectStmt        *sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -160,6 +162,10 @@ func prepare(db *sql.DB) {
 		log.Fatal(err)
 	}
 	profileSelectStmt, err = db.Prepare(profileSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+	imageSelectStmt, err = db.Prepare(imageSelect)
 	if err != nil {
 		log.Fatal(err)
 	}
