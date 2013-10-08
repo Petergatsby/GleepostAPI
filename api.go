@@ -124,6 +124,7 @@ type ConversationAndMessages struct {
 
 type Config struct {
 	UrlBase                 string
+	Port			string
 	LoginOverride           bool
 	RedisProto              string
 	RedisAddress            string
@@ -224,7 +225,7 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/posts/", anotherPostHandler)
 	http.HandleFunc(conf.UrlBase+"/user/", userHandler)
 	http.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+conf.Port, nil)
 }
 
 /********************************************************************

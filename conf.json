@@ -1,5 +1,6 @@
 {
 	"UrlBase":"/api/v0.9",
+	"Port":"8083"
 	"LoginOverride":false,
 	"RedisProto":"tcp",
 	"RedisAddress":"146.185.138.53:6379",
