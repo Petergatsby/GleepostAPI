@@ -449,6 +449,21 @@ func getProfile(id UserId) (user Profile, err error) {
 	return
 }
 
+func awaitOneMessage(userId UserId) ([]byte) {
+	conn := pool.Get()
+	defer conn.Close()
+	psc := redis.PubSubConn{conn}
+	psc.Subscribe(userId)
+	for {
+		switch n := psc.Receive().(type) {
+		case redis.Message:
+			return n.Data
+		case redis.Subscription:
+			fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
+		}
+	}
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
@@ -1478,18 +1493,8 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
 		jsonResp(w, errorJSON, 405)
 	default:
-		conn := pool.Get()
-		defer conn.Close()
-		psc := redis.PubSubConn{conn}
-		psc.Subscribe(userId)
-		for {
-			switch n := psc.Receive().(type) {
-			case redis.Message:
-				w.Write([]byte(n.Data))
-				return
-			case redis.Subscription:
-				fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
-			}
-		}
+		//awaitOneMessage will block until a message arrives over redis
+		message := awaitOneMessage(userId)
+		w.Write(message)
 	}
 }

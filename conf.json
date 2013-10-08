@@ -1,5 +1,5 @@
 {
-	"UrlBase":"/api/v0.9",
+	"UrlBase":"/api/v0.10",
 	"Port":"8083",
 	"LoginOverride":false,
 	"RedisProto":"tcp",
