@@ -29,7 +29,7 @@ const (
 	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, 20"
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	profileSelect      = "SELECT name, `desc` FROM users WHERE id = ?"
+	profileSelect      = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
 	imageSelect        = "SELECT url FROM post_images WHERE post_id = ?"
 )
 

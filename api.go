@@ -39,12 +39,15 @@ type User struct {
 
 type Profile struct {
 	User
-	Desc string `json:"tagline"`
+	Desc    string  `json:"tagline"`
+	Avatar  string  `json:"profile_image"`
+	Network Network `json:"network"`
+	Course  string  `json:"course"`
 }
 
 type Network struct {
-	Id   NetworkId
-	Name string
+	Id   NetworkId `json:"id"`
+	Name string    `json:"name"`
 }
 
 type Message struct {
@@ -440,6 +443,11 @@ func getPostImages(postId PostId) (images []string) {
 	return
 }
 
+func getProfile(id UserId) (user Profile, err error) {
+	user, err = dbGetProfile(id)
+	return
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
@@ -745,10 +753,12 @@ func dbGetPostImages(postId PostId) (images []string, err error) {
 	return
 }
 
-func getProfile(id UserId) (user Profile, err error) {
-	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc)
+func dbGetProfile(id UserId) (user Profile, err error) {
+	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc, &user.Avatar)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	user.User.Id = id
+	nets := getUserNetworks(user.User.Id)
+	user.Network = nets[0]
 	return user, err
 }
 
