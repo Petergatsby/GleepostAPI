@@ -386,13 +386,18 @@ func getParticipants(convId ConversationId) []User {
 	return participants
 }
 
-func getMessages(convId ConversationId, start int64) []Message {
-	messages, err := redisGetMessages(convId, start)
-	if err != nil {
+func getMessages(convId ConversationId, start int64) (messages []Message, err error) {
+	conf := GetConfig()
+	if start + int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
+		messages, err = redisGetMessages(convId, start)
+		if err != nil {
+			messages = dbGetMessages(convId, start)
+			go redisAddAllMessages(convId)
+		}
+	} else {
 		messages = dbGetMessages(convId, start)
-		go redisAddMessages(convId, messages)
 	}
-	return messages
+	return
 }
 
 func getConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
@@ -441,10 +446,10 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 	return
 }
 
-func getFullConversation(convId ConversationId, start int64) (conv ConversationAndMessages) {
+func getFullConversation(convId ConversationId, start int64) (conv ConversationAndMessages, err error) {
 	conv.Conversation.Id = convId
 	conv.Conversation.Participants = getParticipants(convId)
-	conv.Messages = getMessages(convId, start)
+	conv.Messages, err = getMessages(convId, start)
 	return
 }
 
@@ -1638,7 +1643,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if err != nil {
 			start = 0
 		}
-		messages := getMessages(convId, start)
+		messages, err := getMessages(convId, start)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
 		messagesJSON, _ := json.Marshal(messages)
 		w.Write(messagesJSON)
 	case convIdString != nil && r.Method == "POST":
@@ -1664,7 +1673,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if err != nil {
 			start = 0
 		}
-		conv := getFullConversation(convId, start)
+		conv, err := getFullConversation(convId, start)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
 		conversationJSON, _ := json.Marshal(conv)
 		w.Write(conversationJSON)
 	default:
