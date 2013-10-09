@@ -1,7 +1,18 @@
-db structure for anuj
-device id on register
-clarify api docs for longpoll
+-db structure for anuj
 
+-android device id on register
+
+-clarify api docs for longpoll
+
+-Cache things in redis
+--Post images
+--More user details
+
+-Cache things locally
+--Tokens
+--Posts
+--Messages
+--Comments
 
 -Register
 --send verification email
@@ -11,60 +22,22 @@ clarify api docs for longpoll
 --store token:user:expiry in redis
 --log login attempt
 
--Validate Token
---Have I seen it recently?
---does it exist in redis?
-
--Send
---validate message
---publish to redis
-
--GET posts
---Stick in redis
---stick in local cache
-
 -get user networks
 --Either return an error when looking for someone non-existent, or when returning no networks, or check the user exists before using, or check output has at least one network!
-
--POST posts
---stick it in redis
---stick it in local cache?
-
--GET posts/id/comments
---Stick in redis
-
--POST posts/id/comments
---stick in redis
---stick in local cache
-
--GET conversations
--- stick in redis
-
--GET conversations/id
---put messages in redis
-
--GET conversations/id/messages
---get last 20 messages from redis
-
--GET user/id
---retrieve from redis
---put in redis
 
 -get partners
 --More sophisticated than random pl0x!
 
--POST newconversation
---Store in redis
+-POST posts/id/like
 
--POST newgroup
---store in redis
+-POST posts/id/hate
 
--Some way to like/hate
-
--Some way to paginate
-
--Some way to mark message read
-
--Long polling
+-PUT conversations/id/messages read=true
 
 -Websockets
+
+-ACLs
+--View messages
+--Send messages
+
+-Upload pictures
