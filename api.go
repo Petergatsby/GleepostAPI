@@ -380,10 +380,10 @@ func getParticipants(convId ConversationId) []User {
 	return participants
 }
 
-func getMessages(convId ConversationId, offset int64) []Message {
-	messages, err := redisGetMessages(convId, offset)
+func getMessages(convId ConversationId, start int64) []Message {
+	messages, err := redisGetMessages(convId, start)
 	if err != nil {
-		messages = dbGetMessages(convId, offset)
+		messages = dbGetMessages(convId, start)
 		go redisAddMessages(convId, messages)
 	}
 	return messages
@@ -455,7 +455,7 @@ func getProfile(id UserId) (user Profile, err error) {
 func awaitOneMessage(userId UserId) []byte {
 	conn := pool.Get()
 	defer conn.Close()
-	psc := redis.PubSubConn{Conn:conn}
+	psc := redis.PubSubConn{Conn: conn}
 	psc.Subscribe(userId)
 	for {
 		switch n := psc.Receive().(type) {
@@ -621,9 +621,9 @@ func dbGetParticipants(conv ConversationId) []User {
 	return (participants)
 }
 
-func dbGetMessages(convId ConversationId, offset int64) []Message {
-	rows, err := messageSelectStmt.Query(convId, offset)
-	log.Println("DB hit: getMessages convid, offset (message.id, message.by, message.text, message.time, message.seen)")
+func dbGetMessages(convId ConversationId, start int64) []Message {
+	rows, err := messageSelectStmt.Query(convId, start)
+	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Printf("%v", err)
 	}
@@ -654,7 +654,7 @@ func dbGetMessages(convId ConversationId, offset int64) []Message {
 
 func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
 	rows, err := conversationSelectStmt.Query(user_id, start)
-	log.Println("DB hit: getConversations user_id, offset (conversation.id)")
+	log.Println("DB hit: getConversations user_id, start (conversation.id)")
 	if err != nil {
 		return conversations, err
 	}
@@ -677,9 +677,9 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 	return conversations, nil
 }
 
-func getComments(id PostId, offset int64) ([]Comment, error) {
-	rows, err := commentSelectStmt.Query(id, offset)
-	log.Println("DB hit: getComments postid, offset(comment.id, comment.by, comment.text, comment.time)")
+func getComments(id PostId, start int64) ([]Comment, error) {
+	rows, err := commentSelectStmt.Query(id, start)
+	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
 	comments := make([]Comment, 0, 20)
 	if err != nil {
 		return comments, err
@@ -836,7 +836,7 @@ func redisAddPost(post PostSmall) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", post.Id)
-	conn.Send("MSET", baseKey + ":by", post.By.Id, baseKey + ":time", post.Time.Format(time.RFC3339), baseKey + ":text", post.Text)
+	conn.Send("MSET", baseKey+":by", post.By.Id, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
 	conn.Flush()
 }
 
@@ -863,7 +863,7 @@ func redisGetPost(postId PostId) (post PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", postId)
-	values, err := redis.Values(conn.Do("MGET", baseKey + ":by", baseKey + ":time", baseKey + ":text"))
+	values, err := redis.Values(conn.Do("MGET", baseKey+":by", baseKey+":time", baseKey+":text"))
 	if err != nil {
 		return post, err
 	}
@@ -1537,11 +1537,11 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	case commIdStringA != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
 		postId := PostId(_id)
-		offset, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
 		if err != nil {
-			offset = 0
+			start = 0
 		}
-		comments, err := getComments(postId, offset)
+		comments, err := getComments(postId, start)
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
