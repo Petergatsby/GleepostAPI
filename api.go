@@ -471,6 +471,14 @@ func addPost(userId UserId, text string) (postId PostId, err error) {
 	return dbAddPost(userId, text)
 }
 
+func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
+	posts, err = redisGetNetworkPosts(netId, start)
+	if err != nil {
+		posts, err = dbGetPosts(netId)
+	}
+	return
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
@@ -741,7 +749,7 @@ func dbGetUser(id UserId) (user User, err error) {
 	}
 }
 
-func getPosts(net_id NetworkId) (posts []PostSmall, err error) {
+func dbGetPosts(net_id NetworkId) (posts []PostSmall, err error) {
 	rows, err := wallSelectStmt.Query(net_id)
 	defer rows.Close()
 	log.Println("DB hit: getPosts net_id(post.id, post.by, post.time, post.texts)")
@@ -813,6 +821,68 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 /********************************************************************
 redis functions
 ********************************************************************/
+
+func redisAddPost(post PostSmall) {
+	conn := pool.Get()
+	defer conn.Close()
+	baseKey := fmt.Sprintf("posts:%d", post.Id)
+	conn.Send("MSET", baseKey + ":by", post.By, baseKey + ":time", post.Time.Format(time.RFC3339), baseKey + ":text", post.Text)
+	conn.Flush()
+}
+
+func redisGetPost(postId PostId) (post PostSmall, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	baseKey := fmt.Sprintf("posts:%d", postId)
+	values, err := redis.Values(conn.Do("MGET", baseKey + ":by", baseKey + ":time", baseKey + ":text"))
+	if err != nil {
+		return post, err
+	}
+	var by UserId
+	var t string
+	if _, err = redis.Scan(values, &by, &t, &post.Post.Text); err != nil {
+		return post, err
+	}
+	post.Post.Id = postId
+	post.Post.By, err = getUser(by)
+	if err != nil {
+		return post, err
+	}
+	post.Post.Time, _ = time.Parse(time.RFC3339, t)
+	post.Post.Images = getPostImages(postId)
+	post.CommentCount = getCommentCount(postId)
+	return post, nil
+}
+
+func redisGetNetworkPosts(id NetworkId, start int64) (posts []PostSmall, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("networks:%d:posts", id)
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19))
+	if err != nil {
+		return
+	}
+	if len(values) == 0 {
+		return posts, redis.Error("No posts for this network in redis.")
+	}
+	for len(values) > 0 {
+		curr := -1
+		values, err = redis.Scan(values, &curr)
+		if err != nil {
+			return
+		}
+		if curr == -1 {
+			return
+		}
+		postId := PostId(curr)
+		post, err := redisGetPost(postId)
+		if err != nil {
+			return posts, err
+		}
+		posts = append(posts, post)
+	}
+	return
+}
 
 func redisUpdateConversation(id ConversationId) {
 	conn := pool.Get()
@@ -1271,8 +1341,12 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
 		jsonResp(w, errorJSON, 400)
 	case r.Method == "GET":
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		if err != nil {
+			start = 0
+		}
 		networks := getUserNetworks(userId)
-		posts, err := getPosts(networks[0].Id)
+		posts, err := getPosts(networks[0].Id, start)
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
