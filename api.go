@@ -1243,7 +1243,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		token, err := createAndStoreToken(id)
 		if err == nil {
 			tokenJSON, _ := json.Marshal(token)
-			w.Write(tokenJSON)
+			jsonResp(w, tokenJSON, 200)
 		} else {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
