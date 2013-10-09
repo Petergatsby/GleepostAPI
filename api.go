@@ -136,6 +136,12 @@ type Config struct {
 	MysqlPass               string
 	MysqlHost               string
 	MysqlPort               string
+	MessageCache            int
+	PostCache               int
+	CommentCache            int
+	MessagePageSize         int
+	PostPageSize            int
+	CommentPageSize         int
 }
 
 func (c *Config) ConnectionString() string {
@@ -474,10 +480,15 @@ func addPost(userId UserId, text string) (postId PostId, err error) {
 }
 
 func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
-	posts, err = redisGetNetworkPosts(netId, start)
-	if err != nil {
-		posts, err = dbGetPosts(netId)
-		go redisAddPosts(netId, posts)
+	conf := GetConfig()
+	if start + int64(conf.PostPageSize) <= int64(conf.PostCache) {
+		posts, err = redisGetNetworkPosts(netId, start)
+		if err != nil {
+			posts, err = dbGetPosts(netId, start, conf.PostPageSize)
+			go redisAddAllPosts(netId)
+		}
+	} else {
+		posts, err = dbGetPosts(netId, start, conf.PostPageSize)
 	}
 	return
 }
@@ -485,6 +496,32 @@ func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
+	rows, err := commentSelectStmt.Query(postId, start, count)
+	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
+	if err != nil {
+		return comments, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var comment Comment
+		comment.Post = postId
+		var timeString string
+		var by UserId
+		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+		if err != nil {
+			return comments, err
+		}
+		comment.Time, _ = time.Parse(MysqlTime, timeString)
+		comment.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+		comments = append(comments, comment)
+	}
+	return comments, nil
+}
 
 func dbAddPost(userId UserId, text string) (postId PostId, err error) {
 	networks := getUserNetworks(userId)
@@ -622,7 +659,8 @@ func dbGetParticipants(conv ConversationId) []User {
 }
 
 func dbGetMessages(convId ConversationId, start int64) []Message {
-	rows, err := messageSelectStmt.Query(convId, start)
+	conf := GetConfig()
+	rows, err := messageSelectStmt.Query(convId, start, conf.MessagePageSize)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Printf("%v", err)
@@ -677,31 +715,18 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 	return conversations, nil
 }
 
-func getComments(id PostId, start int64) ([]Comment, error) {
-	rows, err := commentSelectStmt.Query(id, start)
-	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
-	comments := make([]Comment, 0, 20)
-	if err != nil {
-		return comments, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var comment Comment
-		comment.Post = id
-		var timeString string
-		var by UserId
-		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+func getComments(id PostId, start int64) (comments []Comment, err error) {
+	conf := GetConfig()
+	if start + int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
+		comments, err = redisGetComments(id, start)
 		if err != nil {
-			return comments, err
+			comments, err = dbGetComments(id, start, conf.CommentPageSize)
+			go redisAddAllComments(id)
 		}
-		comment.Time, _ = time.Parse(MysqlTime, timeString)
-		comment.By, err = getUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-		comments = append(comments, comment)
+	} else {
+		comments, err = dbGetComments(id, start, conf.CommentPageSize)
 	}
-	return comments, nil
+	return
 }
 
 func createConversation(id UserId, nParticipants int) Conversation {
@@ -752,10 +777,10 @@ func dbGetUser(id UserId) (user User, err error) {
 	}
 }
 
-func dbGetPosts(net_id NetworkId) (posts []PostSmall, err error) {
-	rows, err := wallSelectStmt.Query(net_id)
+func dbGetPosts(netId NetworkId, start int64, count int) (posts []PostSmall, err error) {
+	rows, err := wallSelectStmt.Query(netId, start, count)
 	defer rows.Close()
-	log.Println("DB hit: getPosts net_id(post.id, post.by, post.time, post.texts)")
+	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {
 		return
 	}
@@ -855,8 +880,13 @@ func redisAddNetworkPost(network NetworkId, post PostSmall) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d:posts", network)
-	conn.Send("ZADD", key, post.Time.Unix(), post.Id)
-	conn.Flush()
+	exists, _ := redis.Bool(conn.Do("EXISTS", key))
+	if !exists { //Without this we might get stuck with only recent posts in cache
+		go redisAddAllPosts(network)
+	} else {
+		conn.Send("ZADD", key, post.Time.Unix(), post.Id)
+		conn.Flush()
+	}
 }
 
 func redisGetPost(postId PostId) (post PostSmall, err error) {
@@ -1260,6 +1290,128 @@ func redisGetMessage(msgId MessageId) (message Message, err error) {
 	}
 	message.Time, err = time.Parse(time.RFC3339, timeString)
 	return message, err
+}
+
+func redisAddAllMessages(convId ConversationId) {
+	conf := GetConfig()
+	rows, err := messageSelectStmt.Query(convId, 0, conf.MessageCache)
+	defer rows.Close()
+	log.Println("DB hit: allMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	conn := pool.Get()
+	defer conn.Close()
+	zkey := fmt.Sprintf("conversations:%d:messages", convId)
+	for rows.Next() {
+		var message Message
+		var timeString string
+		var by UserId
+		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.Time, err = time.Parse(MysqlTime, timeString)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.By, err = getUser(by)
+		if err != nil {
+			//should only happen if a message is from a non-existent user
+			//(or the db is fucked :))
+			log.Println(err)
+		}
+		key := fmt.Sprintf("messages:%d", message.Id)
+		conn.Send("ZADD", zkey, message.Time.Unix(), message.Id)
+		conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339), key+":seen", message.Seen)
+		conn.Flush()
+	}
+}
+
+func redisAddAllPosts(netId NetworkId) {
+	conf := GetConfig()
+	posts, err := dbGetPosts(netId, 0, conf.PostCache)
+	if err != nil {
+		log.Println(err)
+	}
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("networks:%d:posts", netId)
+	for _, post := range posts {
+		baseKey := fmt.Sprintf("posts:%d", post.Id)
+		conn.Send("MSET", baseKey+":by", post.By.Id, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
+		conn.Send("ZADD", key, post.Time.Unix(), post.Id)
+		conn.Flush()
+	}
+}
+
+func redisAddAllComments(postId PostId) {
+	conf := GetConfig()
+	comments, err := dbGetComments(postId, 0, conf.CommentCache)
+	if err != nil {
+		log.Println(err)
+	}
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("posts:%d:comments", postId)
+	for _, comment := range comments {
+		baseKey := fmt.Sprintf("comments:%d", comment.Id)
+		conn.Send("ZADD", key, comment.Time.Unix(), comment.Id)
+		conn.Send("MSET", baseKey+":by", comment.By.Id, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
+		conn.Flush()
+	}
+}
+
+func redisGetComments(postId PostId, start int64) (comments []Comment, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	conf := GetConfig()
+	key := fmt.Sprintf("posts:%d:comments", postId)
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start + int64(conf.CommentPageSize) - 1))
+	if err != nil {
+		return
+	}
+	if len(values) == 0 {
+		return comments, redis.Error("No conversations for this user in redis.")
+	}
+	for len(values) > 0 {
+		curr := -1
+		values, err = redis.Scan(values, &curr)
+		if err != nil {
+			return
+		}
+		if curr == -1 {
+			return
+		}
+		comment, e := redisGetComment(CommentId(curr))
+		if e != nil {
+			return comments, e
+		}
+		comments = append(comments, comment)
+	}
+	return
+}
+
+func redisGetComment(commentId CommentId) (comment Comment, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("comments:%d", commentId)
+	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":time"))
+	if err != nil {
+		return
+	}
+	var timeString string
+	var by UserId
+	if _, err = redis.Scan(reply, &by, &comment.Text, &timeString); err != nil {
+		return
+	}
+	comment.Id = commentId
+	comment.By, err = getUser(by)
+	if err!= nil {
+		return
+	}
+	comment.Time, _ = time.Parse(time.RFC3339, timeString)
+	return
 }
 
 /*********************************************************************************

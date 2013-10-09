@@ -8,5 +8,11 @@
 	"MysqlUser":"gp",
 	"MysqlPass":"PnOaw3XzP6Tlq6fWvvVv",
 	"MysqlHost":"localhost",
-	"MysqlPort":"3306"
+	"MysqlPort":"3306",
+	"MessageCache":1000,
+	"PostCache":5000,
+	"CommentCache":100,
+	"MessagePageSize":20,
+	"PostPageSize":20,
+	"CommentPageSize":20
 }
