@@ -498,6 +498,24 @@ func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
 	return
 }
 
+func getComments(id PostId, start int64) (comments []Comment, err error) {
+	conf := GetConfig()
+	if start + int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
+		comments, err = redisGetComments(id, start)
+		if err != nil {
+			comments, err = dbGetComments(id, start, conf.CommentPageSize)
+			go redisAddAllComments(id)
+		}
+	} else {
+		comments, err = dbGetComments(id, start, conf.CommentPageSize)
+	}
+	return
+}
+
+func createConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
+	return dbCreateConversation(id, nParticipants)
+}
+
 /********************************************************************
 Database functions
 ********************************************************************/
@@ -720,29 +738,14 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 	return conversations, nil
 }
 
-func getComments(id PostId, start int64) (comments []Comment, err error) {
-	conf := GetConfig()
-	if start + int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
-		comments, err = redisGetComments(id, start)
-		if err != nil {
-			comments, err = dbGetComments(id, start, conf.CommentPageSize)
-			go redisAddAllComments(id)
-		}
-	} else {
-		comments, err = dbGetComments(id, start, conf.CommentPageSize)
-	}
-	return
-}
-
-func createConversation(id UserId, nParticipants int) Conversation {
+func dbCreateConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
 	r, _ := conversationStmt.Exec(id)
-	conversation := Conversation{}
 	cId, _ := r.LastInsertId()
 	conversation.Id = ConversationId(cId)
 	participants := make([]User, 0, 10)
 	user, err := getUser(id)
 	if err != nil {
-		log.Printf("error getting user: %d %v", id, err)
+		return
 	}
 	participants = append(participants, user)
 	nParticipants--
@@ -750,13 +753,13 @@ func createConversation(id UserId, nParticipants int) Conversation {
 	rows, err := randomStmt.Query()
 	log.Println("DB hit: createConversation (user.Name, user.Id)")
 	if err != nil {
-		log.Printf("Error preparing statement: %v", err)
+		return
 	}
 	defer rows.Close()
 	for nParticipants > 0 {
 		rows.Next()
 		if err = rows.Scan(&user.Id, &user.Name); err != nil {
-			log.Printf("Error getting user: %v", err)
+			return
 		} else {
 			participants = append(participants, user)
 			nParticipants--
@@ -765,11 +768,11 @@ func createConversation(id UserId, nParticipants int) Conversation {
 	for _, u := range participants {
 		_, err := participantStmt.Exec(conversation.Id, u.Id)
 		if err != nil {
-			log.Printf("Error adding user to conversation: %v", err)
+			return
 		}
 	}
 	conversation.Participants = participants
-	return (conversation)
+	return
 }
 
 func dbGetUser(id UserId) (user User, err error) {
