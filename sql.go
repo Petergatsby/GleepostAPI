@@ -26,7 +26,7 @@ const (
 	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	commentInsert      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, 20"
+	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	profileSelect      = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
