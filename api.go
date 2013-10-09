@@ -468,7 +468,9 @@ func awaitOneMessage(userId UserId) []byte {
 }
 
 func addPost(userId UserId, text string) (postId PostId, err error) {
-	return dbAddPost(userId, text)
+	postId, err = dbAddPost(userId, text)
+	go redisAddNewPost(userId, text, postId)
+	return
 }
 
 func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
@@ -836,6 +838,17 @@ func redisAddPost(post PostSmall) {
 	baseKey := fmt.Sprintf("posts:%d", post.Id)
 	conn.Send("MSET", baseKey + ":by", post.By.Id, baseKey + ":time", post.Time.Format(time.RFC3339), baseKey + ":text", post.Text)
 	conn.Flush()
+}
+
+func redisAddNewPost(userId UserId, text string, postId PostId) {
+	var post PostSmall
+	post.Id = postId
+	post.By, _ = getUser(userId)
+	post.Time = time.Now().UTC()
+	post.Text = text
+	networks := getUserNetworks(userId)
+	go redisAddPost(post)
+	go redisAddNetworkPost(networks[0].Id, post)
 }
 
 func redisAddNetworkPost(network NetworkId, post PostSmall) {
