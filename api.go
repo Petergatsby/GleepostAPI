@@ -112,14 +112,17 @@ type Rule struct {
 type Conversation struct {
 	Id           ConversationId `json:"id"`
 	Participants []User         `json:"participants"`
-	LastActivity time.Time      `json:"-"`
-	LastMessage  *Message       `json:"mostRecentMessage"`
+}
+
+type ConversationSmall struct {
+	Conversation
+	LastActivity time.Time `json:"-"`
+	LastMessage  *Message  `json:"mostRecentMessage"`
 }
 
 type ConversationAndMessages struct {
-	Id           ConversationId `json:"id"`
-	Participants []User         `json:"participants"`
-	Messages     []Message      `json:"messages"`
+	Conversation
+	Messages []Message `json:"messages"`
 }
 
 type Config struct {
@@ -386,7 +389,7 @@ func getMessages(convId ConversationId, offset int64) []Message {
 	return messages
 }
 
-func getConversations(user_id UserId, start int64) (conversations []Conversation, err error) {
+func getConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
 	conversations, err = redisGetConversations(user_id, start)
 	if err != nil {
 		conversations, err = dbGetConversations(user_id, start)
@@ -433,8 +436,8 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 }
 
 func getFullConversation(convId ConversationId, start int64) (conv ConversationAndMessages) {
-	conv.Id = convId
-	conv.Participants = getParticipants(convId)
+	conv.Conversation.Id = convId
+	conv.Conversation.Participants = getParticipants(convId)
 	conv.Messages = getMessages(convId, start)
 	return
 }
@@ -452,7 +455,7 @@ func getProfile(id UserId) (user Profile, err error) {
 func awaitOneMessage(userId UserId) []byte {
 	conn := pool.Get()
 	defer conn.Close()
-	psc := redis.PubSubConn{conn}
+	psc := redis.PubSubConn{Conn:conn}
 	psc.Subscribe(userId)
 	for {
 		switch n := psc.Receive().(type) {
@@ -638,8 +641,7 @@ func dbGetMessages(convId ConversationId, offset int64) []Message {
 	return (messages)
 }
 
-func dbGetConversations(user_id UserId, start int64) ([]Conversation, error) {
-	conversations := make([]Conversation, 0, 20)
+func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
 	rows, err := conversationSelectStmt.Query(user_id, start)
 	log.Println("DB hit: getConversations user_id, offset (conversation.id)")
 	if err != nil {
@@ -647,14 +649,14 @@ func dbGetConversations(user_id UserId, start int64) ([]Conversation, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var conv Conversation
+		var conv ConversationSmall
 		var t string
-		err = rows.Scan(&conv.Id, &t)
+		err = rows.Scan(&conv.Conversation.Id, &t)
 		if err != nil {
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(MysqlTime, t)
-		conv.Participants = getParticipants(conv.Id)
+		conv.Conversation.Participants = getParticipants(conv.Id)
 		LastMessage, err := getLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -1042,7 +1044,7 @@ func redisGetUser(id UserId) (user User, err error) {
 	return user, nil
 }
 
-func redisGetConversations(id UserId, start int64) (conversations []Conversation, err error) {
+func redisGetConversations(id UserId, start int64) (conversations []ConversationSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
@@ -1062,9 +1064,9 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 		if curr == -1 {
 			return
 		}
-		conv := Conversation{}
+		conv := ConversationSmall{}
 		conv.Id = ConversationId(curr)
-		conv.Participants = getParticipants(conv.Id)
+		conv.Conversation.Participants = getParticipants(conv.Id)
 		LastMessage, err := getLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -1074,7 +1076,7 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 	return
 }
 
-func redisAddConversation(conv Conversation) {
+func redisAddConversation(conv ConversationSmall) {
 	conn := pool.Get()
 	defer conn.Close()
 	for _, participant := range conv.Participants {
