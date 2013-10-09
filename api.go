@@ -475,6 +475,7 @@ func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
 	posts, err = redisGetNetworkPosts(netId, start)
 	if err != nil {
 		posts, err = dbGetPosts(netId)
+		go redisAddPosts(netId, posts)
 	}
 	return
 }
@@ -822,11 +823,26 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 redis functions
 ********************************************************************/
 
+func redisAddPosts(net NetworkId, posts []PostSmall) {
+	for _, post := range posts {
+		go redisAddPost(post)
+		go redisAddNetworkPost(net, post)
+	}
+}
+
 func redisAddPost(post PostSmall) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", post.Id)
-	conn.Send("MSET", baseKey + ":by", post.By, baseKey + ":time", post.Time.Format(time.RFC3339), baseKey + ":text", post.Text)
+	conn.Send("MSET", baseKey + ":by", post.By.Id, baseKey + ":time", post.Time.Format(time.RFC3339), baseKey + ":text", post.Text)
+	conn.Flush()
+}
+
+func redisAddNetworkPost(network NetworkId, post PostSmall) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("networks:%d:posts", network)
+	conn.Send("ZADD", key, post.Time.Unix(), post.Id)
 	conn.Flush()
 }
 
