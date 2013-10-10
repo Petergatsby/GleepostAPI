@@ -402,15 +402,10 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 }
 
 func getMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
-	conf := GetConfig()
-	if after + int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
-		messages, err = redisGetMessagesAfter(convId, after)
-		if err != nil {
-			messages, err = dbGetMessagesAfter(convId, after)
-			go redisAddAllMessages(convId)
-		}
-	} else {
+	messages, err = redisGetMessagesAfter(convId, after)
+	if err != nil {
 		messages, err = dbGetMessagesAfter(convId, after)
+		go redisAddAllMessages(convId)
 	}
 	return
 }
@@ -909,9 +904,13 @@ func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Messa
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
-	index, err := redis.Int(conn.Do("ZREVRANK", key, after))
+	index := -1
+	index, err = redis.Int(conn.Do("ZREVRANK", key, after))
 	if err != nil {
 		return
+	}
+	if index == 0 {
+		return messages, redis.Error("That message isn't in redis!")
 	}
 	start := index - conf.MessagePageSize
 	if start < 0 {
