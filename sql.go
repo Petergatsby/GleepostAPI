@@ -22,6 +22,7 @@ const (
 	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	messageInsert      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
+	messageSelectAfter = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
 	tokenInsert        = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -48,6 +49,7 @@ var (
 	participantSelectStmt  *sql.Stmt
 	messageInsertStmt      *sql.Stmt
 	messageSelectStmt      *sql.Stmt
+	messageSelectAfterStmt *sql.Stmt
 	tokenInsertStmt        *sql.Stmt
 	tokenSelectStmt        *sql.Stmt
 	conversationUpdateStmt *sql.Stmt
@@ -130,6 +132,10 @@ func prepare(db *sql.DB) {
 		log.Fatal(err)
 	}
 	messageSelectStmt, err = db.Prepare(messageSelect)
+	if err != nil {
+		log.Fatal(err)
+	}
+	messageSelectStmt, err = db.Prepare(messageSelectAfter)
 	if err != nil {
 		log.Fatal(err)
 	}

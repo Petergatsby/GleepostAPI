@@ -392,11 +392,25 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 	if start + int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
 		messages, err = redisGetMessages(convId, start)
 		if err != nil {
-			messages = dbGetMessages(convId, start)
+			messages, err = dbGetMessages(convId, start)
 			go redisAddAllMessages(convId)
 		}
 	} else {
-		messages = dbGetMessages(convId, start)
+		messages, err = dbGetMessages(convId, start)
+	}
+	return
+}
+
+func getMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
+	conf := GetConfig()
+	if after + int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
+		messages, err = redisGetMessagesAfter(convId, after)
+		if err != nil {
+			messages, err = dbGetMessagesAfter(convId, after)
+			go redisAddAllMessages(convId)
+		}
+	} else {
+		messages, err = dbGetMessagesAfter(convId, after)
 	}
 	return
 }
@@ -520,6 +534,38 @@ func createConversation(id UserId, nParticipants int) (conversation Conversation
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
+	conf := GetConfig()
+	rows, err := messageSelectAfterStmt.Query(convId, after, conf.MessagePageSize)
+	log.Println("DB hit: getMessages convid, after (message.id, message.by, message.text, message.time, message.seen)")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var message Message
+		var timeString string
+		var by UserId
+		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.Time, err = time.Parse(MysqlTime, timeString)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.By, err = getUser(by)
+		if err != nil {
+			//should only happen if a message is from a non-existent user
+			//(or the db is fucked :))
+			log.Println(err)
+		}
+		messages = append(messages, message)
+	}
+	return
+
+}
 
 func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
 	rows, err := commentSelectStmt.Query(postId, start, count)
@@ -682,7 +728,7 @@ func dbGetParticipants(conv ConversationId) []User {
 	return (participants)
 }
 
-func dbGetMessages(convId ConversationId, start int64) []Message {
+func dbGetMessages(convId ConversationId, start int64) (messages []Message, err error) {
 	conf := GetConfig()
 	rows, err := messageSelectStmt.Query(convId, start, conf.MessagePageSize)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
@@ -690,7 +736,6 @@ func dbGetMessages(convId ConversationId, start int64) []Message {
 		log.Printf("%v", err)
 	}
 	defer rows.Close()
-	messages := make([]Message, 0, 20)
 	for rows.Next() {
 		var message Message
 		var timeString string
@@ -711,7 +756,7 @@ func dbGetMessages(convId ConversationId, start int64) []Message {
 		}
 		messages = append(messages, message)
 	}
-	return (messages)
+	return
 }
 
 func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
@@ -858,6 +903,48 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 /********************************************************************
 redis functions
 ********************************************************************/
+
+func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
+	conf := GetConfig()
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:messages", convId)
+	index, err := redis.Int(conn.Do("ZREVRANK", key, after))
+	if err != nil {
+		return
+	}
+	start := index - conf.MessagePageSize
+	if start < 0 {
+		start = 0
+	}
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, index - 1))
+	if err != nil {
+		return
+	}
+	if len(values) == 0 {
+		return messages, redis.Error("No messages for this conversation in redis.")
+	}
+	for len(values) > 0 {
+		curr := -1
+		values, err = redis.Scan(values, &curr)
+		if err != nil {
+			return
+		}
+		if curr == -1 {
+			return
+		}
+		if curr != 0 {
+			message, errGettingMessage := getMessage(MessageId(curr))
+			if errGettingMessage != nil {
+				return messages, errGettingMessage
+			} else {
+				go redisSetMessage(message)
+			}
+			messages = append(messages, message)
+		}
+	}
+	return
+}
 
 func redisAddPosts(net NetworkId, posts []PostSmall) {
 	for _, post := range posts {
@@ -1281,7 +1368,7 @@ func redisGetMessage(msgId MessageId) (message Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", msgId)
-	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":timestamp", key+":seen"))
+	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":time", key+":seen"))
 	if err != nil {
 		return message, err
 	}
@@ -1657,13 +1744,23 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if err != nil {
 			start = 0
 		}
-		messages, err := getMessages(convId, start)
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			after = 0
+		}
+		var messages []Message
+		if after > 0 {
+			messages, err = getMessagesAfter(convId, after)
+		} else {
+			messages, err = getMessages(convId, start)
+		}
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
+		} else {
+			messagesJSON, _ := json.Marshal(messages)
+			w.Write(messagesJSON)
 		}
-		messagesJSON, _ := json.Marshal(messages)
-		w.Write(messagesJSON)
 	case convIdString != nil && r.Method == "POST":
 		_convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 		convId := ConversationId(_convId)
