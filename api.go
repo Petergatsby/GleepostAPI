@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"regexp"
@@ -23,7 +24,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	_ "net/http/pprof"
 )
 
 type UserId uint64
@@ -222,7 +222,10 @@ func main() {
 		log.Fatalf("Error opening database: %v", err)
 	}
 	db.SetMaxIdleConns(conf.MysqlMaxConnectionCount)
-	prepare(db)
+	err = prepare(db)
+	if err != nil {
+		log.Fatal(err)
+	}
 	go keepalive(db)
 	pool = redis.NewPool(RedisDial, 100)
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
@@ -389,7 +392,7 @@ func getParticipants(convId ConversationId) []User {
 
 func getMessages(convId ConversationId, start int64) (messages []Message, err error) {
 	conf := GetConfig()
-	if start + int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
+	if start+int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
 		messages, err = redisGetMessages(convId, start)
 		if err != nil {
 			messages, err = dbGetMessages(convId, start)
@@ -496,7 +499,7 @@ func addPost(userId UserId, text string) (postId PostId, err error) {
 
 func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
 	conf := GetConfig()
-	if start + int64(conf.PostPageSize) <= int64(conf.PostCache) {
+	if start+int64(conf.PostPageSize) <= int64(conf.PostCache) {
 		posts, err = redisGetNetworkPosts(netId, start)
 		if err != nil {
 			posts, err = dbGetPosts(netId, start, conf.PostPageSize)
@@ -510,7 +513,7 @@ func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
 
 func getComments(id PostId, start int64) (comments []Comment, err error) {
 	conf := GetConfig()
-	if start + int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
+	if start+int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
 		comments, err = redisGetComments(id, start)
 		if err != nil {
 			comments, err = dbGetComments(id, start, conf.CommentPageSize)
@@ -916,7 +919,7 @@ func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Messa
 	if start < 0 {
 		start = 0
 	}
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, index - 1))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, index-1))
 	if err != nil {
 		return
 	}
@@ -1462,7 +1465,7 @@ func redisGetComments(postId PostId, start int64) (comments []Comment, err error
 	defer conn.Close()
 	conf := GetConfig()
 	key := fmt.Sprintf("posts:%d:comments", postId)
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start + int64(conf.CommentPageSize) - 1))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(conf.CommentPageSize)-1))
 	if err != nil {
 		return
 	}
@@ -1502,7 +1505,7 @@ func redisGetComment(commentId CommentId) (comment Comment, err error) {
 	}
 	comment.Id = commentId
 	comment.By, err = getUser(by)
-	if err!= nil {
+	if err != nil {
 		return
 	}
 	comment.Time, _ = time.Parse(time.RFC3339, timeString)
