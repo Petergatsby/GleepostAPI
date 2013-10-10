@@ -23,6 +23,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	_ "net/http/pprof"
 )
 
 type UserId uint64
@@ -766,7 +767,7 @@ func dbCreateConversation(id UserId, nParticipants int) (conversation Conversati
 		}
 	}
 	for _, u := range participants {
-		_, err := participantStmt.Exec(conversation.Id, u.Id)
+		_, err = participantStmt.Exec(conversation.Id, u.Id)
 		if err != nil {
 			return
 		}
@@ -1573,9 +1574,14 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
 		jsonResp(w, errorJSON, 400)
 	default:
-		conversation := createConversation(userId, 2)
-		conversationJSON, _ := json.Marshal(conversation)
-		w.Write(conversationJSON)
+		conversation, err := createConversation(userId, 2)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			conversationJSON, _ := json.Marshal(conversation)
+			w.Write(conversationJSON)
+		}
 	}
 }
 
@@ -1592,9 +1598,14 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
 		jsonResp(w, errorJSON, 400)
 	default:
-		conversation := createConversation(userId, 4)
-		conversationJSON, _ := json.Marshal(conversation)
-		w.Write(conversationJSON)
+		conversation, err := createConversation(userId, 4)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			conversationJSON, _ := json.Marshal(conversation)
+			w.Write(conversationJSON)
+		}
 	}
 }
 
