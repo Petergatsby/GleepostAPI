@@ -135,7 +135,7 @@ func prepare(db *sql.DB) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	messageSelectStmt, err = db.Prepare(messageSelectAfter)
+	messageSelectAfterStmt, err = db.Prepare(messageSelectAfter)
 	if err != nil {
 		log.Fatal(err)
 	}
