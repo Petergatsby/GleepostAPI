@@ -77,102 +77,101 @@ func keepalive(db *sql.DB) {
 	}
 }
 
-func prepare(db *sql.DB) {
-	var err error
+func prepare(db *sql.DB) (err error) {
 	ruleStmt, err = db.Prepare(ruleSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	registerStmt, err = db.Prepare(createUser)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	passStmt, err = db.Prepare(PassSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	randomStmt, err = db.Prepare(randomSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	conversationStmt, err = db.Prepare(conversationInsert)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	userStmt, err = db.Prepare(userSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	participantStmt, err = db.Prepare(participantInsert)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	postStmt, err = db.Prepare(postInsert)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	wallSelectStmt, err = db.Prepare(wallSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	networkStmt, err = db.Prepare(networkSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	conversationSelectStmt, err = db.Prepare(conversationSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	participantSelectStmt, err = db.Prepare(participantSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	messageInsertStmt, err = db.Prepare(messageInsert)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	messageSelectStmt, err = db.Prepare(messageSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	messageSelectAfterStmt, err = db.Prepare(messageSelectAfter)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	tokenInsertStmt, err = db.Prepare(tokenInsert)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	tokenSelectStmt, err = db.Prepare(tokenSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	conversationUpdateStmt, err = db.Prepare(conversationUpdate)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	commentInsertStmt, err = db.Prepare(commentInsert)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	commentSelectStmt, err = db.Prepare(commentSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	lastMessageSelectStmt, err = db.Prepare(lastMessageSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	commentCountSelectStmt, err = db.Prepare(commentCountSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	profileSelectStmt, err = db.Prepare(profileSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	imageSelectStmt, err = db.Prepare(imageSelect)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 }
