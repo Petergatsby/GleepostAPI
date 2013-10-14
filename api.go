@@ -1072,7 +1072,9 @@ func redisPublish(msg RedisMessage) {
 	participants := getParticipants(msg.Conversation)
 	JSONmsg, _ := json.Marshal(msg)
 	for _, user := range participants {
-		conn.Send("PUBLISH", user.Id, JSONmsg)
+		if user.Id != msg.By {
+			conn.Send("PUBLISH", user.Id, JSONmsg)
+		}
 	}
 	conn.Flush()
 }
