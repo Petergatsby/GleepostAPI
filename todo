@@ -30,7 +30,6 @@
 --log registration event
 
 -Login
---store token:user:expiry in redis
 --log login attempt
 
 -get user networks
@@ -38,6 +37,12 @@
 
 -get partners
 --More sophisticated than random pl0x!
+
+-GET contacts
+
+-POST contacts
+
+-DELETE contacts/id
 
 -POST posts/id/like
 
