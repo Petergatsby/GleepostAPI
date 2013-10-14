@@ -1641,11 +1641,18 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		}
-		postsJSON, err := json.Marshal(posts)
-		if err != nil {
-			log.Printf("Something went wrong with json parsing: %v", err)
+		if len(posts) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			w.Write("[]")
+		} else {
+			postsJSON, err := json.Marshal(posts)
+			if err != nil {
+				log.Printf("Something went wrong with json parsing: %v", err)
+			}
 		}
-		w.Write(postsJSON)
 	case r.Method == "POST":
 		text := r.FormValue("text")
 		postId, err := addPost(userId, text)
@@ -1731,8 +1738,16 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		} else {
-			conversationsJSON, _ := json.Marshal(conversations)
-			w.Write(conversationsJSON)
+			if len(conversations) == 0 {
+				// this is an ugly hack. But I can't immediately
+				// think of a neater way to fix this
+				// (json.Marshal(empty slice) returns "null" rather than
+				// empty array "[]" which it obviously should
+				w.Write("[]")
+			} else {
+				conversationsJSON, _ := json.Marshal(conversations)
+				w.Write(conversationsJSON)
+			}
 		}
 	}
 }
@@ -1771,8 +1786,16 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		} else {
-			messagesJSON, _ := json.Marshal(messages)
-			w.Write(messagesJSON)
+			if len(messages) == 0 {
+				// this is an ugly hack. But I can't immediately
+				// think of a neater way to fix this
+				// (json.Marshal(empty slice) returns "null" rather than
+				// empty array "[]" which it obviously should
+				w.Write("[]")
+			} else {
+				messagesJSON, _ := json.Marshal(messages)
+				w.Write(messagesJSON)
+			}
 		}
 	case convIdString != nil && r.Method == "POST":
 		_convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
@@ -1835,8 +1858,16 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		} else {
-			jsonComments, _ := json.Marshal(comments)
-			w.Write(jsonComments)
+			if len(comments) == 0 {
+				// this is an ugly hack. But I can't immediately
+				// think of a neater way to fix this
+				// (json.Marshal(empty slice) returns "null" rather than
+				// empty array "[]" which it obviously should
+				w.Write("[]")
+			} else {
+				jsonComments, _ := json.Marshal(comments)
+				w.Write(jsonComments)
+			}
 		}
 	case commIdStringA != nil && r.Method == "POST":
 		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
