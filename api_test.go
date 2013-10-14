@@ -3,6 +3,10 @@ package main
 import "testing"
 import "time"
 
+const (
+	testDb = "testdb"
+)
+
 func TestCreateToken(t *testing.T) {
 	token := createToken(9)
 	if token.UserId != 9 {

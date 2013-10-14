@@ -454,6 +454,7 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 	go redisSetLastMessage(convId, msgSmall)
 	msg := RedisMessage{msgSmall, convId}
 	go redisPublish(msg)
+	go redisAddMessage(msgSmall, convId)
 	go redisIncConversationMessageCount(convId)
 	go updateConversation(convId)
 	return
@@ -901,6 +902,16 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 /********************************************************************
 redis functions
 ********************************************************************/
+
+func redisAddMessage(msg Message, convId ConversationId) {
+	conf := GetConfig()
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:messages", convId)
+	conn.Send("ZADD", key, message.Time.Unix(), message.Id)
+	conn.Flush()
+	go redisSetMessage(message)
+}
 
 func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
 	conf := GetConfig()
