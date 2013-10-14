@@ -904,7 +904,6 @@ redis functions
 ********************************************************************/
 
 func redisAddMessage(msg Message, convId ConversationId) {
-	conf := GetConfig()
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -1652,6 +1651,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("Something went wrong with json parsing: %v", err)
 			}
+			jsonResp(w, postsJSON, 200)
 		}
 	case r.Method == "POST":
 		text := r.FormValue("text")
