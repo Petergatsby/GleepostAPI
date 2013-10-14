@@ -908,9 +908,9 @@ func redisAddMessage(msg Message, convId ConversationId) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
-	conn.Send("ZADD", key, message.Time.Unix(), message.Id)
+	conn.Send("ZADD", key, msg.Time.Unix(), msg.Id)
 	conn.Flush()
-	go redisSetMessage(message)
+	go redisSetMessage(msg)
 }
 
 func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
@@ -1646,7 +1646,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			// think of a neater way to fix this
 			// (json.Marshal(empty slice) returns null rather than
 			// empty array ([]) which it obviously should
-			w.Write("[]")
+			w.Write([]byte("[]"))
 		} else {
 			postsJSON, err := json.Marshal(posts)
 			if err != nil {
@@ -1743,7 +1743,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 				// think of a neater way to fix this
 				// (json.Marshal(empty slice) returns "null" rather than
 				// empty array "[]" which it obviously should
-				w.Write("[]")
+				w.Write([]byte("[]"))
 			} else {
 				conversationsJSON, _ := json.Marshal(conversations)
 				w.Write(conversationsJSON)
@@ -1791,7 +1791,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 				// think of a neater way to fix this
 				// (json.Marshal(empty slice) returns "null" rather than
 				// empty array "[]" which it obviously should
-				w.Write("[]")
+				w.Write([]byte("[]"))
 			} else {
 				messagesJSON, _ := json.Marshal(messages)
 				w.Write(messagesJSON)
@@ -1863,7 +1863,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 				// think of a neater way to fix this
 				// (json.Marshal(empty slice) returns "null" rather than
 				// empty array "[]" which it obviously should
-				w.Write("[]")
+				w.Write([]byte("[]"))
 			} else {
 				jsonComments, _ := json.Marshal(comments)
 				w.Write(jsonComments)

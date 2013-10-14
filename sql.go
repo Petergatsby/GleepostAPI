@@ -174,4 +174,5 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
+	return nil
 }
