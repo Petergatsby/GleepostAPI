@@ -546,11 +546,11 @@ func registerUser(user string, pass string, email string) (UserId, error) {
 }
 
 func getContacts(user UserId) (contacts []User, err error) {
-	c := getUser(UserId(9))
+	c, _ := getUser(UserId(9))
 	contacts = append(contacts, c)
-	c = getUser(UserId(2395))
+	c, _ = getUser(UserId(2395))
 	contacts = append(contacts, c)
-	c = getUser(UserId(21))
+	c, _ = getUser(UserId(21))
 	contacts = append(contacts, c)
 	return contacts, nil
 }
@@ -970,5 +970,30 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 		//awaitOneMessage will block until a message arrives over redis
 		message := awaitOneMessage(userId)
 		w.Write(message)
+	}
+}
+
+func contactsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
+	userId := UserId(id)
+	token := r.FormValue("token")
+	switch {
+	case !validateToken(userId, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case r.Method == "GET":
+		contacts, err := getContacts(userId)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		}
+		contactsJSON, _ := json.Marshal(contacts)
+		jsonResp(w, contactsJSON, 200)
+	case r.Method == "POST":
+
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+		jsonResp(w, errorJSON, 405)
 	}
 }
