@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"time"
 	"log"
 	"strconv"
-	"encoding/json"
+	"time"
 )
 
 /********************************************************************
@@ -633,4 +633,3 @@ func redisGetComment(commentId CommentId) (comment Comment, err error) {
 	comment.Time, _ = time.Parse(time.RFC3339, timeString)
 	return
 }
-

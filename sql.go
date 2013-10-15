@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
-	"time"
 	"strings"
+	"time"
 )
 
 const (
@@ -537,4 +537,3 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 		return 0, err
 	}
 }
-
