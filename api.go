@@ -237,6 +237,7 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/posts/", anotherPostHandler)
 	http.HandleFunc(conf.UrlBase+"/user/", userHandler)
 	http.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
+	http.HandleFunc(conf.UrlBase+"/contacts", contactsHandler)
 	http.ListenAndServe(":"+conf.Port, nil)
 }
 
