@@ -545,6 +545,16 @@ func registerUser(user string, pass string, email string) (UserId, error) {
 	return dbRegisterUser(user, hash, email)
 }
 
+func getContacts(user UserId) (contacts []User, err error) {
+	c := getUser(UserId(9))
+	contacts = append(contacts, c)
+	c = getUser(UserId(2395))
+	contacts = append(contacts, c)
+	c = getUser(UserId(21))
+	contacts = append(contacts, c)
+	return contacts, nil
+}
+
 /*********************************************************************************
 
 Begin http handlers!
