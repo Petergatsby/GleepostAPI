@@ -118,7 +118,7 @@ type Conversation struct {
 type ConversationSmall struct {
 	Conversation
 	LastActivity time.Time `json:"-"`
-	LastMessage  *Message  `json:"mostRecentMessage"`
+	LastMessage  *Message  `json:"mostRecentMessage,omitempty"`
 }
 
 type ConversationAndMessages struct {

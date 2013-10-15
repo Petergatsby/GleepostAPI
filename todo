@@ -35,6 +35,8 @@
 -get user networks
 --Either return an error when looking for someone non-existent, or when returning no networks, or check the user exists before using, or check output has at least one network!
 
+-Upload pictures
+
 -get partners
 --More sophisticated than random pl0x!
 
@@ -49,6 +51,12 @@
 -POST posts/id/hate
 
 -PUT conversations/id/messages read=true
+
+-Change name
+
+-Name in registration process
+
+-Facebook registration
 
 -Websockets
 
