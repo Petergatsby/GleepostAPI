@@ -213,6 +213,7 @@ example responses:
 
 GET /longpoll?id=[user-id]&token=[token]
 Gets a single message for the current user
+(excluding messages sent by this user)
 
 This message could be from any conversation.
 
@@ -227,4 +228,57 @@ example responses:
 	"timestamp":"2013-09-16T16:58:30.771905595Z",
 	"seen":false,
 	"conversation_id":5
+}
+
+GET /contacts?id=[user-id]&token=[token]
+Gets all the current user's contacts.
+
+If you've added someone, they_confirmed will be false until they accept you and vice versa.
+
+example responses:
+
+HTTP 200
+[
+	{
+		"id":1234,
+		"username":"calgould",
+		"you_confirmed":true,
+		"they_confirmed":false,
+	},
+	{
+		"id":21,
+		"username":"petergatsby",
+		"you_confirmed":false,
+		"they_confirmed":true,
+	}
+]
+
+POST /contacts
+required parameters: id, token, user
+
+Adds the user with id [user] to the current user's contacts.
+
+example responses:
+
+HTTP 201
+{
+	"id":1234,
+	"username":"calgould",
+	"you_confirmed":true,
+	"they_confirmed":false,
+}
+
+PUT /contacts/[user]
+required parameters: id, token, accepted
+
+if accepted = true, it will set that contact to "confirmed"
+
+example responses:
+
+HTTP 200
+{
+	"id":21,
+	"username":"petergatsby",
+	"you_confirmed":true,
+	"they_confirmed":true,
 }
