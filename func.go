@@ -45,22 +45,10 @@ func looksLikeEmail(email string) bool {
 func getLastMessage(id ConversationId) (message Message, err error) {
 	message, err = redisGetLastMessage(id)
 	if err != nil {
-		// Last message is not in redis
-		count, err := redisGetConversationMessageCount(id)
+		message, err = dbGetLastMessage(id)
+		go redisAddAllMessages(id)
 		if err != nil {
-			//and the number of messages that exist is not in redis
-			message, err = dbGetLastMessage(id)
-			if err != nil {
-				//this won't wipe the cache since if we're here it's already missing
-				redisSetConversationMessageCount(id, 0)
-			}
-		} else {
-			//and the number of messages we should have is in redis
-			if count != 0 { // this number currently is probably completely wrong!
-				// but it should be correct in zero vs non-zero terms
-				message, err = dbGetLastMessage(id)
-				redisSetLastMessage(id, message)
-			}
+			return
 		}
 	}
 	return
@@ -224,11 +212,9 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 		return
 	}
 	msgSmall := Message{MessageId(messageId), user, text, time.Now().UTC(), false}
-	go redisSetLastMessage(convId, msgSmall)
 	msg := RedisMessage{msgSmall, convId}
 	go redisPublish(msg)
 	go redisAddMessage(msgSmall, convId)
-	go redisIncConversationMessageCount(convId)
 	go updateConversation(convId)
 	return
 }

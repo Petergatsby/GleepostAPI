@@ -14,7 +14,7 @@ redis functions
 ********************************************************************/
 
 func redisAddMessage(msg Message, convId ConversationId) {
-	log.Printf("redis add message %d %d", convId, message.Id)
+	log.Printf("redis add message %d %d", convId, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -259,8 +259,13 @@ func redisIncCommentCount(id PostId) (err error) {
 func redisGetLastMessage(id ConversationId) (message Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	BaseKey := fmt.Sprintf("conversations:%d:lastmessage:", id)
-	reply, err := redis.Values(conn.Do("MGET", BaseKey+"id", BaseKey+"by", BaseKey+"text", BaseKey+"time", BaseKey+"seen"))
+	key := fmt.Sprintf("conversations:%d:messages", id)
+	messageId, err := redis.Int(conn.Do("ZREVRANGE", key, 0, 0))
+	if err != nil {
+		return
+	}
+	BaseKey := fmt.Sprintf("messages:%d", messageId)
+	reply, err := redis.Values(conn.Do("MGET", BaseKey+":by", BaseKey+":text", BaseKey+":time", BaseKey+":seen"))
 	if err != nil {
 		//should reach this if there is no last message
 		log.Printf("error getting message in redis %v", err)
@@ -268,7 +273,7 @@ func redisGetLastMessage(id ConversationId) (message Message, err error) {
 	}
 	var by UserId
 	var timeString string
-	if _, err = redis.Scan(reply, &message.Id, &by, &message.Text, &timeString, &message.Seen); err != nil {
+	if _, err = redis.Scan(reply, &by, &message.Text, &timeString, &message.Seen); err != nil {
 		return message, err
 	}
 	if by != 0 {
@@ -277,49 +282,20 @@ func redisGetLastMessage(id ConversationId) (message Message, err error) {
 			log.Printf("error getting user %d %v", by, err)
 		}
 	}
+	message.Id = MessageId(messageId)
 	message.Time, err = time.Parse(time.RFC3339, timeString)
 	return message, err
-}
-
-func redisSetLastMessage(convId ConversationId, message Message) {
-	log.Printf("Setting last message in conversation: %d %d", convId, message.Id)
-	conn := pool.Get()
-	defer conn.Close()
-	BaseKey := fmt.Sprintf("conversations:%d:lastmessage:", convId)
-	conn.Send("SET", BaseKey+"id", message.Id)
-	conn.Send("SET", BaseKey+"by", message.By.Id)
-	conn.Send("SET", BaseKey+"text", message.Text)
-	conn.Send("SET", BaseKey+"time", message.Time.Format(time.RFC3339))
-	conn.Send("SET", BaseKey+"seen", strconv.FormatBool(message.Seen))
-	conn.Flush()
 }
 
 func redisGetConversationMessageCount(convId ConversationId) (count int, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messagecount", convId)
-	count, err = redis.Int(conn.Do("GET", key))
+	key := fmt.Sprintf("conversations:%d:messages", convId)
+	count, err = redis.Int(conn.Do("ZCARD", key))
 	if err != nil {
 		return 0, err
 	}
 	return count, nil
-}
-
-func redisSetConversationMessageCount(convId ConversationId, count int) {
-	conn := pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messagecount", convId)
-	conn.Send("SET", key, count)
-	conn.Flush()
-}
-
-func redisIncConversationMessageCount(convId ConversationId) {
-	log.Printf("redisIncConversationMessageCount %d", convId)
-	conn := pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messagecount", convId)
-	conn.Send("INCR", key)
-	conn.Flush()
 }
 
 func redisSetConversationParticipants(convId ConversationId, participants []User) {
