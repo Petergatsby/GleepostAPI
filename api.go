@@ -48,7 +48,7 @@ type Profile struct {
 type Contact struct {
 	User
 	YouConfirmed  bool `json:"you_confirmed"`
-	TheyConfirmed bool `json:"confirmed"`
+	TheyConfirmed bool `json:"they_confirmed"`
 }
 
 type Network struct {
@@ -552,15 +552,8 @@ func registerUser(user string, pass string, email string) (UserId, error) {
 	return dbRegisterUser(user, hash, email)
 }
 
-func getContacts(user UserId) (contacts []User, err error) {
-	//todo: actually get contact list
-	c, _ := getUser(UserId(9))
-	contacts = append(contacts, c)
-	c, _ = getUser(UserId(2395))
-	contacts = append(contacts, c)
-	c, _ = getUser(UserId(21))
-	contacts = append(contacts, c)
-	return contacts, nil
+func getContacts(user UserId) (contacts []Contact, err error) {
+	return dbGetContacts(user)
 }
 
 func addContact(adder UserId, addee UserId) (user User, err error) {

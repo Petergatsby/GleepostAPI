@@ -41,6 +41,7 @@ const (
 	tokenSelect = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	//Contact
 	contactInsert = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
+	contactSelect = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
 )
 
 var (
@@ -76,6 +77,7 @@ var (
 	tokenSelectStmt *sql.Stmt
 	//Contact
 	contactInsertStmt *sql.Stmt
+	contactSelectStmt *sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -201,12 +203,49 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
+	contactSelectStmt, err = db.Prepare(contactSelect)
+	if err != nil {
+		return
+	}
 	return nil
 }
 
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbGetContacts(user UserId) (contacts []Contact, err error) {
+	rows, err := contactSelectStmt.Query(user, user)
+	log.Println("DB hit: GetContacts")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var contact Contact
+		var adder, addee UserId
+		var confirmed bool
+		err = rows.Scan(&adder, &addee, &confirmed)
+		if err != nil {
+			return
+		}
+		switch {
+		case adder == user:
+			contact.User, err = getUser(addee)
+			if err != nil {
+				return
+			}
+			contact.YouConfirmed = true
+			contact.TheyConfirmed = confirmed
+		case addee == user:
+			contact.User, err = getUser(adder)
+			contact.YouConfirmed = confirmed
+			contact.TheyConfirmed = true
+		}
+		contacts = append(contacts, contact)
+	}
+	return
+}
 
 func dbAddContact(adder UserId, addee UserId) (err error) {
 	log.Println("DB hit: addContact")
