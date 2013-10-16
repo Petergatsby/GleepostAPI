@@ -567,6 +567,19 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 	}
 }
 
+func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
+	err = dbUpdateContact(user, toAccept)
+	if err != nil {
+		contact.User, err = getUser(toAccept)
+		if err != nil {
+			return
+		}
+		contact.YouConfirmed = true
+		contact.TheyConfirmed = true
+	}
+	return
+}
+
 /*********************************************************************************
 
 Begin http handlers!
@@ -1017,5 +1030,43 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
 		jsonResp(w, errorJSON, 405)
+	}
+}
+
+func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
+	userId := UserId(id)
+	token := r.FormValue("token")
+	rx, _ := regexp.Compile("contact/(\\d+)/$")
+	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
+	switch {
+	case !validateToken(userId, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case r.Method == "PUT" && contactIdStrings != nil:
+		_contact, err := strconv.ParseUint(contactIdStrings[1], 10, 64)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 400)
+		}
+		contactId := UserId(_contact)
+		accepted, err := strconv.ParseBool(r.FormValue("accepted"))
+		if err != nil {
+			accepted = false
+		}
+		if accepted {
+			contact, err := acceptContact(userId, contactId)
+			if err != nil {
+				errorJSON, _ := json.Marshal(APIerror{err.Error()})
+				jsonResp(w, errorJSON, 500)
+			} else {
+				contactJSON, _ := json.Marshal(contact)
+				jsonResp(w, contactJSON, 200)
+			}
+		} else {
+			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: accepted"})
+			jsonResp(w, errorJSON, 400)
+		}
 	}
 }

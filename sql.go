@@ -42,6 +42,7 @@ const (
 	//Contact
 	contactInsert = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
 	contactSelect = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
+	contactUpdate = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
 )
 
 var (
@@ -78,6 +79,7 @@ var (
 	//Contact
 	contactInsertStmt *sql.Stmt
 	contactSelectStmt *sql.Stmt
+	contactUpdateStmt *sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -207,12 +209,21 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
+	contactUpdateStmt, err = db.Prepare(contactUpdate)
+	if err != nil {
+		return
+	}
 	return nil
 }
 
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbUpdateContact(user UserId, contact UserId) (err error) {
+	_, err = contactUpdateStmt.Exec(user, contact)
+	return
+}
 
 func dbGetContacts(user UserId) (contacts []Contact, err error) {
 	rows, err := contactSelectStmt.Query(user, user)
