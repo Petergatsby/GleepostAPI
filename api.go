@@ -244,6 +244,7 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/user/", userHandler)
 	http.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
 	http.HandleFunc(conf.UrlBase+"/contacts", contactsHandler)
+	http.HandleFunc(conf.UrlBase+"/contacts/", contactsHandler)
 	http.ListenAndServe(":"+conf.Port, nil)
 }
 
@@ -1038,7 +1039,7 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
 	userId := UserId(id)
 	token := r.FormValue("token")
-	rx, _ := regexp.Compile("contact/(\\d+)/$")
+	rx, _ := regexp.Compile("contacts/(\\d+)/$")
 	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
