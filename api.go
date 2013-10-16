@@ -150,6 +150,12 @@ type Config struct {
 	CommentPageSize         int
 }
 
+type Device struct {
+	User UserId
+	Type string
+	Id   string
+}
+
 func (c *Config) ConnectionString() string {
 	return c.MysqlUser + ":" + c.MysqlPass + "@tcp(" + c.MysqlHost + ":" + c.MysqlPort + ")/gleepost?charset=utf8"
 }
@@ -578,6 +584,17 @@ func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
 		contact.YouConfirmed = true
 		contact.TheyConfirmed = true
 	}
+	return
+}
+
+func addDevice(user UserId, deviceType string, deviceId string) (device Device, err error) {
+	err = dbAddDevice(user, deviceType, deviceId)
+	if err != nil {
+		return
+	}
+	device.User = user
+	device.Type = deviceType
+	device.Id = deviceId
 	return
 }
 
@@ -1073,5 +1090,38 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 			errorJSON, _ := json.Marshal(APIerror{"Missing parameter: accepted"})
 			jsonResp(w, errorJSON, 400)
 		}
+	case r.Method == "DELETE" && contactIdStrings != nil:
+		//Implement refusing requests
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+		jsonResp(w, errorJSON, 405)
+	}
+}
+
+func deviceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
+	userId := UserId(id)
+	token := r.FormValue("token")
+	switch {
+	case !validateToken(userId, token):
+		errorJSON, _ := json.Marshal(APIerror{"Invalid credentials"})
+		jsonResp(w, errorJSON, 400)
+	case r.Method == "POST":
+		deviceType := r.FormValue("type")
+		deviceId := r.FormValue("device_id")
+		device, err := addDevice(userId, deviceType, deviceId)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			deviceJSON, _ := json.Marshal(device)
+			jsonResp(w, deviceJSON, 201)
+		}
+	case r.Method == "GET":
+		//implement getting tokens
+	default:
+		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
+		jsonResp(w, errorJSON, 405)
 	}
 }

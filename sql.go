@@ -43,6 +43,8 @@ const (
 	contactInsert = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
 	contactSelect = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
 	contactUpdate = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
+	//device
+	deviceInsert = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
 )
 
 var (
@@ -80,6 +82,8 @@ var (
 	contactInsertStmt *sql.Stmt
 	contactSelectStmt *sql.Stmt
 	contactUpdateStmt *sql.Stmt
+	//Devices
+	deviceInsertStmt *sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -210,6 +214,11 @@ func prepare(db *sql.DB) (err error) {
 		return
 	}
 	contactUpdateStmt, err = db.Prepare(contactUpdate)
+	if err != nil {
+		return
+	}
+	//Devices
+	deviceInsertStmt, err = db.Prepare(deviceInsert)
 	if err != nil {
 		return
 	}
@@ -618,4 +627,9 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 	} else {
 		return 0, err
 	}
+}
+
+func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
+	_, err = deviceInsertStmt.Exec(user, deviceType, deviceId)
+	return
 }
