@@ -244,7 +244,7 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/user/", userHandler)
 	http.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
 	http.HandleFunc(conf.UrlBase+"/contacts", contactsHandler)
-	http.HandleFunc(conf.UrlBase+"/contacts/", contactsHandler)
+	http.HandleFunc(conf.UrlBase+"/contacts/", anotherContactsHandler)
 	http.ListenAndServe(":"+conf.Port, nil)
 }
 
@@ -570,7 +570,7 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 
 func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
 	err = dbUpdateContact(user, toAccept)
-	if err != nil {
+	if err == nil {
 		contact.User, err = getUser(toAccept)
 		if err != nil {
 			return
@@ -1039,7 +1039,7 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
 	userId := UserId(id)
 	token := r.FormValue("token")
-	rx, _ := regexp.Compile("contacts/(\\d+)/$")
+	rx, _ := regexp.Compile("contacts/(\\d+)/?$")
 	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
