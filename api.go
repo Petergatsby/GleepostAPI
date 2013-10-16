@@ -45,6 +45,12 @@ type Profile struct {
 	Course  string  `json:"course"`
 }
 
+type Contact struct {
+	User
+	YouConfirmed  bool `json:"you_confirmed"`
+	TheyConfirmed bool `json:"confirmed"`
+}
+
 type Network struct {
 	Id   NetworkId `json:"id"`
 	Name string    `json:"name"`
@@ -547,6 +553,7 @@ func registerUser(user string, pass string, email string) (UserId, error) {
 }
 
 func getContacts(user UserId) (contacts []User, err error) {
+	//todo: actually get contact list
 	c, _ := getUser(UserId(9))
 	contacts = append(contacts, c)
 	c, _ = getUser(UserId(2395))
@@ -554,6 +561,17 @@ func getContacts(user UserId) (contacts []User, err error) {
 	c, _ = getUser(UserId(21))
 	contacts = append(contacts, c)
 	return contacts, nil
+}
+
+func addContact(adder UserId, addee UserId) (user User, err error) {
+	// Todo : actually add contact
+	user, err = getUser(addee)
+	if err != nil {
+		return
+	} else {
+		err = dbAddContact(adder, addee)
+		return
+	}
 }
 
 /*********************************************************************************
@@ -988,11 +1006,21 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
+		} else {
+			contactsJSON, _ := json.Marshal(contacts)
+			jsonResp(w, contactsJSON, 200)
 		}
-		contactsJSON, _ := json.Marshal(contacts)
-		jsonResp(w, contactsJSON, 200)
 	case r.Method == "POST":
-
+		_otherId, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
+		otherId := UserId(_otherId)
+		contact, err := addContact(userId, otherId)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 500)
+		} else {
+			contactJSON, _ := json.Marshal(contact)
+			jsonResp(w, contactJSON, 201)
+		}
 	default:
 		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
 		jsonResp(w, errorJSON, 405)

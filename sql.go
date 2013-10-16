@@ -9,57 +9,73 @@ import (
 )
 
 const (
-	ruleSelect         = "SELECT network_id, rule_type, rule_value FROM net_rules"
-	createUser         = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	PassSelect         = "SELECT id, password FROM users WHERE name = ?"
-	randomSelect       = "SELECT id, name FROM users ORDER BY RAND()"
+	//Network
+	ruleSelect    = "SELECT network_id, rule_type, rule_value FROM net_rules"
+	networkSelect = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
+	//User
+	createUser    = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
+	userSelect    = "SELECT id, name FROM users WHERE id=?"
+	profileSelect = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
+	PassSelect    = "SELECT id, password FROM users WHERE name = ?"
+	randomSelect  = "SELECT id, name FROM users ORDER BY RAND()"
+	//Conversation
 	conversationInsert = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
-	userSelect         = "SELECT id, name FROM users WHERE id=?"
+	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
+	conversationSelect = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
 	participantInsert  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
+	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
+	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
+	//Post
 	postInsert         = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	wallSelect         = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
-	networkSelect      = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
-	conversationSelect = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
-	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
+	imageSelect        = "SELECT url FROM post_images WHERE post_id = ?"
+	commentInsert      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
+	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
+	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
+	//Message
 	messageInsert      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	messageSelectAfter = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
-	tokenInsert        = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
-	tokenSelect        = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
-	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
-	commentInsert      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
-	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
-	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	profileSelect      = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
-	imageSelect        = "SELECT url FROM post_images WHERE post_id = ?"
+	//Token
+	tokenInsert = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
+	tokenSelect = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
+	//Contact
+	contactInsert = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
 )
 
 var (
-	ruleStmt               *sql.Stmt
-	registerStmt           *sql.Stmt
-	passStmt               *sql.Stmt
-	randomStmt             *sql.Stmt
-	userStmt               *sql.Stmt
+	//Network
+	ruleStmt    *sql.Stmt
+	networkStmt *sql.Stmt
+	//User
+	registerStmt      *sql.Stmt
+	userStmt          *sql.Stmt
+	profileSelectStmt *sql.Stmt
+	passStmt          *sql.Stmt
+	randomStmt        *sql.Stmt
+	//Conversation
 	conversationStmt       *sql.Stmt
+	conversationUpdateStmt *sql.Stmt
+	conversationSelectStmt *sql.Stmt
 	participantStmt        *sql.Stmt
-	networkStmt            *sql.Stmt
+	participantSelectStmt  *sql.Stmt
+	lastMessageSelectStmt  *sql.Stmt
+	//Post
 	postStmt               *sql.Stmt
 	wallSelectStmt         *sql.Stmt
-	conversationSelectStmt *sql.Stmt
-	participantSelectStmt  *sql.Stmt
+	imageSelectStmt        *sql.Stmt
+	commentInsertStmt      *sql.Stmt
+	commentSelectStmt      *sql.Stmt
+	commentCountSelectStmt *sql.Stmt
+	//<essage
 	messageInsertStmt      *sql.Stmt
 	messageSelectStmt      *sql.Stmt
 	messageSelectAfterStmt *sql.Stmt
-	tokenInsertStmt        *sql.Stmt
-	tokenSelectStmt        *sql.Stmt
-	conversationUpdateStmt *sql.Stmt
-	commentInsertStmt      *sql.Stmt
-	commentSelectStmt      *sql.Stmt
-	lastMessageSelectStmt  *sql.Stmt
-	commentCountSelectStmt *sql.Stmt
-	profileSelectStmt      *sql.Stmt
-	imageSelectStmt        *sql.Stmt
+	//Token
+	tokenInsertStmt *sql.Stmt
+	tokenSelectStmt *sql.Stmt
+	//Contact
+	contactInsertStmt *sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -79,11 +95,25 @@ func keepalive(db *sql.DB) {
 }
 
 func prepare(db *sql.DB) (err error) {
+	//Network
 	ruleStmt, err = db.Prepare(ruleSelect)
 	if err != nil {
 		return
 	}
+	networkStmt, err = db.Prepare(networkSelect)
+	if err != nil {
+		return
+	}
+	//User
 	registerStmt, err = db.Prepare(createUser)
+	if err != nil {
+		return
+	}
+	userStmt, err = db.Prepare(userSelect)
+	if err != nil {
+		return
+	}
+	profileSelectStmt, err = db.Prepare(profileSelect)
 	if err != nil {
 		return
 	}
@@ -95,11 +125,16 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
+	//Conversation
 	conversationStmt, err = db.Prepare(conversationInsert)
 	if err != nil {
 		return
 	}
-	userStmt, err = db.Prepare(userSelect)
+	conversationUpdateStmt, err = db.Prepare(conversationUpdate)
+	if err != nil {
+		return
+	}
+	conversationSelectStmt, err = db.Prepare(conversationSelect)
 	if err != nil {
 		return
 	}
@@ -107,6 +142,15 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
+	participantSelectStmt, err = db.Prepare(participantSelect)
+	if err != nil {
+		return
+	}
+	lastMessageSelectStmt, err = db.Prepare(lastMessageSelect)
+	if err != nil {
+		return
+	}
+	//Post
 	postStmt, err = db.Prepare(postInsert)
 	if err != nil {
 		return
@@ -115,15 +159,19 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
-	networkStmt, err = db.Prepare(networkSelect)
+	imageSelectStmt, err = db.Prepare(imageSelect)
 	if err != nil {
 		return
 	}
-	conversationSelectStmt, err = db.Prepare(conversationSelect)
+	commentInsertStmt, err = db.Prepare(commentInsert)
 	if err != nil {
 		return
 	}
-	participantSelectStmt, err = db.Prepare(participantSelect)
+	commentSelectStmt, err = db.Prepare(commentSelect)
+	if err != nil {
+		return
+	}
+	commentCountSelectStmt, err = db.Prepare(commentCountSelect)
 	if err != nil {
 		return
 	}
@@ -139,6 +187,7 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
+	//Token
 	tokenInsertStmt, err = db.Prepare(tokenInsert)
 	if err != nil {
 		return
@@ -147,31 +196,8 @@ func prepare(db *sql.DB) (err error) {
 	if err != nil {
 		return
 	}
-	conversationUpdateStmt, err = db.Prepare(conversationUpdate)
-	if err != nil {
-		return
-	}
-	commentInsertStmt, err = db.Prepare(commentInsert)
-	if err != nil {
-		return
-	}
-	commentSelectStmt, err = db.Prepare(commentSelect)
-	if err != nil {
-		return
-	}
-	lastMessageSelectStmt, err = db.Prepare(lastMessageSelect)
-	if err != nil {
-		return
-	}
-	commentCountSelectStmt, err = db.Prepare(commentCountSelect)
-	if err != nil {
-		return
-	}
-	profileSelectStmt, err = db.Prepare(profileSelect)
-	if err != nil {
-		return
-	}
-	imageSelectStmt, err = db.Prepare(imageSelect)
+	//Contact
+	contactInsertStmt, err = db.Prepare(contactInsert)
 	if err != nil {
 		return
 	}
@@ -181,6 +207,12 @@ func prepare(db *sql.DB) (err error) {
 /********************************************************************
 Database functions
 ********************************************************************/
+
+func dbAddContact(adder UserId, addee UserId) (err error) {
+	log.Println("DB hit: addContact")
+	_, err = contactInsertStmt.Exec(adder, addee)
+	return
+}
 
 func dbGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
 	conf := GetConfig()
