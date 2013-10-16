@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"time"
 	"github.com/garyburd/redigo/redis"
+	"log"
 )
 
 /********************************************************************
@@ -213,6 +214,7 @@ func updateConversation(id ConversationId) (err error) {
 }
 
 func addMessage(convId ConversationId, userId UserId, text string) (messageId MessageId, err error) {
+	log.Printf("Adding message to db: %d, %d %s", convId, userId, text)
 	messageId, err = dbAddMessage(convId, userId, text)
 	if err != nil {
 		return
@@ -253,6 +255,7 @@ func awaitOneMessage(userId UserId) []byte {
 	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
 	psc.Subscribe(userId)
+	defer psc.Unsubscribe(userId)
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:

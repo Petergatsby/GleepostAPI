@@ -14,6 +14,7 @@ redis functions
 ********************************************************************/
 
 func redisAddMessage(msg Message, convId ConversationId) {
+	log.Printf("redis add message %d %d", convId, message.Id)
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -177,6 +178,7 @@ func redisUpdateConversation(id ConversationId) {
 }
 
 func redisPublish(msg RedisMessage) {
+	log.Printf("Publishing message to redis: %d, %d", msg.Conversation, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
 	participants := getParticipants(msg.Conversation)
@@ -280,6 +282,7 @@ func redisGetLastMessage(id ConversationId) (message Message, err error) {
 }
 
 func redisSetLastMessage(convId ConversationId, message Message) {
+	log.Printf("Setting last message in conversation: %d %d", convId, message.Id)
 	conn := pool.Get()
 	defer conn.Close()
 	BaseKey := fmt.Sprintf("conversations:%d:lastmessage:", convId)
@@ -311,6 +314,7 @@ func redisSetConversationMessageCount(convId ConversationId, count int) {
 }
 
 func redisIncConversationMessageCount(convId ConversationId) {
+	log.Printf("redisIncConversationMessageCount %d", convId)
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messagecount", convId)
