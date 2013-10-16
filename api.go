@@ -570,7 +570,7 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 
 func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
 	err = dbUpdateContact(user, toAccept)
-	if err == nil {
+	if err != nil {
 		contact.User, err = getUser(toAccept)
 		if err != nil {
 			return
@@ -1014,8 +1014,12 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 			errorJSON, _ := json.Marshal(APIerror{err.Error()})
 			jsonResp(w, errorJSON, 500)
 		} else {
-			contactsJSON, _ := json.Marshal(contacts)
-			jsonResp(w, contactsJSON, 200)
+			if len(contacts) == 0 {
+				jsonResp(w, []byte("[]"), 200)
+			} else {
+				contactsJSON, _ := json.Marshal(contacts)
+				jsonResp(w, contactsJSON, 200)
+			}
 		}
 	case r.Method == "POST":
 		_otherId, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
