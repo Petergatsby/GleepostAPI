@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	//For parsing
+	MysqlTime = "2006-01-02 15:04:05"
 	//Network
 	ruleSelect    = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	networkSelect = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"

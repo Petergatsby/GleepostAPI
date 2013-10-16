@@ -15,6 +15,12 @@ Begin http handlers!
 
 *********************************************************************************/
 
+func jsonResp(w http.ResponseWriter, resp []byte, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	w.Write(resp)
+}
+
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	/* POST /register
 		requires parameters: user, pass, email

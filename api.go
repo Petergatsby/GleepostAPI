@@ -16,16 +16,6 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-func jsonResp(w http.ResponseWriter, resp []byte, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(code)
-	w.Write(resp)
-}
-
-const (
-	MysqlTime = "2006-01-02 15:04:05"
-)
-
 var (
 	pool       *redis.Pool
 	config     *Config
