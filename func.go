@@ -125,7 +125,7 @@ func getCommentCount(id PostId) (count int) {
 
 func createComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
 	commId, err = dbCreateComment(postId, userId, text)
-	if err != nil {
+	if err == nil {
 		user, e := getUser(userId)
 		if e != nil {
 			return commId, e
