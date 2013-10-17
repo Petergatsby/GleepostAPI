@@ -6,11 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"io"
+	"log"
 	"regexp"
 	"time"
-	"github.com/garyburd/redigo/redis"
-	"log"
 )
 
 /********************************************************************
@@ -119,13 +119,20 @@ func getCommentCount(id PostId) (count int) {
 	count, err := redisGetCommentCount(id)
 	if err != nil {
 		count = dbGetCommentCount(id)
-		go redisSetCommentCount(id, count)
 	}
 	return count
 }
 
 func createComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
 	commId, err = dbCreateComment(postId, userId, text)
+	if err != nil {
+		user, e := getUser(userId)
+		if e != nil {
+			return commId, e
+		}
+		comment := Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
+		go redisAddComment(postId, comment)
+	}
 	return commId, err
 }
 

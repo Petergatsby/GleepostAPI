@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"log"
@@ -13,7 +14,6 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
-	"github.com/garyburd/redigo/redis"
 )
 
 var (

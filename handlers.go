@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net/http"
-	"strconv"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
+	"strconv"
 )
 
 /*********************************************************************************
@@ -542,4 +542,3 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResp(w, errorJSON, 405)
 	}
 }
-

@@ -200,8 +200,8 @@ func RedisDial() (redis.Conn, error) {
 func redisGetCommentCount(id PostId) (count int, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := "posts:" + strconv.FormatUint(uint64(id), 10) + ":comment_count"
-	count, err = redis.Int(conn.Do("GET", key))
+	key := fmt.Sprintf("posts:%d:comments", id)
+	count, err = redis.Int(conn.Do("ZCARD", key))
 	if err != nil {
 		return 0, err
 	} else {
@@ -209,11 +209,13 @@ func redisGetCommentCount(id PostId) (count int, err error) {
 	}
 }
 
-func redisSetCommentCount(id PostId, count int) {
+func redisAddComment(id PostId, comment Comment) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("posts:%d:comment_count", id)
-	conn.Send("SET", key, count)
+	key := fmt.Sprintf("posts:%d:comments", id)
+	baseKey := fmt.Sprintf("comments:%d", comment.Id)
+	conn.Send("ZADD", key, comment.Time.Unix(), comment.Id)
+	conn.Send("MSET", baseKey+":by", comment.By.Id, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
 	conn.Flush()
 }
 
@@ -245,15 +247,6 @@ func redisSetUserNetwork(userId UserId, network Network) {
 	baseKey := fmt.Sprintf("users:%d:network", userId)
 	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name)
 	conn.Flush()
-}
-
-func redisIncCommentCount(id PostId) (err error) {
-	conn := pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("posts:%d:comment_count", id)
-	conn.Send("INCR", key)
-	conn.Flush()
-	return nil
 }
 
 func redisGetLastMessage(id ConversationId) (message Message, err error) {
