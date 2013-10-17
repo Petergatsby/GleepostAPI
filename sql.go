@@ -622,7 +622,7 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 }
 
 func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
-	if res, err := commentInsertStmt.Exec(commId, userId, text); err == nil {
+	if res, err := commentInsertStmt.Exec(postId, userId, text); err == nil {
 		cId, err := res.LastInsertId()
 		commId = CommentId(cId)
 		return commId, err
