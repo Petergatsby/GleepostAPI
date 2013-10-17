@@ -228,169 +228,12 @@ func prepare(db *sql.DB) (err error) {
 }
 
 /********************************************************************
-Database functions
+		Database functions
 ********************************************************************/
 
-func dbUpdateContact(user UserId, contact UserId) (err error) {
-	_, err = contactUpdateStmt.Exec(user, contact)
-	return
-}
-
-func dbGetContacts(user UserId) (contacts []Contact, err error) {
-	rows, err := contactSelectStmt.Query(user, user)
-	log.Println("DB hit: GetContacts")
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var contact Contact
-		var adder, addee UserId
-		var confirmed bool
-		err = rows.Scan(&adder, &addee, &confirmed)
-		if err != nil {
-			return
-		}
-		switch {
-		case adder == user:
-			contact.User, err = getUser(addee)
-			if err != nil {
-				return
-			}
-			contact.YouConfirmed = true
-			contact.TheyConfirmed = confirmed
-		case addee == user:
-			contact.User, err = getUser(adder)
-			contact.YouConfirmed = confirmed
-			contact.TheyConfirmed = true
-		}
-		contacts = append(contacts, contact)
-	}
-	return
-}
-
-func dbAddContact(adder UserId, addee UserId) (err error) {
-	log.Println("DB hit: addContact")
-	_, err = contactInsertStmt.Exec(adder, addee)
-	return
-}
-
-func dbGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
-	conf := GetConfig()
-	rows, err := messageSelectAfterStmt.Query(convId, after, conf.MessagePageSize)
-	log.Println("DB hit: getMessages convid, after (message.id, message.by, message.text, message.time, message.seen)")
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var message Message
-		var timeString string
-		var by UserId
-		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.Time, err = time.Parse(MysqlTime, timeString)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.By, err = getUser(by)
-		if err != nil {
-			//should only happen if a message is from a non-existent user
-			//(or the db is fucked :))
-			log.Println(err)
-		}
-		messages = append(messages, message)
-	}
-	return
-
-}
-
-func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
-	rows, err := commentSelectStmt.Query(postId, start, count)
-	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
-	if err != nil {
-		return comments, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var comment Comment
-		comment.Post = postId
-		var timeString string
-		var by UserId
-		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
-		if err != nil {
-			return comments, err
-		}
-		comment.Time, _ = time.Parse(MysqlTime, timeString)
-		comment.By, err = getUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-		comments = append(comments, comment)
-	}
-	return comments, nil
-}
-
-func dbAddPost(userId UserId, text string) (postId PostId, err error) {
-	networks := getUserNetworks(userId)
-	res, err := postStmt.Exec(userId, text, networks[0].Id)
-	if err != nil {
-		return 0, err
-	}
-	_postId, err := res.LastInsertId()
-	postId = PostId(_postId)
-	if err != nil {
-		return 0, err
-	}
-	return postId, nil
-}
-
-func dbAddMessage(convId ConversationId, userId UserId, text string) (id MessageId, err error) {
-	res, err := messageInsertStmt.Exec(convId, userId, text)
-	if err != nil {
-		return 0, err
-	}
-	_id, err := res.LastInsertId()
-	id = MessageId(_id)
-	return
-}
-
-func dbUpdateConversation(id ConversationId) (err error) {
-	_, err = conversationUpdateStmt.Exec(id)
-	log.Println("DB hit: updateConversation convid ")
-	if err != nil {
-		log.Printf("Error: %v", err)
-	}
-	return err
-}
-
-func dbGetCommentCount(id PostId) (count int) {
-	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
-	if err != nil {
-		return 0
-	}
-	return count
-}
-
-func dbGetLastMessage(id ConversationId) (message Message, err error) {
-	var timeString string
-	var by UserId
-	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-	log.Println("DB hit: dbGetLastMessage convid (message.id, message.by, message.text, message.time, message.seen)")
-	if err != nil {
-		return message, err
-	} else {
-		message.By, err = getUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-		message.Time, _ = time.Parse(MysqlTime, timeString)
-
-		return message, nil
-	}
-}
+/********************************************************************
+		Network
+********************************************************************/
 
 func dbValidateEmail(email string) bool {
 	rows, err := ruleStmt.Query()
@@ -409,18 +252,6 @@ func dbValidateEmail(email string) bool {
 		}
 	}
 	return (false)
-}
-
-func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
-	res, err := registerStmt.Exec(user, hash, email)
-	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-		return 0, APIerror{"Username or email address already taken"}
-	} else if err != nil {
-		return 0, err
-	} else {
-		id, _ := res.LastInsertId()
-		return UserId(id), nil
-	}
 }
 
 func dbGetUserNetworks(id UserId) []Network {
@@ -443,77 +274,46 @@ func dbGetUserNetworks(id UserId) []Network {
 	return (nets)
 }
 
-func dbGetParticipants(conv ConversationId) []User {
-	rows, err := participantSelectStmt.Query(conv)
-	log.Println("DB hit: getParticipants convid (message.id, message.by, message.text, message.time, message.seen)")
-	if err != nil {
-		log.Printf("Error getting participant: %v", err)
+/********************************************************************
+		User
+********************************************************************/
+
+func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
+	res, err := registerStmt.Exec(user, hash, email)
+	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
+		return 0, APIerror{"Username or email address already taken"}
+	} else if err != nil {
+		return 0, err
+	} else {
+		id, _ := res.LastInsertId()
+		return UserId(id), nil
 	}
-	defer rows.Close()
-	participants := make([]User, 0, 5)
-	for rows.Next() {
-		var user User
-		err = rows.Scan(&user.Id, &user.Name)
-		participants = append(participants, user)
-	}
-	return (participants)
 }
 
-func dbGetMessages(convId ConversationId, start int64) (messages []Message, err error) {
-	conf := GetConfig()
-	rows, err := messageSelectStmt.Query(convId, start, conf.MessagePageSize)
-	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
+func dbGetUser(id UserId) (user User, err error) {
+	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
+	log.Println("DB hit: dbGetUser id(user.Name, user.Id)")
 	if err != nil {
-		log.Printf("%v", err)
+		return user, err
+	} else {
+		return user, nil
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var message Message
-		var timeString string
-		var by UserId
-		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.Time, err = time.Parse(MysqlTime, timeString)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.By, err = getUser(by)
-		if err != nil {
-			//should only happen if a message is from a non-existent user
-			//(or the db is fucked :))
-			log.Println(err)
-		}
-		messages = append(messages, message)
-	}
-	return
 }
 
-func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
-	rows, err := conversationSelectStmt.Query(user_id, start)
-	log.Println("DB hit: getConversations user_id, start (conversation.id)")
-	if err != nil {
-		return conversations, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var conv ConversationSmall
-		var t string
-		err = rows.Scan(&conv.Conversation.Id, &t)
-		if err != nil {
-			return conversations, err
-		}
-		conv.LastActivity, _ = time.Parse(MysqlTime, t)
-		conv.Conversation.Participants = getParticipants(conv.Id)
-		LastMessage, err := getLastMessage(conv.Id)
-		if err == nil {
-			conv.LastMessage = &LastMessage
-		}
-		conversations = append(conversations, conv)
-	}
-	return conversations, nil
+func dbGetProfile(id UserId) (user Profile, err error) {
+	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc, &user.Avatar)
+	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
+	user.User.Id = id
+	//at the moment all the urls in the db aren't real ones :/
+	user.Avatar = "https://gleepost.com/" + user.Avatar
+	nets := getUserNetworks(user.User.Id)
+	user.Network = nets[0]
+	return user, err
 }
+
+/********************************************************************
+		Conversation
+********************************************************************/
 
 func dbCreateConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
 	r, _ := conversationStmt.Exec(id)
@@ -552,14 +352,90 @@ func dbCreateConversation(id UserId, nParticipants int) (conversation Conversati
 	return
 }
 
-func dbGetUser(id UserId) (user User, err error) {
-	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
-	log.Println("DB hit: dbGetUser id(user.Name, user.Id)")
+func dbUpdateConversation(id ConversationId) (err error) {
+	_, err = conversationUpdateStmt.Exec(id)
+	log.Println("DB hit: updateConversation convid ")
 	if err != nil {
-		return user, err
-	} else {
-		return user, nil
+		log.Printf("Error: %v", err)
 	}
+	return err
+}
+
+func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
+	rows, err := conversationSelectStmt.Query(user_id, start)
+	log.Println("DB hit: getConversations user_id, start (conversation.id)")
+	if err != nil {
+		return conversations, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var conv ConversationSmall
+		var t string
+		err = rows.Scan(&conv.Conversation.Id, &t)
+		if err != nil {
+			return conversations, err
+		}
+		conv.LastActivity, _ = time.Parse(MysqlTime, t)
+		conv.Conversation.Participants = getParticipants(conv.Id)
+		LastMessage, err := getLastMessage(conv.Id)
+		if err == nil {
+			conv.LastMessage = &LastMessage
+		}
+		conversations = append(conversations, conv)
+	}
+	return conversations, nil
+}
+
+func dbGetParticipants(conv ConversationId) []User {
+	rows, err := participantSelectStmt.Query(conv)
+	log.Println("DB hit: getParticipants convid (message.id, message.by, message.text, message.time, message.seen)")
+	if err != nil {
+		log.Printf("Error getting participant: %v", err)
+	}
+	defer rows.Close()
+	participants := make([]User, 0, 5)
+	for rows.Next() {
+		var user User
+		err = rows.Scan(&user.Id, &user.Name)
+		participants = append(participants, user)
+	}
+	return (participants)
+}
+
+func dbGetLastMessage(id ConversationId) (message Message, err error) {
+	var timeString string
+	var by UserId
+	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+	log.Println("DB hit: dbGetLastMessage convid (message.id, message.by, message.text, message.time, message.seen)")
+	if err != nil {
+		return message, err
+	} else {
+		message.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+		message.Time, _ = time.Parse(MysqlTime, timeString)
+
+		return message, nil
+	}
+}
+
+/********************************************************************
+		Post
+********************************************************************/
+
+func dbAddPost(userId UserId, text string) (postId PostId, err error) {
+	networks := getUserNetworks(userId)
+	res, err := postStmt.Exec(userId, text, networks[0].Id)
+	if err != nil {
+		return 0, err
+	}
+	_postId, err := res.LastInsertId()
+	postId = PostId(_postId)
+	if err != nil {
+		return 0, err
+	}
+	return postId, nil
 }
 
 func dbGetPosts(netId NetworkId, start int64, count int) (posts []PostSmall, err error) {
@@ -610,17 +486,6 @@ func dbGetPostImages(postId PostId) (images []string, err error) {
 	return
 }
 
-func dbGetProfile(id UserId) (user Profile, err error) {
-	err = profileSelectStmt.QueryRow(id).Scan(&user.User.Name, &user.Desc, &user.Avatar)
-	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
-	user.User.Id = id
-	//at the moment all the urls in the db aren't real ones :/
-	user.Avatar = "https://gleepost.com/" + user.Avatar
-	nets := getUserNetworks(user.User.Id)
-	user.Network = nets[0]
-	return user, err
-}
-
 func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
 	if res, err := commentInsertStmt.Exec(postId, userId, text); err == nil {
 		cId, err := res.LastInsertId()
@@ -630,6 +495,173 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 		return 0, err
 	}
 }
+
+func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
+	rows, err := commentSelectStmt.Query(postId, start, count)
+	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
+	if err != nil {
+		return comments, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var comment Comment
+		comment.Post = postId
+		var timeString string
+		var by UserId
+		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+		if err != nil {
+			return comments, err
+		}
+		comment.Time, _ = time.Parse(MysqlTime, timeString)
+		comment.By, err = getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d %v", by, err)
+		}
+		comments = append(comments, comment)
+	}
+	return comments, nil
+}
+
+func dbGetCommentCount(id PostId) (count int) {
+	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
+	if err != nil {
+		return 0
+	}
+	return count
+}
+
+/********************************************************************
+		Message
+********************************************************************/
+
+func dbAddMessage(convId ConversationId, userId UserId, text string) (id MessageId, err error) {
+	res, err := messageInsertStmt.Exec(convId, userId, text)
+	if err != nil {
+		return 0, err
+	}
+	_id, err := res.LastInsertId()
+	id = MessageId(_id)
+	return
+}
+
+func dbGetMessages(convId ConversationId, start int64) (messages []Message, err error) {
+	conf := GetConfig()
+	rows, err := messageSelectStmt.Query(convId, start, conf.MessagePageSize)
+	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
+	if err != nil {
+		log.Printf("%v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var message Message
+		var timeString string
+		var by UserId
+		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.Time, err = time.Parse(MysqlTime, timeString)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.By, err = getUser(by)
+		if err != nil {
+			//should only happen if a message is from a non-existent user
+			//(or the db is fucked :))
+			log.Println(err)
+		}
+		messages = append(messages, message)
+	}
+	return
+}
+
+func dbGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
+	conf := GetConfig()
+	rows, err := messageSelectAfterStmt.Query(convId, after, conf.MessagePageSize)
+	log.Println("DB hit: getMessages convid, after (message.id, message.by, message.text, message.time, message.seen)")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var message Message
+		var timeString string
+		var by UserId
+		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.Time, err = time.Parse(MysqlTime, timeString)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+		message.By, err = getUser(by)
+		if err != nil {
+			//should only happen if a message is from a non-existent user
+			//(or the db is fucked :))
+			log.Println(err)
+		}
+		messages = append(messages, message)
+	}
+	return
+
+}
+
+/********************************************************************
+		Token
+********************************************************************/
+
+/********************************************************************
+		Contact
+********************************************************************/
+
+func dbAddContact(adder UserId, addee UserId) (err error) {
+	log.Println("DB hit: addContact")
+	_, err = contactInsertStmt.Exec(adder, addee)
+	return
+}
+
+func dbGetContacts(user UserId) (contacts []Contact, err error) {
+	rows, err := contactSelectStmt.Query(user, user)
+	log.Println("DB hit: GetContacts")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var contact Contact
+		var adder, addee UserId
+		var confirmed bool
+		err = rows.Scan(&adder, &addee, &confirmed)
+		if err != nil {
+			return
+		}
+		switch {
+		case adder == user:
+			contact.User, err = getUser(addee)
+			if err != nil {
+				return
+			}
+			contact.YouConfirmed = true
+			contact.TheyConfirmed = confirmed
+		case addee == user:
+			contact.User, err = getUser(adder)
+			contact.YouConfirmed = confirmed
+			contact.TheyConfirmed = true
+		}
+		contacts = append(contacts, contact)
+	}
+	return
+}
+
+func dbUpdateContact(user UserId, contact UserId) (err error) {
+	_, err = contactUpdateStmt.Exec(user, contact)
+	return
+}
+
+/********************************************************************
+		Device
+********************************************************************/
 
 func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
 	_, err = deviceInsertStmt.Exec(user, deviceType, deviceId)
