@@ -24,7 +24,7 @@ func createToken(userId UserId) Token {
 	if err == nil {
 		hash.Write(random)
 		digest := hex.EncodeToString(hash.Sum(nil))
-		expiry := time.Now().Add(time.Duration(24) * time.Hour).UTC()
+		expiry := time.Now().Add(time.Duration(24) * time.Hour).UTC().Round(time.Second)
 		token := Token{userId, digest, expiry}
 		return (token)
 	} else {
