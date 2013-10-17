@@ -126,9 +126,6 @@ func getCommentCount(id PostId) (count int) {
 
 func createComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
 	commId, err = dbCreateComment(postId, userId, text)
-	if err == nil {
-		err = redisIncCommentCount(postId)
-	}
 	return commId, err
 }
 
