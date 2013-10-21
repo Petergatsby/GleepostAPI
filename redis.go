@@ -601,7 +601,7 @@ func redisGetUser(id UserId) (user User, err error) {
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d", id)
 	values, err := redis.Values(conn.Do("MGET", baseKey+":name", baseKey+":profile_image"))
-	if len(values) < 3 {
+	if len(values) < 2 {
 		return user, redis.Error("That user isn't cached!")
 	}
 	if _, err := redis.Scan(values, &user.Name, &user.Avatar); err != nil {
