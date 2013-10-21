@@ -291,8 +291,12 @@ func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
 }
 
 func dbGetUser(id UserId) (user User, err error) {
-	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name, &user.Avatar)
+	var av sql.NullString
+	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name, &av)
 	log.Println("DB hit: dbGetUser id(user.Name, user.Id, user.Avatar)")
+	if av.Valid {
+		user.Avatar = "https://gleepost.com/" + av.String
+	}
 	if err != nil {
 		return user, err
 	} else {
