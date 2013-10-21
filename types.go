@@ -12,9 +12,9 @@ type CommentId uint64
 type ConversationId uint64
 
 type User struct {
-	Id   UserId `json:"id"`
-	Name string `json:"username"`
-	Avatar  string  `json:"profile_image"`
+	Id     UserId `json:"id"`
+	Name   string `json:"username"`
+	Avatar string `json:"profile_image"`
 }
 
 type Profile struct {
@@ -130,9 +130,9 @@ type Config struct {
 }
 
 type Device struct {
-	User UserId
-	Type string
-	Id   string
+	User UserId `json:"user"`
+	Type string `json:"type"`
+	Id   string `json:"id"`
 }
 
 func (c *Config) ConnectionString() string {

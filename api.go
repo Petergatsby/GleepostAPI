@@ -89,5 +89,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
 	http.HandleFunc(conf.UrlBase+"/contacts", contactsHandler)
 	http.HandleFunc(conf.UrlBase+"/contacts/", anotherContactsHandler)
+	http.HandleFunc(conf.UrlBase+"/devices", deviceHandler)
 	http.ListenAndServe(":"+conf.Port, nil)
 }

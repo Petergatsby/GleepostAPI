@@ -37,7 +37,8 @@ example responses:
 		"id":2,
 		"by": {
 			"id":9,
-			"username":"Patrick"
+			"username":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
@@ -51,6 +52,7 @@ example responses:
 		"by": {
 			"id":23,
 			"username":"PeterGatsby"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"Sailor Moon FTW!"
@@ -80,6 +82,7 @@ example responses:
 		"by": {
 			"id":9,
 			"username":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"I concur."
@@ -89,6 +92,7 @@ example responses:
 		"by": {
 			"id":545,
 			"username":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"Have you ever / ever felt like this? / How strange things happen / like you're going round the twist?"
@@ -110,15 +114,15 @@ returns a list of 20 of your conversations ordered by most recent message, start
 [
 	{"id":1,
 	"participants": [
-		{"id":9, "username":"Patrick"},
-		{"id":23, "username":"PeterGatsby"}
+		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 	},
 	{"id":2,
 	"participants" [
-		{"id":99999, "username":"Lukas"},
-		{"id":232515, "username":"Ling"}
+		{"id":99999, "username":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":232515, "username":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	}
@@ -132,8 +136,8 @@ example responses:
 {
 	"id":1,
 	"participants": [
-		{"id":9, "username":"Patrick"},
-		{"id":23, "username":"PeterGatsby"}
+		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"messages": [
 		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
@@ -188,8 +192,8 @@ example responses:
 {
 	"id":2342342,
 	"participants": [
-		{"id":9, "username":"Patrick"},
-		{"id":23, "username":"PeterGatsby"}
+		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	]
 }
 
@@ -204,10 +208,10 @@ example responses:
 {
 	"id":2342342,
 	"participants": [
-		{"id":9, "username":"Patrick"},
-		{"id":23, "username":"PeterGatsby"},
-		{"id":1351, "username":"Someone"},
-		{"id":6124, "username":"SomeoneElse"}
+		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":1351, "username":"Someone", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":6124, "username":"SomeoneElse", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	]
 }
 
@@ -223,7 +227,7 @@ at which point it will timeout
 example responses:
 {
 	"id":53,
-	"by": {"id":9,"username":"Patrick"},
+	"by": {"id":9,"username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 	"text":"sup",
 	"timestamp":"2013-09-16T16:58:30.771905595Z",
 	"seen":false,
@@ -281,4 +285,19 @@ HTTP 200
 	"username":"petergatsby",
 	"you_confirmed":true,
 	"they_confirmed":true,
+}
+
+POST /device
+required parameters: id, token, type, device_id
+
+Type should be "android" or "ios"
+
+This registers the push notification id "device_id" for the current user
+
+example responses: 
+HTTP 201
+{
+	"user":2395,
+	"type":"android",
+	"id":"APA91bFmOKOcm6v1ZJVavmvHQ3SLzADznBHhT6gDdNUDZm9wSc-yBdToyAWtR73cro5rnemVTiXdqQMlqmrs_4mdAhZbiLIfeZ4cD4L9OstvTnjzv8-Yx_fSPM1Joe_gpAEe0haNEwh3pSQah1QQQFC829jA7V-vswpuQLmLT2sK_ciMo5Hx7po"
 }

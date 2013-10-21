@@ -584,7 +584,6 @@ func redisSetUserNetwork(userId UserId, network Network) {
 	conn.Flush()
 }
 
-
 /********************************************************************
 		Users
 ********************************************************************/
@@ -593,7 +592,7 @@ func redisSetUser(user User) {
 	conn := pool.Get()
 	defer conn.Close()
 	BaseKey := fmt.Sprintf("users:%d", user.Id)
-	conn.Send("MSET", BaseKey+":name", user.Name, BaseKey + ":profile_image", user.Avatar)
+	conn.Send("MSET", BaseKey+":name", user.Name, BaseKey+":profile_image", user.Avatar)
 	conn.Flush()
 }
 
@@ -601,7 +600,7 @@ func redisGetUser(id UserId) (user User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d", id)
-	values, err := redis.Values(conn.Do("MGET", baseKey + ":name", baseKey + ":profile_image"))
+	values, err := redis.Values(conn.Do("MGET", baseKey+":name", baseKey+":profile_image"))
 	if _, err := redis.Scan(values, &user.Name, &user.Avatar); err != nil {
 		return user, err
 	}
@@ -636,4 +635,3 @@ func redisTokenExists(id UserId, token string) bool {
 	}
 	return exists
 }
-
