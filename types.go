@@ -14,12 +14,12 @@ type ConversationId uint64
 type User struct {
 	Id   UserId `json:"id"`
 	Name string `json:"username"`
+	Avatar  string  `json:"profile_image"`
 }
 
 type Profile struct {
 	User
 	Desc    string  `json:"tagline"`
-	Avatar  string  `json:"profile_image"`
 	Network Network `json:"network"`
 	Course  string  `json:"course"`
 }

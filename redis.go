@@ -593,15 +593,16 @@ func redisSetUser(user User) {
 	conn := pool.Get()
 	defer conn.Close()
 	BaseKey := fmt.Sprintf("users:%d", user.Id)
-	conn.Send("SET", BaseKey+":name", user.Name)
+	conn.Send("MSET", BaseKey+":name", user.Name, BaseKey + ":profile_image", user.Avatar)
 	conn.Flush()
 }
 
 func redisGetUser(id UserId) (user User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	user.Name, err = redis.String(conn.Do("GET", fmt.Sprintf("users:%d:name", id)))
-	if err != nil {
+	baseKey := fmt.Sprintf("users:%d", id)
+	values, err := redis.Values(conn.Do("MGET", baseKey + ":name", baseKey + ":profile_image"))
+	if _, err := redis.Scan(values, &user.Name, &user.Avatar); err != nil {
 		return user, err
 	}
 	user.Id = id

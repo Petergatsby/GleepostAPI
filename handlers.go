@@ -537,6 +537,8 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "GET":
 		//implement getting tokens
+	case r.Method == "DELETE":
+		//Implement deregistering device
 	default:
 		errorJSON, _ := json.Marshal(APIerror{"Method not supported"})
 		jsonResp(w, errorJSON, 405)

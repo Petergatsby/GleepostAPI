@@ -16,7 +16,7 @@ const (
 	networkSelect = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
 	//User
 	createUser    = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	userSelect    = "SELECT id, name FROM users WHERE id=?"
+	userSelect    = "SELECT id, name, avatar FROM users WHERE id=?"
 	profileSelect = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
 	PassSelect    = "SELECT id, password FROM users WHERE name = ?"
 	randomSelect  = "SELECT id, name FROM users ORDER BY RAND()"
@@ -291,8 +291,8 @@ func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
 }
 
 func dbGetUser(id UserId) (user User, err error) {
-	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name)
-	log.Println("DB hit: dbGetUser id(user.Name, user.Id)")
+	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name, &user.Avatar)
+	log.Println("DB hit: dbGetUser id(user.Name, user.Id, user.Avatar)")
 	if err != nil {
 		return user, err
 	} else {
