@@ -306,7 +306,7 @@ func dbGetUser(id UserId) (user User, err error) {
 
 func dbGetProfile(id UserId) (user Profile, err error) {
 	var av, desc sql.NullString
-	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, desc, &av)
+	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, &desc, &av)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if av.Valid {
 		user.Avatar = "https://gleepost.com/" + av.String
