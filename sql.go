@@ -183,35 +183,15 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 		Conversation
 ********************************************************************/
 
-func dbCreateConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
+func dbCreateConversation(id UserId, participants []User) (conversation Conversation, err error) {
 	s := stmt["conversationInsert"]
 	r, _ := s.Exec(id)
 	cId, _ := r.LastInsertId()
 	conversation.Id = ConversationId(cId)
-	participants := make([]User, 0, 10)
-	user, err := getUser(id)
 	if err != nil {
 		return
 	}
-	participants = append(participants, user)
-	nParticipants--
-
-	st := stmt["randomSelect"]
-	rows, err := st.Query()
 	log.Println("DB hit: createConversation (user.Name, user.Id)")
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for nParticipants > 0 {
-		rows.Next()
-		if err = rows.Scan(&user.Id, &user.Name); err != nil {
-			return
-		} else {
-			participants = append(participants, user)
-			nParticipants--
-		}
-	}
 	sta := stmt["participantInsert"]
 	for _, u := range participants {
 		_, err = sta.Exec(conversation.Id, u.Id)
@@ -220,6 +200,28 @@ func dbCreateConversation(id UserId, nParticipants int) (conversation Conversati
 		}
 	}
 	conversation.Participants = participants
+	return
+}
+
+func dbRandomPartners(id UserId, count int) (partners []User, err error) {
+	s := stmt["randomSelect"]
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for count > 0 {
+		rows.Next()
+		var user User
+		if err = rows.Scan(&user.Id, &user.Name); err != nil {
+			return
+		} else {
+			if user.Id != id {
+				partners = append(partners, user)
+				count--
+			}
+		}
+	}
 	return
 }
 

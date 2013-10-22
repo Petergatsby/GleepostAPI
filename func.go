@@ -294,7 +294,16 @@ func getComments(id PostId, start int64) (comments []Comment, err error) {
 }
 
 func createConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
-	return dbCreateConversation(id, nParticipants)
+	participants, err := generatePartners(id, nParticipants - 1)
+	if err != nil {
+		return
+	}
+	user, err := getUser(id)
+	if err != nil {
+		return
+	}
+	participants = append(participants, user)
+	return dbCreateConversation(id, participants)
 }
 
 func validateEmail(email string) bool {
@@ -350,4 +359,8 @@ func addDevice(user UserId, deviceType string, deviceId string) (device Device, 
 	device.Type = deviceType
 	device.Id = deviceId
 	return
+}
+
+func generatePartners(id UserId, count int) (partners []User, err error) {
+	return dbRandomPartners(id, count)
 }
