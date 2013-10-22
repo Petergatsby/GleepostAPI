@@ -215,7 +215,7 @@ example responses:
 }
 ```
 
-##GET /conversations/[conversation-id/messages
+##GET /conversations/[conversation-id]/messages
 required parameters: id=[user-id], token=[token]
 optional parameters: start=[start], after=[after]
 
