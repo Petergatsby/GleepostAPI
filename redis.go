@@ -201,7 +201,8 @@ func redisGetMessage(msgId MessageId) (message Message, err error) {
 
 func redisAddAllMessages(convId ConversationId) {
 	conf := GetConfig()
-	rows, err := messageSelectStmt.Query(convId, 0, conf.MessageCache)
+	s := stmt["messageSelect"]
+	rows, err := s.Query(convId, 0, conf.MessageCache)
 	defer rows.Close()
 	log.Println("DB hit: allMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {

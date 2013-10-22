@@ -62,7 +62,8 @@ func validateToken(id UserId, token string) bool {
 		return (true)
 	} else {
 		var expiry string
-		err := tokenSelectStmt.QueryRow(id, token).Scan(&expiry)
+		s := stmt["tokenSelect"]
+		err := s.QueryRow(id, token).Scan(&expiry)
 		if err != nil {
 			return (false)
 		} else {
@@ -78,7 +79,8 @@ func validateToken(id UserId, token string) bool {
 func validatePass(user string, pass string) (id UserId, err error) {
 	hash := make([]byte, 256)
 	passBytes := []byte(pass)
-	err = passStmt.QueryRow(user).Scan(&id, &hash)
+	s := stmt["passSelect"]
+	err = s.QueryRow(user).Scan(&id, &hash)
 	if err != nil {
 		return 0, err
 	} else {
@@ -93,7 +95,8 @@ func validatePass(user string, pass string) (id UserId, err error) {
 
 func createAndStoreToken(id UserId) (Token, error) {
 	token := createToken(id)
-	_, err := tokenInsertStmt.Exec(token.UserId, token.Token, token.Expiry)
+	s := stmt["tokenInsert"]
+	_, err := s.Exec(token.UserId, token.Token, token.Expiry)
 	redisPutToken(token)
 	if err != nil {
 		return token, err
@@ -159,11 +162,11 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 	if start+int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
 		messages, err = redisGetMessages(convId, start)
 		if err != nil {
-			messages, err = dbGetMessages(convId, start)
+			messages, err = dbGetMessages(convId, start, false)
 			go redisAddAllMessages(convId)
 		}
 	} else {
-		messages, err = dbGetMessages(convId, start)
+		messages, err = dbGetMessages(convId, start, false)
 	}
 	return
 }
@@ -171,7 +174,7 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 func getMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
 	messages, err = redisGetMessagesAfter(convId, after)
 	if err != nil {
-		messages, err = dbGetMessagesAfter(convId, after)
+		messages, err = dbGetMessages(convId, after, true)
 		go redisAddAllMessages(convId)
 	}
 	return

@@ -11,81 +11,11 @@ import (
 const (
 	//For parsing
 	MysqlTime = "2006-01-02 15:04:05"
-	//Network
-	ruleSelect    = "SELECT network_id, rule_type, rule_value FROM net_rules"
-	networkSelect = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
-	//User
-	createUser    = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	userSelect    = "SELECT id, name, avatar FROM users WHERE id=?"
-	profileSelect = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
-	PassSelect    = "SELECT id, password FROM users WHERE name = ?"
-	randomSelect  = "SELECT id, name FROM users ORDER BY RAND()"
-	//Conversation
-	conversationInsert = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
-	conversationUpdate = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
-	conversationSelect = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
-	participantInsert  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
-	participantSelect  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
-	lastMessageSelect  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
-	//Post
-	postInsert         = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
-	wallSelect         = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
-	imageSelect        = "SELECT url FROM post_images WHERE post_id = ?"
-	commentInsert      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	commentSelect      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
-	commentCountSelect = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	//Message
-	messageInsert      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	messageSelect      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
-	messageSelectAfter = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
-	//Token
-	tokenInsert = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
-	tokenSelect = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
-	//Contact
-	contactInsert = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
-	contactSelect = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
-	contactUpdate = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
-	//device
-	deviceInsert = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
 )
 
 var (
-	//Network
-	ruleStmt    *sql.Stmt
-	networkStmt *sql.Stmt
-	//User
-	registerStmt      *sql.Stmt
-	userStmt          *sql.Stmt
-	profileSelectStmt *sql.Stmt
-	passStmt          *sql.Stmt
-	randomStmt        *sql.Stmt
-	//Conversation
-	conversationStmt       *sql.Stmt
-	conversationUpdateStmt *sql.Stmt
-	conversationSelectStmt *sql.Stmt
-	participantStmt        *sql.Stmt
-	participantSelectStmt  *sql.Stmt
-	lastMessageSelectStmt  *sql.Stmt
-	//Post
-	postStmt               *sql.Stmt
-	wallSelectStmt         *sql.Stmt
-	imageSelectStmt        *sql.Stmt
-	commentInsertStmt      *sql.Stmt
-	commentSelectStmt      *sql.Stmt
-	commentCountSelectStmt *sql.Stmt
-	//<essage
-	messageInsertStmt      *sql.Stmt
-	messageSelectStmt      *sql.Stmt
-	messageSelectAfterStmt *sql.Stmt
-	//Token
-	tokenInsertStmt *sql.Stmt
-	tokenSelectStmt *sql.Stmt
-	//Contact
-	contactInsertStmt *sql.Stmt
-	contactSelectStmt *sql.Stmt
-	contactUpdateStmt *sql.Stmt
-	//Devices
-	deviceInsertStmt *sql.Stmt
+	sqlStmt	map[string]string
+	stmt map[string]*sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -106,123 +36,46 @@ func keepalive(db *sql.DB) {
 
 func prepare(db *sql.DB) (err error) {
 	//Network
-	ruleStmt, err = db.Prepare(ruleSelect)
-	if err != nil {
-		return
-	}
-	networkStmt, err = db.Prepare(networkSelect)
-	if err != nil {
-		return
-	}
+	sqlStmt["ruleSelect"] = "SELECT network_id, rule_type, rule_value FROM net_rules"
+	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
 	//User
-	registerStmt, err = db.Prepare(createUser)
-	if err != nil {
-		return
-	}
-	userStmt, err = db.Prepare(userSelect)
-	if err != nil {
-		return
-	}
-	profileSelectStmt, err = db.Prepare(profileSelect)
-	if err != nil {
-		return
-	}
-	passStmt, err = db.Prepare(PassSelect)
-	if err != nil {
-		return
-	}
-	randomStmt, err = db.Prepare(randomSelect)
-	if err != nil {
-		return
-	}
+	sqlStmt["createUser"]    = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
+	sqlStmt["userSelect"]    = "SELECT id, name, avatar FROM users WHERE id=?"
+	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
+	sqlStmt["passSelect"]    = "SELECT id, password FROM users WHERE name = ?"
+	sqlStmt["randomSelect"]  = "SELECT id, name FROM users ORDER BY RAND()"
 	//Conversation
-	conversationStmt, err = db.Prepare(conversationInsert)
-	if err != nil {
-		return
-	}
-	conversationUpdateStmt, err = db.Prepare(conversationUpdate)
-	if err != nil {
-		return
-	}
-	conversationSelectStmt, err = db.Prepare(conversationSelect)
-	if err != nil {
-		return
-	}
-	participantStmt, err = db.Prepare(participantInsert)
-	if err != nil {
-		return
-	}
-	participantSelectStmt, err = db.Prepare(participantSelect)
-	if err != nil {
-		return
-	}
-	lastMessageSelectStmt, err = db.Prepare(lastMessageSelect)
-	if err != nil {
-		return
-	}
+	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
+	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
+	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
+	sqlStmt["participantInsert"]  = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
+	sqlStmt["participantSelect"]  = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
+	sqlStmt["lastMessageSelect"]  = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	//Post
-	postStmt, err = db.Prepare(postInsert)
-	if err != nil {
-		return
-	}
-	wallSelectStmt, err = db.Prepare(wallSelect)
-	if err != nil {
-		return
-	}
-	imageSelectStmt, err = db.Prepare(imageSelect)
-	if err != nil {
-		return
-	}
-	commentInsertStmt, err = db.Prepare(commentInsert)
-	if err != nil {
-		return
-	}
-	commentSelectStmt, err = db.Prepare(commentSelect)
-	if err != nil {
-		return
-	}
-	commentCountSelectStmt, err = db.Prepare(commentCountSelect)
-	if err != nil {
-		return
-	}
-	messageInsertStmt, err = db.Prepare(messageInsert)
-	if err != nil {
-		return
-	}
-	messageSelectStmt, err = db.Prepare(messageSelect)
-	if err != nil {
-		return
-	}
-	messageSelectAfterStmt, err = db.Prepare(messageSelectAfter)
-	if err != nil {
-		return
-	}
+	sqlStmt["postInsert"]         = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
+	sqlStmt["wallSelect"]         = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
+	sqlStmt["imageSelect"]        = "SELECT url FROM post_images WHERE post_id = ?"
+	sqlStmt["commentInsert"]      = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
+	sqlStmt["commentSelect"]      = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
+	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
+	//Message
+	sqlStmt["messageInsert"]      = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
+	sqlStmt["messageSelect"]      = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
+	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
 	//Token
-	tokenInsertStmt, err = db.Prepare(tokenInsert)
-	if err != nil {
-		return
-	}
-	tokenSelectStmt, err = db.Prepare(tokenSelect)
-	if err != nil {
-		return
-	}
+	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
+	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
 	//Contact
-	contactInsertStmt, err = db.Prepare(contactInsert)
-	if err != nil {
-		return
-	}
-	contactSelectStmt, err = db.Prepare(contactSelect)
-	if err != nil {
-		return
-	}
-	contactUpdateStmt, err = db.Prepare(contactUpdate)
-	if err != nil {
-		return
-	}
-	//Devices
-	deviceInsertStmt, err = db.Prepare(deviceInsert)
-	if err != nil {
-		return
+	sqlStmt["contactInsert"] = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
+	sqlStmt["contactSelect"] = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
+	sqlStmt["contactUpdate"] = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
+	//device
+	sqlStmt["deviceInsert"] = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
+	for k, str := range sqlStmt {
+		stmt[k], err = db.Prepare(str)
+		if err != nil {
+			return
+		}
 	}
 	return nil
 }
@@ -236,7 +89,8 @@ func prepare(db *sql.DB) (err error) {
 ********************************************************************/
 
 func dbValidateEmail(email string) bool {
-	rows, err := ruleStmt.Query()
+	s := stmt["ruleSelect"]
+	rows, err := s.Query()
 	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
 	if err != nil {
 		log.Printf("Error preparing statement: %v", err)
@@ -255,7 +109,8 @@ func dbValidateEmail(email string) bool {
 }
 
 func dbGetUserNetworks(id UserId) []Network {
-	rows, err := networkStmt.Query(id)
+	s := stmt["networkSelect"]
+	rows, err := s.Query(id)
 	defer rows.Close()
 	log.Println("DB hit: getUserNetworks userid (network.id, network.name)")
 	nets := make([]Network, 0, 5)
@@ -279,7 +134,8 @@ func dbGetUserNetworks(id UserId) []Network {
 ********************************************************************/
 
 func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
-	res, err := registerStmt.Exec(user, hash, email)
+	s := stmt["createUser"]
+	res, err := s.Exec(user, hash, email)
 	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
 		return 0, APIerror{"Username or email address already taken"}
 	} else if err != nil {
@@ -292,7 +148,8 @@ func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
 
 func dbGetUser(id UserId) (user User, err error) {
 	var av sql.NullString
-	err = userStmt.QueryRow(id).Scan(&user.Id, &user.Name, &av)
+	s := stmt["userSelect"]
+	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av)
 	log.Println("DB hit: dbGetUser id(user.Name, user.Id, user.Avatar)")
 	if av.Valid {
 		user.Avatar = "https://gleepost.com/" + av.String
@@ -306,7 +163,8 @@ func dbGetUser(id UserId) (user User, err error) {
 
 func dbGetProfile(id UserId) (user Profile, err error) {
 	var av, desc sql.NullString
-	err = profileSelectStmt.QueryRow(id).Scan(&user.Name, &desc, &av)
+	s := stmt["profileSelect"]
+	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if av.Valid {
 		user.Avatar = "https://gleepost.com/" + av.String
@@ -316,7 +174,7 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	}
 	user.Id = id
 	//at the moment all the urls in the db aren't real ones :/
-	nets := getUserNetworks(user.User.Id)
+	nets := getUserNetworks(user.Id)
 	user.Network = nets[0]
 	return user, err
 }
@@ -326,7 +184,8 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 ********************************************************************/
 
 func dbCreateConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
-	r, _ := conversationStmt.Exec(id)
+	s := stmt["conversationInsert"]
+	r, _ := s.Exec(id)
 	cId, _ := r.LastInsertId()
 	conversation.Id = ConversationId(cId)
 	participants := make([]User, 0, 10)
@@ -337,7 +196,8 @@ func dbCreateConversation(id UserId, nParticipants int) (conversation Conversati
 	participants = append(participants, user)
 	nParticipants--
 
-	rows, err := randomStmt.Query()
+	st := stmt["randomSelect"]
+	rows, err := st.Query()
 	log.Println("DB hit: createConversation (user.Name, user.Id)")
 	if err != nil {
 		return
@@ -352,8 +212,9 @@ func dbCreateConversation(id UserId, nParticipants int) (conversation Conversati
 			nParticipants--
 		}
 	}
+	sta := stmt["participantInsert"]
 	for _, u := range participants {
-		_, err = participantStmt.Exec(conversation.Id, u.Id)
+		_, err = sta.Exec(conversation.Id, u.Id)
 		if err != nil {
 			return
 		}
@@ -363,7 +224,8 @@ func dbCreateConversation(id UserId, nParticipants int) (conversation Conversati
 }
 
 func dbUpdateConversation(id ConversationId) (err error) {
-	_, err = conversationUpdateStmt.Exec(id)
+	s := stmt["conversationUpdate"]
+	_, err = s.Exec(id)
 	log.Println("DB hit: updateConversation convid ")
 	if err != nil {
 		log.Printf("Error: %v", err)
@@ -372,7 +234,8 @@ func dbUpdateConversation(id ConversationId) (err error) {
 }
 
 func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
-	rows, err := conversationSelectStmt.Query(user_id, start)
+	s := stmt["conversationSelect"]
+	rows, err := s.Query(user_id, start)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
 	if err != nil {
 		return conversations, err
@@ -397,7 +260,8 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 }
 
 func dbGetParticipants(conv ConversationId) []User {
-	rows, err := participantSelectStmt.Query(conv)
+	s := stmt["participantSelect"]
+	rows, err := s.Query(conv)
 	log.Println("DB hit: getParticipants convid (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Printf("Error getting participant: %v", err)
@@ -415,7 +279,8 @@ func dbGetParticipants(conv ConversationId) []User {
 func dbGetLastMessage(id ConversationId) (message Message, err error) {
 	var timeString string
 	var by UserId
-	err = lastMessageSelectStmt.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+	s := stmt["lastMessageSelect"]
+	err = s.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 	log.Println("DB hit: dbGetLastMessage convid (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		return message, err
@@ -436,7 +301,8 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 
 func dbAddPost(userId UserId, text string) (postId PostId, err error) {
 	networks := getUserNetworks(userId)
-	res, err := postStmt.Exec(userId, text, networks[0].Id)
+	s := stmt["postInsert"]
+	res, err := s.Exec(userId, text, networks[0].Id)
 	if err != nil {
 		return 0, err
 	}
@@ -449,7 +315,8 @@ func dbAddPost(userId UserId, text string) (postId PostId, err error) {
 }
 
 func dbGetPosts(netId NetworkId, start int64, count int) (posts []PostSmall, err error) {
-	rows, err := wallSelectStmt.Query(netId, start, count)
+	s := stmt["wallSelect"]
+	rows, err := s.Query(netId, start, count)
 	defer rows.Close()
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {
@@ -479,7 +346,8 @@ func dbGetPosts(netId NetworkId, start int64, count int) (posts []PostSmall, err
 }
 
 func dbGetPostImages(postId PostId) (images []string, err error) {
-	rows, err := imageSelectStmt.Query(postId)
+	s := stmt["imageSelect"]
+	rows, err := s.Query(postId)
 	defer rows.Close()
 	log.Println("DB hit: getImages postId(image)")
 	if err != nil {
@@ -497,7 +365,8 @@ func dbGetPostImages(postId PostId) (images []string, err error) {
 }
 
 func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
-	if res, err := commentInsertStmt.Exec(postId, userId, text); err == nil {
+	s := stmt["commentInsert"]
+	if res, err := s.Exec(postId, userId, text); err == nil {
 		cId, err := res.LastInsertId()
 		commId = CommentId(cId)
 		return commId, err
@@ -507,7 +376,8 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 }
 
 func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
-	rows, err := commentSelectStmt.Query(postId, start, count)
+	s := stmt["commentSelect"]
+	rows, err := s.Query(postId, start, count)
 	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
 	if err != nil {
 		return comments, err
@@ -533,7 +403,8 @@ func dbGetComments(postId PostId, start int64, count int) (comments []Comment, e
 }
 
 func dbGetCommentCount(id PostId) (count int) {
-	err := commentCountSelectStmt.QueryRow(id).Scan(&count)
+	s := stmt["commentCountSelect"]
+	err := s.QueryRow(id).Scan(&count)
 	if err != nil {
 		return 0
 	}
@@ -545,7 +416,8 @@ func dbGetCommentCount(id PostId) (count int) {
 ********************************************************************/
 
 func dbAddMessage(convId ConversationId, userId UserId, text string) (id MessageId, err error) {
-	res, err := messageInsertStmt.Exec(convId, userId, text)
+	s := stmt["messageInsert"]
+	res, err := s.Exec(convId, userId, text)
 	if err != nil {
 		return 0, err
 	}
@@ -554,9 +426,15 @@ func dbAddMessage(convId ConversationId, userId UserId, text string) (id Message
 	return
 }
 
-func dbGetMessages(convId ConversationId, start int64) (messages []Message, err error) {
+func dbGetMessages(convId ConversationId, startOrAfter int64, after bool) (messages []Message, err error) {
 	conf := GetConfig()
-	rows, err := messageSelectStmt.Query(convId, start, conf.MessagePageSize)
+	var s *sql.Stmt
+	if after {
+		s = stmt["messageSelectAfter"]
+	} else {
+		s = stmt["messageSelect"]
+	}
+	rows, err := s.Query(convId, startOrAfter, conf.MessagePageSize)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Printf("%v", err)
@@ -585,38 +463,6 @@ func dbGetMessages(convId ConversationId, start int64) (messages []Message, err 
 	return
 }
 
-func dbGetMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
-	conf := GetConfig()
-	rows, err := messageSelectAfterStmt.Query(convId, after, conf.MessagePageSize)
-	log.Println("DB hit: getMessages convid, after (message.id, message.by, message.text, message.time, message.seen)")
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var message Message
-		var timeString string
-		var by UserId
-		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.Time, err = time.Parse(MysqlTime, timeString)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.By, err = getUser(by)
-		if err != nil {
-			//should only happen if a message is from a non-existent user
-			//(or the db is fucked :))
-			log.Println(err)
-		}
-		messages = append(messages, message)
-	}
-	return
-
-}
-
 /********************************************************************
 		Token
 ********************************************************************/
@@ -627,12 +473,14 @@ func dbGetMessagesAfter(convId ConversationId, after int64) (messages []Message,
 
 func dbAddContact(adder UserId, addee UserId) (err error) {
 	log.Println("DB hit: addContact")
-	_, err = contactInsertStmt.Exec(adder, addee)
+	s := stmt["contactInsert"]
+	_, err = s.Exec(adder, addee)
 	return
 }
 
 func dbGetContacts(user UserId) (contacts []Contact, err error) {
-	rows, err := contactSelectStmt.Query(user, user)
+	s := stmt["contactSelect"]
+	rows, err := s.Query(user, user)
 	log.Println("DB hit: GetContacts")
 	if err != nil {
 		return
@@ -665,7 +513,8 @@ func dbGetContacts(user UserId) (contacts []Contact, err error) {
 }
 
 func dbUpdateContact(user UserId, contact UserId) (err error) {
-	_, err = contactUpdateStmt.Exec(user, contact)
+	s := stmt["contactUpdate"]
+	_, err = s.Exec(user, contact)
 	return
 }
 
@@ -674,6 +523,7 @@ func dbUpdateContact(user UserId, contact UserId) (err error) {
 ********************************************************************/
 
 func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
-	_, err = deviceInsertStmt.Exec(user, deviceType, deviceId)
+	s := stmt["deviceInsert"]
+	_, err = s.Exec(user, deviceType, deviceId)
 	return
 }
