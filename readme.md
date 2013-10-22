@@ -355,12 +355,14 @@ Adds the user with id [user] to the current user's contacts.
 example responses:
 
 HTTP 201
+```
 {
 	"id":1234,
 	"username":"calgould",
 	"you_confirmed":true,
 	"they_confirmed":false,
 }
+```
 
 ##PUT /contacts/[user]
 required parameters: id, token, accepted
