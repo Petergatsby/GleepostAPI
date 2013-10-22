@@ -61,18 +61,7 @@ func validateToken(id UserId, token string) bool {
 	} else if redisTokenExists(id, token) {
 		return (true)
 	} else {
-		var expiry string
-		s := stmt["tokenSelect"]
-		err := s.QueryRow(id, token).Scan(&expiry)
-		if err != nil {
-			return (false)
-		} else {
-			t, _ := time.Parse(MysqlTime, expiry)
-			if t.After(time.Now()) {
-				return (true)
-			}
-			return (false)
-		}
+		return dbTokenExists(id, token)
 	}
 }
 
@@ -294,7 +283,7 @@ func getComments(id PostId, start int64) (comments []Comment, err error) {
 }
 
 func createConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
-	participants, err := generatePartners(id, nParticipants - 1)
+	participants, err := generatePartners(id, nParticipants-1)
 	if err != nil {
 		return
 	}
