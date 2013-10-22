@@ -25,6 +25,8 @@ URL: https://gleepost.com/api/v0.13/
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages)
 
+/user/[user-id] [[GET]](#get-useruser-id)
+
 /newconversation [[POST]](#post-newconversation)
 
 /newgroupconversation [[POST]](#post-newgroupconversation)
@@ -237,7 +239,10 @@ example responses:
 {"id":1356}
 
 
-##GET /user/[user-id]?id=[user-id]&token=[token]
+##GET /user/[user-id]
+required parameters:
+id=[user-id]
+token=[token]
 
 example responses:
 ```
