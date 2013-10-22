@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -375,7 +374,7 @@ func redisUpdateConversation(id ConversationId) {
 	defer conn.Close()
 	participants := getParticipants(id)
 	for _, user := range participants {
-		key := "users:" + strconv.FormatUint(uint64(user.Id), 10) + ":conversations"
+		key := fmt.Sprintf("users:%d:conversations", user.Id)
 		//nb: this means that the last activity time for a conversation will
 		//differ slightly from the db to the cache (and even from user to user)
 		//but I think this is okay because it's only for ordering purposes
