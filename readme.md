@@ -11,31 +11,31 @@ URL: https://gleepost.com/api/v0.13/
 
 ##Available API endpoints:
 
-/register POST
+/register [[POST]](#post-register)
 
-/login POST
+/login [[POST]](#post-login)
 
-/posts GET POST
+/posts [[GET]](#get-posts) [[POST]](#post-posts)
 
-/posts/[post-id]/comments GET POST
+/posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
 
-/conversations GET
+/conversations [[GET]](#get-conversations)
 
-/conversations/[conversation-id] GET
+/conversations/[conversation-id] [[GET]](#get-conversationsconversation-id)
 
-/conversations/[coversation-id]/messages GET POST
+/conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages)
 
-/newconversation POST
+/newconversation [[POST]](#post-newconversation)
 
-/newgroupconversation POST
+/newgroupconversation [[POST]](#post-newgroupconversation)
 
-/longpoll GET
+/longpoll [[GET]](#get-longpoll)
 
-/contacts GET POST
+/contacts [[GET]](#get-contacts) [[POST]](#post-contacts)
 
-/contacts/[contact-id] PUT
+/contacts/[contact-id] [[PUT]](#put-contactsuser)
 
-/device POST
+/device [[POST]](#post-device)
 
 
 ##POST /register
@@ -64,7 +64,13 @@ example responses:
 {"error":"Bad username/password"}
 ```
 
-##GET /posts?id=[user-id]&token=[token]&start=[count]
+##GET /posts
+required parameters:
+id=[user-id]
+token=[token]
+
+optional parameters:
+start=[count]
 returns a list of 20 posts ordered by time, starting at count
 
 example responses:
@@ -111,7 +117,15 @@ example responses:
 {"id":3}
 ```
 
-##GET /posts/[post-id]/comments?id=[user-id]&token=[token]&start=[count]
+##GET /posts/[post-id]/comments
+
+required parameters: 
+
+id=[user-id]
+token=[token]
+
+optional parameters:
+start=[count]
 
 example responses:
 (http 200)
@@ -149,7 +163,14 @@ example responses:
 {"id":234}
 ```
 
-##GET /conversations?id=[user-id]&token=[token]&start=[count]
+##GET /conversations
+required parameters:
+id=[user-id]
+token=[token]
+
+optional parameters:
+start=[count]
+
 returns a list of 20 of your conversations ordered by most recent message, starting at count
 ```
 [
@@ -170,7 +191,10 @@ returns a list of 20 of your conversations ordered by most recent message, start
 ]
 ```
 
-##GET /conversations/[conversation-id]?id=[user-id]&token=[token]
+##GET /conversations/[conversation-id]
+required parameters:
+id=[user-id]
+token=[token]
 
 example responses:
 (HTTP 200)
@@ -189,9 +213,9 @@ example responses:
 }
 ```
 
-##GET /conversations/[conversation-id/messages?id=[user-id]&token=[token]  &start=[start] &after=[after]
-required parameters: id, token
-optional parameters: start, after
+##GET /conversations/[conversation-id/messages
+required parameters: id=[user-id], token=[token]
+optional parameters: start=[start], after=[after]
 
 Returns a list of 20 messages ordered by time from most recent to least recent.
 Given [start], it returns messages from the [start]th most recent to [start + 20]th most recent.
@@ -208,6 +232,7 @@ example responses:
 
 ##POST /conversations/[conversation-id]/messages
 required parameters: id, token, text
+
 example responses:
 {"id":1356}
 
@@ -262,7 +287,11 @@ example responses:
 }
 ```
 
-##GET /longpoll?id=[user-id]&token=[token]
+##GET /longpoll
+required parameters:
+id=[user-id]
+token=[token]
+
 Gets a single message for the current user
 (excluding messages sent by this user)
 
@@ -283,7 +312,11 @@ example responses:
 }
 ```
 
-##GET /contacts?id=[user-id]&token=[token]
+##GET /contacts
+required parameters:
+id=[user-id]
+token=[token]
+
 Gets all the current user's contacts.
 
 If you've added someone, they_confirmed will be false until they accept you and vice versa.
