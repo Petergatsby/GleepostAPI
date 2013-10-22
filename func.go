@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"log"
 	"regexp"
 	"time"
 )
@@ -17,7 +16,7 @@ Top-level functions
 
 func createToken(userId UserId) Token {
 	hash := sha256.New()
-	random := make([]byte, 10)
+	random := make([]byte, 10) //Number pulled out of my... ahem.
 	_, err := io.ReadFull(rand.Reader, random)
 	if err == nil {
 		hash.Write(random)
@@ -198,7 +197,6 @@ func updateConversation(id ConversationId) (err error) {
 }
 
 func addMessage(convId ConversationId, userId UserId, text string) (messageId MessageId, err error) {
-	log.Printf("Adding message to db: %d, %d %s", convId, userId, text)
 	messageId, err = dbAddMessage(convId, userId, text)
 	if err != nil {
 		return

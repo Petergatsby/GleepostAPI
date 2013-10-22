@@ -418,6 +418,7 @@ func dbGetCommentCount(id PostId) (count int) {
 ********************************************************************/
 
 func dbAddMessage(convId ConversationId, userId UserId, text string) (id MessageId, err error) {
+	log.Printf("Adding message to db: %d, %d %s", convId, userId, text)
 	s := stmt["messageInsert"]
 	res, err := s.Exec(convId, userId, text)
 	if err != nil {
