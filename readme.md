@@ -236,8 +236,9 @@ example responses:
 required parameters: id, token, text
 
 example responses:
+```
 {"id":1356}
-
+```
 
 ##GET /user/[user-id]
 required parameters:
