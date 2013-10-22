@@ -35,6 +35,22 @@ func redisPublish(msg RedisMessage) {
 	conn.Flush()
 }
 
+func redisAwaitOneMessage(userId UserId) []byte {
+	conn := pool.Get()
+	defer conn.Close()
+	psc := redis.PubSubConn{Conn: conn}
+	psc.Subscribe(userId)
+	defer psc.Unsubscribe(userId)
+	for {
+		switch n := psc.Receive().(type) {
+		case redis.Message:
+			return n.Data
+		case redis.Subscription:
+			fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
+		}
+	}
+}
+
 func redisAddMessage(msg Message, convId ConversationId) {
 	log.Printf("redis add message %d %d", convId, msg.Id)
 	conn := pool.Get()
