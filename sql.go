@@ -484,6 +484,12 @@ func dbTokenExists(id UserId, token string) bool {
 	}
 }
 
+func dbAddToken(token Token) (err error) {
+	s:= stmt["tokenInsert"]
+	_, err := s.Exec(token.UserId, token.Token, token.Expiry)
+	return
+}
+
 /********************************************************************
 		Contact
 ********************************************************************/

@@ -55,6 +55,9 @@ func getLastMessage(id ConversationId) (message Message, err error) {
 }
 
 func validateToken(id UserId, token string) bool {
+	//If the db is down, this will fail for everyone who doesn't have a cached
+	//token, and so no new requests will be sent.
+	//I'm calling that a "feature" for now.
 	conf := GetConfig()
 	if conf.LoginOverride {
 		return (true)
@@ -84,8 +87,7 @@ func validatePass(user string, pass string) (id UserId, err error) {
 
 func createAndStoreToken(id UserId) (Token, error) {
 	token := createToken(id)
-	s := stmt["tokenInsert"]
-	_, err := s.Exec(token.UserId, token.Token, token.Expiry)
+	err := dbAddToken(token)
 	redisPutToken(token)
 	if err != nil {
 		return token, err
