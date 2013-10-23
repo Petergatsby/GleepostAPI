@@ -23,7 +23,7 @@ URL: https://gleepost.com/api/v0.14/
 
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id)
 
-/conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put=conversationsconversation-idmessages)
+/conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
 /user/[user-id] [[GET]](#get-useruser-id)
 

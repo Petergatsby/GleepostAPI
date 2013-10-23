@@ -14,7 +14,7 @@ Begin http handlers!
 
 *********************************************************************************/
 
-func jsonResponder(w http.ResponseWriter, resp interface{}, code int) {
+func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	marshaled, err := json.Marshal(resp)
 	if err != nil {
@@ -43,28 +43,28 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	switch {
 	case r.Method != "POST":
-		jsonResponder(w, APIerror{"Must be a POST request!"}, 405)
+		jsonResponse(w, APIerror{"Must be a POST request!"}, 405)
 	case len(user) == 0:
 		//Note to future self : would be neater if
 		//we returned _all_ errors not just the first
-		jsonResponder(w, APIerror{"Missing parameter: user"}, 400)
+		jsonResponse(w, APIerror{"Missing parameter: user"}, 400)
 	case len(pass) == 0:
-		jsonResponder(w, APIerror{"Missing parameter: pass"}, 400)
+		jsonResponse(w, APIerror{"Missing parameter: pass"}, 400)
 	case len(email) == 0:
-		jsonResponder(w, APIerror{"Missing parameter: email"}, 400)
+		jsonResponse(w, APIerror{"Missing parameter: email"}, 400)
 	case !validateEmail(email):
-		jsonResponder(w, APIerror{"Invalid Email"}, 400)
+		jsonResponse(w, APIerror{"Invalid Email"}, 400)
 	default:
 		id, err := registerUser(user, pass, email)
 		if err != nil {
 			_, ok := err.(APIerror)
 			if ok { //Duplicate user/email
-				jsonResponder(w, err, 400)
+				jsonResponse(w, err, 400)
 			} else {
-				jsonResponder(w, APIerror{err.Error()}, 500)
+				jsonResponse(w, APIerror{err.Error()}, 500)
 			}
 		} else {
-			jsonResponder(w, &Created{uint64(id)}, 201)
+			jsonResponse(w, &Created{uint64(id)}, 201)
 		}
 	}
 }
@@ -87,16 +87,16 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := validatePass(user, pass)
 	switch {
 	case r.Method != "POST":
-		jsonResponder(w, APIerror{"Must be a POST request!"}, 405)
+		jsonResponse(w, APIerror{"Must be a POST request!"}, 405)
 	case err == nil:
 		token, err := createAndStoreToken(id)
 		if err == nil {
-			jsonResponder(w, token, 200)
+			jsonResponse(w, token, 200)
 		} else {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		}
 	default:
-		jsonResponder(w, APIerror{"Bad username/password"}, 400)
+		jsonResponse(w, APIerror{"Bad username/password"}, 400)
 	}
 }
 
@@ -114,7 +114,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "GET":
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
@@ -123,27 +123,27 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		networks := getUserNetworks(userId)
 		posts, err := getPosts(networks[0].Id, start)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		}
 		if len(posts) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
 			// (json.Marshal(empty slice) returns null rather than
 			// empty array ([]) which it obviously should
-			jsonResponder(w, []string{}, 200)
+			jsonResponse(w, []string{}, 200)
 		} else {
-			jsonResponder(w, posts, 200)
+			jsonResponse(w, posts, 200)
 		}
 	case r.Method == "POST":
 		text := r.FormValue("text")
 		postId, err := addPost(userId, text)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, &Created{uint64(postId)}, 201)
+			jsonResponse(w, &Created{uint64(postId)}, 201)
 		}
 	default:
-		jsonResponder(w, APIerror{"Must be a POST or GET request"}, 405)
+		jsonResponse(w, APIerror{"Must be a POST or GET request"}, 405)
 	}
 }
 
@@ -154,15 +154,15 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 	case r.Method != "POST":
-		jsonResponder(w, APIerror{"Must be a POST request"}, 405)
+		jsonResponse(w, APIerror{"Must be a POST request"}, 405)
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
 		conversation, err := createConversation(userId, 2)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, conversation, 201)
+			jsonResponse(w, conversation, 201)
 		}
 	}
 }
@@ -174,15 +174,15 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId := UserId(id)
 	switch {
 	case r.Method != "POST":
-		jsonResponder(w, APIerror{"Must be a POST request"}, 405)
+		jsonResponse(w, APIerror{"Must be a POST request"}, 405)
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
 		conversation, err := createConversation(userId, 4)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, conversation, 201)
+			jsonResponse(w, conversation, 201)
 		}
 	}
 }
@@ -194,9 +194,9 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId := UserId(id)
 	switch {
 	case r.Method != "GET":
-		jsonResponder(w, APIerror{"Must be a GET request"}, 405)
+		jsonResponse(w, APIerror{"Must be a GET request"}, 405)
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
 		if err != nil {
@@ -204,16 +204,16 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		conversations, err := getConversations(userId, start)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
 			if len(conversations) == 0 {
 				// this is an ugly hack. But I can't immediately
 				// think of a neater way to fix this
 				// (json.Marshal(empty slice) returns "null" rather than
 				// empty array "[]" which it obviously should
-				jsonResponder(w, []string{}, 200)
+				jsonResponse(w, []string{}, 200)
 			} else {
-				jsonResponder(w, conversations, 200)
+				jsonResponse(w, conversations, 200)
 			}
 		}
 	}
@@ -230,7 +230,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case convIdString != nil && r.Method == "GET":
 		_convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
 		convId := ConversationId(_convId)
@@ -249,16 +249,16 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			messages, err = getMessages(convId, start)
 		}
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
 			if len(messages) == 0 {
 				// this is an ugly hack. But I can't immediately
 				// think of a neater way to fix this
 				// (json.Marshal(empty slice) returns "null" rather than
 				// empty array "[]" which it obviously should
-				jsonResponder(w, []string{}, 200)
+				jsonResponse(w, []string{}, 200)
 			} else {
-				jsonResponder(w, messages, 200)
+				jsonResponse(w, messages, 200)
 			}
 		}
 	case convIdString != nil && r.Method == "POST":
@@ -267,14 +267,14 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		text := r.FormValue("text")
 		messageId, err := addMessage(convId, userId, text)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, &Created{uint64(messageId)}, 201)
+			jsonResponse(w, &Created{uint64(messageId)}, 201)
 		}
 	case convIdString != nil && r.Method == "PUT":
 		_convId, err := strconv.ParseUint(convIdString[1], 10, 16)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 400)
+			jsonResponse(w, APIerror{err.Error()}, 400)
 		}
 		convId := ConversationId(_convId)
 		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 16)
@@ -284,14 +284,14 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		upTo := MessageId(_upTo)
 		conversation, err := markConversationSeen(userId, convId, upTo)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, conversation, 200)
+			jsonResponse(w, conversation, 200)
 		}
 	case convIdString != nil: //Unsuported method
-		jsonResponder(w, APIerror{"Must be a GET or POST request"}, 405)
+		jsonResponse(w, APIerror{"Must be a GET or POST request"}, 405)
 	case convIdString2 != nil && r.Method != "GET":
-		jsonResponder(w, APIerror{"Must be a GET request"}, 405)
+		jsonResponse(w, APIerror{"Must be a GET request"}, 405)
 	case convIdString2 != nil:
 		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
 		convId := ConversationId(_convId)
@@ -301,11 +301,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		}
 		conv, err := getFullConversation(convId, start)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		}
-		jsonResponder(w, conv, 200)
+		jsonResponse(w, conv, 200)
 	default:
-		jsonResponder(w, APIerror{"404 not found"}, 404)
+		jsonResponse(w, APIerror{"404 not found"}, 404)
 	}
 }
 
@@ -320,7 +320,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case commIdStringA != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
 		postId := PostId(_id)
@@ -330,16 +330,16 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		comments, err := getComments(postId, start)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
 			if len(comments) == 0 {
 				// this is an ugly hack. But I can't immediately
 				// think of a neater way to fix this
 				// (json.Marshal(empty slice) returns "null" rather than
 				// empty array "[]" which it obviously should
-				jsonResponder(w, []string{}, 200)
+				jsonResponse(w, []string{}, 200)
 			} else {
-				jsonResponder(w, comments, 200)
+				jsonResponse(w, comments, 200)
 			}
 		}
 	case commIdStringA != nil && r.Method == "POST":
@@ -348,9 +348,9 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("text")
 		commentId, err := createComment(postId, userId, text)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, &Created{uint64(commentId)}, 201)
+			jsonResponse(w, &Created{uint64(commentId)}, 201)
 		}
 	case commIdStringB != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringB[1], 10, 16)
@@ -358,7 +358,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%d", postId)
 		//implement getting a specific post
 	default:
-		jsonResponder(w, APIerror{"Method not supported"}, 405)
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
 
@@ -371,19 +371,19 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method != "GET":
-		jsonResponder(w, APIerror{"Method not supported"}, 405)
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	case userIdString != nil:
 		u, _ := strconv.ParseUint(userIdString[1], 10, 16)
 		profileId := UserId(u)
 		user, err := getProfile(profileId)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		}
-		jsonResponder(w, user, 200)
+		jsonResponse(w, user, 200)
 	default:
-		jsonResponder(w, APIerror{"User not found"}, 404)
+		jsonResponse(w, APIerror{"User not found"}, 404)
 	}
 }
 
@@ -394,9 +394,9 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method != "GET":
-		jsonResponder(w, APIerror{"Method not supported"}, 405)
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	default:
 		//awaitOneMessage will block until a message arrives over redis
 		message := awaitOneMessage(userId)
@@ -411,16 +411,16 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "GET":
 		contacts, err := getContacts(userId)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
 			if len(contacts) == 0 {
-				jsonResponder(w, []string{}, 200)
+				jsonResponse(w, []string{}, 200)
 			} else {
-				jsonResponder(w, contacts, 200)
+				jsonResponse(w, contacts, 200)
 			}
 		}
 	case r.Method == "POST":
@@ -428,12 +428,12 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 		otherId := UserId(_otherId)
 		contact, err := addContact(userId, otherId)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, contact, 201)
+			jsonResponse(w, contact, 201)
 		}
 	default:
-		jsonResponder(w, APIerror{"Method not supported"}, 405)
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
 
@@ -446,11 +446,11 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "PUT" && contactIdStrings != nil:
 		_contact, err := strconv.ParseUint(contactIdStrings[1], 10, 64)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 400)
+			jsonResponse(w, APIerror{err.Error()}, 400)
 		}
 		contactId := UserId(_contact)
 		accepted, err := strconv.ParseBool(r.FormValue("accepted"))
@@ -460,17 +460,17 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 		if accepted {
 			contact, err := acceptContact(userId, contactId)
 			if err != nil {
-				jsonResponder(w, APIerror{err.Error()}, 500)
+				jsonResponse(w, APIerror{err.Error()}, 500)
 			} else {
-				jsonResponder(w, contact, 200)
+				jsonResponse(w, contact, 200)
 			}
 		} else {
-			jsonResponder(w, APIerror{"Missing parameter: accepted"}, 400)
+			jsonResponse(w, APIerror{"Missing parameter: accepted"}, 400)
 		}
 	case r.Method == "DELETE" && contactIdStrings != nil:
 		//Implement refusing requests
 	default:
-		jsonResponder(w, APIerror{"Method not supported"}, 405)
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
 
@@ -481,21 +481,21 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	switch {
 	case !validateToken(userId, token):
-		jsonResponder(w, APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
 		deviceId := r.FormValue("device_id")
 		device, err := addDevice(userId, deviceType, deviceId)
 		if err != nil {
-			jsonResponder(w, APIerror{err.Error()}, 500)
+			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			jsonResponder(w, device, 201)
+			jsonResponse(w, device, 201)
 		}
 	case r.Method == "GET":
 		//implement getting tokens
 	case r.Method == "DELETE":
 		//Implement deregistering device
 	default:
-		jsonResponder(w, APIerror{"Method not supported"}, 405)
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
