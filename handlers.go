@@ -21,6 +21,19 @@ func jsonResp(w http.ResponseWriter, resp []byte, code int) {
 	w.Write(resp)
 }
 
+func respondWithJSON(w http.ResponseWriter, resp json.Marshaler, code int) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	marshaled, err := json.Marshal(resp)
+	if err != nil {
+		marshaled, _ = json.Marshal(APIerror{err.Error()})
+		w.WriteHeader(500)
+		w.Write(marshaled)
+	} else {
+		w.WriteHeader(code)
+		w.Write(marshaled)
+	}
+}
+
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	/* POST /register
 		requires parameters: user, pass, email
@@ -300,6 +313,26 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			jsonResp(w, errorJSON, 500)
 		}
 		w.Write([]byte(fmt.Sprintf("{\"id\":%d}", messageId)))
+	case convIdString != nil && r.Method == "PUT":
+		_convId, err := strconv.ParseUint(convIdString[1], 10, 16)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 400)
+		}
+		convId := ConversationId(_convId)
+		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 16)
+		if err != nil {
+			_upTo = 0
+		}
+		upTo := MessageId(_upTo)
+		conversation, err := markConversationSeen(userId, convId, upTo)
+		if err != nil {
+			errorJSON, _ := json.Marshal(APIerror{err.Error()})
+			jsonResp(w, errorJSON, 400)
+		} else {
+			conversationJSON, _ := json.Marshal(conversation)
+			jsonResp(w, conversationJSON, 200)
+		}
 	case convIdString != nil: //Unsuported method
 		errorJSON, _ := json.Marshal(APIerror{"Must be a GET or POST request"})
 		jsonResp(w, errorJSON, 405)

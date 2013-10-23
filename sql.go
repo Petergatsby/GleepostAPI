@@ -262,6 +262,13 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 	return conversations, nil
 }
 
+func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
+	conversation.Id = convId
+	conversation.Participants = getParticipants(convId)
+	conversation.Messages, err = dbGetMessages(convId, 0, false)
+	return
+}
+
 func dbGetParticipants(conv ConversationId) []User {
 	s := stmt["participantSelect"]
 	rows, err := s.Query(conv)

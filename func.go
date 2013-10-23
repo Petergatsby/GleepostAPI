@@ -182,6 +182,11 @@ func getConversations(user_id UserId, start int64) (conversations []Conversation
 	return
 }
 
+func getConversation(userId UserId, convId ConversationId) (conversation ConversationAndMessages, err error) {
+	//redisGetConversation
+	return dbGetConversation(convId)
+}
+
 func getMessage(msgId MessageId) (message Message, err error) {
 	message, err = redisGetMessage(msgId)
 	return message, err
@@ -340,7 +345,7 @@ func generatePartners(id UserId, count int) (partners []User, err error) {
 	return dbRandomPartners(id, count)
 }
 
-func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (err error) {
+func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (conversation ConversationAndMessages, err error) {
 	err = dbMarkRead(id, convId, upTo)
 	if err != nil {
 		return
@@ -349,5 +354,6 @@ func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (err
 	if err != nil {
 		go redisAddAllMessages(convId)
 	}
-	return nil
+	conversation, err = dbGetConversation(convId)
+	return
 }
