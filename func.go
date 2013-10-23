@@ -339,3 +339,15 @@ func addDevice(user UserId, deviceType string, deviceId string) (device Device, 
 func generatePartners(id UserId, count int) (partners []User, err error) {
 	return dbRandomPartners(id, count)
 }
+
+func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (err error) {
+	err = dbMarkRead(id, convId, upTo)
+	if err != nil {
+		return
+	}
+	err = redisMarkConversationSeen(id, convId, upTo)
+	if err != nil {
+		go redisAddAllMessages(convId)
+	}
+	return nil
+}

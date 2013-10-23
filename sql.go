@@ -470,7 +470,7 @@ func dbGetMessages(convId ConversationId, startOrAfter int64, after bool) (messa
 //dbMarkRead sets all messages read in conversation convId
 //that are a) not from user id and b) sent upto and including upTo.
 func dbMarkRead(id UserId, convId ConversationId, upTo MessageId) (err error) {
-	err = stmt["messagesRead"].Exec(convId, upTo, id)
+	_, err = stmt["messagesRead"].Exec(convId, upTo, id)
 	return
 }
 
