@@ -9,8 +9,6 @@
 -Essex uni email
 -university of hull getting connected to university of london
 
--clarify api docs for longpoll
-
 -Cache things in redis
 --Post images
 --More user details

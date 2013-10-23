@@ -350,13 +350,8 @@ required parameters:
 id=[user-id]
 token=[token]
 
-Gets a single message for the current user
-(excluding messages sent by this user)
-
-This message could be from any conversation.
-
-note: Will not respond until a message arrives for the current user or 60 seconds passes
-at which point it will timeout
+Longpoll will block until a message arrives for the current user (in any conversation).
+If no message arrives within 60s the connection will timeout.
 
 example responses:
 ```
