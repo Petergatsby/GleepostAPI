@@ -13,6 +13,11 @@ const (
 	MysqlTime = "2006-01-02 15:04:05"
 )
 
+var (
+	sqlStmt map[string]string
+	stmt	map[string]*sql.Stmt
+)
+
 func keepalive(db *sql.DB) {
 	tick := time.Tick(1 * time.Hour)
 	conf := GetConfig()
@@ -30,8 +35,8 @@ func keepalive(db *sql.DB) {
 }
 
 func prepare(db *sql.DB) (err error) {
-	sqlStmt := make(map[string]string)
-	stmt := make(map[string]*sql.Stmt)
+	sqlStmt = make(map[string]string)
+	stmt = make(map[string]*sql.Stmt)
 	//Network
 	sqlStmt["ruleSelect"] = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
