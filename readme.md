@@ -238,6 +238,19 @@ example responses:
 {"id":1356}
 ```
 
+##PUT /conversations/[conversation-id]/messages
+required parameters: id, token, seen
+
+Marks all messages in a conversation up to [seen] 
+(that weren't sent by the current user) seen.
+
+example responses:
+
+(HTTP 200)
+```
+
+```
+
 ##GET /user/[user-id]
 required parameters:
 id=[user-id]
