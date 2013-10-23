@@ -66,13 +66,12 @@ type PostSmall struct {
 	Post
 	CommentCount int `json:"comments"`
 	LikeCount    int `json:"likes"`
-	HateCount    int `json:"hates"`
 }
 
 type PostFull struct {
 	Post
-	Comments  []Comment  `json:"comments"`
-	LikeHates []LikeHate `json:"like_hate"`
+	Comments []Comment `json:"comments"`
+	Likes    []Like    `json:"likes"`
 }
 
 type Comment struct {
@@ -83,9 +82,9 @@ type Comment struct {
 	Text string    `json:"text"`
 }
 
-type LikeHate struct {
-	Value  bool // true is like, false is hate
+type Like struct {
 	UserID UserId
+	Time   time.Time
 }
 
 type Rule struct {

@@ -40,8 +40,6 @@
 
 -POST posts/id/like
 
--POST posts/id/hate
-
 -PUT conversations/id/messages read=true
 
 -Change name
