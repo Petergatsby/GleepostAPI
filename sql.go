@@ -62,6 +62,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
+	sqlStmt["messagesRead"] = "UPDATE messages SET seen = 1 WHERE conversation_id=? AND id <= ? AND from != ?"
 	//Token
 	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
@@ -463,6 +464,13 @@ func dbGetMessages(convId ConversationId, startOrAfter int64, after bool) (messa
 		}
 		messages = append(messages, message)
 	}
+	return
+}
+
+//dbMarkRead sets all messages read in conversation convId
+//that are a) not from user id and b) sent upto and including upTo.
+func dbMarkRead(id UserId, convId ConversationId, upTo MessageId) (err error) {
+	err = stmt["messagesRead"].Exec(convId, upTo, id)
 	return
 }
 
