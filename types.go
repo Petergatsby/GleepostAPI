@@ -142,6 +142,10 @@ type APIerror struct {
 	Reason string `json:"error"`
 }
 
+type Created struct {
+	Id	uint64 `json:"id"`
+}
+
 func (e APIerror) Error() string {
 	return e.Reason
 }
