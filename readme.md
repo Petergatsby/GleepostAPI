@@ -1,7 +1,7 @@
-#Gleepost API / V0.13
+#Gleepost API / V0.14
 
 
-URL: https://gleepost.com/api/v0.13/
+URL: https://gleepost.com/api/v0.14/
 
 ##Notes:
 
@@ -23,7 +23,7 @@ URL: https://gleepost.com/api/v0.13/
 
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id)
 
-/conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages)
+/conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put=conversationsconversation-idmessages)
 
 /user/[user-id] [[GET]](#get-useruser-id)
 
@@ -242,12 +242,53 @@ example responses:
 required parameters: id, token, seen
 
 Marks all messages in a conversation up to [seen] 
-(that weren't sent by the current user) seen.
+(that were not sent by the current user) seen.
 
 example responses:
 
+seen=51
 (HTTP 200)
 ```
+{
+	"id": 5,
+	"participants": [
+		{
+			"id": 9,
+			"username": "Patrick",
+			"profile_image": "https://gleepost.com/uploads/avatar.png"
+		},
+		{
+			"id": 1327,
+			"username": "Meg",
+			"profile_image": "",
+		}
+	],
+	"messages": [
+		{
+			"id": 52,
+			"by": {
+				"id": 9,
+				"username": "Patrick",
+				"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+			},
+			"text": "sup",
+			"timestamp": "2013-09-16T16:58:23Z",
+			"seen": false
+		},
+		{
+			"id": 51,
+			"by": {
+				"id": 9,
+				"username": "Patrick",
+				"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+			},
+			"text": "sup",
+			"timestamp": "2013-09-16T16:58:30Z",
+			"seen": true
+		}
+	]
+}
+
 
 ```
 

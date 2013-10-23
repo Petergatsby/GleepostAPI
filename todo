@@ -40,8 +40,6 @@
 
 -POST posts/id/like
 
--PUT conversations/id/messages read=true
-
 -Change name
 
 -Name in registration process
