@@ -40,6 +40,7 @@ func prepare(db *sql.DB) (err error) {
 	//Network
 	sqlStmt["ruleSelect"] = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
+	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
 	sqlStmt["userSelect"] = "SELECT id, name, avatar FROM users WHERE id=?"
@@ -130,6 +131,11 @@ func dbGetUserNetworks(id UserId) []Network {
 		}
 	}
 	return (nets)
+}
+
+func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
+	_, err = stmt["networkInsert"].Exec(userId, networkId)
+	return
 }
 
 /********************************************************************

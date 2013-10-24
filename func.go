@@ -294,12 +294,17 @@ func validateEmail(email string) bool {
 	}
 }
 
-func registerUser(user string, pass string, email string) (UserId, error) {
+func registerUser(user string, pass string, email string) (userId UserId, err error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
 		return 0, err
 	}
-	return dbRegisterUser(user, hash, email)
+	userId, err = dbRegisterUser(user, hash, email)
+	conf := GetConfig()
+	if conf.RegisterOverride {
+		setNetwork(userId, 1338) //Highlands and Islands :D
+	}
+	return userId, err
 }
 
 func getContacts(user UserId) (contacts []Contact, err error) {
@@ -356,4 +361,8 @@ func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (con
 	}
 	conversation, err = dbGetConversation(convId)
 	return
+}
+
+func setNetwork(userId UserId, netId NetworkId) (err error) {
+	return dbSetNetwork(userId, netId)
 }

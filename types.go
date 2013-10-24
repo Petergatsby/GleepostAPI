@@ -113,6 +113,7 @@ type Config struct {
 	UrlBase                 string
 	Port                    string
 	LoginOverride           bool
+	RegisterOverride	bool
 	RedisProto              string
 	RedisAddress            string
 	MysqlMaxConnectionCount int

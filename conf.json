@@ -2,6 +2,7 @@
 	"UrlBase":"/api/v0.14",
 	"Port":"8080",
 	"LoginOverride":false,
+	"RegisterOverride":true,
 	"RedisProto":"tcp",
 	"RedisAddress":"146.185.138.53:6379",
 	"MysqlMaxConnectionCount":100,
