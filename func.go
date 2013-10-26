@@ -8,6 +8,8 @@ import (
 	"io"
 	"regexp"
 	"time"
+	"mime/multipart"
+	"strings"
 )
 
 /********************************************************************
@@ -16,7 +18,7 @@ Top-level functions
 
 func createToken(userId UserId) Token {
 	hash := sha256.New()
-	random := make([]byte, 10) //Number pulled out of my... ahem.
+	random := make([]byte, 32) //Number pulled out of my... ahem.
 	_, err := io.ReadFull(rand.Reader, random)
 	if err == nil {
 		hash.Write(random)
@@ -365,4 +367,37 @@ func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (con
 
 func setNetwork(userId UserId, netId NetworkId) (err error) {
 	return dbSetNetwork(userId, netId)
+}
+
+func randomFilename(extension string) (string, error) {
+	hash := sha256.New()
+	random := make([]byte, 32) //Number pulled out of my... ahem.
+	_, err := io.ReadFull(rand.Reader, random)
+	if err == nil {
+		hash.Write(random)
+		digest := hex.EncodeToString(hash.Sum(nil))
+		return digest + extension, nil
+	} else {
+		return "", err
+	}
+}
+
+func storeFile(file multipart.File, header *multipart.FileHeader) (url string, err error) {
+	conf := GetConfig()
+	var filename string
+	switch {
+	case strings.HasSuffix(header.Filename, ".jpg"):
+		filename, err = randomFilename(".jpg")
+	case strings.HasSuffix(header.Filename, ".jpeg"):
+		filename, err = randomFilename(".jpg")
+	case strings.HasSuffix(header.Filename, ".png"):
+		filename, err = randomFilename(".png")
+	default:
+		return "", APIerror{"Unsupported file type"}
+	}
+	if err != nil {
+		return "", APIerror{err.Error()}
+	}
+	//store on s3
+	return conf.UrlBase+ "/uploads/" + filename, nil
 }

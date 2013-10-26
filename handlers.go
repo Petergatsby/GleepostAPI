@@ -499,3 +499,28 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
+
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
+	userId := UserId(id)
+	token := r.FormValue("token")
+	switch {
+	case !validateToken(userId, token):
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
+	case r.Method == "POST":
+		file, header, err := r.FormFile("image")
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 400)
+		}
+		defer file.Close()
+		url, err := storeFile(file, header)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 400)
+		} else {
+			jsonResponse(w, url, 201)
+		}
+	default:
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
+	}
+}

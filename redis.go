@@ -14,7 +14,7 @@ import (
 
 func RedisDial() (redis.Conn, error) {
 	conf := GetConfig()
-	conn, err := redis.Dial(conf.RedisProto, conf.RedisAddress)
+	conn, err := redis.Dial(conf.Redis.Proto, conf.Redis.Address)
 	return conn, err
 }
 

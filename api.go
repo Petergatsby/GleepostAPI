@@ -70,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
-	db.SetMaxIdleConns(conf.MysqlMaxConnectionCount)
+	db.SetMaxIdleConns(conf.Mysql.MaxConns)
 	err = prepare(db)
 	if err != nil {
 		log.Fatal(err)

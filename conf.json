@@ -1,19 +1,24 @@
 {
 	"UrlBase":"/api/v0.14",
 	"Port":"8080",
+	"UploadPath":"uploads/",
 	"LoginOverride":false,
 	"RegisterOverride":true,
-	"RedisProto":"tcp",
-	"RedisAddress":"146.185.138.53:6379",
-	"MysqlMaxConnectionCount":100,
-	"MysqlUser":"gp",
-	"MysqlPass":"PnOaw3XzP6Tlq6fWvvVv",
-	"MysqlHost":"localhost",
-	"MysqlPort":"3306",
 	"MessageCache":1000,
 	"PostCache":5000,
 	"CommentCache":100,
 	"MessagePageSize":20,
 	"PostPageSize":20,
-	"CommentPageSize":20
+	"CommentPageSize":20,
+	"Mysql": {
+		"MaxConns":100,
+		"User":"gp",
+		"Pass":"PnOaw3XzP6Tlq6fWvvVv",
+		"Host":"localhost",
+		"Port":"3306"
+	},
+	"Redis": {
+		"Proto":"tcp",
+		"Address":"146.185.138.53:6379"
+	}
 }

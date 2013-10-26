@@ -109,24 +109,33 @@ type ConversationAndMessages struct {
 	Messages []Message `json:"messages"`
 }
 
+type MysqlConfig struct {
+	MaxConns	   int
+	User               string
+	Pass               string
+	Host               string
+	Port               string
+}
+
+type RedisConfig struct {
+	Proto              string
+	Address            string
+}
+
 type Config struct {
 	UrlBase                 string
 	Port                    string
 	LoginOverride           bool
 	RegisterOverride	bool
-	RedisProto              string
-	RedisAddress            string
-	MysqlMaxConnectionCount int
-	MysqlUser               string
-	MysqlPass               string
-	MysqlHost               string
-	MysqlPort               string
+	UploadPath		string
 	MessageCache            int
 	PostCache               int
 	CommentCache            int
 	MessagePageSize         int
 	PostPageSize            int
 	CommentPageSize         int
+	Mysql			MysqlConfig
+	Redis			RedisConfig
 }
 
 type Device struct {
@@ -136,7 +145,7 @@ type Device struct {
 }
 
 func (c *Config) ConnectionString() string {
-	return c.MysqlUser + ":" + c.MysqlPass + "@tcp(" + c.MysqlHost + ":" + c.MysqlPort + ")/gleepost?charset=utf8"
+	return c.Mysql.User + ":" + c.Mysql.Pass + "@tcp(" + c.Mysql.Host + ":" + c.Mysql.Port + ")/gleepost?charset=utf8"
 }
 
 type APIerror struct {
