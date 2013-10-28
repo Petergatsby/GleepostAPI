@@ -75,6 +75,8 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["contactUpdate"] = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
 	//device
 	sqlStmt["deviceInsert"] = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
+	//Upload
+	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -572,5 +574,14 @@ func dbUpdateContact(user UserId, contact UserId) (err error) {
 func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
 	s := stmt["deviceInsert"]
 	_, err = s.Exec(user, deviceType, deviceId)
+	return
+}
+
+/********************************************************************
+		Upload
+********************************************************************/
+
+func dbAddUpload(user UserId, url string) (err error) {
+	_, err = stmt["userUpload"].Exec(user, url)
 	return
 }

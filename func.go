@@ -12,6 +12,7 @@ import (
 	"strings"
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
+	"io/ioutil"
 )
 
 /********************************************************************
@@ -392,8 +393,7 @@ func getS3() (s *s3.S3) {
 	return
 }
 
-func storeFile(file multipart.File, header *multipart.FileHeader) (url string, err error) {
-	conf := GetConfig()
+func storeFile(id UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
 	switch {
@@ -415,11 +415,19 @@ func storeFile(file multipart.File, header *multipart.FileHeader) (url string, e
 	//store on s3
 	s := getS3()
 	bucket := s.Bucket("gpimg")
-	var data []byte
-	_, err = io.ReadFull(file, data)
+	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
 	}
 	err = bucket.Put(filename, data, contenttype, s3.PublicRead)
-	return conf.UrlBase+ "/uploads/" + filename, err
+	url := bucket.URL(filename)
+	if err != nil {
+		return "", err
+	}
+	err = userAddUpload(id, url)
+	return url, err
+}
+
+func userAddUpload(id UserId, url string) (err error) {
+	return dbAddUpload(id, url)
 }
