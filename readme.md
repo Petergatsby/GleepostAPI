@@ -19,6 +19,8 @@ URL: https://gleepost.com/api/v0.15/
 
 /posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
 
+/posts/[post-id]/images [[POST]](#post-postspost-idimages)
+
 /conversations [[GET]](#get-conversations)
 
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id)
@@ -162,6 +164,17 @@ example responses:
 (http 200)
 ```
 {"id":234}
+```
+
+##POST /posts/[post-id]/images
+required parameters: id, token, url
+
+This adds an image previously uploaded with [/upload](#post-upload) to this post.
+
+example responses:
+(http 201)
+```
+["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
 ```
 
 ##GET /conversations

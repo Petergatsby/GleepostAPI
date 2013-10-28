@@ -6,13 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"regexp"
-	"time"
-	"mime/multipart"
-	"strings"
+	"io/ioutil"
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
-	"io/ioutil"
+	"mime/multipart"
+	"regexp"
+	"strings"
+	"time"
 )
 
 /********************************************************************

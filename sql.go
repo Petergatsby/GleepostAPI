@@ -15,7 +15,7 @@ const (
 
 var (
 	sqlStmt map[string]string
-	stmt	map[string]*sql.Stmt
+	stmt    map[string]*sql.Stmt
 )
 
 func keepalive(db *sql.DB) {
@@ -78,7 +78,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["deviceInsert"] = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
-	sqlStmt["uploadExists"] = "SELECT COUNT() FROM uploads WHERE user_id = ? AND url = ?"
+	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {

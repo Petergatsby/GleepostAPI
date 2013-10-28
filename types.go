@@ -110,38 +110,38 @@ type ConversationAndMessages struct {
 }
 
 type MysqlConfig struct {
-	MaxConns	   int
-	User               string
-	Pass               string
-	Host               string
-	Port               string
+	MaxConns int
+	User     string
+	Pass     string
+	Host     string
+	Port     string
 }
 
 type RedisConfig struct {
-	Proto              string
-	Address            string
+	Proto   string
+	Address string
 }
 
 type AWSConfig struct {
-	KeyId		string
-	SecretKey	string
+	KeyId     string
+	SecretKey string
 }
 
 type Config struct {
-	UrlBase                 string
-	Port                    string
-	LoginOverride           bool
-	RegisterOverride	bool
-	UploadPath		string
-	MessageCache            int
-	PostCache               int
-	CommentCache            int
-	MessagePageSize         int
-	PostPageSize            int
-	CommentPageSize         int
-	Mysql			MysqlConfig
-	Redis			RedisConfig
-	AWS			AWSConfig
+	UrlBase          string
+	Port             string
+	LoginOverride    bool
+	RegisterOverride bool
+	UploadPath       string
+	MessageCache     int
+	PostCache        int
+	CommentCache     int
+	MessagePageSize  int
+	PostPageSize     int
+	CommentPageSize  int
+	Mysql            MysqlConfig
+	Redis            RedisConfig
+	AWS              AWSConfig
 }
 
 type Device struct {
@@ -159,12 +159,13 @@ type APIerror struct {
 }
 
 type Created struct {
-	Id	uint64 `json:"id"`
+	Id uint64 `json:"id"`
 }
 
 type URLCreated struct {
-	URL	string `json:"url"`
+	URL string `json:"url"`
 }
+
 func (e APIerror) Error() string {
 	return e.Reason
 }
