@@ -514,7 +514,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, APIerror{err.Error()}, 400)
 		}
 		defer file.Close()
-		url, err := storeFile(file, header)
+		url, err := storeFile(userId, file, header)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 400)
 		} else {
