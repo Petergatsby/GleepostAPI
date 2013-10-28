@@ -235,6 +235,10 @@ func getPostImages(postId PostId) (images []string) {
 	return
 }
 
+func addPostImage(postId PostId, url string) (err error) {
+	return dbAddPostImage(postId, url)
+}
+
 func getProfile(id UserId) (user Profile, err error) {
 	user, err = dbGetProfile(id)
 	return
@@ -430,4 +434,8 @@ func storeFile(id UserId, file multipart.File, header *multipart.FileHeader) (ur
 
 func userAddUpload(id UserId, url string) (err error) {
 	return dbAddUpload(id, url)
+}
+
+func userUploadExists(id UserId, url string) (exists bool, err error) {
+	return dbUploadExists(id, url)
 }

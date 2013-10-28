@@ -58,6 +58,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["wallSelect"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
+	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
 	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
@@ -77,6 +78,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["deviceInsert"] = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
+	sqlStmt["uploadExists"] = "SELECT COUNT() FROM uploads WHERE user_id = ? AND url = ?"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -384,6 +386,11 @@ func dbGetPostImages(postId PostId) (images []string, err error) {
 	return
 }
 
+func dbAddPostImage(postId PostId, url string) (err error) {
+	_, err = stmt["imageInsert"].Exec(postId, url)
+	return
+}
+
 func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
 	s := stmt["commentInsert"]
 	if res, err := s.Exec(postId, userId, text); err == nil {
@@ -583,5 +590,10 @@ func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
 
 func dbAddUpload(user UserId, url string) (err error) {
 	_, err = stmt["userUpload"].Exec(user, url)
+	return
+}
+
+func dbUploadExists(user UserId, url string) (exists bool, err error) {
+	err = stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
 	return
 }

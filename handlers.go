@@ -316,8 +316,10 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	userId := UserId(id)
 	regexComments, _ := regexp.Compile("posts/(\\d+)/comments/?$")
 	regexNoComments, _ := regexp.Compile("posts/(\\d+)/?$")
+	regexImages, _ := regexp.Compile("posts/(\\d+)/images/?$")
 	commIdStringA := regexComments.FindStringSubmatch(r.URL.Path)
 	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
+	commIdStringC := regexImages.FindStringSubmatch(r.URL.Path)
 	switch {
 	case !validateToken(userId, token):
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
@@ -357,6 +359,22 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		postId := PostId(_id)
 		log.Printf("%d", postId)
 		//implement getting a specific post
+	case commIdStringC != nil && r.Method == "POST":
+		_id, _ := strconv.ParseUint(commIdStringC[1], 10, 64)
+		postId := PostId(_id)
+		url := r.FormValue("url")
+		exists, err := userUploadExists(userId, url)
+		if exists && err == nil {
+			err := addPostImage(postId, url)
+			if err != nil {
+				jsonResponse(w, APIerror{err.Error()}, 500)
+			} else {
+				images := getPostImages(postId)
+				jsonResponse(w, images, 201)
+			}
+		} else {
+			jsonResponse(w, APIerror{"That upload doesn't exist"}, 400)
+		}
 	default:
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
