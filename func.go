@@ -420,7 +420,7 @@ func storeFile(id UserId, file multipart.File, header *multipart.FileHeader) (ur
 		return "", err
 	}
 	err = bucket.Put(filename, data, contenttype, s3.PublicRead)
-	url := bucket.URL(filename)
+	url = bucket.URL(filename)
 	if err != nil {
 		return "", err
 	}
