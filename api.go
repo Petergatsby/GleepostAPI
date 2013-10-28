@@ -90,5 +90,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/contacts", contactsHandler)
 	http.HandleFunc(conf.UrlBase+"/contacts/", anotherContactsHandler)
 	http.HandleFunc(conf.UrlBase+"/devices", deviceHandler)
+	http.HandleFunc(conf.UrlBase+"/upload", uploadHandler)
 	http.ListenAndServe(":"+conf.Port, nil)
 }
