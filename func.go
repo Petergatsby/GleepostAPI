@@ -10,6 +10,8 @@ import (
 	"time"
 	"mime/multipart"
 	"strings"
+	"launchpad.net/goamz/aws"
+	"launchpad.net/goamz/s3"
 )
 
 /********************************************************************
@@ -382,16 +384,28 @@ func randomFilename(extension string) (string, error) {
 	}
 }
 
+func getS3() (s *s3.S3) {
+	conf := GetConfig()
+	var auth aws.Auth
+	auth.AccessKey, auth.SecretKey = conf.AWS.KeyId, conf.AWS.SecretKey
+	s = s3.New(auth, aws.EUWest)
+	return
+}
+
 func storeFile(file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	conf := GetConfig()
 	var filename string
+	var contenttype string
 	switch {
 	case strings.HasSuffix(header.Filename, ".jpg"):
 		filename, err = randomFilename(".jpg")
+		contenttype = "image/jpeg"
 	case strings.HasSuffix(header.Filename, ".jpeg"):
 		filename, err = randomFilename(".jpg")
+		contenttype = "image/jpeg"
 	case strings.HasSuffix(header.Filename, ".png"):
 		filename, err = randomFilename(".png")
+		contenttype = "image/png"
 	default:
 		return "", APIerror{"Unsupported file type"}
 	}
@@ -399,5 +413,13 @@ func storeFile(file multipart.File, header *multipart.FileHeader) (url string, e
 		return "", APIerror{err.Error()}
 	}
 	//store on s3
-	return conf.UrlBase+ "/uploads/" + filename, nil
+	s := getS3()
+	bucket := s.Bucket("gpimg")
+	var data []byte
+	_, err = io.ReadFull(file, data)
+	if err != nil {
+		return "", err
+	}
+	err = bucket.Put(filename, data, contenttype, s3.PublicRead)
+	return conf.UrlBase+ "/uploads/" + filename, err
 }

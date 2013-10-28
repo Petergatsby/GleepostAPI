@@ -122,6 +122,11 @@ type RedisConfig struct {
 	Address            string
 }
 
+type AWSConfig struct {
+	KeyId		string
+	SecretKey	string
+}
+
 type Config struct {
 	UrlBase                 string
 	Port                    string
@@ -136,6 +141,7 @@ type Config struct {
 	CommentPageSize         int
 	Mysql			MysqlConfig
 	Redis			RedisConfig
+	AWS			AWSConfig
 }
 
 type Device struct {
