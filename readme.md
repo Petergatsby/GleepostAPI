@@ -1,7 +1,7 @@
-#Gleepost API / V0.14
+#Gleepost API / V0.15
 
 
-URL: https://gleepost.com/api/v0.14/
+URL: https://gleepost.com/api/v0.15/
 
 ##Notes:
 
@@ -39,6 +39,7 @@ URL: https://gleepost.com/api/v0.14/
 
 /device [[POST]](#post-device)
 
+/upload [[POST]](#post-upload)
 
 ##POST /register
 required parameters: user, pass, email
@@ -441,4 +442,15 @@ HTTP 201
 	"type":"android",
 	"id":"APA91bFmOKOcm6v1ZJVavmvHQ3SLzADznBHhT6gDdNUDZm9wSc-yBdToyAWtR73cro5rnemVTiXdqQMlqmrs_4mdAhZbiLIfeZ4cD4L9OstvTnjzv8-Yx_fSPM1Joe_gpAEe0haNEwh3pSQah1QQQFC829jA7V-vswpuQLmLT2sK_ciMo5Hx7po"
 }
+```
+
+##POST /upload
+required parameters: id, token, image
+
+/upload expects a single multipart/form-data encoded image and on success will return a url.
+
+example responses:
+HTTP 201
+```
+{"url":"https://s3-eu-west-1.amazonaws.com/gpimg/3acd82c15dd0e698fc59c79e445a464553e57d338a6440601551c7fb28e45bf9.jpg"}
 ```

@@ -518,7 +518,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 400)
 		} else {
-			jsonResponse(w, url, 201)
+			jsonResponse(w, URLCreated{url}, 201)
 		}
 	default:
 		jsonResponse(w, APIerror{"Method not supported"}, 405)

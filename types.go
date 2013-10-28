@@ -162,6 +162,9 @@ type Created struct {
 	Id	uint64 `json:"id"`
 }
 
+type URLCreated struct {
+	URL	string `json:"url"`
+}
 func (e APIerror) Error() string {
 	return e.Reason
 }
