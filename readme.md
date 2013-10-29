@@ -43,6 +43,8 @@ URL: https://gleepost.com/api/v0.15/
 
 /upload [[POST]](#post-upload)
 
+/profile [[POST]](#post-profileprofileimage)
+
 ##POST /register
 required parameters: user, pass, email
 
@@ -466,4 +468,15 @@ example responses:
 HTTP 201
 ```
 {"url":"https://s3-eu-west-1.amazonaws.com/gpimg/3acd82c15dd0e698fc59c79e445a464553e57d338a6440601551c7fb28e45bf9.jpg"}
+```
+
+##POST /profile/profile_image
+required parameters: id, token, url
+
+/profile_image expects the url of an image previously uploaded with [/upload](#post-upload).
+
+example responses:
+HTTP 200
+```
+
 ```

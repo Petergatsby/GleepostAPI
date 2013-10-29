@@ -551,7 +551,7 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 	case !validateToken(userId, token):
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "POST":
-		url := r.FormValue("profile_image")
+		url := r.FormValue("url")
 		exists, err := userUploadExists(userId, url)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 400)
