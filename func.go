@@ -321,7 +321,6 @@ func getContacts(user UserId) (contacts []Contact, err error) {
 }
 
 func addContact(adder UserId, addee UserId) (user User, err error) {
-	// Todo : actually add contact
 	user, err = getUser(addee)
 	if err != nil {
 		return
@@ -438,4 +437,8 @@ func userAddUpload(id UserId, url string) (err error) {
 
 func userUploadExists(id UserId, url string) (exists bool, err error) {
 	return dbUploadExists(id, url)
+}
+
+func setProfileImage(id UserId, url string) (err error) {
+	return dbSetProfileImage(id, url)
 }

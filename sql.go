@@ -47,6 +47,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE name = ?"
 	sqlStmt["randomSelect"] = "SELECT id, name FROM users ORDER BY RAND()"
+	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -190,6 +191,11 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	nets := getUserNetworks(user.Id)
 	user.Network = nets[0]
 	return user, err
+}
+
+func dbSetProfileImage(id UserId, url string) (err error) {
+	_, err = stmt["setAvatar"].Exec(url, id)
+	return
 }
 
 /********************************************************************
