@@ -50,6 +50,27 @@ func redisAwaitOneMessage(userId UserId) []byte {
 	}
 }
 
+func redisSubscribe(c chan []byte, userId UserId) {
+	conn := pool.Get()
+	defer conn.Close()
+	psc := redis.PubSubConn{Conn: conn}
+	psc.Subscribe(userId)
+	defer psc.Unsubscribe(userId)
+	for {
+		switch n := psc.Receive().(type) {
+		case redis.Message:
+			c <- n.Data
+		case redis.Subscription:
+			fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
+		}
+	}
+}
+
+func redisMessageChan(userId UserId) (c chan []byte) {
+	go redisSubscribe(c, userId)
+	return
+}
+
 func redisAddMessage(msg Message, convId ConversationId) {
 	log.Printf("redis add message %d %d", convId, msg.Id)
 	conn := pool.Get()

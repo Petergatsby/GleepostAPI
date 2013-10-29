@@ -244,8 +244,18 @@ func getProfile(id UserId) (user Profile, err error) {
 	return
 }
 
-func awaitOneMessage(userId UserId) []byte {
-	return redisAwaitOneMessage(userId)
+func awaitOneMessage(userId UserId) (resp []byte) {
+	c := getMessageChan(userId)
+	select {
+	case resp = <-c:
+		return
+	case <-time.After(70 * time.Second):
+		return
+	}
+}
+
+func getMessageChan(userId UserId) (c chan []byte) {
+	return redisMessageChan(userId)
 }
 
 func addPost(userId UserId, text string) (postId PostId, err error) {
