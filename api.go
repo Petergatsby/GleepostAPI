@@ -78,9 +78,9 @@ func main() {
 	}
 	go keepalive(db)
 	server := &http.Server{
-		Addr:		":"+conf.Port,
-		ReadTimeout:	70 * time.Second,
-		WriteTimeout:	70 * time.Second,
+		Addr:         ":" + conf.Port,
+		ReadTimeout:  70 * time.Second,
+		WriteTimeout: 70 * time.Second,
 	}
 	pool = redis.NewPool(RedisDial, 100)
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
