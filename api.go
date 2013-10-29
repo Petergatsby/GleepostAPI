@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
+	"time"
 )
 
 var (
@@ -76,6 +77,11 @@ func main() {
 		log.Fatal(err)
 	}
 	go keepalive(db)
+	server := &http.Server{
+		Addr:		":"+conf.Port,
+		ReadTimeout:	70 * time.Second,
+		WriteTimeout:	70 * time.Second,
+	}
 	pool = redis.NewPool(RedisDial, 100)
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
@@ -92,5 +98,5 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/devices", deviceHandler)
 	http.HandleFunc(conf.UrlBase+"/upload", uploadHandler)
 	http.HandleFunc(conf.UrlBase+"/profile/profile_image", profileHandler)
-	http.ListenAndServe(":"+conf.Port, nil)
+	server.ListenAndServe()
 }
