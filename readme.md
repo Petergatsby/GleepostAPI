@@ -43,7 +43,7 @@ URL: https://gleepost.com/api/v0.15/
 
 /upload [[POST]](#post-upload)
 
-/profile [[POST]](#post-profileprofileimage)
+/profile [[POST]](#post-profileprofile_image)
 
 ##POST /register
 required parameters: user, pass, email
@@ -475,8 +475,18 @@ required parameters: id, token, url
 
 /profile_image expects the url of an image previously uploaded with [/upload](#post-upload).
 
+For now its response is the same as if you issued a GET /user/[id]
+but they will diverge in the future.
+
 example responses:
 HTTP 200
 ```
-
+{
+	"id":9,
+	"username":"Patrick",
+	"tagline":"I like computers",
+	"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
+	"network": { "id":1, "name":"University of Leeds" },
+	"course":"Computer Science"
+}
 ```
