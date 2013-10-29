@@ -440,5 +440,9 @@ func userUploadExists(id UserId, url string) (exists bool, err error) {
 }
 
 func setProfileImage(id UserId, url string) (err error) {
-	return dbSetProfileImage(id, url)
+	err = dbSetProfileImage(id, url)
+	if err != nil {
+		go redisSetProfileImage(id, url)
+	}
+	return
 }

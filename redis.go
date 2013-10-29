@@ -681,6 +681,14 @@ func redisGetUser(id UserId) (user User, err error) {
 	return user, nil
 }
 
+func redisSetProfileImage(id UserId, url string) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d:profile_image", id)
+	conn.Send("SET", key, url)
+	conn.Flush()
+}
+
 /********************************************************************
 		Tokens
 ********************************************************************/

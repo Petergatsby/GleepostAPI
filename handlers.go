@@ -542,3 +542,36 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
+
+func profileHandler(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
+	userId := UserId(id)
+	token := r.FormValue("token")
+	switch {
+	case !validateToken(userId, token):
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
+	case r.Method == "POST":
+		url := r.FormValue("profile_image")
+		exists, err := userUploadExists(userId, url)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 400)
+			return
+		}
+		if !exists {
+			jsonResponse(w, APIerror{"Image doesn't exist!"}, 400)
+		} else {
+			err = setProfileImage(userId, url)
+			if err != nil {
+				jsonResponse(w, APIerror{err.Error()}, 500)
+			} else {
+				user, err := getProfile(userId)
+				if err != nil {
+					jsonResponse(w, APIerror{err.Error()}, 500)
+				}
+				jsonResponse(w, user, 200)
+			}
+		}
+	default:
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
+	}
+}
