@@ -8,11 +8,18 @@ import (
 	"strconv"
 )
 
-/*********************************************************************************
-
-Begin http handlers!
-
-*********************************************************************************/
+//Note to self: validateToken should probably return an error at some point
+func authenticate(r *http.Request) (userId UserId, err error) {
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	userId = UserId(id)
+	token := r.FormValue("token")
+	success := validateToken(userId, token)
+	if success {
+		return userId, nil
+	} else {
+		return 0, &APIerror{"Invalid credentials"}
+	}
+}
 
 func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -26,6 +33,12 @@ func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 		w.Write(marshaled)
 	}
 }
+
+/*********************************************************************************
+
+Begin http handlers!
+
+*********************************************************************************/
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	/* POST /register
@@ -109,11 +122,9 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 	*/
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "GET":
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
@@ -149,13 +160,11 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 
 func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, APIerror{"Must be a POST request"}, 405)
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
 		conversation, err := createConversation(userId, 2)
@@ -169,13 +178,11 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 
 func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	token := r.FormValue("token")
-	userId := UserId(id)
+	userId, err := authenticate(r)
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, APIerror{"Must be a POST request"}, 405)
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
 		conversation, err := createConversation(userId, 4)
@@ -189,13 +196,11 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	token := r.FormValue("token")
-	userId := UserId(id)
+	userId, err := authenticate(r)
 	switch {
 	case r.Method != "GET":
 		jsonResponse(w, APIerror{"Must be a GET request"}, 405)
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
@@ -221,15 +226,13 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 
 func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	regex, _ := regexp.Compile("conversations/(\\d+)/messages/?$")
 	convIdString := regex.FindStringSubmatch(r.URL.Path)
 	regex2, _ := regexp.Compile("conversations/(\\d+)/?$")
 	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case convIdString != nil && r.Method == "GET":
 		_convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
@@ -311,9 +314,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 
 func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	token := r.FormValue("token")
-	userId := UserId(id)
+	userId, err := authenticate(r)
 	regexComments, _ := regexp.Compile("posts/(\\d+)/comments/?$")
 	regexNoComments, _ := regexp.Compile("posts/(\\d+)/?$")
 	regexImages, _ := regexp.Compile("posts/(\\d+)/images/?$")
@@ -321,7 +322,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
 	commIdStringC := regexImages.FindStringSubmatch(r.URL.Path)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case commIdStringA != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
@@ -382,13 +383,11 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	regexUser, _ := regexp.Compile("user/(\\d+)/?$")
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method != "GET":
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
@@ -407,11 +406,9 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 
 func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method != "GET":
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
@@ -424,11 +421,9 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 
 func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "GET":
 		contacts, err := getContacts(userId)
@@ -457,13 +452,11 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 
 func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	rx, _ := regexp.Compile("contacts/(\\d+)/?$")
 	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "PUT" && contactIdStrings != nil:
 		_contact, err := strconv.ParseUint(contactIdStrings[1], 10, 64)
@@ -494,11 +487,9 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 
 func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
@@ -520,11 +511,9 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "POST":
 		file, header, err := r.FormFile("image")
@@ -544,11 +533,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func profileHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userId := UserId(id)
-	token := r.FormValue("token")
+	userId, err := authenticate(r)
 	switch {
-	case !validateToken(userId, token):
+	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case r.Method == "POST":
 		url := r.FormValue("url")
