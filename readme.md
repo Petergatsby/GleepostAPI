@@ -43,7 +43,7 @@ URL: https://gleepost.com/api/v0.15/
 
 /upload [[POST]](#post-upload)
 
-/profile [[POST]](#post-profileprofile_image)
+/profile/profile_image [[POST]](#post-profileprofile_image)
 
 ##POST /register
 required parameters: user, pass, email
