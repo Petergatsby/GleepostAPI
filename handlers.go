@@ -383,7 +383,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
+	_, err := authenticate(r)
 	regexUser, _ := regexp.Compile("user/(\\d+)/?$")
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {

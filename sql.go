@@ -166,7 +166,11 @@ func dbGetUser(id UserId) (user User, err error) {
 	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av)
 	log.Println("DB hit: dbGetUser id(user.Name, user.Id, user.Avatar)")
 	if av.Valid {
-		user.Avatar = "https://gleepost.com/" + av.String
+		if !strings.HasPrefix(av.String, "https://") {
+			user.Avatar = "https://gleepost.com/" + av.String
+		} else {
+			user.Avatar = av.String
+		}
 	}
 	if err != nil {
 		return user, err
@@ -181,7 +185,11 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if av.Valid {
-		user.Avatar = "https://gleepost.com/" + av.String
+		if !strings.HasPrefix(av.String, "https://") {
+			user.Avatar = "https://gleepost.com/" + av.String
+		} else {
+			user.Avatar = av.String
+		}
 	}
 	if desc.Valid {
 		user.Desc = desc.String
