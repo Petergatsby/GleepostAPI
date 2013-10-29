@@ -560,6 +560,9 @@ func dbGetContacts(user UserId) (contacts []Contact, err error) {
 			contact.TheyConfirmed = confirmed
 		case addee == user:
 			contact.User, err = getUser(adder)
+			if err != nil {
+				return
+			}
 			contact.YouConfirmed = confirmed
 			contact.TheyConfirmed = true
 		}
