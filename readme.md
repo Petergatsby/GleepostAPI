@@ -231,11 +231,12 @@ example responses:
 
 ##GET /conversations/[conversation-id]/messages
 required parameters: id=[user-id], token=[token]
-optional parameters: start=[start], after=[after]
+optional parameters: start=[start], after=[after], before=[before]
 
 Returns a list of 20 messages ordered by time from most recent to least recent.
 Given [start], it returns messages from the [start]th most recent to [start + 20]th most recent.
 Given [after], it returns at most 20 of the messages received since [after]
+Given [before], it returns at most 20 of the messages received immediately before [before]
 
 example responses:
 ```

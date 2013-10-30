@@ -155,11 +155,11 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 	if start+int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
 		messages, err = redisGetMessages(convId, start)
 		if err != nil {
-			messages, err = dbGetMessages(convId, start, false)
+			messages, err = dbGetMessages(convId, start, "start")
 			go redisAddAllMessages(convId)
 		}
 	} else {
-		messages, err = dbGetMessages(convId, start, false)
+		messages, err = dbGetMessages(convId, start, "start")
 	}
 	return
 }
@@ -167,7 +167,16 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 func getMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
 	messages, err = redisGetMessagesAfter(convId, after)
 	if err != nil {
-		messages, err = dbGetMessages(convId, after, true)
+		messages, err = dbGetMessages(convId, after, "after")
+		go redisAddAllMessages(convId)
+	}
+	return
+}
+
+func getMessagesBefore(convId ConversationId, before int64) (messages []Message, err error) {
+	messages, err = redisGetMessagesBefore(convId, before)
+	if err != nil {
+		messages, err = dbGetMessages(convId, before, "before")
 		go redisAddAllMessages(convId)
 	}
 	return

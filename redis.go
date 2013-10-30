@@ -212,6 +212,49 @@ func redisMarkConversationSeen(id UserId, convId ConversationId, upTo MessageId)
 	return
 }
 
+func redisGetMessagesBefore(convId ConversationId, before int64) (messages []Message, err error) {
+	conf := GetConfig()
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:messages", convId)
+	index := -1
+	index, err = redis.Int(conn.Do("ZREVRANK", key, before))
+	if err != nil {
+		return
+	}
+	if index <= 0 {
+		return messages, redis.Error("That message isn't in redis!")
+	}
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, index, index + conf.MessagePageSize - 1))
+	if err != nil {
+		return
+	}
+	if len(values) == 0 {
+		return messages, redis.Error("No messages for this conversation in redis.")
+	}
+	for len(values) > 0 {
+		curr := -1
+		values, err = redis.Scan(values, &curr)
+		if err != nil {
+			return
+		}
+		if curr == -1 {
+			return
+		}
+		if curr != 0 {
+			message, errGettingMessage := getMessage(MessageId(curr))
+			if errGettingMessage != nil {
+				return messages, errGettingMessage
+			} else {
+				go redisSetMessage(message)
+			}
+			messages = append(messages, message)
+		}
+	}
+	return
+
+}
+
 func redisGetMessages(convId ConversationId, start int64) (messages []Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()

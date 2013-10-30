@@ -67,6 +67,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
+	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id < ? ORDER BY timestamp DESC LIMIT ?"
 	sqlStmt["messagesRead"] = "UPDATE chat_messages SET seen = 1 WHERE conversation_id=? AND id <= ? AND `from` != ?"
 	//Token
 	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
@@ -282,7 +283,7 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
 	conversation.Id = convId
 	conversation.Participants = getParticipants(convId)
-	conversation.Messages, err = dbGetMessages(convId, 0, false)
+	conversation.Messages, err = dbGetMessages(convId, 0, "start")
 	return
 }
 
@@ -459,15 +460,18 @@ func dbAddMessage(convId ConversationId, userId UserId, text string) (id Message
 	return
 }
 
-func dbGetMessages(convId ConversationId, startOrAfter int64, after bool) (messages []Message, err error) {
+func dbGetMessages(convId ConversationId, index int64, sel string) (messages []Message, err error) {
 	conf := GetConfig()
 	var s *sql.Stmt
-	if after {
+	switch {
+	case sel == "after":
 		s = stmt["messageSelectAfter"]
-	} else {
+	case sel == "before":
+		s = stmt["messageSelectBefore"]
+	case sel == "start":
 		s = stmt["messageSelect"]
 	}
-	rows, err := s.Query(convId, startOrAfter, conf.MessagePageSize)
+	rows, err := s.Query(convId, index, conf.MessagePageSize)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		log.Printf("%v", err)

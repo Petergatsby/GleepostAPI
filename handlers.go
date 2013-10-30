@@ -245,10 +245,17 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if err != nil {
 			after = 0
 		}
+		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+		if err != nil {
+			before = 0
+		}
 		var messages []Message
-		if after > 0 {
+		switch {
+		case after > 0:
 			messages, err = getMessagesAfter(convId, after)
-		} else {
+		case before > 0:
+			messages, err = getMessagesBefore(convId, before)
+		default:
 			messages, err = getMessages(convId, start)
 		}
 		if err != nil {
