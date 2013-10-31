@@ -526,13 +526,14 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		file, header, err := r.FormFile("image")
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 400)
-		}
-		defer file.Close()
-		url, err := storeFile(userId, file, header)
-		if err != nil {
-			jsonResponse(w, APIerror{err.Error()}, 400)
 		} else {
-			jsonResponse(w, URLCreated{url}, 201)
+			defer file.Close()
+			url, err := storeFile(userId, file, header)
+			if err != nil {
+				jsonResponse(w, APIerror{err.Error()}, 400)
+			} else {
+				jsonResponse(w, URLCreated{url}, 201)
+			}
 		}
 	default:
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
