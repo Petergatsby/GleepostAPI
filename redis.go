@@ -18,6 +18,8 @@ func RedisDial() (redis.Conn, error) {
 	return conn, err
 }
 
+var ErrEmptyCache = APIerror{"Not in redis!"}
+
 /********************************************************************
 		Messages
 ********************************************************************/
@@ -76,7 +78,7 @@ func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Messa
 		return
 	}
 	if index == 0 {
-		return messages, redis.Error("That message isn't in redis!")
+		return messages, ErrEmptyCache
 	}
 	start := index - conf.MessagePageSize
 	if start < 0 {
@@ -87,7 +89,7 @@ func redisGetMessagesAfter(convId ConversationId, after int64) (messages []Messa
 		return
 	}
 	if len(values) == 0 {
-		return messages, redis.Error("No messages for this conversation in redis.")
+		return messages, ErrEmptyCache
 	}
 	for len(values) > 0 {
 		curr := -1
@@ -230,7 +232,7 @@ func redisGetMessagesBefore(convId ConversationId, before int64) (messages []Mes
 		return
 	}
 	if len(values) == 0 {
-		return messages, redis.Error("No messages for this conversation in redis.")
+		return messages, ErrEmptyCache
 	}
 	for len(values) > 0 {
 		curr := -1
@@ -264,7 +266,7 @@ func redisGetMessages(convId ConversationId, start int64) (messages []Message, e
 		return
 	}
 	if len(values) == 0 {
-		return messages, redis.Error("No messages for this conversation in redis.")
+		return messages, ErrEmptyCache
 	}
 	for len(values) > 0 {
 		curr := -1
@@ -425,7 +427,7 @@ func redisGetNetworkPosts(id NetworkId, start int64) (posts []PostSmall, err err
 		return
 	}
 	if len(values) == 0 {
-		return posts, redis.Error("No posts for this network in redis.")
+		return posts, ErrEmptyCache
 	}
 	for len(values) > 0 {
 		curr := -1
@@ -498,7 +500,7 @@ func redisSetConversationParticipants(convId ConversationId, participants []User
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
 	for _, user := range participants {
-		conn.Send("HSET", key, user.Id, user.Name)
+		conn.Send("SADD", key, user.Id)
 	}
 	conn.Flush()
 }
@@ -507,16 +509,20 @@ func redisGetConversationParticipants(convId ConversationId) (participants []Use
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
-	values, err := redis.Values(conn.Do("HGETALL", key))
+	values, err := redis.Values(conn.Do("SMEMBERS", key))
 	if err != nil {
 		return
 	}
 	if len(values) == 0 {
-		return participants, redis.Error("Nothing in redis")
+		return participants, ErrEmptyCache
 	}
 	for len(values) > 0 {
 		user := User{}
-		values, err = redis.Scan(values, &user.Id, &user.Name)
+		values, err = redis.Scan(values, &user.Id)
+		if err != nil {
+			return
+		}
+		user, err = getUser(user.Id)
 		if err != nil {
 			return
 		}
