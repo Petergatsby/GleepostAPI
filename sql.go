@@ -300,7 +300,7 @@ func dbGetParticipants(conv ConversationId) []User {
 	for rows.Next() {
 		var id UserId
 		err = rows.Scan(&id)
-		user, err = getUser(id)
+		user, err := getUser(id)
 		if err == nil {
 			participants = append(participants, user)
 		}

@@ -128,8 +128,8 @@ type AWSConfig struct {
 }
 
 type APNSConfig struct {
-	CertFile  string
-	KeyFile   string
+	CertFile string
+	KeyFile  string
 }
 
 type Config struct {
@@ -147,7 +147,7 @@ type Config struct {
 	Mysql            MysqlConfig
 	Redis            RedisConfig
 	AWS              AWSConfig
-	APNS		 APNSConfig
+	APNS             APNSConfig
 }
 
 type Device struct {
