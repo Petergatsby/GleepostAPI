@@ -225,7 +225,7 @@ func redisGetMessagesBefore(convId ConversationId, before int64) (messages []Mes
 	if index <= 0 {
 		return messages, redis.Error("That message isn't in redis!")
 	}
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, index, index + conf.MessagePageSize - 1))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, index, index+conf.MessagePageSize-1))
 	if err != nil {
 		return
 	}

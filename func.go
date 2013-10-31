@@ -373,6 +373,10 @@ func addDevice(user UserId, deviceType string, deviceId string) (device Device, 
 	return
 }
 
+func getDevices(user UserId) (devices []Device, err error) {
+	return dbGetDevices(user)
+}
+
 func generatePartners(id UserId, count int) (partners []User, err error) {
 	return dbRandomPartners(id, count)
 }

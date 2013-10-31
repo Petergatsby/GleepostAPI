@@ -127,6 +127,11 @@ type AWSConfig struct {
 	SecretKey string
 }
 
+type APNSConfig struct {
+	CertFile  string
+	KeyFile   string
+}
+
 type Config struct {
 	UrlBase          string
 	Port             string
@@ -142,6 +147,7 @@ type Config struct {
 	Mysql            MysqlConfig
 	Redis            RedisConfig
 	AWS              AWSConfig
+	APNS		 APNSConfig
 }
 
 type Device struct {

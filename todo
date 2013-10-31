@@ -29,8 +29,6 @@
 -get user networks
 --Either return an error when looking for someone non-existent, or when returning no networks, or check the user exists before using, or check output has at least one network!
 
--Upload pictures
-
 -get partners
 --More sophisticated than random pl0x!
 
@@ -49,8 +47,6 @@
 -ACLs
 --View messages
 --Send messages
-
--Upload pictures
 
 -Unit tests
 --Database

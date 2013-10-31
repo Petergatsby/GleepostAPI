@@ -78,6 +78,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["contactUpdate"] = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
 	//device
 	sqlStmt["deviceInsert"] = "INSERT INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
+	sqlStmt["deviceSelect"] = "SELECT user_id, device_type, device_id FROM devices WHERE user = ?"
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
@@ -593,6 +594,23 @@ func dbUpdateContact(user UserId, contact UserId) (err error) {
 func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
 	s := stmt["deviceInsert"]
 	_, err = s.Exec(user, deviceType, deviceId)
+	return
+}
+
+func dbGetDevices(user UserId) (devices []Device, err error) {
+	s := stmt["deviceSelect"]
+	rows, err := s.Query(user)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		device := Device{User: user}
+		if err = rows.Scan(&device.Type, &device.Id); err != nil {
+			return
+		}
+		devices = append(devices, device)
+	}
 	return
 }
 

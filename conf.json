@@ -24,5 +24,9 @@
 	"AWS": {
 		"KeyId":"",
 		"SecretKey":""
+	},
+	"APNS": {
+		"CertFile":"",
+		"KeyFile":""
 	}
 }
