@@ -143,6 +143,7 @@ type Config struct {
 	MessagePageSize  int
 	PostPageSize     int
 	CommentPageSize  int
+	OnlineTimeout    int
 	Mysql            MysqlConfig
 	Redis            RedisConfig
 	AWS              AWSConfig

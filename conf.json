@@ -9,6 +9,7 @@
 	"MessagePageSize":20,
 	"PostPageSize":20,
 	"CommentPageSize":20,
+	"OnlineTimeout":300,
 	"Mysql": {
 		"MaxConns":100,
 		"User":"gp",

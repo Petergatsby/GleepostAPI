@@ -477,3 +477,11 @@ func setBusyStatus(id UserId, busy bool) (err error) {
 	}
 	return
 }
+
+func userPing(id UserId) {
+	redisUserPing(id)
+}
+
+func userIsOnline(id UserId) bool {
+	return redisUserIsOnline(id)
+}

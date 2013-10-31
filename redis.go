@@ -751,6 +751,26 @@ func redisSetBusyStatus(id UserId, busy bool) {
 	conn.Flush()
 }
 
+func redisUserPing(id UserId) {
+	conf := GetConfig()
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d:busy", id)
+	conn.Send("SETEX", key, conf.OnlineTimeout, 1)
+	conn.Flush()
+}
+
+func redisUserIsOnline(id UserId) (online bool) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d:busy", id)
+	online, err := redis.Bool(conn.Do("EXISTS", key))
+	if err != nil {
+		return false
+	}
+	return
+}
+
 /********************************************************************
 		Tokens
 ********************************************************************/
