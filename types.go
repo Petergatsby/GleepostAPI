@@ -172,6 +172,10 @@ type URLCreated struct {
 	URL string `json:"url"`
 }
 
+type BusyStatus struct {
+	Busy bool `json:"busy"`
+}
+
 func (e APIerror) Error() string {
 	return e.Reason
 }

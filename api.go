@@ -98,5 +98,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/devices", deviceHandler)
 	http.HandleFunc(conf.UrlBase+"/upload", uploadHandler)
 	http.HandleFunc(conf.UrlBase+"/profile/profile_image", profileImageHandler)
+	http.HandleFunc(conf.UrlBase+"/profile/busy", busyHandler)
 	server.ListenAndServe()
 }

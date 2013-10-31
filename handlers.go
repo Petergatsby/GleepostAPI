@@ -569,3 +569,24 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
+
+func busyHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
+	case r.Method == "POST":
+		status, err := strconv.ParseBool(r.FormValue("status"))
+		if err != nil {
+			jsonResponse(w, APIerror{"Bad input"}, 400)
+		}
+		err = setBusyStatus(userId, status)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 500)
+		} else {
+			jsonResponse(w, &BusyStatus{status}, 200)
+		}
+	default:
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
+	}
+}

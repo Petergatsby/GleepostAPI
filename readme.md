@@ -45,6 +45,8 @@ URL: https://gleepost.com/api/v0.16/
 
 /profile/profile_image [[POST]](#post-profileprofile_image)
 
+/profile/busy [[POST]](#post-profilebusy)
+
 ##POST /register
 required parameters: user, pass, email
 
@@ -490,4 +492,17 @@ HTTP 200
 	"network": { "id":1, "name":"University of Leeds" },
 	"course":"Computer Science"
 }
+```
+
+##POST /profile/busy
+required parameters: id, token, status
+
+status can be true or false
+
+/profile/busy sets user [id] status to [status]
+
+example responses:
+HTTP 200
+```
+{ "busy":true }
 ```
