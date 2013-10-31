@@ -48,6 +48,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE name = ?"
 	sqlStmt["randomSelect"] = "SELECT id, name FROM users ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
+	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -196,6 +197,11 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 
 func dbSetProfileImage(id UserId, url string) (err error) {
 	_, err = stmt["setAvatar"].Exec(url, id)
+	return
+}
+
+func dbSetBusyStatus(id UserId, busy bool) (err error) {
+	_, err = stmt["setBusy"].Exec(busy, id)
 	return
 }
 

@@ -743,6 +743,14 @@ func redisSetProfileImage(id UserId, url string) {
 	conn.Flush()
 }
 
+func redisSetBusyStatus(id UserId, busy bool) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d:busy", id)
+	conn.Send("SET", key, busy)
+	conn.Flush()
+}
+
 /********************************************************************
 		Tokens
 ********************************************************************/

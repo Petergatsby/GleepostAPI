@@ -464,8 +464,16 @@ func userUploadExists(id UserId, url string) (exists bool, err error) {
 
 func setProfileImage(id UserId, url string) (err error) {
 	err = dbSetProfileImage(id, url)
-	if err != nil {
+	if err == nil {
 		go redisSetProfileImage(id, url)
+	}
+	return
+}
+
+func setBusyStatus(id UserId, busy bool) (err error) {
+	err = dbSetBusyStatus(id, busy)
+	if err == nil {
+		go redisSetBusyStatus(id, busy)
 	}
 	return
 }
