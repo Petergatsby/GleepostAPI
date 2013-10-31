@@ -539,7 +539,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func profileHandler(w http.ResponseWriter, r *http.Request) {
+func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
