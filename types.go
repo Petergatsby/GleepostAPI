@@ -137,7 +137,6 @@ type Config struct {
 	Port             string
 	LoginOverride    bool
 	RegisterOverride bool
-	UploadPath       string
 	MessageCache     int
 	PostCache        int
 	CommentCache     int

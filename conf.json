@@ -1,7 +1,6 @@
 {
-	"UrlBase":"/api/v0.14",
+	"UrlBase":"/api/v0.16",
 	"Port":"8080",
-	"UploadPath":"uploads/",
 	"LoginOverride":false,
 	"RegisterOverride":true,
 	"MessageCache":1000,
