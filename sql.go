@@ -53,7 +53,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
-	sqlStmt["participantSelect"] = "SELECT participant_id, users.name FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
+	sqlStmt["participantSelect"] = "SELECT participant_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
@@ -291,16 +291,19 @@ func dbGetConversation(convId ConversationId) (conversation ConversationAndMessa
 func dbGetParticipants(conv ConversationId) []User {
 	s := stmt["participantSelect"]
 	rows, err := s.Query(conv)
-	log.Println("DB hit: getParticipants convid (message.id, message.by, message.text, message.time, message.seen)")
+	log.Println("DB hit: getParticipants convid (user.id)")
 	if err != nil {
 		log.Printf("Error getting participant: %v", err)
 	}
 	defer rows.Close()
 	participants := make([]User, 0, 5)
 	for rows.Next() {
-		var user User
-		err = rows.Scan(&user.Id, &user.Name)
-		participants = append(participants, user)
+		var id UserId
+		err = rows.Scan(&id)
+		user, err = getUser(id)
+		if err == nil {
+			participants = append(participants, user)
+		}
 	}
 	return (participants)
 }
