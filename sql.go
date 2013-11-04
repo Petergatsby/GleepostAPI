@@ -85,7 +85,8 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
 	sqlStmt["notificationSelect"] = "SELECT id, type, time, `by`, post_id, seen FROM notifications WHERE recipient = ?"
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
-	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
+	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient) VALUES (?, NOW(), ?, ?)"
+	sqlStmt["postNotificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -685,12 +686,13 @@ func dbMarkNotificationsSeen(upTo NotificationId) (err error) {
 }
 
 func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (notification interface{}, err error) {
-	s := stmt["notificationInsert"]
 	var res sql.Result
 	if isPN {
+		s := stmt["postNotificationInsert"]
 		res, err = s.Exec(ntype, by, recipient, post)
 	} else {
-		res, err = s.Exec(ntype, by, recipient, "")
+		s := stmt["notificationInsert"]
+		res, err = s.Exec(ntype, by, recipient)
 	}
 	if err != nil {
 		return
