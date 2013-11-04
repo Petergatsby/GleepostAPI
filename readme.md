@@ -563,3 +563,27 @@ HTTP 200
 ] 
 
 ```
+
+##PUT /notifications
+required parameters: id, token, seen
+
+Marks all notifications for user [id] seen up to and including the notification with id [seen]
+Responds with an array containing any unseen notifications.
+
+example responses:
+HTTP 200
+```
+[
+	{
+		"id":99999,
+		"type":"added_you",
+		"time":"2013-09-16T16:58:30.771905595Z",
+		"by": {
+			"id":9,
+			"name":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+	}
+] 
+
+```
