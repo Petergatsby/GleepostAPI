@@ -345,7 +345,7 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 		return
 	} else {
 		err = dbAddContact(adder, addee)
-		if err != nil {
+		if err == nil {
 			go createNotification("added_you", adder, addee, false, 0)
 		}
 		return
