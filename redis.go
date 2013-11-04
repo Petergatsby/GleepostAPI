@@ -376,9 +376,11 @@ func redisAddNewPost(userId UserId, text string, postId PostId) {
 	post.By, _ = getUser(userId)
 	post.Time = time.Now().UTC()
 	post.Text = text
-	networks := getUserNetworks(userId)
-	go redisAddPost(post)
-	go redisAddNetworkPost(networks[0].Id, post)
+	networks, err := getUserNetworks(userId)
+	if err == nil {
+		go redisAddPost(post)
+		go redisAddNetworkPost(networks[0].Id, post)
+	}
 }
 
 func redisAddNetworkPost(network NetworkId, post PostSmall) {

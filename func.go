@@ -132,13 +132,16 @@ func createComment(postId PostId, userId UserId, text string) (commId CommentId,
 	return commId, err
 }
 
-func getUserNetworks(id UserId) (nets []Network) {
-	nets, err := redisGetUserNetwork(id)
+func getUserNetworks(id UserId) (nets []Network, err error) {
+	nets, err = redisGetUserNetwork(id)
 	if err != nil {
-		nets = dbGetUserNetworks(id)
+		nets, err = dbGetUserNetworks(id)
+		if err != nil {
+			return
+		}
 		redisSetUserNetwork(id, nets[0])
 	}
-	return (nets)
+	return
 }
 
 func getParticipants(convId ConversationId) []User {

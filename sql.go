@@ -124,25 +124,24 @@ func dbValidateEmail(email string) bool {
 	return (false)
 }
 
-func dbGetUserNetworks(id UserId) []Network {
+func dbGetUserNetworks(id UserId) (networks []Network, err error) {
 	s := stmt["networkSelect"]
 	rows, err := s.Query(id)
 	defer rows.Close()
 	log.Println("DB hit: getUserNetworks userid (network.id, network.name)")
-	nets := make([]Network, 0, 5)
 	if err != nil {
-		log.Printf("Error querying db: %v", err)
+		return
 	}
 	for rows.Next() {
 		var network Network
 		err = rows.Scan(&network.Id, &network.Name)
 		if err != nil {
-			log.Printf("Error scanning row: %v", err)
+			return
 		} else {
-			nets = append(nets, network)
+			networks = append(networks, network)
 		}
 	}
-	return (nets)
+	return
 }
 
 func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
@@ -194,7 +193,10 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 		user.Desc = desc.String
 	}
 	user.Id = id
-	nets := getUserNetworks(user.Id)
+	nets, err := getUserNetworks(user.Id)
+	if err != nil {
+		return
+	}
 	user.Network = nets[0]
 	return user, err
 }
@@ -342,7 +344,10 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 ********************************************************************/
 
 func dbAddPost(userId UserId, text string) (postId PostId, err error) {
-	networks := getUserNetworks(userId)
+	networks, err := getUserNetworks(userId)
+	if err != nil {
+		return
+	}
 	s := stmt["postInsert"]
 	res, err := s.Exec(userId, text, networks[0].Id)
 	if err != nil {
