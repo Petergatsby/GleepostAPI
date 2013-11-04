@@ -139,6 +139,9 @@ func getUserNetworks(id UserId) (nets []Network, err error) {
 		if err != nil {
 			return
 		}
+		if len(nets) == 0 {
+			return nets, APIerror{"User has no networks!"}
+		}
 		redisSetUserNetwork(id, nets[0])
 	}
 	return
