@@ -597,7 +597,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
-	case r.Method == "PuT":
+	case r.Method == "PUT":
 		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 		if err != nil {
 			_upTo = 0
