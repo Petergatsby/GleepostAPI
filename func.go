@@ -345,6 +345,9 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 		return
 	} else {
 		err = dbAddContact(adder, addee)
+		if err != nil {
+			go createNotification("added_you", adder, addee, false, 0)
+		}
 		return
 	}
 }
@@ -352,13 +355,15 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
 	err = dbUpdateContact(user, toAccept)
 	if err != nil {
-		contact.User, err = getUser(toAccept)
-		if err != nil {
-			return
-		}
-		contact.YouConfirmed = true
-		contact.TheyConfirmed = true
+		return
 	}
+	contact.User, err = getUser(toAccept)
+	if err != nil {
+		return
+	}
+	contact.YouConfirmed = true
+	contact.TheyConfirmed = true
+	go createNotification("accepted_you", user, toAccept, false, 0)
 	return
 }
 
@@ -484,4 +489,17 @@ func userPing(id UserId) {
 
 func userIsOnline(id UserId) bool {
 	return redisUserIsOnline(id)
+}
+
+func getUserNotifications(id UserId) (notifications []interface{}, err error) {
+	return dbGetUserNotifications(id)
+}
+
+func markNotificationsSeen(upTo NotificationId) (err error) {
+	return dbMarkNotificationsSeen(upTo)
+}
+
+func createNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (err error) {
+	_, err = dbCreateNotification(ntype, by, recipient, isPN, post)
+	return
 }

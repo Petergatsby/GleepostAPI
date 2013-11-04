@@ -591,3 +591,45 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	}
 }
+
+func notificationHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
+	case r.Method == "PuT":
+		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
+		if err != nil {
+			_upTo = 0
+		}
+		notificationId := NotificationId(_upTo)
+		err = markNotificationsSeen(notificationId)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 500)
+		} else {
+			notifications, err := getUserNotifications(userId)
+			if err != nil {
+				jsonResponse(w, APIerror{err.Error()}, 500)
+			} else {
+				if len(notifications) == 0 {
+					jsonResponse(w, []string{}, 200)
+				} else {
+					jsonResponse(w, notifications, 200)
+				}
+			}
+		}
+	case r.Method == "GET":
+		notifications, err := getUserNotifications(userId)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 500)
+		} else {
+			if len(notifications) == 0 {
+				jsonResponse(w, []string{}, 200)
+			} else {
+				jsonResponse(w, notifications, 200)
+			}
+		}
+	default:
+		jsonResponse(w, APIerror{"Method not supported"}, 405)
+	}
+}

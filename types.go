@@ -10,6 +10,7 @@ type MessageId uint64
 type PostId uint64
 type CommentId uint64
 type ConversationId uint64
+type NotificationId uint64
 
 type User struct {
 	Id     UserId `json:"id"`
@@ -154,6 +155,19 @@ type Device struct {
 	User UserId `json:"user"`
 	Type string `json:"type"`
 	Id   string `json:"id"`
+}
+
+type Notification struct {
+	Id   NotificationId `json:"id"`
+	Type string         `json:"type"`
+	Time time.Time      `json:"time"`
+	By   User           `json:"user"`
+	Seen bool           `json:"seen"`
+}
+
+type PostNotification struct {
+	Notification
+	Post PostId `json:"post"`
 }
 
 func (c *Config) ConnectionString() string {

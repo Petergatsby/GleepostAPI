@@ -83,6 +83,9 @@ func prepare(db *sql.DB) (err error) {
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
+	sqlStmt["notificationSelect"] = "SELECT id, type, time, by, post_id, seen FROM notifications WHERE recipient = ?"
+	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
+	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, by, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -635,4 +638,82 @@ func dbAddUpload(user UserId, url string) (err error) {
 func dbUploadExists(user UserId, url string) (exists bool, err error) {
 	err = stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
 	return
+}
+
+/********************************************************************
+		Notification
+********************************************************************/
+
+func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) {
+	s := stmt["notificationSelect"]
+	rows, err := s.Query(id)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var notification Notification
+		var t string
+		var post sql.NullInt64
+		var by UserId
+		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &post, &notification.Seen); err != nil {
+			return
+		}
+		notification.Time, err = time.Parse(t, time.RFC3339)
+		if err != nil {
+			return
+		}
+		notification.By, err = getUser(by)
+		if err != nil {
+			return
+		}
+		if post.Valid {
+			var np PostNotification
+			np.Notification = notification
+			np.Post = PostId(post.Int64)
+			notifications = append(notifications, np)
+		} else {
+			notifications = append(notifications, notification)
+		}
+	}
+	return
+}
+
+func dbMarkNotificationsSeen(upTo NotificationId) (err error) {
+	_, err = stmt["notificationUpdate"].Exec(upTo)
+	return
+}
+
+func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (notification interface{}, err error) {
+	s := stmt["notificationInsert"]
+	var res sql.Result
+	if isPN {
+		res, err = s.Exec(ntype, by, recipient, post)
+	} else {
+		res, err = s.Exec(ntype, by, recipient, "")
+	}
+	if err != nil {
+		return
+	} else {
+		n := Notification{
+			Type: ntype,
+			Time: time.Now().UTC(),
+			Seen: false,
+		}
+		id, iderr := res.LastInsertId()
+		if iderr != nil {
+			return n, iderr
+		}
+		n.Id = NotificationId(id)
+		n.By, err = getUser(by)
+		if err != nil {
+			return
+		}
+		if isPN {
+			np := PostNotification{n, post}
+			return np, nil
+		} else {
+			return n, nil
+		}
+	}
 }
