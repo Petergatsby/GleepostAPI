@@ -83,9 +83,9 @@ func prepare(db *sql.DB) (err error) {
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
-	sqlStmt["notificationSelect"] = "SELECT id, type, time, by, post_id, seen FROM notifications WHERE recipient = ?"
+	sqlStmt["notificationSelect"] = "SELECT id, type, time, `by`, post_id, seen FROM notifications WHERE recipient = ?"
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
-	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, by, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
+	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
