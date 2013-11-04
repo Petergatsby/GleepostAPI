@@ -659,7 +659,7 @@ func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) 
 		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &post, &notification.Seen); err != nil {
 			return
 		}
-		notification.Time, err = time.Parse(t, time.RFC3339)
+		notification.Time, err = time.Parse(t, MysqlTime)
 		if err != nil {
 			return
 		}
