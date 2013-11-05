@@ -171,6 +171,9 @@ func dbGetUser(id UserId) (user User, err error) {
 	s := stmt["userSelect"]
 	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av)
 	log.Println("DB hit: dbGetUser id(user.Name, user.Id, user.Avatar)")
+	if err != nil {
+		return
+	}
 	if av.Valid {
 		user.Avatar = av.String
 	}
