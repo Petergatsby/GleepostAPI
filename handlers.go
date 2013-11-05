@@ -408,8 +408,9 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		user, err := getProfile(profileId)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 500)
+		} else {
+			jsonResponse(w, user, 200)
 		}
-		jsonResponse(w, user, 200)
 	default:
 		jsonResponse(w, APIerror{"User not found"}, 404)
 	}
