@@ -149,6 +149,33 @@ func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
 	return
 }
 
+func dbAssignNetworks(userId UserId, email string) (networks int, err error) {
+	if err != nil {
+		return
+	}
+	s := stmt["ruleSelect"]
+	rows, err := s.Query()
+	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		rule := new(Rule)
+		if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
+			return
+		}
+		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
+			err = dbSetNetwork(userId, rule.NetworkID)
+			if err != nil {
+				return
+			}
+			networks++
+		}
+	}
+	return
+}
+
 /********************************************************************
 		User
 ********************************************************************/

@@ -336,9 +336,14 @@ func registerUser(user string, pass string, email string) (userId UserId, err er
 		return 0, err
 	}
 	userId, err = dbRegisterUser(user, hash, email)
+	if err != nil {
+		return 0, err
+	}
 	conf := GetConfig()
 	if conf.RegisterOverride {
 		setNetwork(userId, 1338) //Highlands and Islands :D
+	} else {
+		_, err = assignNetworks(userId, email)
 	}
 	return userId, err
 }
@@ -510,4 +515,8 @@ func markNotificationsSeen(upTo NotificationId) (err error) {
 func createNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (err error) {
 	_, err = dbCreateNotification(ntype, by, recipient, isPN, post)
 	return
+}
+
+func assignNetworks(user UserId, email string) (networks int, err error) {
+	return dbAssignNetworks(user, email)
 }
