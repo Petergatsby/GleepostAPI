@@ -10,7 +10,7 @@ import (
 
 //Note to self: validateToken should probably return an error at some point
 func authenticate(r *http.Request) (userId UserId, err error) {
-	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 16)
+	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
 	userId = UserId(id)
 	token := r.FormValue("token")
 	success := validateToken(userId, token)
@@ -207,7 +207,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
 		}
@@ -239,9 +239,9 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case convIdString != nil && r.Method == "GET":
-		_convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
+		_convId, _ := strconv.ParseUint(convIdString[1], 10, 64)
 		convId := ConversationId(_convId)
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
 		}
@@ -276,7 +276,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			}
 		}
 	case convIdString != nil && r.Method == "POST":
-		_convId, _ := strconv.ParseUint(convIdString[1], 10, 16)
+		_convId, _ := strconv.ParseUint(convIdString[1], 10, 64)
 		convId := ConversationId(_convId)
 		text := r.FormValue("text")
 		messageId, err := addMessage(convId, userId, text)
@@ -286,12 +286,12 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			jsonResponse(w, &Created{uint64(messageId)}, 201)
 		}
 	case convIdString != nil && r.Method == "PUT":
-		_convId, err := strconv.ParseUint(convIdString[1], 10, 16)
+		_convId, err := strconv.ParseUint(convIdString[1], 10, 64)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 400)
 		}
 		convId := ConversationId(_convId)
-		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 16)
+		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 		if err != nil {
 			_upTo = 0
 		}
@@ -307,9 +307,9 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	case convIdString2 != nil && r.Method != "GET":
 		jsonResponse(w, APIerror{"Must be a GET request"}, 405)
 	case convIdString2 != nil:
-		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 16)
+		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
 		convId := ConversationId(_convId)
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
 		}
@@ -336,9 +336,9 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	case commIdStringA != nil && r.Method == "GET":
-		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
+		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 64)
 		postId := PostId(_id)
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 16)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
 		}
@@ -357,7 +357,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case commIdStringA != nil && r.Method == "POST":
-		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 16)
+		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 64)
 		postId := PostId(_id)
 		text := r.FormValue("text")
 		commentId, err := createComment(postId, userId, text)
@@ -367,7 +367,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, &Created{uint64(commentId)}, 201)
 		}
 	case commIdStringB != nil && r.Method == "GET":
-		_id, _ := strconv.ParseUint(commIdStringB[1], 10, 16)
+		_id, _ := strconv.ParseUint(commIdStringB[1], 10, 64)
 		postId := PostId(_id)
 		log.Printf("%d", postId)
 		//implement getting a specific post
@@ -403,7 +403,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method != "GET":
 		jsonResponse(w, APIerror{"Method not supported"}, 405)
 	case userIdString != nil:
-		u, _ := strconv.ParseUint(userIdString[1], 10, 16)
+		u, _ := strconv.ParseUint(userIdString[1], 10, 64)
 		profileId := UserId(u)
 		user, err := getProfile(profileId)
 		if err != nil {
