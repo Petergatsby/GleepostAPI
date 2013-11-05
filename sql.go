@@ -499,7 +499,7 @@ func dbGetCommentCount(id PostId) (count int) {
 }
 
 func dbGetPost(postId PostId) (post Post, err error) {
-	s := stmt["commentCountSelect"]
+	s := stmt["postSelect"]
 	post.Id = postId
 	var by UserId
 	var t string
