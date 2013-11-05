@@ -369,8 +369,12 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	case commIdStringB != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringB[1], 10, 64)
 		postId := PostId(_id)
-		log.Printf("%d", postId)
-		//implement getting a specific post
+		post, err := getPost(postId)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 500)
+		} else {
+			jsonResponse(w, post, 200)
+		}
 	case commIdStringC != nil && r.Method == "POST":
 		_id, _ := strconv.ParseUint(commIdStringC[1], 10, 64)
 		postId := PostId(_id)
