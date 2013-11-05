@@ -186,6 +186,9 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	s := stmt["profileSelect"]
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
+	if err != nil {
+		return
+	}
 	if av.Valid {
 		user.Avatar = av.String
 	}
@@ -196,9 +199,10 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	nets, err := getUserNetworks(user.Id)
 	if err != nil {
 		return
+	} else {
+		user.Network = nets[0]
+		return user, err
 	}
-	user.Network = nets[0]
-	return user, err
 }
 
 func dbSetProfileImage(id UserId, url string) (err error) {
