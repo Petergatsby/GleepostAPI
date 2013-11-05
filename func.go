@@ -106,9 +106,11 @@ func getUser(id UserId) (user User, err error) {
 	user, err = redisGetUser(id)
 	if err != nil {
 		user, err = dbGetUser(id)
-		redisSetUser(user)
+		if err == nil {
+			redisSetUser(user)
+		}
 	}
-	return user, err
+	return
 }
 
 func getCommentCount(id PostId) (count int) {
