@@ -122,6 +122,10 @@ func getCommentCount(id PostId) (count int) {
 }
 
 func createComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
+	post, err := getPost(postId)
+	if err != nil {
+		return
+	}
 	commId, err = dbCreateComment(postId, userId, text)
 	if err == nil {
 		user, e := getUser(userId)
@@ -129,6 +133,7 @@ func createComment(postId PostId, userId UserId, text string) (commId CommentId,
 			return commId, e
 		}
 		comment := Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
+		go createNotification("commented", userId, post.By.Id, true, postId)
 		go redisAddComment(postId, comment)
 	}
 	return commId, err
@@ -519,4 +524,8 @@ func createNotification(ntype string, by UserId, recipient UserId, isPN bool, po
 
 func assignNetworks(user UserId, email string) (networks int, err error) {
 	return dbAssignNetworks(user, email)
+}
+
+func getPost(postId PostId) (post Post, err error) {
+	return dbGetPost(postId)
 }

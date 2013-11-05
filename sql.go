@@ -64,6 +64,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
 	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
+	sqlStmt["postSelect"] = "SELECT by, time, text FROM wall_posts WHERE id = ?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
@@ -495,6 +496,27 @@ func dbGetCommentCount(id PostId) (count int) {
 		return 0
 	}
 	return count
+}
+
+func dbGetPost(postId PostId) (post Post, err error) {
+	s := stmt["commentCountSelect"]
+	post.Id = postId
+	var by UserId
+	var t string
+	err = s.QueryRow(postId).Scan(&by, &t, &post.Text)
+	if err != nil {
+		return
+	}
+	post.By, err = getUser(by)
+	if err != nil {
+		return
+	}
+	post.Time, err = time.Parse(MysqlTime, t)
+	if err != nil {
+		return
+	}
+	post.Images = getPostImages(postId)
+	return
 }
 
 /********************************************************************
