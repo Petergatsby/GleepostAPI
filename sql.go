@@ -64,7 +64,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
 	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	sqlStmt["postSelect"] = "SELECT by, time, text FROM wall_posts WHERE id = ?"
+	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
