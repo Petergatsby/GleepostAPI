@@ -71,8 +71,8 @@ type PostSmall struct {
 
 type PostFull struct {
 	Post
-	Comments []Comment `json:"comments"`
-	Likes    []Like    `json:"likes"`
+	Comments []Comment  `json:"comments"`
+	Likes    []LikeFull `json:"likes"`
 }
 
 type Comment struct {

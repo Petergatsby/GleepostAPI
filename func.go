@@ -569,8 +569,21 @@ func delLike(user UserId, post PostId) (err error) {
 	return dbRemoveLike(user, post)
 }
 
-func getLikes(post PostId) (likes []Like, err error) {
-	return dbGetLikes(post)
+func getLikes(post PostId) (likes []LikeFull, err error) {
+	l, err := dbGetLikes(post)
+	if err != nil {
+		return
+	}
+	for _, like := range l {
+		lf := LikeFull{}
+		lf.User, err = getUser(like.UserID)
+		if err != nil {
+			return
+		}
+		lf.Time = like.Time
+		likes = append(likes, lf)
+	}
+	return
 }
 
 func hasLiked(user UserId, post PostId) (liked bool, err error) {
