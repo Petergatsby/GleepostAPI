@@ -790,9 +790,9 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 func dbCreateLike(user UserId, post PostId) (err error) {
 	_, err = stmt["addLike"].Exec(post, user)
 	// Suppress duplicate entry errors
-	switch err := err.(type) {
+	switch e := err.(type) {
 	case *mysql.MySQLError:
-		if err.Number == 1062 {
+		if e.Number == 1062 {
 			err = nil
 		}
 	}
