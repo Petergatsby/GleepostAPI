@@ -789,6 +789,10 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 
 func dbCreateLike(user UserId, post PostId) (err error) {
 	_, err = stmt["addLike"].Exec(post, user)
+	switch err := err.(type) {
+	default:
+		log.Printf("type: %T", err)
+	}
 	return
 }
 
