@@ -404,14 +404,14 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				jsonResponse(w, APIerror{err.Error()}, 500)
 			} else {
-				jsonResponse(w, Liked{Post:postId, Liked:true}, 200)
+				jsonResponse(w, Liked{Post: postId, Liked: true}, 200)
 			}
 		default:
 			err = delLike(userId, postId)
 			if err != nil {
 				jsonResponse(w, APIerror{err.Error()}, 500)
 			} else {
-				jsonResponse(w, Liked{Post:postId, Liked:false}, 200)
+				jsonResponse(w, Liked{Post: postId, Liked: false}, 200)
 			}
 		}
 	default:

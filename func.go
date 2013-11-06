@@ -536,9 +536,20 @@ func getPost(postId PostId) (post Post, err error) {
 	return dbGetPost(postId)
 }
 
-func addLike(user UserId, post PostId) (err error) {
+func addLike(user UserId, postId PostId) (err error) {
 	//TODO: add like to redis
-	return dbCreateLike(user, post)
+	post, err := getPost(postId)
+	if err != nil {
+		return
+	} else {
+		err = dbCreateLike(user, postId)
+		if err != nil {
+			return
+		} else {
+			createNotification("liked", user, post.By.Id, true, postId)
+		}
+	}
+	return
 }
 
 func delLike(user UserId, post PostId) (err error) {
