@@ -393,7 +393,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, APIerror{"That upload doesn't exist"}, 400)
 		}
 	case commIdStringD != nil && r.Method == "POST":
-		_id, _ := strconv.ParseUint(commIdStringC[1], 10, 64)
+		_id, _ := strconv.ParseUint(commIdStringD[1], 10, 64)
 		postId := PostId(_id)
 		liked, err := strconv.ParseBool(r.FormValue("liked"))
 		switch {
