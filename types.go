@@ -89,7 +89,7 @@ type Like struct {
 }
 
 type LikeFull struct {
-	User User `json:"by"`
+	User User      `json:"by"`
 	Time time.Time `json:"timestamp"`
 }
 
