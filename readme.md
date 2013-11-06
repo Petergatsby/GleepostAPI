@@ -21,6 +21,8 @@ URL: https://gleepost.com/api/v0.17/
 
 /posts/[post-id]/images [[POST]](#post-postspost-idimages)
 
+/posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
+
 /conversations [[GET]](#get-conversations)
 
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id)
@@ -181,6 +183,22 @@ example responses:
 (http 201)
 ```
 ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+```
+
+##POST /posts/[post-id]/likes
+required parameters: id, token, liked
+
+[liked] must be a boolean.
+If true, adds a like for this post for this user.
+If false, removes a like for this post for this user.
+
+example responses:
+(http 200)
+```
+{"post":5, "liked":true}
+```
+```
+{"post":5, "liked":false}
 ```
 
 ##GET /conversations
