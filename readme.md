@@ -1,7 +1,7 @@
-#Gleepost API / V0.17
+#Gleepost API / V0.18
 
 
-URL: https://gleepost.com/api/v0.17/
+URL: https://gleepost.com/api/v0.18/
 
 ##Notes:
 
