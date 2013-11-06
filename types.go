@@ -88,6 +88,11 @@ type Like struct {
 	Time   time.Time
 }
 
+type LikeFull struct {
+	User User `json:"by"`
+	Time time.Time `json:"timestamp"`
+}
+
 type Rule struct {
 	NetworkID NetworkId
 	Type      string

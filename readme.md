@@ -19,6 +19,8 @@ URL: https://gleepost.com/api/v0.18/
 
 /posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
 
+/posts/[post-id] [[GET]](#get-postspost-d)
+
 /posts/[post-id]/images [[POST]](#post-postspost-idimages)
 
 /posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
@@ -126,6 +128,59 @@ example responses:
 (http 200)
 ```
 {"id":3}
+```
+
+##GET /posts/[post-id]
+required parameters: id, token
+
+example responses:
+(http 200)
+```
+{
+	"id":2,
+	"by": {
+		"id":9,
+		"username":"Patrick",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+	"timestamp":"2013-09-05T13:09:38Z",
+	"text":"This is a cool post for cool people!",
+	"comments": [{
+		"id":51341,
+		"by": {
+			"id":9,
+			"username":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		},
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"I concur."
+	},
+	{
+		"id":4362346,
+		"by": {
+			"id":545,
+			"username":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		},
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"Have you ever / ever felt like this? / How strange things happen / like you're going round the twist?"
+	}],
+	"likes":[{"by": {
+			"id":545,
+			"username":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+			},
+		"timestamp":"2013-09-05T13:09:38Z"},
+		{"by": {
+			"id":545,
+			"username":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+			},
+		"timestamp":"2013-09-05T13:09:38Z"}
+		],
+	"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+}
+
 ```
 
 ##GET /posts/[post-id]/comments
