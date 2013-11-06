@@ -536,6 +536,19 @@ func getPost(postId PostId) (post Post, err error) {
 	return dbGetPost(postId)
 }
 
+func getPostFull(postId PostId) (post PostFull, err error) {
+	post.Post, err = getPost(postId)
+	if err != nil {
+		return
+	}
+	post.Comments, err = getComments(postId, 0)
+	if err != nil {
+		return
+	}
+	post.Likes, err = getLikes(postId)
+	return
+}
+
 func addLike(user UserId, postId PostId) (err error) {
 	//TODO: add like to redis
 	post, err := getPost(postId)
