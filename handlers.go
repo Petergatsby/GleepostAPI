@@ -328,9 +328,11 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	regexComments, _ := regexp.Compile("posts/(\\d+)/comments/?$")
 	regexNoComments, _ := regexp.Compile("posts/(\\d+)/?$")
 	regexImages, _ := regexp.Compile("posts/(\\d+)/images/?$")
+	regexLikes, _ := regexp.Compile("posts/(\\d+)/likes/?$")
 	commIdStringA := regexComments.FindStringSubmatch(r.URL.Path)
 	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
 	commIdStringC := regexImages.FindStringSubmatch(r.URL.Path)
+	commIdStringD := regexLikes.FindStringSubmatch(r.URL.Path)
 	switch {
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
@@ -389,6 +391,28 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			jsonResponse(w, APIerror{"That upload doesn't exist"}, 400)
+		}
+	case commIdStringD != nil && r.Method == "POST":
+		_id, _ := strconv.ParseUint(commIdStringC[1], 10, 64)
+		postId := PostId(_id)
+		liked, err := strconv.ParseBool(r.FormValue("liked"))
+		switch {
+		case err != nil:
+			jsonResponse(w, APIerror{err.Error()}, 400)
+		case liked:
+			err = addLike(userId, postId)
+			if err != nil {
+				jsonResponse(w, APIerror{err.Error()}, 500)
+			} else {
+				jsonResponse(w, Liked{Post:postId, Liked:true}, 200)
+			}
+		default:
+			err = delLike(userId, postId)
+			if err != nil {
+				jsonResponse(w, APIerror{err.Error()}, 500)
+			} else {
+				jsonResponse(w, Liked{Post:postId, Liked:false}, 200)
+			}
 		}
 	default:
 		jsonResponse(w, APIerror{"Method not supported"}, 405)

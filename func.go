@@ -19,6 +19,11 @@ import (
 Top-level functions
 ********************************************************************/
 
+//createToken generates a new Token which expires in 24h. If something goes wrong,
+//it issues a token which expires now
+
+//createtoken might do with returning an error
+//why would it break though
 func createToken(userId UserId) Token {
 	hash := sha256.New()
 	random := make([]byte, 32) //Number pulled out of my... ahem.
@@ -344,7 +349,6 @@ func registerUser(user string, pass string, email string) (userId UserId, err er
 	if err != nil {
 		return 0, err
 	}
-	conf := GetConfig()
 	_, err = assignNetworks(userId, email)
 	return
 }
@@ -530,4 +534,21 @@ func assignNetworks(user UserId, email string) (networks int, err error) {
 
 func getPost(postId PostId) (post Post, err error) {
 	return dbGetPost(postId)
+}
+
+func addLike(user UserId, post PostId) (err error) {
+	//TODO: add like to redis
+	return dbCreateLike(user, post)
+}
+
+func delLike(user UserId, post PostId) (err error) {
+	return dbRemoveLike(user, post)
+}
+
+func getLikes(post PostId) (likes []Like, err error) {
+	return dbGetLikes(post)
+}
+
+func hasLiked(user UserId, post PostId) (liked bool, err error) {
+	return dbHasLiked(user, post)
 }

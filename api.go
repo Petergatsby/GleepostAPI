@@ -1,3 +1,4 @@
+//package GleepostAPI is a simple REST API for gleepost.com
 package main
 
 import (

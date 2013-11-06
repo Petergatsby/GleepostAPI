@@ -190,6 +190,11 @@ type BusyStatus struct {
 	Busy bool `json:"busy"`
 }
 
+type Liked struct {
+	Post PostId `json:"post"`
+	Liked bool  `json:"liked"`
+}
+
 func (e APIerror) Error() string {
 	return e.Reason
 }

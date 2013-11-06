@@ -84,10 +84,16 @@ func prepare(db *sql.DB) (err error) {
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
+	//Notification
 	sqlStmt["notificationSelect"] = "SELECT id, type, time, `by`, post_id, seen FROM notifications WHERE recipient = ?"
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
 	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient) VALUES (?, NOW(), ?, ?)"
 	sqlStmt["postNotificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
+	//Like
+	sqlStmt["addLike"] = "INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)"
+	sqlStmt["delLike"] = "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?"
+	sqlStmt["likeSelect"] = "SELECT user_id, timestamp FROM post_likes WHERE post_id = ?"
+	sqlStmt["likeExists"] = "SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -779,4 +785,41 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 			return n, nil
 		}
 	}
+}
+
+func dbCreateLike(user UserId, post PostId) (err error) {
+	_, err = stmt["addLike"].Exec(post, user)
+	return
+}
+
+func dbRemoveLike(user UserId, post PostId) (err error) {
+	_, err = stmt["delLike"].Exec(post, user)
+	return
+}
+
+func dbGetLikes(post PostId) (likes []Like, err error) {
+	rows, err := stmt["likeSelect"].Query(post)
+	defer rows.Close()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var t string
+		var like Like
+		err = rows.Scan(&like.UserID, &t)
+		if err != nil {
+			return
+		}
+		like.Time, err = time.Parse(MysqlTime, t)
+		if err != nil {
+			return
+		}
+		likes = append(likes, like)
+	}
+	return
+}
+
+func dbHasLiked(user UserId, post PostId) (liked bool, err error) {
+	err = stmt["likeExists"].QueryRow(post, user).Scan(&liked)
+	return
 }
