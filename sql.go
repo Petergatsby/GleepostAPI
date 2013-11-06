@@ -790,8 +790,10 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 func dbCreateLike(user UserId, post PostId) (err error) {
 	_, err = stmt["addLike"].Exec(post, user)
 	// Suppress duplicate entry errors
-	if strings.HasPrefix(err.Error(), "Error 1062") {
-		err = nil
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "Error 1062") {
+			err = nil
+		}
 	}
 	return
 }
