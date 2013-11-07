@@ -320,7 +320,11 @@ func getComments(id PostId, start int64) (comments []Comment, err error) {
 }
 
 func createConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
-	participants, err := generatePartners(id, nParticipants-1)
+	networks, err := getUserNetworks(id)
+	if err != nil {
+		return
+	}
+	participants, err := generatePartners(id, nParticipants-1, networks[0].Id)
 	if err != nil {
 		return
 	}
@@ -400,8 +404,8 @@ func getDevices(user UserId) (devices []Device, err error) {
 	return dbGetDevices(user)
 }
 
-func generatePartners(id UserId, count int) (partners []User, err error) {
-	return dbRandomPartners(id, count)
+func generatePartners(id UserId, count int, network NetworkId) (partners []User, err error) {
+	return dbRandomPartners(id, count, network)
 }
 
 func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (conversation ConversationAndMessages, err error) {
