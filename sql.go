@@ -46,7 +46,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["userSelect"] = "SELECT id, name, avatar FROM users WHERE id=?"
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE name = ?"
-	sqlStmt["randomSelect"] = "SELECT id, name, profile_image FROM users LEFT JOIN user_network ON id = user_id WHERE network_id = ? ORDER BY RAND()"
+	sqlStmt["randomSelect"] = "SELECT id, name, avatar FROM users LEFT JOIN user_network ON id = user_id WHERE network_id = ? ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	//Conversation
