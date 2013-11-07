@@ -286,9 +286,13 @@ func dbRandomPartners(id UserId, count int, network NetworkId) (partners []User,
 	for count > 0 {
 		rows.Next()
 		var user User
-		if err = rows.Scan(&user.Id, &user.Name, &user.Avatar); err != nil {
+		var av sql.NullString
+		if err = rows.Scan(&user.Id, &user.Name, &av); err != nil {
 			return
 		} else {
+			if av.Valid {
+				user.Avatar = av.String
+			}
 			if user.Id != id {
 				partners = append(partners, user)
 				count--
