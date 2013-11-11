@@ -94,6 +94,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["delLike"] = "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?"
 	sqlStmt["likeSelect"] = "SELECT user_id, timestamp FROM post_likes WHERE post_id = ?"
 	sqlStmt["likeExists"] = "SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?"
+	sqlStmt["likeCount"] = "SELECT COUNT(*) FROM post_likes WHERE post_id = ?"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -831,5 +832,10 @@ func dbGetLikes(post PostId) (likes []Like, err error) {
 
 func dbHasLiked(user UserId, post PostId) (liked bool, err error) {
 	err = stmt["likeExists"].QueryRow(post, user).Scan(&liked)
+	return
+}
+
+func dbLikeCount(post PostId) (count int, err error) {
+	err = stmt["likeCount"].QueryRow(post).Scan(&count)
 	return
 }
