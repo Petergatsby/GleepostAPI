@@ -112,24 +112,35 @@ func prepare(db *sql.DB) (err error) {
 		Network
 ********************************************************************/
 
-func dbValidateEmail(email string) bool {
+func dbGetRules() (rules []Rule, err error) {
 	s := stmt["ruleSelect"]
 	rows, err := s.Query()
 	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
 	if err != nil {
-		log.Printf("Error preparing statement: %v", err)
+		return
 	}
 	defer rows.Close()
 	for rows.Next() {
-		rule := new(Rule)
+		var rule Rule
 		if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
-			log.Printf("Error getting rule: %v", err)
+			return
 		}
+		rules = append(rules, rule)
+	}
+	return
+}
+
+func dbValidateEmail(email string) bool {
+	rules, err := dbGetRules()
+	if err != nil {
+		return false
+	}
+	for _, rule := range(rules) {
 		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
-			return (true)
+			return true
 		}
 	}
-	return (false)
+	return false
 }
 
 func dbGetUserNetworks(id UserId) (networks []Network, err error) {
@@ -158,21 +169,11 @@ func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
 }
 
 func dbAssignNetworks(userId UserId, email string) (networks int, err error) {
+	rules, err := dbGetRules()
 	if err != nil {
 		return
 	}
-	s := stmt["ruleSelect"]
-	rows, err := s.Query()
-	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		rule := new(Rule)
-		if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
-			return
-		}
+	for _, rule := range rules {
 		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
 			err = dbSetNetwork(userId, rule.NetworkID)
 			if err != nil {

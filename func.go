@@ -597,3 +597,4 @@ func hasLiked(user UserId, post PostId) (liked bool, err error) {
 func likeCount(post PostId) (count int, err error) {
 	return dbLikeCount(post)
 }
+
