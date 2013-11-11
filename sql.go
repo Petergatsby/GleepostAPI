@@ -433,6 +433,7 @@ func dbGetPosts(netId NetworkId, start int64, count int) (posts []PostSmall, err
 		}
 		post.CommentCount = getCommentCount(post.Id)
 		post.Images = getPostImages(post.Id)
+		post.LikeCount, err = likeCount(post.Id)
 		posts = append(posts, post)
 	}
 	return

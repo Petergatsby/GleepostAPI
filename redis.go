@@ -417,6 +417,10 @@ func redisGetPost(postId PostId) (post PostSmall, err error) {
 	post.Post.Time, _ = time.Parse(time.RFC3339, t)
 	post.Post.Images = getPostImages(postId)
 	post.CommentCount = getCommentCount(postId)
+	post.LikeCount, err = likeCount(postId)
+	if err != nil {
+		return
+	}
 	return post, nil
 }
 
