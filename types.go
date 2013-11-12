@@ -142,6 +142,7 @@ type EmailConfig struct {
 	User	string
 	Pass	string
 	Server	string
+	Port	int
 	From	string
 }
 
