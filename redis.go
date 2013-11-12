@@ -424,11 +424,44 @@ func redisGetPost(postId PostId) (post PostSmall, err error) {
 	return post, nil
 }
 
-func redisGetNetworkPosts(id NetworkId, start int64) (posts []PostSmall, err error) {
+func redisGetNetworkPosts(id NetworkId, index int64, sel string) (posts []PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
+	conf := GetConfig()
+
 	key := fmt.Sprintf("networks:%d:posts", id)
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19))
+	var start, finish int
+	switch {
+	case sel == "before":
+		rindex := -1
+		rindex, err = redis.Int(conn.Do("ZREVRANK", key, index))
+		if err != nil {
+			return
+		}
+		if rindex < 1 {
+			return posts, ErrEmptyCache
+		}
+		start = rindex + 1
+		finish = rindex + conf.MessagePageSize
+	case sel == "after":
+		rindex := -1
+		rindex, err = redis.Int(conn.Do("ZREVRANK", key, index))
+		if err != nil {
+			return
+		}
+		if rindex < 1 {
+			return posts, ErrEmptyCache
+		}
+		start = rindex - conf.PostPageSize
+		if start < 0 {
+			start = 0
+		}
+		finish = rindex - 1
+	default:
+		start = int(index)
+		finish = int(index) + conf.PostPageSize - 1
+	}
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, finish))
 	if err != nil {
 		return
 	}
@@ -456,7 +489,7 @@ func redisGetNetworkPosts(id NetworkId, start int64) (posts []PostSmall, err err
 
 func redisAddAllPosts(netId NetworkId) {
 	conf := GetConfig()
-	posts, err := dbGetPosts(netId, 0, conf.PostCache)
+	posts, err := dbGetPosts(netId, 0, conf.PostCache, "start")
 	if err != nil {
 		log.Println(err)
 	}

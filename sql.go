@@ -59,6 +59,8 @@ func prepare(db *sql.DB) (err error) {
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["wallSelect"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
+	sqlStmt["wallSelectAfter"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? AND id > ? ORDER BY time DESC LIMIT 0, ?"
+	sqlStmt["wallSelectBefore"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? AND id < ? ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
@@ -130,12 +132,13 @@ func dbGetRules() (rules []Rule, err error) {
 	return
 }
 
+//POSSIBLE TODO: move out of sql.go; pass in rules as an argument
 func dbValidateEmail(email string) bool {
 	rules, err := dbGetRules()
 	if err != nil {
 		return false
 	}
-	for _, rule := range(rules) {
+	for _, rule := range rules {
 		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
 			return true
 		}
@@ -408,9 +411,20 @@ func dbAddPost(userId UserId, text string) (postId PostId, err error) {
 	return postId, nil
 }
 
-func dbGetPosts(netId NetworkId, start int64, count int) (posts []PostSmall, err error) {
-	s := stmt["wallSelect"]
-	rows, err := s.Query(netId, start, count)
+//dbGetPosts finds posts in the network netId.
+func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []PostSmall, err error) {
+	var s *sql.Stmt
+	switch {
+	case sel == "start":
+		s = stmt["wallSelect"]
+	case sel == "before":
+		s = stmt["wallSelectBefore"]
+	case sel == "after":
+		s = stmt["wallSelectAfter"]
+	default:
+		return posts, APIerror{"Invalid selector"}
+	}
+	rows, err := s.Query(netId, index, count)
 	defer rows.Close()
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {

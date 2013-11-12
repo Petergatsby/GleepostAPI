@@ -291,16 +291,14 @@ func addPost(userId UserId, text string) (postId PostId, err error) {
 	return
 }
 
-func getPosts(netId NetworkId, start int64) (posts []PostSmall, err error) {
+func getPosts(netId NetworkId, index int64, sel string) (posts []PostSmall, err error) {
 	conf := GetConfig()
-	if start+int64(conf.PostPageSize) <= int64(conf.PostCache) {
-		posts, err = redisGetNetworkPosts(netId, start)
-		if err != nil {
-			posts, err = dbGetPosts(netId, start, conf.PostPageSize)
-			go redisAddAllPosts(netId)
-		}
+	posts, err = redisGetNetworkPosts(netId, index, sel)
+	if err != nil {
+		posts, err = dbGetPosts(netId, index, conf.PostPageSize, sel)
+		go redisAddAllPosts(netId)
 	} else {
-		posts, err = dbGetPosts(netId, start, conf.PostPageSize)
+		posts, err = dbGetPosts(netId, index, conf.PostPageSize, sel)
 	}
 	return
 }
@@ -597,4 +595,3 @@ func hasLiked(user UserId, post PostId) (liked bool, err error) {
 func likeCount(post PostId) (count int, err error) {
 	return dbLikeCount(post)
 }
-

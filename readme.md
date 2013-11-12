@@ -88,6 +88,10 @@ optional parameters:
 start=[count]
 returns a list of 20 posts ordered by time, starting at count
 
+before=[id]
+after=[id]
+returns a list of 20 posts ordered by time, starting before/after [id]
+
 example responses:
 (HTTP 200)
 ```

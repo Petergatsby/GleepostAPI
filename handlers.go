@@ -130,11 +130,27 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			start = 0
 		}
+		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+		if err != nil {
+			before = 0
+		}
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			before = 0
+		}
 		networks, err := getUserNetworks(userId)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
-			posts, err := getPosts(networks[0].Id, start)
+			var posts []PostSmall
+			switch {
+			case after > 0:
+				posts, err = getPosts(networks[0].Id, after, "after")
+			case before > 0:
+				posts, err = getPosts(networks[0].Id, before, "before")
+			default:
+				posts, err = getPosts(networks[0].Id, start, "start")
+			}
 			if err != nil {
 				jsonResponse(w, APIerror{err.Error()}, 500)
 			}
