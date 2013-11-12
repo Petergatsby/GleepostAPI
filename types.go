@@ -138,6 +138,13 @@ type APNSConfig struct {
 	KeyFile  string
 }
 
+type EmailConfig struct {
+	User	string
+	Pass	string
+	Server	string
+	From	string
+}
+
 type Config struct {
 	UrlBase          string
 	Port             string
@@ -154,6 +161,7 @@ type Config struct {
 	Redis            RedisConfig
 	AWS              AWSConfig
 	APNS             APNSConfig
+	Email		 EmailConfig
 }
 
 type Device struct {

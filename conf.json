@@ -28,5 +28,11 @@
 	"APNS": {
 		"CertFile":"",
 		"KeyFile":""
-	}
+	},
+	"Email": {
+		"User":"",
+		"Pass":"",
+		"Server":"",
+		"From":""
+	}	
 }
