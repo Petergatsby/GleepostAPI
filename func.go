@@ -297,9 +297,8 @@ func getPosts(netId NetworkId, index int64, sel string) (posts []PostSmall, err 
 	if err != nil {
 		posts, err = dbGetPosts(netId, index, conf.PostPageSize, sel)
 		go redisAddAllPosts(netId)
-	} else {
-		return
 	}
+	return
 }
 
 func getComments(id PostId, start int64) (comments []Comment, err error) {
