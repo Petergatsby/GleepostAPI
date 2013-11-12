@@ -136,7 +136,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
 		if err != nil {
-			before = 0
+			after = 0
 		}
 		networks, err := getUserNetworks(userId)
 		if err != nil {
