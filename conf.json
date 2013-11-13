@@ -1,5 +1,5 @@
 {
-	"UrlBase":"/api/v0.19",
+	"UrlBase":"/api/v0.20",
 	"Port":"8080",
 	"LoginOverride":false,
 	"RegisterOverride":true,
