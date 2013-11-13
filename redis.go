@@ -575,7 +575,7 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start + int64(conf.ConversationPageSize) - 1, "WITHSCORES"))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(conf.ConversationPageSize)-1, "WITHSCORES"))
 	if err != nil {
 		return
 	}

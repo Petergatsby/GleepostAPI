@@ -276,6 +276,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
+	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 	},
 	{"id":2,
@@ -283,6 +284,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 		{"id":99999, "username":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":232515, "username":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
+	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	}
 ]
@@ -420,7 +422,8 @@ example responses:
 	"participants": [
 		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
-	]
+	],
+	"lastActivity":"2013-09-05T13:09:38Z"
 }
 ```
 
@@ -439,7 +442,8 @@ example responses:
 		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":1351, "username":"Someone", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":6124, "username":"SomeoneElse", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
-	]
+	],
+	"lastActivity":"2013-09-05T13:09:38Z"
 }
 ```
 

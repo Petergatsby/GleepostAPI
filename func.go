@@ -251,10 +251,18 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 }
 
 func getFullConversation(convId ConversationId, start int64) (conv ConversationAndMessages, err error) {
-	conv.Conversation.Id = convId
-	conv.Conversation.Participants = getParticipants(convId)
+	conv.Id = convId
+	conv.LastActivity, err = ConversationLastActivity(convId)
+	if err != nil {
+		return
+	}
+	conv.Participants = getParticipants(convId)
 	conv.Messages, err = getMessages(convId, start)
 	return
+}
+
+func ConversationLastActivity(convId ConversationId) (t time.Time, err error) {
+	return dbConversationActivity(convId)
 }
 
 func getPostImages(postId PostId) (images []string) {

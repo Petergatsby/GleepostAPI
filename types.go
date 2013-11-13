@@ -101,13 +101,13 @@ type Rule struct {
 
 type Conversation struct {
 	Id           ConversationId `json:"id"`
+	LastActivity time.Time      `json:"lastActivity"`
 	Participants []User         `json:"participants"`
 }
 
 type ConversationSmall struct {
 	Conversation
-	LastActivity time.Time `json:"lastActivity"`
-	LastMessage  *Message  `json:"mostRecentMessage,omitempty"`
+	LastMessage *Message `json:"mostRecentMessage,omitempty"`
 }
 
 type ConversationAndMessages struct {
@@ -148,23 +148,23 @@ type EmailConfig struct {
 }
 
 type Config struct {
-	UrlBase          string
-	Port             string
-	LoginOverride    bool
-	RegisterOverride bool
-	MessageCache     int
-	PostCache        int
-	CommentCache     int
-	MessagePageSize  int
-	PostPageSize     int
-	CommentPageSize  int
+	UrlBase              string
+	Port                 string
+	LoginOverride        bool
+	RegisterOverride     bool
+	MessageCache         int
+	PostCache            int
+	CommentCache         int
+	MessagePageSize      int
+	PostPageSize         int
+	CommentPageSize      int
 	ConversationPageSize int
-	OnlineTimeout    int
-	Mysql            MysqlConfig
-	Redis            RedisConfig
-	AWS              AWSConfig
-	APNS             APNSConfig
-	Email            EmailConfig
+	OnlineTimeout        int
+	Mysql                MysqlConfig
+	Redis                RedisConfig
+	AWS                  AWSConfig
+	APNS                 APNSConfig
+	Email                EmailConfig
 }
 
 type Device struct {

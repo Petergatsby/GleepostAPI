@@ -53,6 +53,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
+	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	sqlStmt["participantSelect"] = "SELECT participant_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
@@ -278,6 +279,7 @@ func dbCreateConversation(id UserId, participants []User) (conversation Conversa
 		}
 	}
 	conversation.Participants = participants
+	conversation.LastActivity = time.Now().UTC()
 	return
 }
 
@@ -333,7 +335,7 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(MysqlTime, t)
-		conv.Conversation.Participants = getParticipants(conv.Id)
+		conv.Participants = getParticipants(conv.Id)
 		LastMessage, err := getLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -343,8 +345,23 @@ func dbGetConversations(user_id UserId, start int64) (conversations []Conversati
 	return conversations, nil
 }
 
+func dbConversationActivity(convId ConversationId) (t time.Time, err error) {
+	s := stmt["conversationActivity"]
+	var tstring string
+	err = s.QueryRow(convId).Scan(&tstring)
+	if err != nil {
+		return
+	}
+	t, err = time.Parse(MysqlTime, tstring)
+	return
+}
+
 func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
 	conversation.Id = convId
+	conversation.LastActivity, err = dbConversationActivity(convId)
+	if err != nil {
+		return
+	}
 	conversation.Participants = getParticipants(convId)
 	conversation.Messages, err = dbGetMessages(convId, 0, "start")
 	return
