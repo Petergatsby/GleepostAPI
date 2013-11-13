@@ -205,6 +205,7 @@ func getConversations(userId UserId, start int64) (conversations []ConversationS
 	conversations, err = redisGetConversations(userId, start)
 	if err != nil {
 		conversations, err = dbGetConversations(userId, start, conf.ConversationPageSize)
+		go addAllConversations(userId)
 	}
 	return
 }
