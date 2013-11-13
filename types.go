@@ -106,7 +106,7 @@ type Conversation struct {
 
 type ConversationSmall struct {
 	Conversation
-	LastActivity time.Time `json:"-"`
+	LastActivity time.Time `json:"lastActivity"`
 	LastMessage  *Message  `json:"mostRecentMessage,omitempty"`
 }
 
@@ -158,6 +158,7 @@ type Config struct {
 	MessagePageSize  int
 	PostPageSize     int
 	CommentPageSize  int
+	ConversationPageSize int
 	OnlineTimeout    int
 	Mysql            MysqlConfig
 	Redis            RedisConfig

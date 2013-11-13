@@ -571,10 +571,11 @@ func redisGetConversationParticipants(convId ConversationId) (participants []Use
 }
 
 func redisGetConversations(id UserId, start int64) (conversations []ConversationSmall, err error) {
+	conf := GetConfig()
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+19))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start + int64(conf.ConversationPageSize) - 1, "WITHSCORES"))
 	if err != nil {
 		return
 	}
@@ -583,15 +584,17 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 	}
 	for len(values) > 0 {
 		curr := -1
-		values, err = redis.Scan(values, &curr)
+		unix := -1
+		values, err = redis.Scan(values, &curr, &unix)
 		if err != nil {
 			return
 		}
-		if curr == -1 {
+		if curr == -1 || unix == -1 {
 			return
 		}
 		conv := ConversationSmall{}
 		conv.Id = ConversationId(curr)
+		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
 		conv.Conversation.Participants = getParticipants(conv.Id)
 		LastMessage, err := getLastMessage(conv.Id)
 		if err == nil {
