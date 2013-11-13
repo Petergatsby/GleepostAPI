@@ -68,7 +68,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	configInit()
 	conf := GetConfig()
-	send("draaglom@gmail.com")
+	send("draaglom@gmail.com", "Hello", "Hi")
 	db, err := sql.Open("mysql", conf.ConnectionString())
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)

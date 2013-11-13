@@ -139,11 +139,12 @@ type APNSConfig struct {
 }
 
 type EmailConfig struct {
-	User	string
-	Pass	string
-	Server	string
-	Port	int
-	From	string
+	User       string
+	Pass       string
+	Server     string
+	Port       int
+	From       string
+	FromHeader string
 }
 
 type Config struct {
@@ -162,7 +163,7 @@ type Config struct {
 	Redis            RedisConfig
 	AWS              AWSConfig
 	APNS             APNSConfig
-	Email		 EmailConfig
+	Email            EmailConfig
 }
 
 type Device struct {
