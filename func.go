@@ -341,7 +341,7 @@ func createConversation(id UserId, nParticipants int, live bool) (conversation C
 		return
 	}
 	participants = append(participants, user)
-	conversation, err =  dbCreateConversation(id, participants, live)
+	conversation, err = dbCreateConversation(id, participants, live)
 	if err == nil {
 		go redisAddConversation(conversation)
 	}

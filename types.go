@@ -161,7 +161,7 @@ type Config struct {
 	CommentPageSize      int
 	ConversationPageSize int
 	OnlineTimeout        int
-	Expiry		     int
+	Expiry               int
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig
