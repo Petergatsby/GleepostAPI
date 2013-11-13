@@ -284,8 +284,8 @@ func awaitOneMessage(userId UserId) (resp []byte) {
 	select {
 	case resp = <-c:
 		return
-	case <-time.After(70 * time.Second):
-		return
+	case <-time.After(60 * time.Second):
+		return []byte("{}")
 	}
 }
 

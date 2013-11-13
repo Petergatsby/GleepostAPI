@@ -455,7 +455,7 @@ id=[user-id]
 token=[token]
 
 Longpoll will block until a message arrives for the current user (in any conversation).
-If no message arrives within 60s the connection will timeout.
+If no message arrives within 60s the response will be empty-object "{}".
 
 example responses:
 ```
