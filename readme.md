@@ -308,7 +308,8 @@ example responses:
 		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
-	]
+	],
+	"lastActivity":"2013-09-05T13:09:38Z"
 }
 ```
 
@@ -363,6 +364,7 @@ seen=51
 			"profile_image": "",
 		}
 	],
+	"lastActivity":"2013-09-05T13:09:38Z",
 	"messages": [
 		{
 			"id": 52,
