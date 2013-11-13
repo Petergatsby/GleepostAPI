@@ -52,7 +52,7 @@ func prepare(db *sql.DB) (err error) {
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
-	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
+	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["conversationExpiry"] = "SELECT expiry FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["conversationSetExpiry"] = "INSERT INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
@@ -326,9 +326,9 @@ func dbUpdateConversation(id ConversationId) (err error) {
 	return err
 }
 
-func dbGetConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
+func dbGetConversations(user_id UserId, start int64, count int) (conversations []ConversationSmall, err error) {
 	s := stmt["conversationSelect"]
-	rows, err := s.Query(user_id, start)
+	rows, err := s.Query(user_id, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
 	if err != nil {
 		return conversations, err

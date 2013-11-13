@@ -605,7 +605,7 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 	return
 }
 
-func redisAddConversation(conv ConversationSmall) {
+func redisAddConversation(conv Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
 	for _, participant := range conv.Participants {

@@ -200,16 +200,20 @@ func getMessagesBefore(convId ConversationId, before int64) (messages []Message,
 	return
 }
 
-func getConversations(user_id UserId, start int64) (conversations []ConversationSmall, err error) {
-	conversations, err = redisGetConversations(user_id, start)
+func getConversations(userId UserId, start int64) (conversations []ConversationSmall, err error) {
+	conf := GetConfig()
+	conversations, err = redisGetConversations(userId, start)
 	if err != nil {
-		conversations, err = dbGetConversations(user_id, start)
-		if err == nil {
-			for _, conv := range conversations {
-				go redisAddConversation(conv)
-			}
-		}
-		return
+		conversations, err = dbGetConversations(userId, start, conf.ConversationPageSize)
+	}
+	return
+}
+
+func addAllConversations(userId UserId) (err error) {
+	conf := GetConfig()
+	conversations, err := dbGetConversations(userId, 0, conf.ConversationPageSize)
+	for _, conv := range conversations {
+		go redisAddConversation(conv.Conversation)
 	}
 	return
 }
@@ -337,7 +341,11 @@ func createConversation(id UserId, nParticipants int, live bool) (conversation C
 		return
 	}
 	participants = append(participants, user)
-	return dbCreateConversation(id, participants, live)
+	conversation, err =  dbCreateConversation(id, participants, live)
+	if err == nil {
+		go redisAddConversation(conversation)
+	}
+	return
 }
 
 func validateEmail(email string) bool {
