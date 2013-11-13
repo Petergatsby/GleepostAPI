@@ -17,12 +17,12 @@ func NewHeader() Header {
 	return h
 }
 
-func (h Header) To(address string) {
+func (h *Header) To(address string) {
 	h.Headers = append(h.Headers, []byte("To: "+address+"\n")...)
 	return
 }
 
-func (h Header) Subject(subject string) {
+func (h *Header) Subject(subject string) {
 	h.Headers = append(h.Headers, []byte("Subject: "+subject+"\n")...)
 	return
 }

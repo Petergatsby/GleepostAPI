@@ -35,6 +35,7 @@
 		"Pass":"",
 		"Server":"",
 		"Port":,
-		"From":""
+		"From":"",
+		"FromHeader":""
 	}	
 }
