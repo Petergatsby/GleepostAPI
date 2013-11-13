@@ -186,7 +186,7 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
-		conversation, err := createConversation(userId, 2)
+		conversation, err := createConversation(userId, 2, true)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {
@@ -204,7 +204,7 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, APIerror{"Invalid credentials"}, 400)
 	default:
-		conversation, err := createConversation(userId, 4)
+		conversation, err := createConversation(userId, 4, true)
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 500)
 		} else {

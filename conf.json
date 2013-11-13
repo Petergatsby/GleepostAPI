@@ -11,6 +11,7 @@
 	"CommentPageSize":20,
 	"ConversationPageSize":20,
 	"OnlineTimeout":300,
+	"Expiry":600,
 	"Mysql": {
 		"MaxConns":100,
 		"User":"gp",

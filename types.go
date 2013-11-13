@@ -103,6 +103,7 @@ type Conversation struct {
 	Id           ConversationId `json:"id"`
 	LastActivity time.Time      `json:"lastActivity"`
 	Participants []User         `json:"participants"`
+	Expiry       *Expiry        `json:"expiry,omitempty"`
 }
 
 type ConversationSmall struct {
@@ -160,6 +161,7 @@ type Config struct {
 	CommentPageSize      int
 	ConversationPageSize int
 	OnlineTimeout        int
+	Expiry		     int
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig
@@ -209,6 +211,10 @@ type BusyStatus struct {
 type Liked struct {
 	Post  PostId `json:"post"`
 	Liked bool   `json:"liked"`
+}
+
+type Expiry struct {
+	Time time.Time `json:"time"`
 }
 
 func (e APIerror) Error() string {

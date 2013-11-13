@@ -54,6 +54,8 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, 20"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
+	sqlStmt["conversationExpiry"] = "SELECT expiry FROM conversation_expirations WHERE conversation_id = ?"
+	sqlStmt["conversationSetExpiry"] = "INSERT INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	sqlStmt["participantSelect"] = "SELECT participant_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
@@ -262,7 +264,7 @@ func dbSetBusyStatus(id UserId, busy bool) (err error) {
 		Conversation
 ********************************************************************/
 
-func dbCreateConversation(id UserId, participants []User) (conversation Conversation, err error) {
+func dbCreateConversation(id UserId, participants []User, live bool) (conversation Conversation, err error) {
 	s := stmt["conversationInsert"]
 	r, _ := s.Exec(id)
 	cId, _ := r.LastInsertId()
@@ -280,6 +282,11 @@ func dbCreateConversation(id UserId, participants []User) (conversation Conversa
 	}
 	conversation.Participants = participants
 	conversation.LastActivity = time.Now().UTC()
+	if live {
+		conf := GetConfig()
+		conversation.Expiry = &Expiry{time.Now().Add(time.Duration(conf.Expiry) * time.Second)}
+		err = dbConversationSetExpiry(conversation.Id, *conversation.Expiry)
+	}
 	return
 }
 
@@ -356,6 +363,23 @@ func dbConversationActivity(convId ConversationId) (t time.Time, err error) {
 	return
 }
 
+func dbConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
+	s := stmt["conversationExpiry"]
+	var t string
+	err = s.QueryRow(convId).Scan(&t)
+	if err != nil {
+		return
+	}
+	expiry.Time, err = time.Parse(MysqlTime, t)
+	return
+}
+
+func dbConversationSetExpiry(convId ConversationId, expiry Expiry) (err error) {
+	s := stmt["conversationSetExpiry"]
+	_, err = s.Exec(convId, expiry.Time)
+	return
+}
+
 func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
 	conversation.Id = convId
 	conversation.LastActivity, err = dbConversationActivity(convId)
@@ -363,6 +387,10 @@ func dbGetConversation(convId ConversationId) (conversation ConversationAndMessa
 		return
 	}
 	conversation.Participants = getParticipants(convId)
+	expiry, err := conversationExpiry(convId)
+	if err == nil {
+		conversation.Expiry = &expiry
+	}
 	conversation.Messages, err = dbGetMessages(convId, 0, "start")
 	return
 }

@@ -323,7 +323,7 @@ func getComments(id PostId, start int64) (comments []Comment, err error) {
 	return
 }
 
-func createConversation(id UserId, nParticipants int) (conversation Conversation, err error) {
+func createConversation(id UserId, nParticipants int, live bool) (conversation Conversation, err error) {
 	networks, err := getUserNetworks(id)
 	if err != nil {
 		return
@@ -337,7 +337,7 @@ func createConversation(id UserId, nParticipants int) (conversation Conversation
 		return
 	}
 	participants = append(participants, user)
-	return dbCreateConversation(id, participants)
+	return dbCreateConversation(id, participants, live)
 }
 
 func validateEmail(email string) bool {
@@ -600,4 +600,8 @@ func hasLiked(user UserId, post PostId) (liked bool, err error) {
 
 func likeCount(post PostId) (count int, err error) {
 	return dbLikeCount(post)
+}
+
+func conversationExpiry(convId ConversationId) (expiry Expiry, err error) {
+	return dbConversationExpiry(convId)
 }
