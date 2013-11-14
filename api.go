@@ -3,71 +3,23 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"io/ioutil"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
-	"os/signal"
 	"runtime"
-	"sync"
-	"syscall"
 	"time"
+	"github.com/draaglom/GleepostAPI/gp"
 )
 
 var (
 	pool       *redis.Pool
-	config     *Config
-	configLock = new(sync.RWMutex)
 )
-
-func loadConfig(fail bool) {
-	file, err := ioutil.ReadFile("conf.json")
-	if err != nil {
-		log.Println("Opening config failed: ", err)
-		if fail {
-			os.Exit(1)
-		}
-	}
-
-	c := new(Config)
-	if err = json.Unmarshal(file, c); err != nil {
-		log.Println("Parsing config failed: ", err)
-		if fail {
-			os.Exit(1)
-		}
-	}
-	configLock.Lock()
-	config = c
-	configLock.Unlock()
-}
-
-func GetConfig() *Config {
-	configLock.RLock()
-	defer configLock.RUnlock()
-	return config
-}
-
-func configInit() {
-	loadConfig(true)
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGUSR2)
-	go func() {
-		for {
-			<-s
-			loadConfig(false)
-			log.Println("Reloaded")
-		}
-	}()
-}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	configInit()
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	send("draaglom@gmail.com", "Hello", "Hi")
 	db, err := sql.Open("mysql", conf.ConnectionString())
 	if err != nil {

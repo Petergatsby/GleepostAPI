@@ -13,18 +13,19 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"github.com/draaglom/GleepostAPI/gp"
 )
 
 /********************************************************************
 Top-level functions
 ********************************************************************/
 
-//createToken generates a new Token which expires in 24h. If something goes wrong,
+//createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
 
 //createtoken might do with returning an error
 //why would it break though
-func createToken(userId UserId) Token {
+func createToken(userId gp.UserId) gp.Token {
 	hash := sha256.New()
 	random := make([]byte, 32) //Number pulled out of my... ahem.
 	_, err := io.ReadFull(rand.Reader, random)
@@ -32,10 +33,10 @@ func createToken(userId UserId) Token {
 		hash.Write(random)
 		digest := hex.EncodeToString(hash.Sum(nil))
 		expiry := time.Now().Add(time.Duration(24) * time.Hour).UTC().Round(time.Second)
-		token := Token{userId, digest, expiry}
+		token := gp.Token{userId, digest, expiry}
 		return (token)
 	} else {
-		return (Token{userId, "foo", time.Now().UTC()})
+		return (gp.Token{userId, "foo", time.Now().UTC()})
 	}
 }
 
@@ -49,7 +50,7 @@ func looksLikeEmail(email string) bool {
 	}
 }
 
-func getLastMessage(id ConversationId) (message Message, err error) {
+func getLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	message, err = redisGetLastMessage(id)
 	if err != nil {
 		message, err = dbGetLastMessage(id)
@@ -61,11 +62,11 @@ func getLastMessage(id ConversationId) (message Message, err error) {
 	return
 }
 
-func validateToken(id UserId, token string) bool {
+func validateToken(id gp.UserId, token string) bool {
 	//If the db is down, this will fail for everyone who doesn't have a cached
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	if conf.LoginOverride {
 		return (true)
 	} else if redisTokenExists(id, token) {
@@ -75,7 +76,7 @@ func validateToken(id UserId, token string) bool {
 	}
 }
 
-func validatePass(user string, pass string) (id UserId, err error) {
+func validatePass(user string, pass string) (id gp.UserId, err error) {
 	hash := make([]byte, 256)
 	passBytes := []byte(pass)
 	s := stmt["passSelect"]
@@ -92,7 +93,7 @@ func validatePass(user string, pass string) (id UserId, err error) {
 	}
 }
 
-func createAndStoreToken(id UserId) (Token, error) {
+func createAndStoreToken(id gp.UserId) (gp.Token, error) {
 	token := createToken(id)
 	err := dbAddToken(token)
 	redisPutToken(token)
@@ -103,7 +104,7 @@ func createAndStoreToken(id UserId) (Token, error) {
 	}
 }
 
-func getUser(id UserId) (user User, err error) {
+func getUser(id gp.UserId) (user gp.User, err error) {
 	/* Hits the cache then the db
 	only I'm not 100% confident yet with what
 	happens when you attempt to get a redis key
@@ -118,7 +119,7 @@ func getUser(id UserId) (user User, err error) {
 	return
 }
 
-func getCommentCount(id PostId) (count int) {
+func getCommentCount(id gp.PostId) (count int) {
 	count, err := redisGetCommentCount(id)
 	if err != nil {
 		count = dbGetCommentCount(id)
@@ -126,7 +127,7 @@ func getCommentCount(id PostId) (count int) {
 	return count
 }
 
-func createComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
+func createComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
 	post, err := getPost(postId)
 	if err != nil {
 		return
@@ -137,14 +138,14 @@ func createComment(postId PostId, userId UserId, text string) (commId CommentId,
 		if e != nil {
 			return commId, e
 		}
-		comment := Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
+		comment := gp.Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
 		go createNotification("commented", userId, post.By.Id, true, postId)
 		go redisAddComment(postId, comment)
 	}
 	return commId, err
 }
 
-func getUserNetworks(id UserId) (nets []Network, err error) {
+func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	nets, err = redisGetUserNetwork(id)
 	if err != nil {
 		nets, err = dbGetUserNetworks(id)
@@ -152,14 +153,14 @@ func getUserNetworks(id UserId) (nets []Network, err error) {
 			return
 		}
 		if len(nets) == 0 {
-			return nets, APIerror{"User has no networks!"}
+			return nets, gp.APIerror{"User has no networks!"}
 		}
 		redisSetUserNetwork(id, nets[0])
 	}
 	return
 }
 
-func getParticipants(convId ConversationId) []User {
+func getParticipants(convId gp.ConversationId) []gp.User {
 	participants, err := redisGetConversationParticipants(convId)
 	if err != nil {
 		participants = dbGetParticipants(convId)
@@ -168,8 +169,8 @@ func getParticipants(convId ConversationId) []User {
 	return participants
 }
 
-func getMessages(convId ConversationId, index int64, sel string) (messages []Message, err error) {
-	conf := GetConfig()
+func getMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
+	conf := gp.GetConfig()
 	messages, err = redisGetMessages(convId, index, sel, conf.MessagePageSize)
 	if err != nil {
 		messages, err = dbGetMessages(convId, index, sel, conf.MessagePageSize)
@@ -179,8 +180,8 @@ func getMessages(convId ConversationId, index int64, sel string) (messages []Mes
 	return
 }
 
-func getConversations(userId UserId, start int64) (conversations []ConversationSmall, err error) {
-	conf := GetConfig()
+func getConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
+	conf := gp.GetConfig()
 	conversations, err = redisGetConversations(userId, start)
 	if err != nil {
 		conversations, err = dbGetConversations(userId, start, conf.ConversationPageSize)
@@ -189,8 +190,8 @@ func getConversations(userId UserId, start int64) (conversations []ConversationS
 	return
 }
 
-func addAllConversations(userId UserId) (err error) {
-	conf := GetConfig()
+func addAllConversations(userId gp.UserId) (err error) {
+	conf := gp.GetConfig()
 	conversations, err := dbGetConversations(userId, 0, conf.ConversationPageSize)
 	for _, conv := range conversations {
 		go redisAddConversation(conv.Conversation)
@@ -198,17 +199,17 @@ func addAllConversations(userId UserId) (err error) {
 	return
 }
 
-func getConversation(userId UserId, convId ConversationId) (conversation ConversationAndMessages, err error) {
+func getConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
 	//redisGetConversation
 	return dbGetConversation(convId)
 }
 
-func getMessage(msgId MessageId) (message Message, err error) {
+func getMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	message, err = redisGetMessage(msgId)
 	return message, err
 }
 
-func updateConversation(id ConversationId) (err error) {
+func updateConversation(id gp.ConversationId) (err error) {
 	err = dbUpdateConversation(id)
 	if err != nil {
 		return err
@@ -217,7 +218,7 @@ func updateConversation(id ConversationId) (err error) {
 	return nil
 }
 
-func addMessage(convId ConversationId, userId UserId, text string) (messageId MessageId, err error) {
+func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
 	messageId, err = dbAddMessage(convId, userId, text)
 	if err != nil {
 		return
@@ -226,15 +227,15 @@ func addMessage(convId ConversationId, userId UserId, text string) (messageId Me
 	if err != nil {
 		return
 	}
-	msgSmall := Message{MessageId(messageId), user, text, time.Now().UTC(), false}
-	msg := RedisMessage{msgSmall, convId}
+	msgSmall := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
+	msg := gp.RedisMessage{msgSmall, convId}
 	go redisPublish(msg)
 	go redisAddMessage(msgSmall, convId)
 	go updateConversation(convId)
 	return
 }
 
-func getFullConversation(convId ConversationId, start int64) (conv ConversationAndMessages, err error) {
+func getFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
 	conv.Id = convId
 	conv.LastActivity, err = ConversationLastActivity(convId)
 	if err != nil {
@@ -245,20 +246,20 @@ func getFullConversation(convId ConversationId, start int64) (conv ConversationA
 	return
 }
 
-func ConversationLastActivity(convId ConversationId) (t time.Time, err error) {
+func ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
 	return dbConversationActivity(convId)
 }
 
-func getPostImages(postId PostId) (images []string) {
+func getPostImages(postId gp.PostId) (images []string) {
 	images, _ = dbGetPostImages(postId)
 	return
 }
 
-func addPostImage(postId PostId, url string) (err error) {
+func addPostImage(postId gp.PostId, url string) (err error) {
 	return dbAddPostImage(postId, url)
 }
 
-func getProfile(id UserId) (user Profile, err error) {
+func getProfile(id gp.UserId) (user gp.Profile, err error) {
 	user, err = dbGetProfile(id)
 	if err != nil {
 		return
@@ -271,7 +272,7 @@ func getProfile(id UserId) (user Profile, err error) {
 	return
 }
 
-func awaitOneMessage(userId UserId) (resp []byte) {
+func awaitOneMessage(userId gp.UserId) (resp []byte) {
 	c := getMessageChan(userId)
 	select {
 	case resp = <-c:
@@ -281,11 +282,11 @@ func awaitOneMessage(userId UserId) (resp []byte) {
 	}
 }
 
-func getMessageChan(userId UserId) (c chan []byte) {
+func getMessageChan(userId gp.UserId) (c chan []byte) {
 	return redisMessageChan(userId)
 }
 
-func addPost(userId UserId, text string) (postId PostId, err error) {
+func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
 	networks, err := getUserNetworks(userId)
 	if err != nil {
 		return
@@ -297,8 +298,8 @@ func addPost(userId UserId, text string) (postId PostId, err error) {
 	return
 }
 
-func getPosts(netId NetworkId, index int64, sel string) (posts []PostSmall, err error) {
-	conf := GetConfig()
+func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
+	conf := gp.GetConfig()
 	posts, err = redisGetNetworkPosts(netId, index, sel)
 	if err != nil {
 		posts, err = dbGetPosts(netId, index, conf.PostPageSize, sel)
@@ -307,8 +308,8 @@ func getPosts(netId NetworkId, index int64, sel string) (posts []PostSmall, err 
 	return
 }
 
-func getComments(id PostId, start int64) (comments []Comment, err error) {
-	conf := GetConfig()
+func getComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
+	conf := gp.GetConfig()
 	if start+int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
 		comments, err = redisGetComments(id, start)
 		if err != nil {
@@ -321,7 +322,7 @@ func getComments(id PostId, start int64) (comments []Comment, err error) {
 	return
 }
 
-func createConversation(id UserId, nParticipants int, live bool) (conversation Conversation, err error) {
+func createConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
 	networks, err := getUserNetworks(id)
 	if err != nil {
 		return
@@ -354,7 +355,7 @@ func validateEmail(email string) (validates bool, err error) {
 	}
 }
 
-func testEmail(email string, rules []Rule) bool {
+func testEmail(email string, rules []gp.Rule) bool {
 	for _, rule := range rules {
 		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
 			return true
@@ -363,7 +364,7 @@ func testEmail(email string, rules []Rule) bool {
 	return false
 }
 
-func registerUser(user string, pass string, email string) (userId UserId, err error) {
+func registerUser(user string, pass string, email string) (userId gp.UserId, err error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
 		return 0, err
@@ -376,11 +377,11 @@ func registerUser(user string, pass string, email string) (userId UserId, err er
 	return
 }
 
-func getContacts(user UserId) (contacts []Contact, err error) {
+func getContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	return dbGetContacts(user)
 }
 
-func addContact(adder UserId, addee UserId) (user User, err error) {
+func addContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
 	user, err = getUser(addee)
 	if err != nil {
 		return
@@ -393,7 +394,7 @@ func addContact(adder UserId, addee UserId) (user User, err error) {
 	}
 }
 
-func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
+func acceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err error) {
 	err = dbUpdateContact(user, toAccept)
 	if err != nil {
 		return
@@ -408,7 +409,7 @@ func acceptContact(user UserId, toAccept UserId) (contact Contact, err error) {
 	return
 }
 
-func addDevice(user UserId, deviceType string, deviceId string) (device Device, err error) {
+func addDevice(user gp.UserId, deviceType string, deviceId string) (device gp.Device, err error) {
 	err = dbAddDevice(user, deviceType, deviceId)
 	if err != nil {
 		return
@@ -419,15 +420,15 @@ func addDevice(user UserId, deviceType string, deviceId string) (device Device, 
 	return
 }
 
-func getDevices(user UserId) (devices []Device, err error) {
+func getDevices(user gp.UserId) (devices []gp.Device, err error) {
 	return dbGetDevices(user)
 }
 
-func generatePartners(id UserId, count int, network NetworkId) (partners []User, err error) {
+func generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	return dbRandomPartners(id, count, network)
 }
 
-func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (conversation ConversationAndMessages, err error) {
+func markConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
 	err = dbMarkRead(id, convId, upTo)
 	if err != nil {
 		return
@@ -440,7 +441,7 @@ func markConversationSeen(id UserId, convId ConversationId, upTo MessageId) (con
 	return
 }
 
-func setNetwork(userId UserId, netId NetworkId) (err error) {
+func setNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
 	return dbSetNetwork(userId, netId)
 }
 
@@ -458,14 +459,14 @@ func randomFilename(extension string) (string, error) {
 }
 
 func getS3() (s *s3.S3) {
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	var auth aws.Auth
 	auth.AccessKey, auth.SecretKey = conf.AWS.KeyId, conf.AWS.SecretKey
 	s = s3.New(auth, aws.EUWest)
 	return
 }
 
-func storeFile(id UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
+func storeFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
 	switch {
@@ -479,10 +480,10 @@ func storeFile(id UserId, file multipart.File, header *multipart.FileHeader) (ur
 		filename, err = randomFilename(".png")
 		contenttype = "image/png"
 	default:
-		return "", APIerror{"Unsupported file type"}
+		return "", gp.APIerror{"Unsupported file type"}
 	}
 	if err != nil {
-		return "", APIerror{err.Error()}
+		return "", gp.APIerror{err.Error()}
 	}
 	//store on s3
 	s := getS3()
@@ -500,15 +501,15 @@ func storeFile(id UserId, file multipart.File, header *multipart.FileHeader) (ur
 	return url, err
 }
 
-func userAddUpload(id UserId, url string) (err error) {
+func userAddUpload(id gp.UserId, url string) (err error) {
 	return dbAddUpload(id, url)
 }
 
-func userUploadExists(id UserId, url string) (exists bool, err error) {
+func userUploadExists(id gp.UserId, url string) (exists bool, err error) {
 	return dbUploadExists(id, url)
 }
 
-func setProfileImage(id UserId, url string) (err error) {
+func setProfileImage(id gp.UserId, url string) (err error) {
 	err = dbSetProfileImage(id, url)
 	if err == nil {
 		go redisSetProfileImage(id, url)
@@ -516,7 +517,7 @@ func setProfileImage(id UserId, url string) (err error) {
 	return
 }
 
-func setBusyStatus(id UserId, busy bool) (err error) {
+func setBusyStatus(id gp.UserId, busy bool) (err error) {
 	err = dbSetBusyStatus(id, busy)
 	if err == nil {
 		go redisSetBusyStatus(id, busy)
@@ -524,29 +525,29 @@ func setBusyStatus(id UserId, busy bool) (err error) {
 	return
 }
 
-func userPing(id UserId) {
+func userPing(id gp.UserId) {
 	redisUserPing(id)
 }
 
-func userIsOnline(id UserId) bool {
+func userIsOnline(id gp.UserId) bool {
 	return redisUserIsOnline(id)
 }
 
-func getUserNotifications(id UserId) (notifications []interface{}, err error) {
+func getUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
 	return dbGetUserNotifications(id)
 }
 
-func markNotificationsSeen(upTo NotificationId) (err error) {
+func markNotificationsSeen(upTo gp.NotificationId) (err error) {
 	return dbMarkNotificationsSeen(upTo)
 }
 
-func createNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (err error) {
+func createNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (err error) {
 	_, err = dbCreateNotification(ntype, by, recipient, isPN, post)
 	return
 }
 
-func assignNetworks(user UserId, email string) (networks int, err error) {
-	conf := GetConfig()
+func assignNetworks(user gp.UserId, email string) (networks int, err error) {
+	conf := gp.GetConfig()
 	if conf.RegisterOverride {
 		setNetwork(user, 1338) //Highlands and Islands :D
 	} else {
@@ -567,11 +568,11 @@ func assignNetworks(user UserId, email string) (networks int, err error) {
 	return
 }
 
-func getPost(postId PostId) (post Post, err error) {
+func getPost(postId gp.PostId) (post gp.Post, err error) {
 	return dbGetPost(postId)
 }
 
-func getPostFull(postId PostId) (post PostFull, err error) {
+func getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	post.Post, err = getPost(postId)
 	if err != nil {
 		return
@@ -584,7 +585,7 @@ func getPostFull(postId PostId) (post PostFull, err error) {
 	return
 }
 
-func addLike(user UserId, postId PostId) (err error) {
+func addLike(user gp.UserId, postId gp.PostId) (err error) {
 	//TODO: add like to redis
 	post, err := getPost(postId)
 	if err != nil {
@@ -600,17 +601,17 @@ func addLike(user UserId, postId PostId) (err error) {
 	return
 }
 
-func delLike(user UserId, post PostId) (err error) {
+func delLike(user gp.UserId, post gp.PostId) (err error) {
 	return dbRemoveLike(user, post)
 }
 
-func getLikes(post PostId) (likes []LikeFull, err error) {
+func getLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
 	l, err := dbGetLikes(post)
 	if err != nil {
 		return
 	}
 	for _, like := range l {
-		lf := LikeFull{}
+		lf := gp.LikeFull{}
 		lf.User, err = getUser(like.UserID)
 		if err != nil {
 			return
@@ -621,14 +622,14 @@ func getLikes(post PostId) (likes []LikeFull, err error) {
 	return
 }
 
-func hasLiked(user UserId, post PostId) (liked bool, err error) {
+func hasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 	return dbHasLiked(user, post)
 }
 
-func likeCount(post PostId) (count int, err error) {
+func likeCount(post gp.PostId) (count int, err error) {
 	return dbLikeCount(post)
 }
 
-func conversationExpiry(convId ConversationId) (expiry Expiry, err error) {
+func conversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	return dbConversationExpiry(convId)
 }

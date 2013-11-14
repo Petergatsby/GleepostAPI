@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"time"
+	"github.com/draaglom/GleepostAPI/gp"
 )
 
 const (
@@ -20,7 +21,7 @@ var (
 
 func keepalive(db *sql.DB) {
 	tick := time.Tick(1 * time.Hour)
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	for {
 		<-tick
 		err := db.Ping()
@@ -117,7 +118,7 @@ func prepare(db *sql.DB) (err error) {
 		Network
 ********************************************************************/
 
-func dbGetRules() (rules []Rule, err error) {
+func dbGetRules() (rules []gp.Rule, err error) {
 	s := stmt["ruleSelect"]
 	rows, err := s.Query()
 	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
@@ -126,7 +127,7 @@ func dbGetRules() (rules []Rule, err error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var rule Rule
+		var rule gp.Rule
 		if err = rows.Scan(&rule.NetworkID, &rule.Type, &rule.Value); err != nil {
 			return
 		}
@@ -135,7 +136,7 @@ func dbGetRules() (rules []Rule, err error) {
 	return
 }
 
-func dbGetUserNetworks(id UserId) (networks []Network, err error) {
+func dbGetUserNetworks(id gp.UserId) (networks []gp.Network, err error) {
 	s := stmt["networkSelect"]
 	rows, err := s.Query(id)
 	defer rows.Close()
@@ -144,7 +145,7 @@ func dbGetUserNetworks(id UserId) (networks []Network, err error) {
 		return
 	}
 	for rows.Next() {
-		var network Network
+		var network gp.Network
 		err = rows.Scan(&network.Id, &network.Name)
 		if err != nil {
 			return
@@ -155,7 +156,7 @@ func dbGetUserNetworks(id UserId) (networks []Network, err error) {
 	return
 }
 
-func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
+func dbSetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 	_, err = stmt["networkInsert"].Exec(userId, networkId)
 	return
 }
@@ -164,20 +165,20 @@ func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
 		User
 ********************************************************************/
 
-func dbRegisterUser(user string, hash []byte, email string) (UserId, error) {
+func dbRegisterUser(user string, hash []byte, email string) (gp.UserId, error) {
 	s := stmt["createUser"]
 	res, err := s.Exec(user, hash, email)
 	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-		return 0, APIerror{"Username or email address already taken"}
+		return 0, gp.APIerror{"Username or email address already taken"}
 	} else if err != nil {
 		return 0, err
 	} else {
 		id, _ := res.LastInsertId()
-		return UserId(id), nil
+		return gp.UserId(id), nil
 	}
 }
 
-func dbGetUser(id UserId) (user User, err error) {
+func dbGetUser(id gp.UserId) (user gp.User, err error) {
 	var av sql.NullString
 	s := stmt["userSelect"]
 	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av)
@@ -196,7 +197,7 @@ func dbGetUser(id UserId) (user User, err error) {
 }
 
 //dbGetProfile fetches a user but DOES NOT GET THEIR NETWORK.
-func dbGetProfile(id UserId) (user Profile, err error) {
+func dbGetProfile(id gp.UserId) (user gp.Profile, err error) {
 	var av, desc sql.NullString
 	s := stmt["profileSelect"]
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
@@ -214,12 +215,12 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 	return
 }
 
-func dbSetProfileImage(id UserId, url string) (err error) {
+func dbSetProfileImage(id gp.UserId, url string) (err error) {
 	_, err = stmt["setAvatar"].Exec(url, id)
 	return
 }
 
-func dbSetBusyStatus(id UserId, busy bool) (err error) {
+func dbSetBusyStatus(id gp.UserId, busy bool) (err error) {
 	_, err = stmt["setBusy"].Exec(busy, id)
 	return
 }
@@ -228,11 +229,11 @@ func dbSetBusyStatus(id UserId, busy bool) (err error) {
 		Conversation
 ********************************************************************/
 
-func dbCreateConversation(id UserId, participants []User, live bool) (conversation Conversation, err error) {
+func dbCreateConversation(id gp.UserId, participants []gp.User, live bool) (conversation gp.Conversation, err error) {
 	s := stmt["conversationInsert"]
 	r, _ := s.Exec(id)
 	cId, _ := r.LastInsertId()
-	conversation.Id = ConversationId(cId)
+	conversation.Id = gp.ConversationId(cId)
 	if err != nil {
 		return
 	}
@@ -247,14 +248,14 @@ func dbCreateConversation(id UserId, participants []User, live bool) (conversati
 	conversation.Participants = participants
 	conversation.LastActivity = time.Now().UTC()
 	if live {
-		conf := GetConfig()
-		conversation.Expiry = &Expiry{time.Now().Add(time.Duration(conf.Expiry) * time.Second)}
+		conf := gp.GetConfig()
+		conversation.Expiry = &gp.Expiry{time.Now().Add(time.Duration(conf.Expiry) * time.Second)}
 		err = dbConversationSetExpiry(conversation.Id, *conversation.Expiry)
 	}
 	return
 }
 
-func dbRandomPartners(id UserId, count int, network NetworkId) (partners []User, err error) {
+func dbRandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	s := stmt["randomSelect"]
 	rows, err := s.Query(network)
 	if err != nil {
@@ -263,7 +264,7 @@ func dbRandomPartners(id UserId, count int, network NetworkId) (partners []User,
 	defer rows.Close()
 	for count > 0 {
 		rows.Next()
-		var user User
+		var user gp.User
 		var av sql.NullString
 		if err = rows.Scan(&user.Id, &user.Name, &av); err != nil {
 			return
@@ -280,7 +281,7 @@ func dbRandomPartners(id UserId, count int, network NetworkId) (partners []User,
 	return
 }
 
-func dbUpdateConversation(id ConversationId) (err error) {
+func dbUpdateConversation(id gp.ConversationId) (err error) {
 	s := stmt["conversationUpdate"]
 	_, err = s.Exec(id)
 	log.Println("DB hit: updateConversation convid ")
@@ -290,7 +291,7 @@ func dbUpdateConversation(id ConversationId) (err error) {
 	return err
 }
 
-func dbGetConversations(userId UserId, start int64, count int) (conversations []ConversationSmall, err error) {
+func dbGetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	s := stmt["conversationSelect"]
 	rows, err := s.Query(userId, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
@@ -299,7 +300,7 @@ func dbGetConversations(userId UserId, start int64, count int) (conversations []
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var conv ConversationSmall
+		var conv gp.ConversationSmall
 		var t string
 		err = rows.Scan(&conv.Conversation.Id, &t)
 		if err != nil {
@@ -316,7 +317,7 @@ func dbGetConversations(userId UserId, start int64, count int) (conversations []
 	return conversations, nil
 }
 
-func dbConversationActivity(convId ConversationId) (t time.Time, err error) {
+func dbConversationActivity(convId gp.ConversationId) (t time.Time, err error) {
 	s := stmt["conversationActivity"]
 	var tstring string
 	err = s.QueryRow(convId).Scan(&tstring)
@@ -327,7 +328,7 @@ func dbConversationActivity(convId ConversationId) (t time.Time, err error) {
 	return
 }
 
-func dbConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
+func dbConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	s := stmt["conversationExpiry"]
 	var t string
 	err = s.QueryRow(convId).Scan(&t)
@@ -338,14 +339,14 @@ func dbConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
 	return
 }
 
-func dbConversationSetExpiry(convId ConversationId, expiry Expiry) (err error) {
+func dbConversationSetExpiry(convId gp.ConversationId, expiry gp.Expiry) (err error) {
 	s := stmt["conversationSetExpiry"]
 	_, err = s.Exec(convId, expiry.Time)
 	return
 }
 
-func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
-	conf := GetConfig()
+func dbGetConversation(convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
+	conf := gp.GetConfig()
 	conversation.Id = convId
 	conversation.LastActivity, err = dbConversationActivity(convId)
 	if err != nil {
@@ -361,7 +362,7 @@ func dbGetConversation(convId ConversationId) (conversation ConversationAndMessa
 }
 
 //TODO: Should not be calling getUser
-func dbGetParticipants(conv ConversationId) []User {
+func dbGetParticipants(conv gp.ConversationId) []gp.User {
 	s := stmt["participantSelect"]
 	rows, err := s.Query(conv)
 	log.Println("DB hit: getParticipants convid (user.id)")
@@ -369,9 +370,9 @@ func dbGetParticipants(conv ConversationId) []User {
 		log.Printf("Error getting participant: %v", err)
 	}
 	defer rows.Close()
-	participants := make([]User, 0, 5)
+	participants := make([]gp.User, 0, 5)
 	for rows.Next() {
-		var id UserId
+		var id gp.UserId
 		err = rows.Scan(&id)
 		user, err := dbGetUser(id)
 		if err == nil {
@@ -381,9 +382,9 @@ func dbGetParticipants(conv ConversationId) []User {
 	return (participants)
 }
 
-func dbGetLastMessage(id ConversationId) (message Message, err error) {
+func dbGetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	var timeString string
-	var by UserId
+	var by gp.UserId
 	s := stmt["lastMessageSelect"]
 	err = s.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 	log.Println("DB hit: dbGetLastMessage convid (message.id, message.by, message.text, message.time, message.seen)")
@@ -404,14 +405,14 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 		Post
 ********************************************************************/
 
-func dbAddPost(userId UserId, text string, network NetworkId) (postId PostId, err error) {
+func dbAddPost(userId gp.UserId, text string, network gp.NetworkId) (postId gp.PostId, err error) {
 	s := stmt["postInsert"]
 	res, err := s.Exec(userId, text, network)
 	if err != nil {
 		return 0, err
 	}
 	_postId, err := res.LastInsertId()
-	postId = PostId(_postId)
+	postId = gp.PostId(_postId)
 	if err != nil {
 		return 0, err
 	}
@@ -419,7 +420,7 @@ func dbAddPost(userId UserId, text string, network NetworkId) (postId PostId, er
 }
 
 //dbGetPosts finds posts in the network netId.
-func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []PostSmall, err error) {
+func dbGetPosts(netId gp.NetworkId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
 	var s *sql.Stmt
 	switch {
 	case sel == "start":
@@ -429,7 +430,7 @@ func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []Po
 	case sel == "after":
 		s = stmt["wallSelectAfter"]
 	default:
-		return posts, APIerror{"Invalid selector"}
+		return posts, gp.APIerror{"Invalid selector"}
 	}
 	rows, err := s.Query(netId, index, count)
 	defer rows.Close()
@@ -438,9 +439,9 @@ func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []Po
 		return
 	}
 	for rows.Next() {
-		var post PostSmall
+		var post gp.PostSmall
 		var t string
-		var by UserId
+		var by gp.UserId
 		err = rows.Scan(&post.Id, &by, &t, &post.Text)
 		if err != nil {
 			return posts, err
@@ -467,7 +468,7 @@ func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []Po
 	return
 }
 
-func dbGetPostImages(postId PostId) (images []string, err error) {
+func dbGetPostImages(postId gp.PostId) (images []string, err error) {
 	s := stmt["imageSelect"]
 	rows, err := s.Query(postId)
 	defer rows.Close()
@@ -486,23 +487,23 @@ func dbGetPostImages(postId PostId) (images []string, err error) {
 	return
 }
 
-func dbAddPostImage(postId PostId, url string) (err error) {
+func dbAddPostImage(postId gp.PostId, url string) (err error) {
 	_, err = stmt["imageInsert"].Exec(postId, url)
 	return
 }
 
-func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentId, err error) {
+func dbCreateComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
 	s := stmt["commentInsert"]
 	if res, err := s.Exec(postId, userId, text); err == nil {
 		cId, err := res.LastInsertId()
-		commId = CommentId(cId)
+		commId = gp.CommentId(cId)
 		return commId, err
 	} else {
 		return 0, err
 	}
 }
 
-func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
+func dbGetComments(postId gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
 	s := stmt["commentSelect"]
 	rows, err := s.Query(postId, start, count)
 	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
@@ -511,10 +512,10 @@ func dbGetComments(postId PostId, start int64, count int) (comments []Comment, e
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var comment Comment
+		var comment gp.Comment
 		comment.Post = postId
 		var timeString string
-		var by UserId
+		var by gp.UserId
 		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
 		if err != nil {
 			return comments, err
@@ -529,7 +530,7 @@ func dbGetComments(postId PostId, start int64, count int) (comments []Comment, e
 	return comments, nil
 }
 
-func dbGetCommentCount(id PostId) (count int) {
+func dbGetCommentCount(id gp.PostId) (count int) {
 	s := stmt["commentCountSelect"]
 	err := s.QueryRow(id).Scan(&count)
 	if err != nil {
@@ -539,10 +540,10 @@ func dbGetCommentCount(id PostId) (count int) {
 }
 
 //TODO: This should not be calling getUser, getPostImages
-func dbGetPost(postId PostId) (post Post, err error) {
+func dbGetPost(postId gp.PostId) (post gp.Post, err error) {
 	s := stmt["postSelect"]
 	post.Id = postId
-	var by UserId
+	var by gp.UserId
 	var t string
 	err = s.QueryRow(postId).Scan(&by, &t, &post.Text)
 	if err != nil {
@@ -564,7 +565,7 @@ func dbGetPost(postId PostId) (post Post, err error) {
 		Message
 ********************************************************************/
 
-func dbAddMessage(convId ConversationId, userId UserId, text string) (id MessageId, err error) {
+func dbAddMessage(convId gp.ConversationId, userId gp.UserId, text string) (id gp.MessageId, err error) {
 	log.Printf("Adding message to db: %d, %d %s", convId, userId, text)
 	s := stmt["messageInsert"]
 	res, err := s.Exec(convId, userId, text)
@@ -572,12 +573,12 @@ func dbAddMessage(convId ConversationId, userId UserId, text string) (id Message
 		return 0, err
 	}
 	_id, err := res.LastInsertId()
-	id = MessageId(_id)
+	id = gp.MessageId(_id)
 	return
 }
 
 //TODO: This should not be calling getUser
-func dbGetMessages(convId ConversationId, index int64, sel string, count int) (messages []Message, err error) {
+func dbGetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	var s *sql.Stmt
 	switch {
 	case sel == "after":
@@ -594,9 +595,9 @@ func dbGetMessages(convId ConversationId, index int64, sel string, count int) (m
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var message Message
+		var message gp.Message
 		var timeString string
-		var by UserId
+		var by gp.UserId
 		err = rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 		if err != nil {
 			log.Printf("%v", err)
@@ -616,7 +617,7 @@ func dbGetMessages(convId ConversationId, index int64, sel string, count int) (m
 
 //dbMarkRead sets all messages read in conversation convId
 //that are a) not from user id and b) sent upto and including upTo.
-func dbMarkRead(id UserId, convId ConversationId, upTo MessageId) (err error) {
+func dbMarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	_, err = stmt["messagesRead"].Exec(convId, upTo, id)
 	return
 }
@@ -625,7 +626,7 @@ func dbMarkRead(id UserId, convId ConversationId, upTo MessageId) (err error) {
 		Token
 ********************************************************************/
 
-func dbTokenExists(id UserId, token string) bool {
+func dbTokenExists(id gp.UserId, token string) bool {
 	var expiry string
 	s := stmt["tokenSelect"]
 	err := s.QueryRow(id, token).Scan(&expiry)
@@ -640,7 +641,7 @@ func dbTokenExists(id UserId, token string) bool {
 	}
 }
 
-func dbAddToken(token Token) (err error) {
+func dbAddToken(token gp.Token) (err error) {
 	s := stmt["tokenInsert"]
 	_, err = s.Exec(token.UserId, token.Token, token.Expiry)
 	return
@@ -650,7 +651,7 @@ func dbAddToken(token Token) (err error) {
 		Contact
 ********************************************************************/
 
-func dbAddContact(adder UserId, addee UserId) (err error) {
+func dbAddContact(adder gp.UserId, addee gp.UserId) (err error) {
 	log.Println("DB hit: addContact")
 	s := stmt["contactInsert"]
 	_, err = s.Exec(adder, addee)
@@ -658,7 +659,7 @@ func dbAddContact(adder UserId, addee UserId) (err error) {
 }
 
 //TODO: This should not be calling getUser
-func dbGetContacts(user UserId) (contacts []Contact, err error) {
+func dbGetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	s := stmt["contactSelect"]
 	rows, err := s.Query(user, user)
 	log.Println("DB hit: GetContacts")
@@ -667,8 +668,8 @@ func dbGetContacts(user UserId) (contacts []Contact, err error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var contact Contact
-		var adder, addee UserId
+		var contact gp.Contact
+		var adder, addee gp.UserId
 		var confirmed bool
 		err = rows.Scan(&adder, &addee, &confirmed)
 		if err != nil {
@@ -695,7 +696,7 @@ func dbGetContacts(user UserId) (contacts []Contact, err error) {
 	return
 }
 
-func dbUpdateContact(user UserId, contact UserId) (err error) {
+func dbUpdateContact(user gp.UserId, contact gp.UserId) (err error) {
 	s := stmt["contactUpdate"]
 	_, err = s.Exec(user, contact)
 	return
@@ -705,13 +706,13 @@ func dbUpdateContact(user UserId, contact UserId) (err error) {
 		Device
 ********************************************************************/
 
-func dbAddDevice(user UserId, deviceType string, deviceId string) (err error) {
+func dbAddDevice(user gp.UserId, deviceType string, deviceId string) (err error) {
 	s := stmt["deviceInsert"]
 	_, err = s.Exec(user, deviceType, deviceId)
 	return
 }
 
-func dbGetDevices(user UserId) (devices []Device, err error) {
+func dbGetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	s := stmt["deviceSelect"]
 	rows, err := s.Query(user)
 	if err != nil {
@@ -719,7 +720,7 @@ func dbGetDevices(user UserId) (devices []Device, err error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		device := Device{User: user}
+		device := gp.Device{User: user}
 		if err = rows.Scan(&device.Type, &device.Id); err != nil {
 			return
 		}
@@ -732,12 +733,12 @@ func dbGetDevices(user UserId) (devices []Device, err error) {
 		Upload
 ********************************************************************/
 
-func dbAddUpload(user UserId, url string) (err error) {
+func dbAddUpload(user gp.UserId, url string) (err error) {
 	_, err = stmt["userUpload"].Exec(user, url)
 	return
 }
 
-func dbUploadExists(user UserId, url string) (exists bool, err error) {
+func dbUploadExists(user gp.UserId, url string) (exists bool, err error) {
 	err = stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
 	return
 }
@@ -746,7 +747,7 @@ func dbUploadExists(user UserId, url string) (exists bool, err error) {
 		Notification
 ********************************************************************/
 
-func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) {
+func dbGetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
 	s := stmt["notificationSelect"]
 	rows, err := s.Query(id)
 	if err != nil {
@@ -754,10 +755,10 @@ func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) 
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var notification Notification
+		var notification gp.Notification
 		var t string
 		var post sql.NullInt64
-		var by UserId
+		var by gp.UserId
 		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &post, &notification.Seen); err != nil {
 			return
 		}
@@ -770,9 +771,9 @@ func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) 
 			return
 		}
 		if post.Valid {
-			var np PostNotification
+			var np gp.PostNotification
 			np.Notification = notification
-			np.Post = PostId(post.Int64)
+			np.Post = gp.PostId(post.Int64)
 			notifications = append(notifications, np)
 		} else {
 			notifications = append(notifications, notification)
@@ -781,12 +782,12 @@ func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) 
 	return
 }
 
-func dbMarkNotificationsSeen(upTo NotificationId) (err error) {
+func dbMarkNotificationsSeen(upTo gp.NotificationId) (err error) {
 	_, err = stmt["notificationUpdate"].Exec(upTo)
 	return
 }
 
-func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (notification interface{}, err error) {
+func dbCreateNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (notification interface{}, err error) {
 	var res sql.Result
 	if isPN {
 		s := stmt["postNotificationInsert"]
@@ -798,7 +799,7 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 	if err != nil {
 		return
 	} else {
-		n := Notification{
+		n := gp.Notification{
 			Type: ntype,
 			Time: time.Now().UTC(),
 			Seen: false,
@@ -807,13 +808,13 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 		if iderr != nil {
 			return n, iderr
 		}
-		n.Id = NotificationId(id)
+		n.Id = gp.NotificationId(id)
 		n.By, err = dbGetUser(by)
 		if err != nil {
 			return
 		}
 		if isPN {
-			np := PostNotification{n, post}
+			np := gp.PostNotification{n, post}
 			return np, nil
 		} else {
 			return n, nil
@@ -821,7 +822,7 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 	}
 }
 
-func dbCreateLike(user UserId, post PostId) (err error) {
+func dbCreateLike(user gp.UserId, post gp.PostId) (err error) {
 	_, err = stmt["addLike"].Exec(post, user)
 	// Suppress duplicate entry errors
 	if err != nil {
@@ -832,12 +833,12 @@ func dbCreateLike(user UserId, post PostId) (err error) {
 	return
 }
 
-func dbRemoveLike(user UserId, post PostId) (err error) {
+func dbRemoveLike(user gp.UserId, post gp.PostId) (err error) {
 	_, err = stmt["delLike"].Exec(post, user)
 	return
 }
 
-func dbGetLikes(post PostId) (likes []Like, err error) {
+func dbGetLikes(post gp.PostId) (likes []gp.Like, err error) {
 	rows, err := stmt["likeSelect"].Query(post)
 	defer rows.Close()
 	if err != nil {
@@ -845,7 +846,7 @@ func dbGetLikes(post PostId) (likes []Like, err error) {
 	}
 	for rows.Next() {
 		var t string
-		var like Like
+		var like gp.Like
 		err = rows.Scan(&like.UserID, &t)
 		if err != nil {
 			return
@@ -859,12 +860,12 @@ func dbGetLikes(post PostId) (likes []Like, err error) {
 	return
 }
 
-func dbHasLiked(user UserId, post PostId) (liked bool, err error) {
+func dbHasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 	err = stmt["likeExists"].QueryRow(post, user).Scan(&liked)
 	return
 }
 
-func dbLikeCount(post PostId) (count int, err error) {
+func dbLikeCount(post gp.PostId) (count int, err error) {
 	err = stmt["likeCount"].QueryRow(post).Scan(&count)
 	return
 }

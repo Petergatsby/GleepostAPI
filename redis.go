@@ -6,6 +6,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
+	"github.com/draaglom/GleepostAPI/gp"
 )
 
 /********************************************************************
@@ -13,18 +14,18 @@ import (
 ********************************************************************/
 
 func RedisDial() (redis.Conn, error) {
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	conn, err := redis.Dial(conf.Redis.Proto, conf.Redis.Address)
 	return conn, err
 }
 
-var ErrEmptyCache = APIerror{"Not in redis!"}
+var ErrEmptyCache = gp.APIerror{"Not in redis!"}
 
 /********************************************************************
 		Messages
 ********************************************************************/
 
-func redisPublish(msg RedisMessage) {
+func redisPublish(msg gp.RedisMessage) {
 	log.Printf("Publishing message to redis: %d, %d", msg.Conversation, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
@@ -36,7 +37,7 @@ func redisPublish(msg RedisMessage) {
 	conn.Flush()
 }
 
-func redisSubscribe(c chan []byte, userId UserId) {
+func redisSubscribe(c chan []byte, userId gp.UserId) {
 	conn := pool.Get()
 	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
@@ -52,12 +53,12 @@ func redisSubscribe(c chan []byte, userId UserId) {
 	}
 }
 
-func redisMessageChan(userId UserId) (c chan []byte) {
+func redisMessageChan(userId gp.UserId) (c chan []byte) {
 	go redisSubscribe(c, userId)
 	return
 }
 
-func redisAddMessage(msg Message, convId ConversationId) {
+func redisAddMessage(msg gp.Message, convId gp.ConversationId) {
 	log.Printf("redis add message %d %d", convId, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
@@ -67,7 +68,7 @@ func redisAddMessage(msg Message, convId ConversationId) {
 	go redisSetMessage(msg)
 }
 
-func redisGetLastMessage(id ConversationId) (message Message, err error) {
+func redisGetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", id)
@@ -82,7 +83,7 @@ func redisGetLastMessage(id ConversationId) (message Message, err error) {
 		log.Printf("error getting message in redis %v", err)
 		return message, err
 	}
-	var by UserId
+	var by gp.UserId
 	var timeString string
 	if _, err = redis.Scan(reply, &by, &message.Text, &timeString, &message.Seen); err != nil {
 		return message, err
@@ -93,12 +94,12 @@ func redisGetLastMessage(id ConversationId) (message Message, err error) {
 			log.Printf("error getting user %d %v", by, err)
 		}
 	}
-	message.Id = MessageId(messageId)
+	message.Id = gp.MessageId(messageId)
 	message.Time, err = time.Parse(time.RFC3339, timeString)
 	return message, err
 }
 
-func redisAddMessages(convId ConversationId, messages []Message) {
+func redisAddMessages(convId gp.ConversationId, messages []gp.Message) {
 	//expecting messages ordered b
 	conn := pool.Get()
 	defer conn.Close()
@@ -110,7 +111,7 @@ func redisAddMessages(convId ConversationId, messages []Message) {
 	conn.Flush()
 }
 
-func redisSetMessage(message Message) {
+func redisSetMessage(message gp.Message) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", message.Id)
@@ -118,7 +119,7 @@ func redisSetMessage(message Message) {
 	conn.Flush()
 }
 
-func redisMessageSeen(msgId MessageId) {
+func redisMessageSeen(msgId gp.MessageId) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d:seen", msgId)
@@ -126,7 +127,7 @@ func redisMessageSeen(msgId MessageId) {
 	conn.Flush()
 }
 
-func redisMarkConversationSeen(id UserId, convId ConversationId, upTo MessageId) (err error) {
+func redisMarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -155,7 +156,7 @@ func redisMarkConversationSeen(id UserId, convId ConversationId, upTo MessageId)
 			return
 		}
 		if curr != 0 {
-			message, errGettingMessage := getMessage(MessageId(curr))
+			message, errGettingMessage := getMessage(gp.MessageId(curr))
 			if errGettingMessage != nil {
 				return errGettingMessage
 			} else {
@@ -168,7 +169,7 @@ func redisMarkConversationSeen(id UserId, convId ConversationId, upTo MessageId)
 	return
 }
 
-func redisGetMessages(convId ConversationId, index int64, sel string, count int) (messages []Message, err error) {
+func redisGetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -220,7 +221,7 @@ func redisGetMessages(convId ConversationId, index int64, sel string, count int)
 			return
 		}
 		if curr != 0 {
-			message, errGettingMessage := getMessage(MessageId(curr))
+			message, errGettingMessage := getMessage(gp.MessageId(curr))
 			if errGettingMessage != nil {
 				return messages, errGettingMessage
 			} else {
@@ -232,7 +233,7 @@ func redisGetMessages(convId ConversationId, index int64, sel string, count int)
 	return
 }
 
-func redisGetMessage(msgId MessageId) (message Message, err error) {
+func redisGetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", msgId)
@@ -242,7 +243,7 @@ func redisGetMessage(msgId MessageId) (message Message, err error) {
 	}
 	message.Id = msgId
 	var timeString string
-	var by UserId
+	var by gp.UserId
 	if _, err = redis.Scan(reply, &by, &message.Text, &timeString, &message.Seen); err != nil {
 		return message, err
 	}
@@ -256,8 +257,8 @@ func redisGetMessage(msgId MessageId) (message Message, err error) {
 	return message, err
 }
 
-func redisAddAllMessages(convId ConversationId) {
-	conf := GetConfig()
+func redisAddAllMessages(convId gp.ConversationId) {
+	conf := gp.GetConfig()
 	s := stmt["messageSelect"]
 	rows, err := s.Query(convId, 0, conf.MessageCache)
 	defer rows.Close()
@@ -269,9 +270,9 @@ func redisAddAllMessages(convId ConversationId) {
 	defer conn.Close()
 	zkey := fmt.Sprintf("conversations:%d:messages", convId)
 	for rows.Next() {
-		var message Message
+		var message gp.Message
 		var timeString string
-		var by UserId
+		var by gp.UserId
 		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 		if err != nil {
 			log.Printf("%v", err)
@@ -297,14 +298,14 @@ func redisAddAllMessages(convId ConversationId) {
 		Posts
 ********************************************************************/
 
-func redisAddPosts(net NetworkId, posts []PostSmall) {
+func redisAddPosts(net gp.NetworkId, posts []gp.PostSmall) {
 	for _, post := range posts {
 		go redisAddPost(post)
 		go redisAddNetworkPost(net, post)
 	}
 }
 
-func redisAddPost(post PostSmall) {
+func redisAddPost(post gp.PostSmall) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", post.Id)
@@ -312,8 +313,8 @@ func redisAddPost(post PostSmall) {
 	conn.Flush()
 }
 
-func redisAddNewPost(userId UserId, text string, postId PostId) {
-	var post PostSmall
+func redisAddNewPost(userId gp.UserId, text string, postId gp.PostId) {
+	var post gp.PostSmall
 	post.Id = postId
 	post.By, _ = getUser(userId)
 	post.Time = time.Now().UTC()
@@ -325,7 +326,7 @@ func redisAddNewPost(userId UserId, text string, postId PostId) {
 	}
 }
 
-func redisAddNetworkPost(network NetworkId, post PostSmall) {
+func redisAddNetworkPost(network gp.NetworkId, post gp.PostSmall) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d:posts", network)
@@ -338,7 +339,7 @@ func redisAddNetworkPost(network NetworkId, post PostSmall) {
 	}
 }
 
-func redisGetPost(postId PostId) (post PostSmall, err error) {
+func redisGetPost(postId gp.PostId) (post gp.PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", postId)
@@ -346,7 +347,7 @@ func redisGetPost(postId PostId) (post PostSmall, err error) {
 	if err != nil {
 		return post, err
 	}
-	var by UserId
+	var by gp.UserId
 	var t string
 	if _, err = redis.Scan(values, &by, &t, &post.Post.Text); err != nil {
 		return post, err
@@ -366,10 +367,10 @@ func redisGetPost(postId PostId) (post PostSmall, err error) {
 	return post, nil
 }
 
-func redisGetNetworkPosts(id NetworkId, index int64, sel string) (posts []PostSmall, err error) {
+func redisGetNetworkPosts(id gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	conf := GetConfig()
+	conf := gp.GetConfig()
 
 	key := fmt.Sprintf("networks:%d:posts", id)
 	var start, finish int
@@ -419,7 +420,7 @@ func redisGetNetworkPosts(id NetworkId, index int64, sel string) (posts []PostSm
 		if curr == -1 {
 			return
 		}
-		postId := PostId(curr)
+		postId := gp.PostId(curr)
 		post, err := redisGetPost(postId)
 		if err != nil {
 			return posts, err
@@ -429,8 +430,8 @@ func redisGetNetworkPosts(id NetworkId, index int64, sel string) (posts []PostSm
 	return
 }
 
-func redisAddAllPosts(netId NetworkId) {
-	conf := GetConfig()
+func redisAddAllPosts(netId gp.NetworkId) {
+	conf := gp.GetConfig()
 	posts, err := dbGetPosts(netId, 0, conf.PostCache, "start")
 	if err != nil {
 		log.Println(err)
@@ -450,7 +451,7 @@ func redisAddAllPosts(netId NetworkId) {
 		Conversations
 ********************************************************************/
 
-func redisUpdateConversation(id ConversationId) {
+func redisUpdateConversation(id gp.ConversationId) {
 	conn := pool.Get()
 	defer conn.Close()
 	participants := getParticipants(id)
@@ -465,7 +466,7 @@ func redisUpdateConversation(id ConversationId) {
 	conn.Flush()
 }
 
-func redisGetConversationMessageCount(convId ConversationId) (count int, err error) {
+func redisGetConversationMessageCount(convId gp.ConversationId) (count int, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -476,7 +477,7 @@ func redisGetConversationMessageCount(convId ConversationId) (count int, err err
 	return count, nil
 }
 
-func redisSetConversationParticipants(convId ConversationId, participants []User) {
+func redisSetConversationParticipants(convId gp.ConversationId, participants []gp.User) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
@@ -486,7 +487,7 @@ func redisSetConversationParticipants(convId ConversationId, participants []User
 	conn.Flush()
 }
 
-func redisGetConversationParticipants(convId ConversationId) (participants []User, err error) {
+func redisGetConversationParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
@@ -498,7 +499,7 @@ func redisGetConversationParticipants(convId ConversationId) (participants []Use
 		return participants, ErrEmptyCache
 	}
 	for len(values) > 0 {
-		user := User{}
+		user := gp.User{}
 		values, err = redis.Scan(values, &user.Id)
 		if err != nil {
 			return
@@ -512,8 +513,8 @@ func redisGetConversationParticipants(convId ConversationId) (participants []Use
 	return
 }
 
-func redisGetConversations(id UserId, start int64) (conversations []ConversationSmall, err error) {
-	conf := GetConfig()
+func redisGetConversations(id gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
+	conf := gp.GetConfig()
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
@@ -534,8 +535,8 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 		if curr == -1 || unix == -1 {
 			return
 		}
-		conv := ConversationSmall{}
-		conv.Id = ConversationId(curr)
+		conv := gp.ConversationSmall{}
+		conv.Id = gp.ConversationId(curr)
 		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
 		conv.Conversation.Participants = getParticipants(conv.Id)
 		expiry, err := conversationExpiry(conv.Id)
@@ -551,7 +552,7 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 	return
 }
 
-func redisConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
+func redisConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:expiry", convId)
@@ -563,7 +564,7 @@ func redisConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
 	return
 }
 
-func redisSetConversationExpiry(conv Conversation) {
+func redisSetConversationExpiry(conv gp.Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:expiry", conv.Id)
@@ -571,7 +572,7 @@ func redisSetConversationExpiry(conv Conversation) {
 	conn.Flush()
 }
 
-func redisAddConversation(conv Conversation) {
+func redisAddConversation(conv gp.Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
 	go redisSetConversationExpiry(conv)
@@ -586,7 +587,7 @@ func redisAddConversation(conv Conversation) {
 		Comments
 ********************************************************************/
 
-func redisGetCommentCount(id PostId) (count int, err error) {
+func redisGetCommentCount(id gp.PostId) (count int, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
@@ -598,7 +599,7 @@ func redisGetCommentCount(id PostId) (count int, err error) {
 	}
 }
 
-func redisAddComment(id PostId, comment Comment) {
+func redisAddComment(id gp.PostId, comment gp.Comment) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
@@ -608,8 +609,8 @@ func redisAddComment(id PostId, comment Comment) {
 	conn.Flush()
 }
 
-func redisAddAllComments(postId PostId) {
-	conf := GetConfig()
+func redisAddAllComments(postId gp.PostId) {
+	conf := gp.GetConfig()
 	comments, err := dbGetComments(postId, 0, conf.CommentCache)
 	if err != nil {
 		log.Println(err)
@@ -625,10 +626,10 @@ func redisAddAllComments(postId PostId) {
 	}
 }
 
-func redisGetComments(postId PostId, start int64) (comments []Comment, err error) {
+func redisGetComments(postId gp.PostId, start int64) (comments []gp.Comment, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	key := fmt.Sprintf("posts:%d:comments", postId)
 	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(conf.CommentPageSize)-1))
 	if err != nil {
@@ -646,7 +647,7 @@ func redisGetComments(postId PostId, start int64) (comments []Comment, err error
 		if curr == -1 {
 			return
 		}
-		comment, e := redisGetComment(CommentId(curr))
+		comment, e := redisGetComment(gp.CommentId(curr))
 		if e != nil {
 			return comments, e
 		}
@@ -655,7 +656,7 @@ func redisGetComments(postId PostId, start int64) (comments []Comment, err error
 	return
 }
 
-func redisGetComment(commentId CommentId) (comment Comment, err error) {
+func redisGetComment(commentId gp.CommentId) (comment gp.Comment, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("comments:%d", commentId)
@@ -664,7 +665,7 @@ func redisGetComment(commentId CommentId) (comment Comment, err error) {
 		return
 	}
 	var timeString string
-	var by UserId
+	var by gp.UserId
 	if _, err = redis.Scan(reply, &by, &comment.Text, &timeString); err != nil {
 		return
 	}
@@ -681,7 +682,7 @@ func redisGetComment(commentId CommentId) (comment Comment, err error) {
 		Networks
 ********************************************************************/
 
-func redisGetUserNetwork(userId UserId) (networks []Network, err error) {
+func redisGetUserNetwork(userId gp.UserId) (networks []gp.Network, err error) {
 	/* Part 1 of the transition to one network per user (why did I ever allow more :| */
 	//this returns a slice of 1 network to keep compatible with dbGetNetworks
 	conn := pool.Get()
@@ -691,7 +692,7 @@ func redisGetUserNetwork(userId UserId) (networks []Network, err error) {
 	if err != nil {
 		return networks, err
 	}
-	net := Network{}
+	net := gp.Network{}
 	if _, err = redis.Scan(reply, &net.Id, &net.Name); err != nil {
 		return networks, err
 	} else if net.Id == 0 {
@@ -703,7 +704,7 @@ func redisGetUserNetwork(userId UserId) (networks []Network, err error) {
 	return networks, nil
 }
 
-func redisSetUserNetwork(userId UserId, network Network) {
+func redisSetUserNetwork(userId gp.UserId, network gp.Network) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d:network", userId)
@@ -715,7 +716,7 @@ func redisSetUserNetwork(userId UserId, network Network) {
 		Users
 ********************************************************************/
 
-func redisSetUser(user User) {
+func redisSetUser(user gp.User) {
 	conn := pool.Get()
 	defer conn.Close()
 	BaseKey := fmt.Sprintf("users:%d", user.Id)
@@ -723,7 +724,7 @@ func redisSetUser(user User) {
 	conn.Flush()
 }
 
-func redisGetUser(id UserId) (user User, err error) {
+func redisGetUser(id gp.UserId) (user gp.User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d", id)
@@ -744,7 +745,7 @@ func redisGetUser(id UserId) (user User, err error) {
 	return user, nil
 }
 
-func redisSetProfileImage(id UserId, url string) {
+func redisSetProfileImage(id gp.UserId, url string) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:profile_image", id)
@@ -752,7 +753,7 @@ func redisSetProfileImage(id UserId, url string) {
 	conn.Flush()
 }
 
-func redisSetBusyStatus(id UserId, busy bool) {
+func redisSetBusyStatus(id gp.UserId, busy bool) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:busy", id)
@@ -760,8 +761,8 @@ func redisSetBusyStatus(id UserId, busy bool) {
 	conn.Flush()
 }
 
-func redisUserPing(id UserId) {
-	conf := GetConfig()
+func redisUserPing(id gp.UserId) {
+	conf := gp.GetConfig()
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:busy", id)
@@ -769,7 +770,7 @@ func redisUserPing(id UserId) {
 	conn.Flush()
 }
 
-func redisUserIsOnline(id UserId) (online bool) {
+func redisUserIsOnline(id gp.UserId) (online bool) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:busy", id)
@@ -784,7 +785,7 @@ func redisUserIsOnline(id UserId) (online bool) {
 		Tokens
 ********************************************************************/
 
-func redisPutToken(token Token) {
+func redisPutToken(token gp.Token) {
 	/* Set a session token in redis.
 		We use the token value as part of the redis key
 	        so that a user may have more than one concurrent session
@@ -797,7 +798,7 @@ func redisPutToken(token Token) {
 	conn.Flush()
 }
 
-func redisTokenExists(id UserId, token string) bool {
+func redisTokenExists(id gp.UserId, token string) bool {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:token:%s", id, token)

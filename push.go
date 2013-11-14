@@ -3,10 +3,11 @@ package main
 import (
 	"github.com/anachronistic/apns"
 	"log"
+	"github.com/draaglom/GleepostAPI/gp"
 )
 
-func notify(user UserId) {
-	conf := GetConfig()
+func notify(user gp.UserId) {
+	conf := gp.GetConfig()
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
 	payload := apns.NewPayload()
 	payload.Alert = "Sup"

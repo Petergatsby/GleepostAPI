@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
+	"github.com/draaglom/GleepostAPI/gp"
 )
 
 type Header struct {
@@ -11,7 +12,7 @@ type Header struct {
 }
 
 func NewHeader() Header {
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	h := Header{}
 	h.Headers = []byte("From: " + conf.Email.FromHeader + "\n")
 	return h
@@ -28,7 +29,7 @@ func (h *Header) Subject(subject string) {
 }
 
 func send(to string, subject string, body string) (err error) {
-	conf := GetConfig()
+	conf := gp.GetConfig()
 	header := NewHeader()
 	header.To(to)
 	header.Subject(subject)
