@@ -10,7 +10,7 @@ import (
 
 const (
 	//For parsing
-	MysqlTime = "2006-01-02 15:04:05"
+	mysqlTime = "2006-01-02 15:04:05"
 )
 
 var (
@@ -305,7 +305,7 @@ func dbGetConversations(userId UserId, start int64, count int) (conversations []
 		if err != nil {
 			return conversations, err
 		}
-		conv.LastActivity, _ = time.Parse(MysqlTime, t)
+		conv.LastActivity, _ = time.Parse(mysqlTime, t)
 		conv.Participants = dbGetParticipants(conv.Id)
 		LastMessage, err := dbGetLastMessage(conv.Id)
 		if err == nil {
@@ -323,7 +323,7 @@ func dbConversationActivity(convId ConversationId) (t time.Time, err error) {
 	if err != nil {
 		return
 	}
-	t, err = time.Parse(MysqlTime, tstring)
+	t, err = time.Parse(mysqlTime, tstring)
 	return
 }
 
@@ -334,7 +334,7 @@ func dbConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
 	if err != nil {
 		return
 	}
-	expiry.Time, err = time.Parse(MysqlTime, t)
+	expiry.Time, err = time.Parse(mysqlTime, t)
 	return
 }
 
@@ -345,6 +345,7 @@ func dbConversationSetExpiry(convId ConversationId, expiry Expiry) (err error) {
 }
 
 func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
+	conf := GetConfig()
 	conversation.Id = convId
 	conversation.LastActivity, err = dbConversationActivity(convId)
 	if err != nil {
@@ -355,7 +356,7 @@ func dbGetConversation(convId ConversationId) (conversation ConversationAndMessa
 	if err == nil {
 		conversation.Expiry = &expiry
 	}
-	conversation.Messages, err = dbGetMessages(convId, 0, "start")
+	conversation.Messages, err = dbGetMessages(convId, 0, "start", conf.MessagePageSize)
 	return
 }
 
@@ -393,7 +394,7 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 		if err != nil {
 			log.Printf("error getting user %d %v", by, err)
 		}
-		message.Time, _ = time.Parse(MysqlTime, timeString)
+		message.Time, _ = time.Parse(mysqlTime, timeString)
 
 		return message, nil
 	}
@@ -444,7 +445,7 @@ func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []Po
 		if err != nil {
 			return posts, err
 		}
-		post.Time, err = time.Parse(MysqlTime, t)
+		post.Time, err = time.Parse(mysqlTime, t)
 		if err != nil {
 			return posts, err
 		}
@@ -518,7 +519,7 @@ func dbGetComments(postId PostId, start int64, count int) (comments []Comment, e
 		if err != nil {
 			return comments, err
 		}
-		comment.Time, _ = time.Parse(MysqlTime, timeString)
+		comment.Time, _ = time.Parse(mysqlTime, timeString)
 		comment.By, err = dbGetUser(by)
 		if err != nil {
 			log.Printf("error getting user %d %v", by, err)
@@ -551,7 +552,7 @@ func dbGetPost(postId PostId) (post Post, err error) {
 	if err != nil {
 		return
 	}
-	post.Time, err = time.Parse(MysqlTime, t)
+	post.Time, err = time.Parse(mysqlTime, t)
 	if err != nil {
 		return
 	}
@@ -576,8 +577,7 @@ func dbAddMessage(convId ConversationId, userId UserId, text string) (id Message
 }
 
 //TODO: This should not be calling getUser
-func dbGetMessages(convId ConversationId, index int64, sel string) (messages []Message, err error) {
-	conf := GetConfig()
+func dbGetMessages(convId ConversationId, index int64, sel string, count int) (messages []Message, err error) {
 	var s *sql.Stmt
 	switch {
 	case sel == "after":
@@ -587,7 +587,7 @@ func dbGetMessages(convId ConversationId, index int64, sel string) (messages []M
 	case sel == "start":
 		s = stmt["messageSelect"]
 	}
-	rows, err := s.Query(convId, index, conf.MessagePageSize)
+	rows, err := s.Query(convId, index, count)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
 		return
@@ -601,7 +601,7 @@ func dbGetMessages(convId ConversationId, index int64, sel string) (messages []M
 		if err != nil {
 			log.Printf("%v", err)
 		}
-		message.Time, err = time.Parse(MysqlTime, timeString)
+		message.Time, err = time.Parse(mysqlTime, timeString)
 		if err != nil {
 			log.Printf("%v", err)
 		}
@@ -632,7 +632,7 @@ func dbTokenExists(id UserId, token string) bool {
 	if err != nil {
 		return (false)
 	} else {
-		t, _ := time.Parse(MysqlTime, expiry)
+		t, _ := time.Parse(mysqlTime, expiry)
 		if t.After(time.Now()) {
 			return (true)
 		}
@@ -746,7 +746,6 @@ func dbUploadExists(user UserId, url string) (exists bool, err error) {
 		Notification
 ********************************************************************/
 
-//TODO: This should not be calling getUser
 func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) {
 	s := stmt["notificationSelect"]
 	rows, err := s.Query(id)
@@ -762,11 +761,11 @@ func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) 
 		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &post, &notification.Seen); err != nil {
 			return
 		}
-		notification.Time, err = time.Parse(MysqlTime, t)
+		notification.Time, err = time.Parse(mysqlTime, t)
 		if err != nil {
 			return
 		}
-		notification.By, err = getUser(by)
+		notification.By, err = dbGetUser(by)
 		if err != nil {
 			return
 		}
@@ -787,7 +786,6 @@ func dbMarkNotificationsSeen(upTo NotificationId) (err error) {
 	return
 }
 
-//TODO: This should not be calling getUser
 func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (notification interface{}, err error) {
 	var res sql.Result
 	if isPN {
@@ -810,7 +808,7 @@ func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, 
 			return n, iderr
 		}
 		n.Id = NotificationId(id)
-		n.By, err = getUser(by)
+		n.By, err = dbGetUser(by)
 		if err != nil {
 			return
 		}
@@ -852,7 +850,7 @@ func dbGetLikes(post PostId) (likes []Like, err error) {
 		if err != nil {
 			return
 		}
-		like.Time, err = time.Parse(MysqlTime, t)
+		like.Time, err = time.Parse(mysqlTime, t)
 		if err != nil {
 			return
 		}

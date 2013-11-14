@@ -334,7 +334,7 @@ func redisAddAllMessages(convId ConversationId) {
 		if err != nil {
 			log.Printf("%v", err)
 		}
-		message.Time, err = time.Parse(MysqlTime, timeString)
+		message.Time, err = time.Parse(mysqlTime, timeString)
 		if err != nil {
 			log.Printf("%v", err)
 		}

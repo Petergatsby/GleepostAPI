@@ -173,28 +173,30 @@ func getMessages(convId ConversationId, start int64) (messages []Message, err er
 	if start+int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
 		messages, err = redisGetMessages(convId, start)
 		if err != nil {
-			messages, err = dbGetMessages(convId, start, "start")
+			messages, err = dbGetMessages(convId, start, "start", conf.MessagePageSize)
 			go redisAddAllMessages(convId)
 		}
 	} else {
-		messages, err = dbGetMessages(convId, start, "start")
+		messages, err = dbGetMessages(convId, start, "start", conf.MessagePageSize)
 	}
 	return
 }
 
 func getMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
+	conf := GetConfig()
 	messages, err = redisGetMessagesAfter(convId, after)
 	if err != nil {
-		messages, err = dbGetMessages(convId, after, "after")
+		messages, err = dbGetMessages(convId, after, "after", conf.MessagePageSize)
 		go redisAddAllMessages(convId)
 	}
 	return
 }
 
 func getMessagesBefore(convId ConversationId, before int64) (messages []Message, err error) {
+	conf := GetConfig()
 	messages, err = redisGetMessagesBefore(convId, before)
 	if err != nil {
-		messages, err = dbGetMessages(convId, before, "before")
+		messages, err = dbGetMessages(convId, before, "before", conf.MessagePageSize)
 		go redisAddAllMessages(convId)
 	}
 	return
