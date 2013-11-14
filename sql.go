@@ -135,20 +135,6 @@ func dbGetRules() (rules []Rule, err error) {
 	return
 }
 
-//POSSIBLE TODO: move out of sql.go; pass in rules as an argument
-func dbValidateEmail(email string) bool {
-	rules, err := dbGetRules()
-	if err != nil {
-		return false
-	}
-	for _, rule := range rules {
-		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
-			return true
-		}
-	}
-	return false
-}
-
 func dbGetUserNetworks(id UserId) (networks []Network, err error) {
 	s := stmt["networkSelect"]
 	rows, err := s.Query(id)
@@ -542,6 +528,7 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 	}
 }
 
+//TODO: This should not be calling getUser
 func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
 	s := stmt["commentSelect"]
 	rows, err := s.Query(postId, start, count)
@@ -578,6 +565,7 @@ func dbGetCommentCount(id PostId) (count int) {
 	return count
 }
 
+//TODO: This should not be calling getUser, getPostImages
 func dbGetPost(postId PostId) (post Post, err error) {
 	s := stmt["postSelect"]
 	post.Id = postId
@@ -615,6 +603,7 @@ func dbAddMessage(convId ConversationId, userId UserId, text string) (id Message
 	return
 }
 
+//TODO: This should not be calling getUser
 func dbGetMessages(convId ConversationId, index int64, sel string) (messages []Message, err error) {
 	conf := GetConfig()
 	var s *sql.Stmt
@@ -698,6 +687,7 @@ func dbAddContact(adder UserId, addee UserId) (err error) {
 	return
 }
 
+//TODO: This should not be calling getUser
 func dbGetContacts(user UserId) (contacts []Contact, err error) {
 	s := stmt["contactSelect"]
 	rows, err := s.Query(user, user)
@@ -786,6 +776,7 @@ func dbUploadExists(user UserId, url string) (exists bool, err error) {
 		Notification
 ********************************************************************/
 
+//TODO: This should not be calling getUser
 func dbGetUserNotifications(id UserId) (notifications []interface{}, err error) {
 	s := stmt["notificationSelect"]
 	rows, err := s.Query(id)
@@ -826,6 +817,7 @@ func dbMarkNotificationsSeen(upTo NotificationId) (err error) {
 	return
 }
 
+//TODO: This should not be calling getUser
 func dbCreateNotification(ntype string, by UserId, recipient UserId, isPN bool, post PostId) (notification interface{}, err error) {
 	var res sql.Result
 	if isPN {

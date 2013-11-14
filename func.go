@@ -349,12 +349,25 @@ func createConversation(id UserId, nParticipants int, live bool) (conversation C
 	return
 }
 
-func validateEmail(email string) bool {
+func validateEmail(email string) (validates bool, err error) {
 	if !looksLikeEmail(email) {
-		return (false)
+		return false, nil
 	} else {
-		return dbValidateEmail(email)
+		rules, err := dbGetRules()
+		if err != nil {
+			return false, err
+		}
+		return testEmail(email, rules), nil
 	}
+}
+
+func testEmail(email string, rules []Rule) bool {
+	for _, rule := range rules {
+		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
+			return true
+		}
+	}
+	return false
 }
 
 func registerUser(user string, pass string, email string) (userId UserId, err error) {

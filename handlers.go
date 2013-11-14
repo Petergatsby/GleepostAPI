@@ -64,9 +64,16 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, APIerror{"Missing parameter: pass"}, 400)
 	case len(email) == 0:
 		jsonResponse(w, APIerror{"Missing parameter: email"}, 400)
-	case !validateEmail(email):
-		jsonResponse(w, APIerror{"Invalid Email"}, 400)
 	default:
+		validates, err := validateEmail(email)
+		if err != nil {
+			jsonResponse(w, APIerror{err.Error()}, 500)
+			return
+		}
+		if !validates {
+			jsonResponse(w, APIerror{"Invalid Email"}, 400)
+			return
+		}
 		id, err := registerUser(user, pass, email)
 		if err != nil {
 			_, ok := err.(APIerror)
