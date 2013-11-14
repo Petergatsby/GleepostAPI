@@ -676,14 +676,14 @@ func dbGetContacts(user UserId) (contacts []Contact, err error) {
 		}
 		switch {
 		case adder == user:
-			contact.User, err = getUser(addee)
+			contact.User, err = dbGetUser(addee)
 			if err != nil {
 				return
 			}
 			contact.YouConfirmed = true
 			contact.TheyConfirmed = confirmed
 		case addee == user:
-			contact.User, err = getUser(adder)
+			contact.User, err = dbGetUser(adder)
 			if err != nil {
 				return
 			}
