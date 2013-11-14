@@ -418,7 +418,6 @@ func dbAddPost(userId UserId, text string, network NetworkId) (postId PostId, er
 }
 
 //dbGetPosts finds posts in the network netId.
-//TODO: This should not be calling getUser, getPostImages, likeCount
 func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []PostSmall, err error) {
 	var s *sql.Stmt
 	switch {
@@ -453,9 +452,15 @@ func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []Po
 		if err != nil {
 			return posts, err
 		}
-		post.CommentCount = getCommentCount(post.Id)
-		post.Images = getPostImages(post.Id)
-		post.LikeCount, err = likeCount(post.Id)
+		post.CommentCount = dbGetCommentCount(post.Id)
+		post.Images, err = dbGetPostImages(post.Id)
+		if err != nil {
+			return
+		}
+		post.LikeCount, err = dbLikeCount(post.Id)
+		if err != nil {
+			return
+		}
 		posts = append(posts, post)
 	}
 	return
@@ -496,7 +501,6 @@ func dbCreateComment(postId PostId, userId UserId, text string) (commId CommentI
 	}
 }
 
-//TODO: This should not be calling getUser
 func dbGetComments(postId PostId, start int64, count int) (comments []Comment, err error) {
 	s := stmt["commentSelect"]
 	rows, err := s.Query(postId, start, count)
@@ -515,7 +519,7 @@ func dbGetComments(postId PostId, start int64, count int) (comments []Comment, e
 			return comments, err
 		}
 		comment.Time, _ = time.Parse(MysqlTime, timeString)
-		comment.By, err = getUser(by)
+		comment.By, err = dbGetUser(by)
 		if err != nil {
 			log.Printf("error getting user %d %v", by, err)
 		}
@@ -543,7 +547,7 @@ func dbGetPost(postId PostId) (post Post, err error) {
 	if err != nil {
 		return
 	}
-	post.By, err = getUser(by)
+	post.By, err = dbGetUser(by)
 	if err != nil {
 		return
 	}
@@ -551,7 +555,7 @@ func dbGetPost(postId PostId) (post Post, err error) {
 	if err != nil {
 		return
 	}
-	post.Images = getPostImages(postId)
+	post.Images, err = dbGetPostImages(postId)
 	return
 }
 
@@ -586,14 +590,14 @@ func dbGetMessages(convId ConversationId, index int64, sel string) (messages []M
 	rows, err := s.Query(convId, index, conf.MessagePageSize)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
 	if err != nil {
-		log.Printf("%v", err)
+		return
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var message Message
 		var timeString string
 		var by UserId
-		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+		err = rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
 		if err != nil {
 			log.Printf("%v", err)
 		}
@@ -601,11 +605,9 @@ func dbGetMessages(convId ConversationId, index int64, sel string) (messages []M
 		if err != nil {
 			log.Printf("%v", err)
 		}
-		message.By, err = getUser(by)
+		message.By, err = dbGetUser(by)
 		if err != nil {
-			//should only happen if a message is from a non-existent user
-			//(or the db is fucked :))
-			log.Println(err)
+			return
 		}
 		messages = append(messages, message)
 	}
