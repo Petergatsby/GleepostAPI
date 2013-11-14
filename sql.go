@@ -195,7 +195,7 @@ func dbGetUser(id UserId) (user User, err error) {
 	}
 }
 
-//TODO: This shouldn't be calling getUserNetworks
+//dbGetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func dbGetProfile(id UserId) (user Profile, err error) {
 	var av, desc sql.NullString
 	s := stmt["profileSelect"]
@@ -211,13 +211,7 @@ func dbGetProfile(id UserId) (user Profile, err error) {
 		user.Desc = desc.String
 	}
 	user.Id = id
-	nets, err := getUserNetworks(user.Id)
-	if err != nil {
-		return
-	} else {
-		user.Network = nets[0]
-		return user, err
-	}
+	return
 }
 
 func dbSetProfileImage(id UserId, url string) (err error) {
@@ -296,10 +290,9 @@ func dbUpdateConversation(id ConversationId) (err error) {
 	return err
 }
 
-//TODO: THis should not be calling getParticipants and getLastMessage
-func dbGetConversations(user_id UserId, start int64, count int) (conversations []ConversationSmall, err error) {
+func dbGetConversations(userId UserId, start int64, count int) (conversations []ConversationSmall, err error) {
 	s := stmt["conversationSelect"]
-	rows, err := s.Query(user_id, start, count)
+	rows, err := s.Query(userId, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
 	if err != nil {
 		return conversations, err
@@ -313,8 +306,8 @@ func dbGetConversations(user_id UserId, start int64, count int) (conversations [
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(MysqlTime, t)
-		conv.Participants = getParticipants(conv.Id)
-		LastMessage, err := getLastMessage(conv.Id)
+		conv.Participants = dbGetParticipants(conv.Id)
+		LastMessage, err := dbGetLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
 		}
@@ -351,15 +344,14 @@ func dbConversationSetExpiry(convId ConversationId, expiry Expiry) (err error) {
 	return
 }
 
-//TODO: This should not be calling getParticipants / conversationExpiry
 func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
 	conversation.Id = convId
 	conversation.LastActivity, err = dbConversationActivity(convId)
 	if err != nil {
 		return
 	}
-	conversation.Participants = getParticipants(convId)
-	expiry, err := conversationExpiry(convId)
+	conversation.Participants = dbGetParticipants(convId)
+	expiry, err := dbConversationExpiry(convId)
 	if err == nil {
 		conversation.Expiry = &expiry
 	}
@@ -380,7 +372,7 @@ func dbGetParticipants(conv ConversationId) []User {
 	for rows.Next() {
 		var id UserId
 		err = rows.Scan(&id)
-		user, err := getUser(id)
+		user, err := dbGetUser(id)
 		if err == nil {
 			participants = append(participants, user)
 		}
@@ -388,7 +380,6 @@ func dbGetParticipants(conv ConversationId) []User {
 	return (participants)
 }
 
-//TODO: Should not be calling getUser
 func dbGetLastMessage(id ConversationId) (message Message, err error) {
 	var timeString string
 	var by UserId
@@ -398,7 +389,7 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 	if err != nil {
 		return message, err
 	} else {
-		message.By, err = getUser(by)
+		message.By, err = dbGetUser(by)
 		if err != nil {
 			log.Printf("error getting user %d %v", by, err)
 		}
@@ -412,14 +403,9 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 		Post
 ********************************************************************/
 
-//TODO: Should not be using getUserNetworks
-func dbAddPost(userId UserId, text string) (postId PostId, err error) {
-	networks, err := getUserNetworks(userId)
-	if err != nil {
-		return
-	}
+func dbAddPost(userId UserId, text string, network NetworkId) (postId PostId, err error) {
 	s := stmt["postInsert"]
-	res, err := s.Exec(userId, text, networks[0].Id)
+	res, err := s.Exec(userId, text, network)
 	if err != nil {
 		return 0, err
 	}

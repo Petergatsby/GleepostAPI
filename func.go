@@ -281,6 +281,14 @@ func addPostImage(postId PostId, url string) (err error) {
 
 func getProfile(id UserId) (user Profile, err error) {
 	user, err = dbGetProfile(id)
+	if err != nil {
+		return
+	}
+	nets, err := getUserNetworks(user.Id)
+	if err != nil {
+		return
+	}
+	user.Network = nets[0]
 	return
 }
 
@@ -299,8 +307,14 @@ func getMessageChan(userId UserId) (c chan []byte) {
 }
 
 func addPost(userId UserId, text string) (postId PostId, err error) {
-	postId, err = dbAddPost(userId, text)
-	go redisAddNewPost(userId, text, postId)
+	networks, err := getUserNetworks(userId)
+	if err != nil {
+		return
+	}
+	postId, err = dbAddPost(userId, text, networks[0].Id)
+	if err == nil {
+		go redisAddNewPost(userId, text, postId)
+	}
 	return
 }
 
