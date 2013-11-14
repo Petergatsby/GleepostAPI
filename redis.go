@@ -596,6 +596,10 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 		conv.Id = ConversationId(curr)
 		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
 		conv.Conversation.Participants = getParticipants(conv.Id)
+		expiry, err := conversationExpiry(conv.Id)
+		if err == nil {
+			conv.Expiry = &expiry
+		}
 		LastMessage, err := getLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -605,9 +609,30 @@ func redisGetConversations(id UserId, start int64) (conversations []Conversation
 	return
 }
 
+func redisConversationExpiry(convId ConversationId) (expiry Expiry, err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:expiry", convId)
+	t, err := redis.Int(conn.Do("GET", key))
+	if err != nil {
+		return
+	}
+	expiry.Time = time.Unix(int64(t), 0).UTC()
+	return
+}
+
+func redisSetConversationExpiry(conv Conversation) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:expiry", conv.Id)
+	conn.Send("SET", key, conv.Expiry.Time.Unix())
+	conn.Flush()
+}
+
 func redisAddConversation(conv Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
+	go redisSetConversationExpiry(conv)
 	for _, participant := range conv.Participants {
 		key := fmt.Sprintf("users:%d:conversations", participant.Id)
 		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.Id)

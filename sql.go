@@ -174,6 +174,7 @@ func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
 	return
 }
 
+//TODO: Should not be in sql.go
 func dbAssignNetworks(userId UserId, email string) (networks int, err error) {
 	rules, err := dbGetRules()
 	if err != nil {
@@ -226,6 +227,7 @@ func dbGetUser(id UserId) (user User, err error) {
 	}
 }
 
+//TODO: This shouldn't be calling getUserNetworks
 func dbGetProfile(id UserId) (user Profile, err error) {
 	var av, desc sql.NullString
 	s := stmt["profileSelect"]
@@ -326,6 +328,7 @@ func dbUpdateConversation(id ConversationId) (err error) {
 	return err
 }
 
+//TODO: THis should not be calling getParticipants and getLastMessage
 func dbGetConversations(user_id UserId, start int64, count int) (conversations []ConversationSmall, err error) {
 	s := stmt["conversationSelect"]
 	rows, err := s.Query(user_id, start, count)
@@ -380,6 +383,7 @@ func dbConversationSetExpiry(convId ConversationId, expiry Expiry) (err error) {
 	return
 }
 
+//TODO: This should not be calling getParticipants / conversationExpiry
 func dbGetConversation(convId ConversationId) (conversation ConversationAndMessages, err error) {
 	conversation.Id = convId
 	conversation.LastActivity, err = dbConversationActivity(convId)
@@ -395,6 +399,7 @@ func dbGetConversation(convId ConversationId) (conversation ConversationAndMessa
 	return
 }
 
+//TODO: Should not be calling getUser
 func dbGetParticipants(conv ConversationId) []User {
 	s := stmt["participantSelect"]
 	rows, err := s.Query(conv)
@@ -415,6 +420,7 @@ func dbGetParticipants(conv ConversationId) []User {
 	return (participants)
 }
 
+//TODO: Should not be calling getUser
 func dbGetLastMessage(id ConversationId) (message Message, err error) {
 	var timeString string
 	var by UserId
@@ -438,6 +444,7 @@ func dbGetLastMessage(id ConversationId) (message Message, err error) {
 		Post
 ********************************************************************/
 
+//TODO: Should not be using getUserNetworks
 func dbAddPost(userId UserId, text string) (postId PostId, err error) {
 	networks, err := getUserNetworks(userId)
 	if err != nil {
@@ -457,6 +464,7 @@ func dbAddPost(userId UserId, text string) (postId PostId, err error) {
 }
 
 //dbGetPosts finds posts in the network netId.
+//TODO: This should not be calling getUser, getPostImages, likeCount
 func dbGetPosts(netId NetworkId, index int64, count int, sel string) (posts []PostSmall, err error) {
 	var s *sql.Stmt
 	switch {
