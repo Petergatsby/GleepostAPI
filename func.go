@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/db"
 	"io"
 	"io/ioutil"
 	"launchpad.net/goamz/aws"
@@ -13,7 +15,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"github.com/draaglom/GleepostAPI/gp"
 )
 
 /********************************************************************
@@ -53,7 +54,7 @@ func looksLikeEmail(email string) bool {
 func getLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	message, err = redisGetLastMessage(id)
 	if err != nil {
-		message, err = dbGetLastMessage(id)
+		message, err = db.GetLastMessage(id)
 		go redisAddAllMessages(id)
 		if err != nil {
 			return
@@ -72,15 +73,13 @@ func validateToken(id gp.UserId, token string) bool {
 	} else if redisTokenExists(id, token) {
 		return (true)
 	} else {
-		return dbTokenExists(id, token)
+		return db.TokenExists(id, token)
 	}
 }
 
 func validatePass(user string, pass string) (id gp.UserId, err error) {
-	hash := make([]byte, 256)
 	passBytes := []byte(pass)
-	s := stmt["passSelect"]
-	err = s.QueryRow(user).Scan(&id, &hash)
+	hash, id, err := db.GetHash(user, pass)
 	if err != nil {
 		return 0, err
 	} else {
@@ -95,7 +94,7 @@ func validatePass(user string, pass string) (id gp.UserId, err error) {
 
 func createAndStoreToken(id gp.UserId) (gp.Token, error) {
 	token := createToken(id)
-	err := dbAddToken(token)
+	err := db.AddToken(token)
 	redisPutToken(token)
 	if err != nil {
 		return token, err
@@ -111,7 +110,7 @@ func getUser(id gp.UserId) (user gp.User, err error) {
 	that doesn't exist in redigo! */
 	user, err = redisGetUser(id)
 	if err != nil {
-		user, err = dbGetUser(id)
+		user, err = db.GetUser(id)
 		if err == nil {
 			redisSetUser(user)
 		}
@@ -122,7 +121,7 @@ func getUser(id gp.UserId) (user gp.User, err error) {
 func getCommentCount(id gp.PostId) (count int) {
 	count, err := redisGetCommentCount(id)
 	if err != nil {
-		count = dbGetCommentCount(id)
+		count = db.GetCommentCount(id)
 	}
 	return count
 }
@@ -132,7 +131,7 @@ func createComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.C
 	if err != nil {
 		return
 	}
-	commId, err = dbCreateComment(postId, userId, text)
+	commId, err = db.CreateComment(postId, userId, text)
 	if err == nil {
 		user, e := getUser(userId)
 		if e != nil {
@@ -148,7 +147,7 @@ func createComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.C
 func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	nets, err = redisGetUserNetwork(id)
 	if err != nil {
-		nets, err = dbGetUserNetworks(id)
+		nets, err = db.GetUserNetworks(id)
 		if err != nil {
 			return
 		}
@@ -163,7 +162,7 @@ func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 func getParticipants(convId gp.ConversationId) []gp.User {
 	participants, err := redisGetConversationParticipants(convId)
 	if err != nil {
-		participants = dbGetParticipants(convId)
+		participants = db.GetParticipants(convId)
 		go redisSetConversationParticipants(convId, participants)
 	}
 	return participants
@@ -173,7 +172,7 @@ func getMessages(convId gp.ConversationId, index int64, sel string) (messages []
 	conf := gp.GetConfig()
 	messages, err = redisGetMessages(convId, index, sel, conf.MessagePageSize)
 	if err != nil {
-		messages, err = dbGetMessages(convId, index, sel, conf.MessagePageSize)
+		messages, err = db.GetMessages(convId, index, sel, conf.MessagePageSize)
 		go redisAddAllMessages(convId)
 		return
 	}
@@ -184,7 +183,7 @@ func getConversations(userId gp.UserId, start int64) (conversations []gp.Convers
 	conf := gp.GetConfig()
 	conversations, err = redisGetConversations(userId, start)
 	if err != nil {
-		conversations, err = dbGetConversations(userId, start, conf.ConversationPageSize)
+		conversations, err = db.GetConversations(userId, start, conf.ConversationPageSize)
 		go addAllConversations(userId)
 	}
 	return
@@ -192,7 +191,7 @@ func getConversations(userId gp.UserId, start int64) (conversations []gp.Convers
 
 func addAllConversations(userId gp.UserId) (err error) {
 	conf := gp.GetConfig()
-	conversations, err := dbGetConversations(userId, 0, conf.ConversationPageSize)
+	conversations, err := db.GetConversations(userId, 0, conf.ConversationPageSize)
 	for _, conv := range conversations {
 		go redisAddConversation(conv.Conversation)
 	}
@@ -201,7 +200,7 @@ func addAllConversations(userId gp.UserId) (err error) {
 
 func getConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
 	//redisGetConversation
-	return dbGetConversation(convId)
+	return db.GetConversation(convId)
 }
 
 func getMessage(msgId gp.MessageId) (message gp.Message, err error) {
@@ -210,7 +209,7 @@ func getMessage(msgId gp.MessageId) (message gp.Message, err error) {
 }
 
 func updateConversation(id gp.ConversationId) (err error) {
-	err = dbUpdateConversation(id)
+	err = db.UpdateConversation(id)
 	if err != nil {
 		return err
 	}
@@ -219,7 +218,7 @@ func updateConversation(id gp.ConversationId) (err error) {
 }
 
 func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
-	messageId, err = dbAddMessage(convId, userId, text)
+	messageId, err = db.AddMessage(convId, userId, text)
 	if err != nil {
 		return
 	}
@@ -247,20 +246,20 @@ func getFullConversation(convId gp.ConversationId, start int64) (conv gp.Convers
 }
 
 func ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
-	return dbConversationActivity(convId)
+	return db.ConversationActivity(convId)
 }
 
 func getPostImages(postId gp.PostId) (images []string) {
-	images, _ = dbGetPostImages(postId)
+	images, _ = db.GetPostImages(postId)
 	return
 }
 
 func addPostImage(postId gp.PostId, url string) (err error) {
-	return dbAddPostImage(postId, url)
+	return db.AddPostImage(postId, url)
 }
 
 func getProfile(id gp.UserId) (user gp.Profile, err error) {
-	user, err = dbGetProfile(id)
+	user, err = db.GetProfile(id)
 	if err != nil {
 		return
 	}
@@ -291,7 +290,7 @@ func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
 	if err != nil {
 		return
 	}
-	postId, err = dbAddPost(userId, text, networks[0].Id)
+	postId, err = db.AddPost(userId, text, networks[0].Id)
 	if err == nil {
 		go redisAddNewPost(userId, text, postId)
 	}
@@ -302,7 +301,7 @@ func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall
 	conf := gp.GetConfig()
 	posts, err = redisGetNetworkPosts(netId, index, sel)
 	if err != nil {
-		posts, err = dbGetPosts(netId, index, conf.PostPageSize, sel)
+		posts, err = db.GetPosts(netId, index, conf.PostPageSize, sel)
 		go redisAddAllPosts(netId)
 	}
 	return
@@ -313,11 +312,11 @@ func getComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
 	if start+int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
 		comments, err = redisGetComments(id, start)
 		if err != nil {
-			comments, err = dbGetComments(id, start, conf.CommentPageSize)
+			comments, err = db.GetComments(id, start, conf.CommentPageSize)
 			go redisAddAllComments(id)
 		}
 	} else {
-		comments, err = dbGetComments(id, start, conf.CommentPageSize)
+		comments, err = db.GetComments(id, start, conf.CommentPageSize)
 	}
 	return
 }
@@ -336,7 +335,7 @@ func createConversation(id gp.UserId, nParticipants int, live bool) (conversatio
 		return
 	}
 	participants = append(participants, user)
-	conversation, err = dbCreateConversation(id, participants, live)
+	conversation, err = db.CreateConversation(id, participants, live)
 	if err == nil {
 		go redisAddConversation(conversation)
 	}
@@ -347,7 +346,7 @@ func validateEmail(email string) (validates bool, err error) {
 	if !looksLikeEmail(email) {
 		return false, nil
 	} else {
-		rules, err := dbGetRules()
+		rules, err := db.GetRules()
 		if err != nil {
 			return false, err
 		}
@@ -369,7 +368,7 @@ func registerUser(user string, pass string, email string) (userId gp.UserId, err
 	if err != nil {
 		return 0, err
 	}
-	userId, err = dbRegisterUser(user, hash, email)
+	userId, err = db.RegisterUser(user, hash, email)
 	if err != nil {
 		return 0, err
 	}
@@ -378,7 +377,7 @@ func registerUser(user string, pass string, email string) (userId gp.UserId, err
 }
 
 func getContacts(user gp.UserId) (contacts []gp.Contact, err error) {
-	return dbGetContacts(user)
+	return db.GetContacts(user)
 }
 
 func addContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
@@ -386,7 +385,7 @@ func addContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
 	if err != nil {
 		return
 	} else {
-		err = dbAddContact(adder, addee)
+		err = db.AddContact(adder, addee)
 		if err == nil {
 			go createNotification("added_you", adder, addee, false, 0)
 		}
@@ -395,7 +394,7 @@ func addContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
 }
 
 func acceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err error) {
-	err = dbUpdateContact(user, toAccept)
+	err = db.UpdateContact(user, toAccept)
 	if err != nil {
 		return
 	}
@@ -410,7 +409,7 @@ func acceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err 
 }
 
 func addDevice(user gp.UserId, deviceType string, deviceId string) (device gp.Device, err error) {
-	err = dbAddDevice(user, deviceType, deviceId)
+	err = db.AddDevice(user, deviceType, deviceId)
 	if err != nil {
 		return
 	}
@@ -421,15 +420,15 @@ func addDevice(user gp.UserId, deviceType string, deviceId string) (device gp.De
 }
 
 func getDevices(user gp.UserId) (devices []gp.Device, err error) {
-	return dbGetDevices(user)
+	return db.GetDevices(user)
 }
 
 func generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
-	return dbRandomPartners(id, count, network)
+	return db.RandomPartners(id, count, network)
 }
 
 func markConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
-	err = dbMarkRead(id, convId, upTo)
+	err = db.MarkRead(id, convId, upTo)
 	if err != nil {
 		return
 	}
@@ -437,12 +436,12 @@ func markConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.Messag
 	if err != nil {
 		go redisAddAllMessages(convId)
 	}
-	conversation, err = dbGetConversation(convId)
+	conversation, err = db.GetConversation(convId)
 	return
 }
 
 func setNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
-	return dbSetNetwork(userId, netId)
+	return db.SetNetwork(userId, netId)
 }
 
 func randomFilename(extension string) (string, error) {
@@ -502,15 +501,15 @@ func storeFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) 
 }
 
 func userAddUpload(id gp.UserId, url string) (err error) {
-	return dbAddUpload(id, url)
+	return db.AddUpload(id, url)
 }
 
 func userUploadExists(id gp.UserId, url string) (exists bool, err error) {
-	return dbUploadExists(id, url)
+	return db.UploadExists(id, url)
 }
 
 func setProfileImage(id gp.UserId, url string) (err error) {
-	err = dbSetProfileImage(id, url)
+	err = db.SetProfileImage(id, url)
 	if err == nil {
 		go redisSetProfileImage(id, url)
 	}
@@ -518,7 +517,7 @@ func setProfileImage(id gp.UserId, url string) (err error) {
 }
 
 func setBusyStatus(id gp.UserId, busy bool) (err error) {
-	err = dbSetBusyStatus(id, busy)
+	err = db.SetBusyStatus(id, busy)
 	if err == nil {
 		go redisSetBusyStatus(id, busy)
 	}
@@ -534,15 +533,15 @@ func userIsOnline(id gp.UserId) bool {
 }
 
 func getUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
-	return dbGetUserNotifications(id)
+	return db.GetUserNotifications(id)
 }
 
 func markNotificationsSeen(upTo gp.NotificationId) (err error) {
-	return dbMarkNotificationsSeen(upTo)
+	return db.MarkNotificationsSeen(upTo)
 }
 
 func createNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (err error) {
-	_, err = dbCreateNotification(ntype, by, recipient, isPN, post)
+	_, err = db.CreateNotification(ntype, by, recipient, isPN, post)
 	return
 }
 
@@ -551,7 +550,7 @@ func assignNetworks(user gp.UserId, email string) (networks int, err error) {
 	if conf.RegisterOverride {
 		setNetwork(user, 1338) //Highlands and Islands :D
 	} else {
-		rules, e := dbGetRules()
+		rules, e := db.GetRules()
 		if e != nil {
 			return 0, e
 		}
@@ -569,7 +568,7 @@ func assignNetworks(user gp.UserId, email string) (networks int, err error) {
 }
 
 func getPost(postId gp.PostId) (post gp.Post, err error) {
-	return dbGetPost(postId)
+	return db.GetPost(postId)
 }
 
 func getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
@@ -591,7 +590,7 @@ func addLike(user gp.UserId, postId gp.PostId) (err error) {
 	if err != nil {
 		return
 	} else {
-		err = dbCreateLike(user, postId)
+		err = db.CreateLike(user, postId)
 		if err != nil {
 			return
 		} else {
@@ -602,11 +601,11 @@ func addLike(user gp.UserId, postId gp.PostId) (err error) {
 }
 
 func delLike(user gp.UserId, post gp.PostId) (err error) {
-	return dbRemoveLike(user, post)
+	return db.RemoveLike(user, post)
 }
 
 func getLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
-	l, err := dbGetLikes(post)
+	l, err := db.GetLikes(post)
 	if err != nil {
 		return
 	}
@@ -623,13 +622,13 @@ func getLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
 }
 
 func hasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
-	return dbHasLiked(user, post)
+	return db.HasLiked(user, post)
 }
 
 func likeCount(post gp.PostId) (count int, err error) {
-	return dbLikeCount(post)
+	return db.LikeCount(post)
 }
 
 func conversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
-	return dbConversationExpiry(convId)
+	return db.ConversationExpiry(convId)
 }

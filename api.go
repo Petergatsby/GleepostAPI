@@ -2,35 +2,23 @@
 package main
 
 import (
-	"database/sql"
+	"github.com/draaglom/GleepostAPI/gp"
 	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"time"
-	"github.com/draaglom/GleepostAPI/gp"
 )
 
 var (
-	pool       *redis.Pool
+	pool *redis.Pool
 )
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := gp.GetConfig()
 	send("draaglom@gmail.com", "Hello", "Hi")
-	db, err := sql.Open("mysql", conf.ConnectionString())
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	db.SetMaxIdleConns(conf.Mysql.MaxConns)
-	err = prepare(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-	go keepalive(db)
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
 		ReadTimeout:  70 * time.Second,

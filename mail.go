@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/draaglom/GleepostAPI/gp"
 	"log"
 	"net/smtp"
-	"github.com/draaglom/GleepostAPI/gp"
 )
 
 type Header struct {

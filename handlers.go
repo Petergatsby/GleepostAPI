@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/draaglom/GleepostAPI/gp"
 	"net/http"
 	"regexp"
 	"strconv"
-	"github.com/draaglom/GleepostAPI/gp"
 )
 
 //Note to self: validateToken should probably return an error at some point

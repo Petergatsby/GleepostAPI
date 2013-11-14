@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/db"
 	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
-	"github.com/draaglom/GleepostAPI/gp"
 )
 
 /********************************************************************
@@ -259,34 +260,14 @@ func redisGetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 
 func redisAddAllMessages(convId gp.ConversationId) {
 	conf := gp.GetConfig()
-	s := stmt["messageSelect"]
-	rows, err := s.Query(convId, 0, conf.MessageCache)
-	defer rows.Close()
-	log.Println("DB hit: allMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
+	messages, err := db.GetMessages(convId, 0, "start", conf.MessageCache)
 	if err != nil {
 		log.Printf("%v", err)
 	}
 	conn := pool.Get()
 	defer conn.Close()
 	zkey := fmt.Sprintf("conversations:%d:messages", convId)
-	for rows.Next() {
-		var message gp.Message
-		var timeString string
-		var by gp.UserId
-		err := rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.Time, err = time.Parse(mysqlTime, timeString)
-		if err != nil {
-			log.Printf("%v", err)
-		}
-		message.By, err = getUser(by)
-		if err != nil {
-			//should only happen if a message is from a non-existent user
-			//(or the db is fucked :))
-			log.Println(err)
-		}
+	for _, message := range messages {
 		key := fmt.Sprintf("messages:%d", message.Id)
 		conn.Send("ZADD", zkey, message.Time.Unix(), message.Id)
 		conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339), key+":seen", message.Seen)
@@ -432,7 +413,7 @@ func redisGetNetworkPosts(id gp.NetworkId, index int64, sel string) (posts []gp.
 
 func redisAddAllPosts(netId gp.NetworkId) {
 	conf := gp.GetConfig()
-	posts, err := dbGetPosts(netId, 0, conf.PostCache, "start")
+	posts, err := db.GetPosts(netId, 0, conf.PostCache, "start")
 	if err != nil {
 		log.Println(err)
 	}
@@ -611,7 +592,7 @@ func redisAddComment(id gp.PostId, comment gp.Comment) {
 
 func redisAddAllComments(postId gp.PostId) {
 	conf := gp.GetConfig()
-	comments, err := dbGetComments(postId, 0, conf.CommentCache)
+	comments, err := db.GetComments(postId, 0, conf.CommentCache)
 	if err != nil {
 		log.Println(err)
 	}

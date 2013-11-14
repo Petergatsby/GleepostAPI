@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/anachronistic/apns"
-	"log"
 	"github.com/draaglom/GleepostAPI/gp"
+	"log"
 )
 
 func notify(user gp.UserId) {
