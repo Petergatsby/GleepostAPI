@@ -160,24 +160,6 @@ func dbSetNetwork(userId UserId, networkId NetworkId) (err error) {
 	return
 }
 
-//TODO: Should not be in sql.go
-func dbAssignNetworks(userId UserId, email string) (networks int, err error) {
-	rules, err := dbGetRules()
-	if err != nil {
-		return
-	}
-	for _, rule := range rules {
-		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
-			err = dbSetNetwork(userId, rule.NetworkID)
-			if err != nil {
-				return
-			}
-			networks++
-		}
-	}
-	return
-}
-
 /********************************************************************
 		User
 ********************************************************************/

@@ -557,7 +557,19 @@ func assignNetworks(user UserId, email string) (networks int, err error) {
 	if conf.RegisterOverride {
 		setNetwork(user, 1338) //Highlands and Islands :D
 	} else {
-		return dbAssignNetworks(user, email)
+		rules, e := dbGetRules()
+		if e != nil {
+			return 0, e
+		}
+		for _, rule := range rules {
+			if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
+				e := setNetwork(user, rule.NetworkID)
+				if e != nil {
+					return networks, e
+				}
+				networks++
+			}
+		}
 	}
 	return
 }
