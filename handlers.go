@@ -278,11 +278,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		var messages []Message
 		switch {
 		case after > 0:
-			messages, err = getMessagesAfter(convId, after)
+			messages, err = getMessages(convId, after, "after")
 		case before > 0:
-			messages, err = getMessagesBefore(convId, before)
+			messages, err = getMessages(convId, before, "before")
 		default:
-			messages, err = getMessages(convId, start)
+			messages, err = getMessages(convId, start, "start")
 		}
 		if err != nil {
 			jsonResponse(w, APIerror{err.Error()}, 500)

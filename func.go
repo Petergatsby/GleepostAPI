@@ -168,36 +168,13 @@ func getParticipants(convId ConversationId) []User {
 	return participants
 }
 
-func getMessages(convId ConversationId, start int64) (messages []Message, err error) {
+func getMessages(convId ConversationId, index int64, sel string) (messages []Message, err error) {
 	conf := GetConfig()
-	if start+int64(conf.MessagePageSize) <= int64(conf.MessageCache) {
-		messages, err = redisGetMessages(convId, start)
-		if err != nil {
-			messages, err = dbGetMessages(convId, start, "start", conf.MessagePageSize)
-			go redisAddAllMessages(convId)
-		}
-	} else {
-		messages, err = dbGetMessages(convId, start, "start", conf.MessagePageSize)
-	}
-	return
-}
-
-func getMessagesAfter(convId ConversationId, after int64) (messages []Message, err error) {
-	conf := GetConfig()
-	messages, err = redisGetMessagesAfter(convId, after)
+	messages, err = redisGetMessages(convId, index, sel, conf.MessagePageSize)
 	if err != nil {
-		messages, err = dbGetMessages(convId, after, "after", conf.MessagePageSize)
+		messages, err = dbGetMessages(convId, index, sel, conf.MessagePageSize)
 		go redisAddAllMessages(convId)
-	}
-	return
-}
-
-func getMessagesBefore(convId ConversationId, before int64) (messages []Message, err error) {
-	conf := GetConfig()
-	messages, err = redisGetMessagesBefore(convId, before)
-	if err != nil {
-		messages, err = dbGetMessages(convId, before, "before", conf.MessagePageSize)
-		go redisAddAllMessages(convId)
+		return
 	}
 	return
 }
@@ -264,7 +241,7 @@ func getFullConversation(convId ConversationId, start int64) (conv ConversationA
 		return
 	}
 	conv.Participants = getParticipants(convId)
-	conv.Messages, err = getMessages(convId, start)
+	conv.Messages, err = getMessages(convId, start, "start")
 	return
 }
 
