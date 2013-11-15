@@ -381,7 +381,8 @@ func GetConversation(convId gp.ConversationId) (conversation gp.ConversationAndM
 	return
 }
 
-//TODO: Should not be calling getUser
+//GetParticipants returns all of the participants in conv.
+TODO: Return an error when appropriate
 func GetParticipants(conv gp.ConversationId) []gp.User {
 	s := stmt["participantSelect"]
 	rows, err := s.Query(conv)
@@ -559,7 +560,8 @@ func GetCommentCount(id gp.PostId) (count int) {
 	return count
 }
 
-//TODO: This should not be calling getUser, getPostImages
+//GetPost returns the post postId or an error if it doesn't exist.
+//TODO: This could return without an embedded user or images array
 func GetPost(postId gp.PostId) (post gp.Post, err error) {
 	s := stmt["postSelect"]
 	post.Id = postId
@@ -597,7 +599,13 @@ func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (id gp.
 	return
 }
 
-//TODO: This should not be calling getUser
+//GetMessages retrieves n = count messages from the conversation convId.
+//These can be starting from the offset index (when sel == "start"); or they can
+//be the n messages before or after index when sel == "before" or "after" respectively.
+//I don't know what will happen if you give sel something else, probably a null pointer
+//exception.
+//TODO: This could return a message which doesn't embed a user
+//BUG(Patrick): Should return an error when sel isn't right! 
 func GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	var s *sql.Stmt
 	switch {
@@ -635,8 +643,9 @@ func GetMessages(convId gp.ConversationId, index int64, sel string, count int) (
 	return
 }
 
-//dbMarkRead sets all messages read in conversation convId
-//that are a) not from user id and b) sent upto and including upTo.
+//MarkRead will set all messages in the conversation convId read = true
+//up to and including upTo and excluding messages sent by user id.
+//TODO: This won't generalize to >2 participants
 func MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	_, err = stmt["messagesRead"].Exec(convId, upTo, id)
 	return
@@ -678,7 +687,8 @@ func AddContact(adder gp.UserId, addee gp.UserId) (err error) {
 	return
 }
 
-//TODO: This should not be calling getUser
+//GetContacts retrieves all the contacts for user.
+//TODO: This could return contacts which doesn't embed a user
 func GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	s := stmt["contactSelect"]
 	rows, err := s.Query(user, user)
