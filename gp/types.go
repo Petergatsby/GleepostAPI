@@ -155,6 +155,11 @@ type EmailConfig struct {
 	FromHeader string
 }
 
+type FacebookConfig struct {
+	AppID      string
+	AppSecret  string
+}
+
 type Config struct {
 	UrlBase              string
 	Port                 string
@@ -174,6 +179,7 @@ type Config struct {
 	AWS                  AWSConfig
 	APNS                 APNSConfig
 	Email                EmailConfig
+	Facebook	     FacebookConfig
 }
 
 type Device struct {

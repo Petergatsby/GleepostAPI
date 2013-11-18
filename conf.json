@@ -38,5 +38,9 @@
 		"Port":,
 		"From":"",
 		"FromHeader":""
+	},
+	"Facebook": {
+		"AppId":"",
+		"AppSecret":""
 	}	
 }
