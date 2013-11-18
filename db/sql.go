@@ -1,3 +1,4 @@
+//db handles 
 package db
 
 import (
@@ -270,6 +271,7 @@ func CreateConversation(id gp.UserId, participants []gp.User, live bool) (conver
 	if live {
 		conf := gp.GetConfig()
 		conversation.Expiry = &gp.Expiry{time.Now().Add(time.Duration(conf.Expiry) * time.Second)}
+		log.Println(conversation.Expiry)
 		err = ConversationSetExpiry(conversation.Id, *conversation.Expiry)
 	}
 	return
@@ -382,7 +384,7 @@ func GetConversation(convId gp.ConversationId) (conversation gp.ConversationAndM
 }
 
 //GetParticipants returns all of the participants in conv.
-TODO: Return an error when appropriate
+//TODO: Return an error when appropriate
 func GetParticipants(conv gp.ConversationId) []gp.User {
 	s := stmt["participantSelect"]
 	rows, err := s.Query(conv)
