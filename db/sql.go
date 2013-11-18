@@ -271,7 +271,6 @@ func CreateConversation(id gp.UserId, participants []gp.User, live bool) (conver
 	if live {
 		conf := gp.GetConfig()
 		conversation.Expiry = &gp.Expiry{time.Now().Add(time.Duration(conf.Expiry) * time.Second)}
-		log.Println(conf.Expiry)
 		err = ConversationSetExpiry(conversation.Id, *conversation.Expiry)
 	}
 	return
