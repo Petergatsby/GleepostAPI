@@ -689,3 +689,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
 	}
 }
+
+func facebookHandler(w http.ResponseWriter, r *http.Request) {
+	DebugToken(r.FormValue("token"))
+}
