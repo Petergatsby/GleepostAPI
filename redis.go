@@ -9,11 +9,14 @@ import (
 	"log"
 	"time"
 )
+//TODO: turn into module
+
 
 /********************************************************************
 		General
 ********************************************************************/
 
+//TODO: Unexport
 func RedisDial() (redis.Conn, error) {
 	conf := gp.GetConfig()
 	conn, err := redis.Dial(conf.Redis.Proto, conf.Redis.Address)
@@ -26,6 +29,7 @@ var ErrEmptyCache = gp.APIerror{"Not in redis!"}
 		Messages
 ********************************************************************/
 
+//TODO: Pass in recipients as an argument
 func redisPublish(msg gp.RedisMessage) {
 	log.Printf("Publishing message to redis: %d, %d", msg.Conversation, msg.Id)
 	conn := pool.Get()
@@ -38,6 +42,7 @@ func redisPublish(msg gp.RedisMessage) {
 	conn.Flush()
 }
 
+//TODO: Delete Printf
 func redisSubscribe(c chan []byte, userId gp.UserId) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -59,6 +64,7 @@ func redisMessageChan(userId gp.UserId) (c chan []byte) {
 	return
 }
 
+//TODO: Delete Printf
 func redisAddMessage(msg gp.Message, convId gp.ConversationId) {
 	log.Printf("redis add message %d %d", convId, msg.Id)
 	conn := pool.Get()
@@ -69,6 +75,9 @@ func redisAddMessage(msg gp.Message, convId gp.ConversationId) {
 	go redisSetMessage(msg)
 }
 
+//TODO: Eliminate dependence on func.go
+//TODO: Get a message which doesn't embed a gp.User, just a UserId.
+//TODO: New function which will get message.By from redis only 
 func redisGetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -128,6 +137,7 @@ func redisMessageSeen(msgId gp.MessageId) {
 	conn.Flush()
 }
 
+//TODO: Do this using cache.GetMessage
 func redisMarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -170,6 +180,7 @@ func redisMarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.M
 	return
 }
 
+//TODO: Do this using cache.GetMessage
 func redisGetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -234,6 +245,9 @@ func redisGetMessages(convId gp.ConversationId, index int64, sel string, count i
 	return
 }
 
+//TODO: get a message which doesn't embed a gp.User
+//TODO: Use redis' GetUser instead of func.go
+//TODO: Eliminate Printf
 func redisGetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -258,6 +272,8 @@ func redisGetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	return message, err
 }
 
+//TODO: Eliminate Printf
+//TODO: Return an error
 func redisAddAllMessages(convId gp.ConversationId) {
 	conf := gp.GetConfig()
 	messages, err := db.GetMessages(convId, 0, "start", conf.MessageCache)
@@ -294,6 +310,8 @@ func redisAddPost(post gp.PostSmall) {
 	conn.Flush()
 }
 
+//TODO: Remove dependence on getUser
+//TODO: Remove dependence on getUserNetworks
 func redisAddNewPost(userId gp.UserId, text string, postId gp.PostId) {
 	var post gp.PostSmall
 	post.Id = postId
@@ -320,6 +338,8 @@ func redisAddNetworkPost(network gp.NetworkId, post gp.PostSmall) {
 	}
 }
 
+//TODO: return a version of a post which doesn't embed gp.User / images / comment count / like count.
+//TODO: Use local version of getUser / getPostImages / getCommentCount / likeCount rather than func.go.
 func redisGetPost(postId gp.PostId) (post gp.PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -348,6 +368,7 @@ func redisGetPost(postId gp.PostId) (post gp.PostSmall, err error) {
 	return post, nil
 }
 
+//TODO: Return posts which don't embed a user
 func redisGetNetworkPosts(id gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -432,6 +453,7 @@ func redisAddAllPosts(netId gp.NetworkId) {
 		Conversations
 ********************************************************************/
 
+//TODO: Pass in participants as an argument.
 func redisUpdateConversation(id gp.ConversationId) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -468,6 +490,8 @@ func redisSetConversationParticipants(convId gp.ConversationId, participants []g
 	conn.Flush()
 }
 
+//TODO: Return []gp.UserId.
+//TODO: Use getUser from redis
 func redisGetConversationParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -494,6 +518,8 @@ func redisGetConversationParticipants(convId gp.ConversationId) (participants []
 	return
 }
 
+//TODO: return []gp.ConversationId.
+//TODO: remove dependence on func.go's getParticipants, conversationExpiry, getLastMessage.
 func redisGetConversations(id gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
 	conf := gp.GetConfig()
 	conn := pool.Get()
