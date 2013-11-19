@@ -643,6 +643,13 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, &gp.BusyStatus{status}, 200)
 		}
+	case r.Method == "GET":
+		status, err := BusyStatus(userId)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		}
+		jsonResponse(w, &gp.BusyStatus{status}, 200)
 	default:
 		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
 	}

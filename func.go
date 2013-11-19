@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/draaglom/GleepostAPI/gp"
 	"github.com/draaglom/GleepostAPI/db"
+	"github.com/draaglom/GleepostAPI/gp"
 	"io"
 	"io/ioutil"
 	"launchpad.net/goamz/aws"
@@ -521,6 +521,11 @@ func setBusyStatus(id gp.UserId, busy bool) (err error) {
 	if err == nil {
 		go redisSetBusyStatus(id, busy)
 	}
+	return
+}
+
+func BusyStatus(id gp.UserId) (busy bool, err error) {
+	busy, err = db.BusyStatus(id)
 	return
 }
 

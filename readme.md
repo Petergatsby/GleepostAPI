@@ -15,6 +15,8 @@ URL: https://gleepost.com/api/v0.21/
 
 /login [[POST]](#post-login)
 
+/fblogin [[POST]](#post-fblogin)
+
 /posts [[GET]](#get-posts) [[POST]](#post-posts)
 
 /posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
@@ -49,7 +51,7 @@ URL: https://gleepost.com/api/v0.21/
 
 /profile/profile_image [[POST]](#post-profileprofile_image)
 
-/profile/busy [[POST]](#post-profilebusy)
+/profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
 /notifications [[GET]](#post-notifications) [[PUT]](#put-notifications)
 
@@ -602,6 +604,17 @@ required parameters: id, token, status
 status can be true or false
 
 /profile/busy sets user [id] status to [status]
+
+example responses:
+HTTP 200
+```
+{ "busy":true }
+```
+
+##GET /profile/busy
+required parameters: id, token
+
+The current busy/free status for this user.
 
 example responses:
 HTTP 200

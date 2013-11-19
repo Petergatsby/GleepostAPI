@@ -65,7 +65,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["randomSelect"] = "SELECT id, name, avatar FROM users LEFT JOIN user_network ON id = user_id WHERE network_id = ? ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
-	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
+	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
 	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ?"
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
@@ -245,6 +245,11 @@ func SetProfileImage(id gp.UserId, url string) (err error) {
 
 func SetBusyStatus(id gp.UserId, busy bool) (err error) {
 	_, err = stmt["setBusy"].Exec(busy, id)
+	return
+}
+
+func BusyStatus(id gp.UserId) (busy bool, err error) {
+	err = stmt["getBusy"].QueryRow(id).Scan(busy)
 	return
 }
 

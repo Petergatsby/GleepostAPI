@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/draaglom/GleepostAPI/gp"
 	"github.com/draaglom/GleepostAPI/db"
+	"github.com/draaglom/GleepostAPI/gp"
 	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
 )
-//TODO: turn into module
 
+//TODO: turn into module
 
 /********************************************************************
 		General
@@ -77,7 +77,7 @@ func redisAddMessage(msg gp.Message, convId gp.ConversationId) {
 
 //TODO: Eliminate dependence on func.go
 //TODO: Get a message which doesn't embed a gp.User, just a UserId.
-//TODO: New function which will get message.By from redis only 
+//TODO: New function which will get message.By from redis only
 func redisGetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
