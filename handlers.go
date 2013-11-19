@@ -698,13 +698,17 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
-	fbToken := r.FormValue("token")
-	token, err := FacebookLogin(fbToken)
-	if err != nil {
-		jsonResponse(w, gp.APIerror{"Bad token"}, 400)
-		return
+	if r.Method == "POST" {
+		fbToken := r.FormValue("token")
+		token, err := FacebookLogin(fbToken)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{"Bad token"}, 400)
+			return
+		}
+		jsonResponse(w, token, 201)
+	} else {
+		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
 	}
-	jsonResponse(w, token, 201)
 }
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {
@@ -720,4 +724,3 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
 	}
 }
-
