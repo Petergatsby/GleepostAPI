@@ -381,6 +381,10 @@ func registerUser(user string, pass string, email string) (userId gp.UserId, err
 		return 0, err
 	}
 	_, err = assignNetworks(userId, email)
+	if err != nil {
+		return 0, err
+	}
+	err = issueVerification(userId)
 	return
 }
 
