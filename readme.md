@@ -79,6 +79,19 @@ example responses:
 {"error":"Bad username/password"}
 ```
 
+##POST /fblogin
+required parameters: token
+example responses:
+
+Please note: at the moment this will only work for a facebook account which is already associated with a gleepost user. 
+
+Eventually this will also register a new user / allow you to connect your facebook account to an existing user account and at that point the interface will change.
+
+
+(HTTP 200) 
+```
+{"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
+```
 ##GET /posts
 required parameters:
 id=[user-id]

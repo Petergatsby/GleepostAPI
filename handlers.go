@@ -691,5 +691,11 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
-	DebugToken(r.FormValue("token"))
+	fbToken := r.FormValue("token")
+	token, err := FacebookLogin(fbToken)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{"Bad token"}, 400)
+		return
+	}
+	jsonResponse(w, token, 201)
 }

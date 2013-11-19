@@ -42,5 +42,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/profile/profile_image", profileImageHandler)
 	http.HandleFunc(conf.UrlBase+"/profile/busy", busyHandler)
 	http.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
+	http.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	server.ListenAndServe()
 }
