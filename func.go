@@ -664,7 +664,7 @@ func issueVerification(id gp.UserId) (err error) {
 	if err != nil {
 		return
 	}
-	err = send(email, user.Name + ", verify your Gleepost account!", random)
+	err = send(email, user.Name+", verify your Gleepost account!", random)
 	return
 }
 

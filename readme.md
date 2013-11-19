@@ -45,7 +45,7 @@ URL: https://gleepost.com/api/v0.21/
 
 /contacts/[contact-id] [[PUT]](#put-contactsuser)
 
-/device [[POST]](#post-device)
+/devices [[POST]](#post-devices)
 
 /upload [[POST]](#post-upload)
 
@@ -550,7 +550,8 @@ HTTP 200
 	"they_confirmed":true,
 }
 ```
-##POST /device
+
+##POST /devices
 required parameters: id, token, type, device_id
 
 Type should be "android" or "ios"
