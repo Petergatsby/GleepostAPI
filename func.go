@@ -24,20 +24,28 @@ Top-level functions
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
 
+func randomString() (random string, err error) {
+	hash := sha256.New()
+	randombuf := make([]byte, 32) //Number pulled out of my... ahem.
+	_, err = io.ReadFull(rand.Reader, randombuf)
+	if err != nil {
+		return
+	}
+	hash.Write(randombuf)
+	random = hex.EncodeToString(hash.Sum(nil))
+	return
+}
+
 //createtoken might do with returning an error
 //why would it break though
 func createToken(userId gp.UserId) gp.Token {
-	hash := sha256.New()
-	random := make([]byte, 32) //Number pulled out of my... ahem.
-	_, err := io.ReadFull(rand.Reader, random)
-	if err == nil {
-		hash.Write(random)
-		digest := hex.EncodeToString(hash.Sum(nil))
-		expiry := time.Now().Add(time.Duration(24) * time.Hour).UTC().Round(time.Second)
-		token := gp.Token{userId, digest, expiry}
-		return (token)
-	} else {
+	random, err := randomString()
+	if err != nil {
 		return (gp.Token{userId, "foo", time.Now().UTC()})
+	} else {
+		expiry := time.Now().Add(time.Duration(24) * time.Hour).UTC().Round(time.Second)
+		token := gp.Token{userId, random, expiry}
+		return (token)
 	}
 }
 
@@ -636,4 +644,30 @@ func likeCount(post gp.PostId) (count int, err error) {
 
 func conversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	return db.ConversationExpiry(convId)
+}
+
+//TODO: send an actual link
+func issueVerification(id gp.UserId) (err error) {
+	random, err := randomString()
+	if err != nil {
+		return
+	}
+	err = db.SetVerificationToken(id, random)
+	if err != nil {
+		return
+	}
+	user, err := getUser(id)
+	if err != nil {
+		return
+	}
+	email, err := GetEmail(id)
+	if err != nil {
+		return
+	}
+	err = send(email, user.Name + ", verify your Gleepost account!", random)
+	return
+}
+
+func GetEmail(id gp.UserId) (email string, err error) {
+	return db.GetEmail(id)
 }

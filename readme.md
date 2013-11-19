@@ -83,6 +83,7 @@ example responses:
 
 ##POST /fblogin
 required parameters: token
+
 example responses:
 
 Please note: at the moment this will only work for a facebook account which is already associated with a gleepost user. 
