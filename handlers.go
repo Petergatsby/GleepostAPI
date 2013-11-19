@@ -706,3 +706,18 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonResponse(w, token, 201)
 }
+
+func verificationHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		token := r.FormValue("token")
+		err := Verify(token)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		jsonResponse(w, []byte(`{"verified":true}`), 200)
+	} else {
+		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+	}
+}
+

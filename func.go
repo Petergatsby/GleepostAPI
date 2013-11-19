@@ -675,3 +675,12 @@ func issueVerification(id gp.UserId) (err error) {
 func GetEmail(id gp.UserId) (email string, err error) {
 	return db.GetEmail(id)
 }
+
+func Verify(token string) (err error) {
+	id, err := db.VerificationTokenExists(token)
+	if err != nil {
+		return
+	}
+	err = db.Verify(id)
+	return
+}
