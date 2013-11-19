@@ -684,3 +684,7 @@ func Verify(token string) (err error) {
 	err = db.Verify(id)
 	return
 }
+
+func UserWithEmail(email string) (id gp.UserId, err error) {
+	return db.UserWithEmail(email)
+}

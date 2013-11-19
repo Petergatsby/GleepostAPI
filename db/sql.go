@@ -71,6 +71,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["verificationExists"] = "SELECT user_id FROM verification WHERE token = ?"
 	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
 	sqlStmt["emailSelect"] = "SELECT email FROM users WHERE id = ?"
+	sqlStmt["userWithEmail"] = "SELECT id FROM users WHERE email = ?"
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -934,5 +935,10 @@ func HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 
 func LikeCount(post gp.PostId) (count int, err error) {
 	err = stmt["likeCount"].QueryRow(post).Scan(&count)
+	return
+}
+
+func UserWithEmail(email string) (id gp.UserId, err error) {
+	err = stmt["userWithEmail"].QueryRow(email).Scan(&id)
 	return
 }
