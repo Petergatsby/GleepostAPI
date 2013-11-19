@@ -67,7 +67,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
 	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ?"
-	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?. ?)"
+	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?, ?)"
 	sqlStmt["verificationExists"] = "SELECT user_id FROM verification WHERE token = ?"
 	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
 	sqlStmt["emailSelect"] = "SELECT email FROM users WHERE id = ?"
