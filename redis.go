@@ -52,11 +52,9 @@ func redisSubscribe(c chan []byte, userId gp.UserId) {
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:
-			log.Printf("Message: %v", n)
 			c <- n.Data
 		case redis.Subscription:
 			fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
-			log.Printf("Subscription: %v", n)
 		default:
 			log.Printf("Other: %v", n)
 		}
@@ -64,6 +62,7 @@ func redisSubscribe(c chan []byte, userId gp.UserId) {
 }
 
 func redisMessageChan(userId gp.UserId) (c chan []byte) {
+	c = make(chan []byte)
 	go redisSubscribe(c, userId)
 	return
 }
