@@ -18,7 +18,8 @@ var (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := gp.GetConfig()
-	notify(gp.UserId(2399))
+	name, _ = FBName(1474356782)
+	log.Println(name)
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
 		ReadTimeout:  70 * time.Second,
