@@ -455,6 +455,10 @@ func getDevices(user gp.UserId) (devices []gp.Device, err error) {
 	return db.GetDevices(user)
 }
 
+func deleteDevice(user gp.UserId, deviceId string) (err error) {
+	return db.DeleteDevice(user, deviceId)
+}
+
 func generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	return db.RandomPartners(id, count, network)
 }
