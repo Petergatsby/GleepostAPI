@@ -12,7 +12,7 @@ func notify(user gp.UserId) {
 	payload := apns.NewPayload()
 	payload.Alert = "Sup"
 	payload.Badge = 1337
-	payload.Sound = "sup.mp3"
+	payload.Sound = "default"
 
 	devices, err := getDevices(user)
 	if err != nil {
