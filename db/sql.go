@@ -822,8 +822,8 @@ func GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		device := gp.Device{User: user}
-		if err = rows.Scan(&device.Type, &device.Id); err != nil {
+		device := gp.Device{}
+		if err = rows.Scan(&device.User, &device.Type, &device.Id); err != nil {
 			return
 		}
 		devices = append(devices, device)
