@@ -9,7 +9,6 @@ import (
 	_ "net/http/pprof"
 	"runtime"
 	"time"
-	"log"
 )
 
 var (
@@ -19,8 +18,6 @@ var (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := gp.GetConfig()
-	name, _ := FBName(1474356782)
-	log.Println(name)
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
 		ReadTimeout:  70 * time.Second,
