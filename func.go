@@ -239,6 +239,7 @@ func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 	go redisPublish(msg)
 	go redisAddMessage(msgSmall, convId)
 	go updateConversation(convId)
+	go messagePush(msgSmall, convId)
 	return
 }
 
