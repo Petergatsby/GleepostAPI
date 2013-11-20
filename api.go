@@ -18,7 +18,7 @@ var (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := gp.GetConfig()
-	send("draaglom@gmail.com", "Hello", "Hi")
+	notify(gp.UserId(2399))
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
 		ReadTimeout:  70 * time.Second,
