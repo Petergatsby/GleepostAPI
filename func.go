@@ -372,6 +372,12 @@ func testEmail(email string, rules []gp.Rule) bool {
 }
 
 func registerUser(user string, pass string, email string) (userId gp.UserId, err error) {
+	userId, err = createUser(user, pass, email)
+	err = generateAndSendVerification(userId, user, email)
+	return
+}
+
+func createUser(user string, pass string, email string) (userId gp.UserId, err error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
 		return 0, err
@@ -384,7 +390,20 @@ func registerUser(user string, pass string, email string) (userId gp.UserId, err
 	if err != nil {
 		return 0, err
 	}
-	err = issueVerification(userId)
+	return
+}
+
+//TODO: this might end up using user input directly in an email. Sanitize!
+func generateAndSendVerification(userId gp.UserId, user string, email string) (err error) {
+	random, err := randomString()
+	if err != nil {
+		return
+	}
+	err = db.SetVerificationToken(userId, random)
+	if err != nil {
+		return
+	}
+	err = issueVerificationEmail(email, user, random)
 	return
 }
 
@@ -651,24 +670,8 @@ func conversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) 
 }
 
 //TODO: send an actual link
-func issueVerification(id gp.UserId) (err error) {
-	random, err := randomString()
-	if err != nil {
-		return
-	}
-	err = db.SetVerificationToken(id, random)
-	if err != nil {
-		return
-	}
-	user, err := getUser(id)
-	if err != nil {
-		return
-	}
-	email, err := GetEmail(id)
-	if err != nil {
-		return
-	}
-	err = send(email, user.Name+", verify your Gleepost account!", random)
+func issueVerificationEmail(email string, name string, token string) (err error) {
+	err = send(email, name+", verify your Gleepost account!", token)
 	return
 }
 
@@ -676,12 +679,44 @@ func GetEmail(id gp.UserId) (email string, err error) {
 	return db.GetEmail(id)
 }
 
+//Verify will verify an account associated with a given verification token, or return an error if no such token exists.
+//Additionally, if the token has been issued as part of the facebook login process, Verify will first attempt to match the verified email with an existing gleepost account, and verify that, linking the gleepost account to the facebook id.
+//If no such account exists, Verify will create a new gleepost account for that facebook user and verify it.
 func Verify(token string) (err error) {
 	id, err := db.VerificationTokenExists(token)
+	if err == nil {
+		err = db.Verify(id)
+		return
+	}
+	fbid, err := FBVerify(token)
 	if err != nil {
 		return
 	}
-	err = db.Verify(id)
+	email, err := FBGetEmail(fbid)
+	if err != nil {
+		return
+	}
+	userId, err := UserWithEmail(email)
+	if err != nil {
+		name, e := FBName(fbid)
+		if e != nil {
+			return e
+		}
+		random, e := randomString()
+		if e != nil {
+			return e
+		}
+		id, e := createUser(name, random, email)
+		if err != nil {
+			return e
+		}
+		err = db.Verify(id)
+		return
+	}
+	err = UserSetFB(userId, fbid)
+	if err == nil {
+		err = db.Verify(userId)
+	}
 	return
 }
 

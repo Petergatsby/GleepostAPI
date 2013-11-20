@@ -713,13 +713,19 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		token := r.FormValue("token")
-		err := Verify(token)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+		regex, _ := regexp.Compile("verify/(\\d+)/?$")
+		tokenString := regex.FindStringSubmatch(r.URL.Path)
+		if tokenString != nil {
+			token := tokenString[1]
+			err := Verify(token)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 400)
+				return
+			}
+			jsonResponse(w, []byte(`{"verified":true}`), 200)
 			return
 		}
-		jsonResponse(w, []byte(`{"verified":true}`), 200)
+		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 	} else {
 		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
 	}

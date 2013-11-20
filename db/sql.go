@@ -67,6 +67,10 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
 	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ?"
+	sqlStmt["fbInsert"] = "INSERT INTO facebook (fb_id, email) VALUES (?, ?)"
+	sqlStmt["selectFBemail"] = "SELECT email FROM facebook WHERE fb_id = ?"
+	sqlStmt["fbInsertVerification"] = "REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)"
+	sqlStmt["fbSetGPUser"] = "UPDATE facebook SET user_id = ? WHERE fb_id = ?"
 	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?, ?)"
 	sqlStmt["verificationExists"] = "SELECT user_id FROM verification WHERE token = ?"
 	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
@@ -280,6 +284,36 @@ func Verify(id gp.UserId) (err error) {
 
 func GetEmail(id gp.UserId) (email string, err error) {
 	err = stmt["emailSelect"].QueryRow(id).Scan(email)
+	return
+}
+
+func UserWithEmail(email string) (id gp.UserId, err error) {
+	err = stmt["userWithEmail"].QueryRow(email).Scan(&id)
+	return
+}
+
+func CreateFBUser(fbId uint64, email string) (err error) {
+	_, err = stmt["fbInsert"].Exec(fbId, email)
+	return
+}
+
+func FBUserEmail(fbid uint64) (email string, err error) {
+	err = stmt["selectFBemail"].QueryRow(fbid).Scan(&email)
+	return
+}
+
+func CreateFBVerification(fbid uint64, token string) (err error) {
+	_, err = stmt["fbInsertVerification"].Exec(fbid, token)
+	return
+}
+
+func FBVerificationExists(token string) (fbid uint64, err error) {
+	err = stmt["fbVerificationExists"].QueryRow(token).Scan(&fbid)
+	return
+}
+
+func FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
+	_, err = stmt["fbSetGPUser"].Exec(fbid, userId)
 	return
 }
 
@@ -935,10 +969,5 @@ func HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 
 func LikeCount(post gp.PostId) (count int, err error) {
 	err = stmt["likeCount"].QueryRow(post).Scan(&count)
-	return
-}
-
-func UserWithEmail(email string) (id gp.UserId, err error) {
-	err = stmt["userWithEmail"].QueryRow(email).Scan(&id)
 	return
 }

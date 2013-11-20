@@ -64,10 +64,59 @@ func FacebookLogin(fbToken string) (token gp.Token, err error) {
 		token = createToken(userId)
 		return
 	}
-	//TODO: Implement!
 	return
 }
 
 func FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
 	return db.UserIdFromFB(fbid)
+}
+
+func FacebookRegister(fbToken string, email string) (err error) {
+	t, err := ValidateToken(fbToken)
+	if err != nil {
+		return
+	}
+	err = db.CreateFBUser(t.FBUser, email)
+	if err == nil {
+		err = FBissueVerification(t.FBUser)
+	}
+	return
+}
+
+func FBissueVerification(fbid uint64) (err error) {
+	email, err := FBGetEmail(fbid)
+	if err != nil {
+		return
+	}
+	random, err := randomString()
+	if err != nil {
+		return
+	}
+	err = db.CreateFBVerification(fbid, random)
+	if err != nil {
+		return
+	}
+	name, err := FBName(fbid)
+	if err != nil {
+		return
+	}
+	err = issueVerificationEmail(email, name, random)
+	return
+}
+
+//TODO: get name from fb api
+func FBName(fbid uint64) (name string, err error) {
+	return "Jim", nil
+}
+
+func FBVerify(token string) (fbid uint64, err error) {
+	return db.FBVerificationExists(token)
+}
+
+func FBGetEmail(fbid uint64) (email string, err error) {
+	return db.FBUserEmail(fbid)
+}
+
+func UserSetFB(userId gp.UserId, fbid uint64) (err error) {
+	return db.FBSetGPUser(fbid, userId)
 }
