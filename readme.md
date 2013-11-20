@@ -55,6 +55,8 @@ URL: https://gleepost.com/api/v0.22/
 
 /notifications [[GET]](#post-notifications) [[PUT]](#put-notifications)
 
+/verify/[token] [[POST]](#post-verifytoken)
+
 ##POST /register
 required parameters: user, pass, email
 
@@ -701,4 +703,16 @@ HTTP 200
 	}
 ] 
 
+```
+
+##POST /verify/[token]
+
+This will verify the account this verification-token is associated with, or create a verified account for a new facebook user.
+
+If it fails it will return HTTP 400 and the error.
+
+Example responses:
+HTTP 200
+```
+{"verified":true}
 ```

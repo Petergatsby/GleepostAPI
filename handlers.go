@@ -700,10 +700,33 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		fbToken := r.FormValue("token")
-		token, err := FacebookLogin(fbToken)
+		email := r.FormValue("email")
+		_, err := ValidateToken(fbToken)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{"Bad token"}, 400)
 			return
+		}
+		token, err := FacebookLogin(fbToken)
+		if err != nil {
+			if len(email) < 3 {
+				jsonResponse(w, gp.APIerror{"Email required"}, 400)
+				return
+			}
+			validates, err := validateEmail(email)
+			if !validates {
+				jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
+				return
+			}
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			err = FacebookRegister(fbToken, email)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			jsonResponse(w, []byte("{\"status\":\"unverified\"}"), 201)
 		}
 		jsonResponse(w, token, 201)
 	} else {
