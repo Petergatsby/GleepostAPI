@@ -106,7 +106,8 @@ func FBissueVerification(fbid uint64) (err error) {
 
 //TODO: get name from fb api
 func FBName(fbid uint64) (name string, err error) {
-	return "Jim", nil
+	res, err := facebook.Get(fmt.Sprintf("/%d", fbid)
+	return res["name"], err
 }
 
 func FBVerify(token string) (fbid uint64, err error) {
