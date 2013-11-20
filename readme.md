@@ -86,17 +86,23 @@ example responses:
 ##POST /fblogin
 required parameters: token
 
-example responses:
+Please note: This is in a state of development. Expect it to change frequently.
 
-Please note: at the moment this will only work for a facebook account which is already associated with a gleepost user. 
-
-Eventually this will also register a new user / allow you to connect your facebook account to an existing user account and at that point the interface will change.
-
+If this facebook user has an associated, verified gleepost account, this will issue an access token in the same manner as /login:
 
 (HTTP 200) 
 ```
 {"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
 ```
+
+If this facebook user does not have a gleepost account associated, this will issue a verification email and respond with:
+
+(HTTP 201)
+```
+{"status":"unverified"}
+```
+
+
 ##GET /posts
 required parameters:
 id=[user-id]
