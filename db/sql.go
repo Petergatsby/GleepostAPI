@@ -254,7 +254,7 @@ func SetBusyStatus(id gp.UserId, busy bool) (err error) {
 }
 
 func BusyStatus(id gp.UserId) (busy bool, err error) {
-	err = stmt["getBusy"].QueryRow(id).Scan(busy)
+	err = stmt["getBusy"].QueryRow(id).Scan(&busy)
 	return
 }
 
