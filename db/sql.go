@@ -113,6 +113,7 @@ func prepare(db *sql.DB) (err error) {
 	//device
 	sqlStmt["deviceInsert"] = "REPLACE INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
 	sqlStmt["deviceSelect"] = "SELECT user_id, device_type, device_id FROM devices WHERE user_id = ?"
+	sqlStmt["deviceDelete"] = "DELETE FROM devices WHERE user_id = ? AND device_id = ?"
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
@@ -828,6 +829,12 @@ func GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 		}
 		devices = append(devices, device)
 	}
+	return
+}
+
+func DeleteDevice(user gp.UserId, device string) (err error) {
+	s := stmt["deviceDelete"]
+	_, err = s.Exec(user, device)
 	return
 }
 

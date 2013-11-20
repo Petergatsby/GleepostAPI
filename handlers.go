@@ -572,6 +572,31 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+	case r.Method == "DELETE":
+		regex, _ := regexp.Compile("devices/(\\d+)/?$")
+		deviceIdString := regex.FindStringSubmatch(r.URL.Path)
+		if deviceIdString != nil {
+			err := deleteDevice(userId, deviceIdString[1])
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			w.WriteHeader(204)
+			return
+		}
+		jsonResponse(w, gp.APIerror{"Provide a device id"}, 400)
+	default:
+		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+	}
+
+}
+
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	userId, err := authenticate(r)
