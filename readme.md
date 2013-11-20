@@ -85,6 +85,7 @@ example responses:
 
 ##POST /fblogin
 required parameters: token
+optional parameters: email
 
 Please note: This is in a state of development. Expect it to change frequently.
 
@@ -95,7 +96,14 @@ If this facebook user has an associated, verified gleepost account, this will is
 {"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
 ```
 
-If this facebook user does not have a gleepost account associated, this will issue a verification email and respond with:
+If this facebook user does not have a gleepost account associated, the facebook login will fail and prompt you with:
+
+(HTTP 400)
+```
+{"error":"Email required"}
+```
+
+In which case you must resubmit the request including the email parameter. This will issue a verification email and respond with:
 
 (HTTP 201)
 ```
