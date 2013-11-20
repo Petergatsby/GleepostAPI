@@ -578,7 +578,7 @@ func markNotificationsSeen(upTo gp.NotificationId) (err error) {
 
 func createNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (err error) {
 	_, err = db.CreateNotification(ntype, by, recipient, isPN, post)
-	if err != nil {
+	if err == nil {
 		go notificationPush(recipient)
 	}
 	return
