@@ -1,7 +1,7 @@
-#Gleepost API / V0.22
+#Gleepost API / V0.23
 
 
-URL: https://gleepost.com/api/v0.22/
+URL: https://gleepost.com/api/v0.23/
 
 ##Notes:
 
@@ -45,7 +45,9 @@ URL: https://gleepost.com/api/v0.22/
 
 /contacts/[contact-id] [[PUT]](#put-contactsuser)
 
-/devices [[POST]](#post-devices)
+/devices [[POST]](#post-devices) 
+
+/devices/[device-id] [[DELETE]](#delete-devicesdevice-id)
 
 /upload [[POST]](#post-upload)
 
@@ -583,6 +585,15 @@ HTTP 201
 	"id":"APA91bFmOKOcm6v1ZJVavmvHQ3SLzADznBHhT6gDdNUDZm9wSc-yBdToyAWtR73cro5rnemVTiXdqQMlqmrs_4mdAhZbiLIfeZ4cD4L9OstvTnjzv8-Yx_fSPM1Joe_gpAEe0haNEwh3pSQah1QQQFC829jA7V-vswpuQLmLT2sK_ciMo5Hx7po"
 }
 ```
+
+##DELETE /devices/[device-id]
+required parameters: id, token
+
+This will stop [device-id] receiving push notifications for this user.
+
+If successfull, the response will be:
+HTTP 204
+(no content)
 
 ##POST /upload
 required parameters: id, token, image
