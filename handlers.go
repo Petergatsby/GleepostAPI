@@ -579,7 +579,7 @@ func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
 	case r.Method == "DELETE":
-		regex, _ := regexp.Compile("devices/(\\d+)/?$")
+		regex, _ := regexp.Compile("devices/([:alnum:]+)/?$")
 		deviceIdString := regex.FindStringSubmatch(r.URL.Path)
 		if deviceIdString != nil {
 			err := deleteDevice(userId, deviceIdString[1])
