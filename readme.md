@@ -29,7 +29,7 @@ URL: https://gleepost.com/api/v0.23/
 
 /conversations [[GET]](#get-conversations)
 
-/conversations/[conversation-id] [[GET]](#get-conversationsconversation-id)
+/conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id)
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
@@ -348,6 +348,16 @@ example responses:
 	"expiry": { time: "2013-11-13T22:11:32.956855553Z" }
 }
 ```
+
+##DELETE /conversations/[conversation-id]
+required parameters:
+id=[user-id]
+token=[token]
+
+This ends a live conversation. If you try this on a regular conversation, I don't know what will happen!
+
+If it is successful, it will respond with HTTP 204.
+
 
 ##GET /conversations/[conversation-id]/messages
 required parameters: id=[user-id], token=[token]
