@@ -17,6 +17,9 @@ import (
 	"time"
 )
 
+var ETOOWEAK = gp.APIerror{"Password too weak!"}
+var ENOSUCHUSER = gp.APIerror{"No such user."}
+
 /********************************************************************
 Top-level functions
 ********************************************************************/
@@ -57,6 +60,13 @@ func looksLikeEmail(email string) bool {
 	} else {
 		return (true)
 	}
+}
+
+func checkPassStrength(pass string) (err error) {
+	if len(pass) < 5 {
+		return &ETOOWEAK
+	}
+	return nil
 }
 
 func getLastMessage(id gp.ConversationId) (message gp.Message, err error) {
@@ -270,6 +280,9 @@ func addPostImage(postId gp.PostId, url string) (err error) {
 func getProfile(id gp.UserId) (user gp.Profile, err error) {
 	user, err = db.GetProfile(id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return &ENOSUCHUSER
+		}
 		return
 	}
 	nets, err := getUserNetworks(user.Id)
@@ -375,16 +388,19 @@ func testEmail(email string, rules []gp.Rule) bool {
 func registerUser(user string, pass string, email string) (userId gp.UserId, err error) {
 	userId, err = createUser(user, pass, email)
 	if err != nil {
-		return err
+		return
 	}
 	err = generateAndSendVerification(userId, user, email)
 	return
 }
 
 func createUser(user string, pass string, email string) (userId gp.UserId, err error) {
+	err = checkPassStrength(pass)
+	if err != nil {
+		return
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
-		if err.
 		return 0, err
 	}
 	userId, err = db.RegisterUser(user, hash, email)

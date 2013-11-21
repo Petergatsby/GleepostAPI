@@ -78,7 +78,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		id, err := registerUser(user, pass, email)
 		if err != nil {
 			_, ok := err.(gp.APIerror)
-			if ok { //Duplicate user/email
+			if ok { //Duplicate user/email or password too short
 				jsonResponse(w, err, 400)
 			} else {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
@@ -467,6 +467,10 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		profileId := gp.UserId(u)
 		user, err := getProfile(profileId)
 		if err != nil {
+			if err == ENOSUCHUSER {
+				jsonResponse(w, gp.APIerror{err.Error()}, 404)
+				return
+			}
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
 			jsonResponse(w, user, 200)
