@@ -691,7 +691,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			_upTo = 0
 		}
 		notificationId := gp.NotificationId(_upTo)
-		err = markNotificationsSeen(notificationId)
+		err = markNotificationsSeen(userId, notificationId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
