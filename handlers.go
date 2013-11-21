@@ -327,9 +327,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		}
 	case convIdString != nil: //Unsuported method
 		jsonResponse(w, gp.APIerror{"Must be a GET or POST request"}, 405)
-	case convIdString2 != nil && r.Method != "GET":
-		jsonResponse(w, gp.APIerror{"Must be a GET request"}, 405)
-	case convIdString2 != nil:
+	case convIdString2 != nil && r.Method == "GET":
 		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
 		convId := gp.ConversationId(_convId)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
@@ -341,6 +339,17 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		}
 		jsonResponse(w, conv, 200)
+	case convIdString2 != nil && r.Method == "DELETE":
+		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
+		convId := gp.ConversationId(_convId)
+		err := terminateConversation(convId)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		}
+		w.WriteHeader(204)
+	case convIdString2 != nil:
+		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
 	default:
 		jsonResponse(w, gp.APIerror{"404 not found"}, 404)
 	}

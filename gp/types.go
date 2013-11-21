@@ -228,6 +228,7 @@ type Liked struct {
 
 type Expiry struct {
 	Time time.Time `json:"time"`
+	Ended bool     `json:"ended"`
 }
 
 func (e APIerror) Error() string {

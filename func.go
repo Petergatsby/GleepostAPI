@@ -731,3 +731,7 @@ func Verify(token string) (err error) {
 func UserWithEmail(email string) (id gp.UserId, err error) {
 	return db.UserWithEmail(email)
 }
+
+func terminateConversation(convId gp.ConversationId) (err error) {
+	return db.TerminateConversation(convId)
+}

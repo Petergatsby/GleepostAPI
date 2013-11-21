@@ -81,8 +81,9 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
-	sqlStmt["conversationExpiry"] = "SELECT expiry FROM conversation_expirations WHERE conversation_id = ?"
+	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["conversationSetExpiry"] = "REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
+	sqlStmt["endConversation"] = "UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	sqlStmt["participantSelect"] = "SELECT participant_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
 	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
@@ -342,7 +343,7 @@ func CreateConversation(id gp.UserId, participants []gp.User, live bool) (conver
 	conversation.LastActivity = time.Now().UTC()
 	if live {
 		conf := gp.GetConfig()
-		conversation.Expiry = &gp.Expiry{time.Now().Add(time.Duration(conf.Expiry) * time.Second)}
+		conversation.Expiry = &gp.Expiry{Time:time.Now().Add(time.Duration(conf.Expiry) * time.Second), Ended:false}
 		err = ConversationSetExpiry(conversation.Id, *conversation.Expiry)
 	}
 	return
@@ -424,11 +425,16 @@ func ConversationActivity(convId gp.ConversationId) (t time.Time, err error) {
 func ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	s := stmt["conversationExpiry"]
 	var t string
-	err = s.QueryRow(convId).Scan(&t)
+	err = s.QueryRow(convId).Scan(&t, &expiry.Ended)
 	if err != nil {
 		return
 	}
 	expiry.Time, err = time.Parse(mysqlTime, t)
+	return
+}
+
+func TerminateConversation(convId gp.ConversationId) (err error) {
+	_, err = stmt["endConversation"].Exec(convId)
 	return
 }
 
