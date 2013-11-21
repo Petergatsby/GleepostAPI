@@ -62,6 +62,8 @@ URL: https://gleepost.com/api/v0.23/
 ##POST /register
 required parameters: user, pass, email
 
+Password must be at least 5 characters long.
+
 example responses:
 (HTTP 200)
 ```

@@ -374,6 +374,9 @@ func testEmail(email string, rules []gp.Rule) bool {
 
 func registerUser(user string, pass string, email string) (userId gp.UserId, err error) {
 	userId, err = createUser(user, pass, email)
+	if err != nil {
+		return err
+	}
 	err = generateAndSendVerification(userId, user, email)
 	return
 }
@@ -381,6 +384,7 @@ func registerUser(user string, pass string, email string) (userId gp.UserId, err
 func createUser(user string, pass string, email string) (userId gp.UserId, err error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
+		if err.
 		return 0, err
 	}
 	userId, err = db.RegisterUser(user, hash, email)
