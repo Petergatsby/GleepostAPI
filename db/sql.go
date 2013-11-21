@@ -891,8 +891,8 @@ func GetUserNotifications(id gp.UserId) (notifications []interface{}, err error)
 	return
 }
 
-func MarkNotificationsSeen(upTo gp.NotificationId) (err error) {
-	_, err = stmt["notificationUpdate"].Exec(upTo)
+func MarkNotificationsSeen(user gp.UserId, upTo gp.NotificationId) (err error) {
+	_, err = stmt["notificationUpdate"].Exec(user, upTo)
 	return
 }
 

@@ -577,8 +577,8 @@ func getUserNotifications(id gp.UserId) (notifications []interface{}, err error)
 	return db.GetUserNotifications(id)
 }
 
-func markNotificationsSeen(upTo gp.NotificationId) (err error) {
-	return db.MarkNotificationsSeen(upTo)
+func markNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err error) {
+	return db.MarkNotificationsSeen(id, upTo)
 }
 
 func createNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (err error) {
