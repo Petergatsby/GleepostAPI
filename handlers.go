@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"log"
 )
 
 //Note to self: validateToken should probably return an error at some point
@@ -692,7 +691,6 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			_upTo = 0
 		}
 		notificationId := gp.NotificationId(_upTo)
-		log.Println("Up to notification id: ", notificationId)
 		err = markNotificationsSeen(userId, notificationId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
