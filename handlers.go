@@ -17,7 +17,7 @@ func authenticate(r *http.Request) (userId gp.UserId, err error) {
 	if success {
 		return userId, nil
 	} else {
-		return 0, gp.APIerror{"Invalid credentials"}
+		return 0, &EBADTOKEN
 	}
 }
 
@@ -34,6 +34,9 @@ func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 	}
 }
 
+var EBADTOKEN = gp.APIerror{"Invalid credentials"}
+var EUNSUPPORTED = gp.APIerror{"Method not supported"}
+var ENOTFOUND = gp.APIerror{"404 not found"}
 /*********************************************************************************
 
 Begin http handlers!
@@ -56,7 +59,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	switch {
 	case r.Method != "POST":
-		jsonResponse(w, gp.APIerror{"Must be a POST request!"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	case len(user) == 0:
 		//Note to future self : would be neater if
 		//we returned _all_ errors not just the first
@@ -107,7 +110,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := validatePass(user, pass)
 	switch {
 	case r.Method != "POST":
-		jsonResponse(w, gp.APIerror{"Must be a POST request!"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err == nil:
 		token, err := createAndStoreToken(id)
 		if err == nil {
@@ -132,7 +135,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
@@ -181,7 +184,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, &gp.Created{uint64(postId)}, 201)
 		}
 	default:
-		jsonResponse(w, gp.APIerror{"Must be a POST or GET request"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -190,9 +193,9 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case r.Method != "POST":
-		jsonResponse(w, gp.APIerror{"Must be a POST request"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		conversation, err := createConversation(userId, 2, true)
 		if err != nil {
@@ -208,9 +211,9 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case r.Method != "POST":
-		jsonResponse(w, gp.APIerror{"Must be a POST request"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		conversation, err := createConversation(userId, 4, true)
 		if err != nil {
@@ -226,9 +229,9 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case r.Method != "GET":
-		jsonResponse(w, gp.APIerror{"Must be a GET request"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
@@ -260,7 +263,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case convIdString != nil && r.Method == "GET":
 		_convId, _ := strconv.ParseUint(convIdString[1], 10, 64)
 		convId := gp.ConversationId(_convId)
@@ -326,7 +329,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			jsonResponse(w, conversation, 200)
 		}
 	case convIdString != nil: //Unsuported method
-		jsonResponse(w, gp.APIerror{"Must be a GET or POST request"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	case convIdString2 != nil && r.Method == "GET":
 		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
 		convId := gp.ConversationId(_convId)
@@ -349,9 +352,9 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		}
 		w.WriteHeader(204)
 	case convIdString2 != nil:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
-		jsonResponse(w, gp.APIerror{"404 not found"}, 404)
+		jsonResponse(w, ENOTFOUND, 404)
 	}
 }
 
@@ -368,7 +371,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	commIdStringD := regexLikes.FindStringSubmatch(r.URL.Path)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case commIdStringA != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 64)
 		postId := gp.PostId(_id)
@@ -448,7 +451,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -459,9 +462,9 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method != "GET":
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, EUNSUPPORTED, 405)
 	case userIdString != nil:
 		u, _ := strconv.ParseUint(userIdString[1], 10, 64)
 		profileId := gp.UserId(u)
@@ -485,9 +488,9 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method != "GET":
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		//awaitOneMessage will block until a message arrives over redis
 		message := awaitOneMessage(userId)
@@ -500,7 +503,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		contacts, err := getContacts(userId)
 		if err != nil {
@@ -522,7 +525,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, contact, 201)
 		}
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -533,7 +536,7 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT" && contactIdStrings != nil:
 		_contact, err := strconv.ParseUint(contactIdStrings[1], 10, 64)
 		if err != nil {
@@ -557,7 +560,7 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "DELETE" && contactIdStrings != nil:
 		//Implement refusing requests
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -566,7 +569,7 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
 		deviceId := r.FormValue("device_id")
@@ -578,10 +581,8 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "GET":
 		//implement getting tokens
-	case r.Method == "DELETE":
-		//Implement deregistering device
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -590,7 +591,7 @@ func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, EBADTOKEN, 400)
 	case r.Method == "DELETE":
 		regex, _ := regexp.Compile("devices/([:alnum:]+)/?$")
 		deviceIdString := regex.FindStringSubmatch(r.URL.Path)
@@ -605,7 +606,7 @@ func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, gp.APIerror{"Provide a device id"}, 400)
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 
 }
@@ -615,7 +616,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		file, header, err := r.FormFile("image")
 		if err != nil {
@@ -630,7 +631,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -638,7 +639,7 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		url := r.FormValue("url")
 		exists, err := userUploadExists(userId, url)
@@ -661,7 +662,7 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -669,7 +670,7 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		status, err := strconv.ParseBool(r.FormValue("status"))
 		if err != nil {
@@ -689,7 +690,7 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, &gp.BusyStatus{status}, 200)
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -697,7 +698,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
-		jsonResponse(w, gp.APIerror{"Invalid credentials"}, 400)
+		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
 		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 		if err != nil {
@@ -731,7 +732,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	default:
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -768,7 +769,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, token, 201)
 	} else {
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -788,6 +789,6 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 	} else {
-		jsonResponse(w, gp.APIerror{"Method not supported"}, 405)
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
