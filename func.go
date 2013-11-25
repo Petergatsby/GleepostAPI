@@ -18,7 +18,6 @@ import (
 )
 
 var ETOOWEAK = gp.APIerror{"Password too weak!"}
-var ENOSUCHUSER = gp.APIerror{"No such user."}
 
 /********************************************************************
 Top-level functions
@@ -244,12 +243,11 @@ func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 	if err != nil {
 		return
 	}
-	msgSmall := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
-	msg := gp.RedisMessage{msgSmall, convId}
-	go redisPublish(msg)
-	go redisAddMessage(msgSmall, convId)
+	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
+	go redisPublish(msg, convId)
+	go redisAddMessage(msg, convId)
 	go updateConversation(convId)
-	go messagePush(msgSmall, convId)
+	go messagePush(msg, convId)
 	return
 }
 
@@ -280,9 +278,6 @@ func addPostImage(postId gp.PostId, url string) (err error) {
 func getProfile(id gp.UserId) (user gp.Profile, err error) {
 	user, err = db.GetProfile(id)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return &ENOSUCHUSER
-		}
 		return
 	}
 	nets, err := getUserNetworks(user.Id)

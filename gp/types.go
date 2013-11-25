@@ -51,11 +51,6 @@ type Message struct {
 	Seen bool      `json:"seen"`
 }
 
-type RedisMessage struct {
-	Message
-	Conversation ConversationId `json:"conversation_id"`
-}
-
 type Token struct {
 	UserId UserId    `json:"id"`
 	Token  string    `json:"value"`
@@ -235,6 +230,8 @@ func (e APIerror) Error() string {
 	return e.Reason
 }
 
+var ENOSUCHUSER = APIerror{"No such user."}
+
 var (
 	config     *Config
 	configLock = new(sync.RWMutex)
@@ -283,3 +280,4 @@ func configInit() {
 func init() {
 	configInit()
 }
+

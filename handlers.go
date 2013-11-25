@@ -467,7 +467,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		profileId := gp.UserId(u)
 		user, err := getProfile(profileId)
 		if err != nil {
-			if err == ENOSUCHUSER {
+			if err == gp.ENOSUCHUSER {
 				jsonResponse(w, gp.APIerror{err.Error()}, 404)
 				return
 			}

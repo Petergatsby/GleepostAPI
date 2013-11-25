@@ -30,11 +30,11 @@ var ErrEmptyCache = gp.APIerror{"Not in redis!"}
 ********************************************************************/
 
 //TODO: Pass in recipients as an argument
-func redisPublish(msg gp.RedisMessage) {
-	log.Printf("Publishing message to redis: %d, %d", msg.Conversation, msg.Id)
+func redisPublish(msg gp.Message, convId gp.ConversationId) {
+	log.Printf("Publishing message to redis: %d, %d", convId, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
-	participants := getParticipants(msg.Conversation)
+	participants := getParticipants(convId)
 	JSONmsg, _ := json.Marshal(msg)
 	for _, user := range participants {
 		conn.Send("PUBLISH", user.Id, JSONmsg)

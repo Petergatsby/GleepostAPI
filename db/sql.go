@@ -237,6 +237,9 @@ func GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return user, &gp.ENOSUCHUSER
+		}
 		return
 	}
 	if av.Valid {
