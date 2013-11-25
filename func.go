@@ -177,7 +177,7 @@ func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 }
 
 func getParticipants(convId gp.ConversationId) []gp.User {
-	participants, err := redisGetConversationParticipants(convId)
+	participants, err := redisGetParticipants(convId)
 	if err != nil {
 		participants = db.GetParticipants(convId)
 		go redisSetConversationParticipants(convId, participants)
@@ -198,7 +198,7 @@ func getMessages(convId gp.ConversationId, index int64, sel string) (messages []
 
 func getConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
 	conf := gp.GetConfig()
-	conversations, err = redisGetConversations(userId, start)
+	conversations, err = redisGetConversations(userId, start, conf.ConversationPageSize)
 	if err != nil {
 		conversations, err = db.GetConversations(userId, start, conf.ConversationPageSize)
 		go addAllConversations(userId)
@@ -309,14 +309,14 @@ func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
 	}
 	postId, err = db.AddPost(userId, text, networks[0].Id)
 	if err == nil {
-		go redisAddNewPost(userId, text, postId)
+		go redisAddNewPost(userId, text, postId, networks[0].Id)
 	}
 	return
 }
 
 func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
 	conf := gp.GetConfig()
-	posts, err = redisGetNetworkPosts(netId, index, sel)
+	posts, err = redisGetPosts(netId, index, conf.PostPageSize, sel)
 	if err != nil {
 		posts, err = db.GetPosts(netId, index, conf.PostPageSize, sel)
 		go redisAddAllPosts(netId)
@@ -692,9 +692,14 @@ func conversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) 
 	return db.ConversationExpiry(convId)
 }
 
+func verificationUrl(token string) (url string) {
+	url = "https://gleepost.com/verification.html?token=" + token
+	return
+}
+
 //TODO: send an actual link
 func issueVerificationEmail(email string, name string, token string) (err error) {
-	err = send(email, name+", verify your Gleepost account!", token)
+	err = send(email, name+", verify your Gleepost account!", verificationUrl(token))
 	return
 }
 

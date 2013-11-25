@@ -31,10 +31,9 @@ var ErrEmptyCache = gp.APIerror{"Not in redis!"}
 
 //TODO: Pass in recipients as an argument
 func redisPublish(msg gp.Message, convId gp.ConversationId) {
-	log.Printf("Publishing message to redis: %d, %d", convId, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
-	participants := getParticipants(convId)
+	participants := db.GetParticipants(convId)
 	JSONmsg, _ := json.Marshal(msg)
 	for _, user := range participants {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
@@ -67,9 +66,7 @@ func redisMessageChan(userId gp.UserId) (c chan []byte) {
 	return
 }
 
-//TODO: Delete Printf
 func redisAddMessage(msg gp.Message, convId gp.ConversationId) {
-	log.Printf("redis add message %d %d", convId, msg.Id)
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -78,9 +75,6 @@ func redisAddMessage(msg gp.Message, convId gp.ConversationId) {
 	go redisSetMessage(msg)
 }
 
-//TODO: Eliminate dependence on func.go
-//TODO: Get a message which doesn't embed a gp.User, just a UserId.
-//TODO: New function which will get message.By from redis only
 func redisGetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -89,31 +83,11 @@ func redisGetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	if err != nil {
 		return
 	}
-	BaseKey := fmt.Sprintf("messages:%d", messageId)
-	reply, err := redis.Values(conn.Do("MGET", BaseKey+":by", BaseKey+":text", BaseKey+":time", BaseKey+":seen"))
-	if err != nil {
-		//should reach this if there is no last message
-		log.Printf("error getting message in redis %v", err)
-		return message, err
-	}
-	var by gp.UserId
-	var timeString string
-	if _, err = redis.Scan(reply, &by, &message.Text, &timeString, &message.Seen); err != nil {
-		return message, err
-	}
-	if by != 0 {
-		message.By, err = getUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-	}
-	message.Id = gp.MessageId(messageId)
-	message.Time, err = time.Parse(time.RFC3339, timeString)
+	message, err = redisGetMessage(gp.MessageId(messageId))
 	return message, err
 }
 
 func redisAddMessages(convId gp.ConversationId, messages []gp.Message) {
-	//expecting messages ordered b
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -140,7 +114,6 @@ func redisMessageSeen(msgId gp.MessageId) {
 	conn.Flush()
 }
 
-//TODO: Do this using cache.GetMessage
 func redisMarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -170,7 +143,8 @@ func redisMarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.M
 			return
 		}
 		if curr != 0 {
-			message, errGettingMessage := getMessage(gp.MessageId(curr))
+			//This mightn't work correctly but it's okay since I will throw this code out soon. For future me: the date today is: 25/11/13
+			message, errGettingMessage := redisGetMessage(gp.MessageId(curr))
 			if errGettingMessage != nil {
 				return errGettingMessage
 			} else {
@@ -183,7 +157,6 @@ func redisMarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.M
 	return
 }
 
-//TODO: Do this using cache.GetMessage
 func redisGetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -236,7 +209,7 @@ func redisGetMessages(convId gp.ConversationId, index int64, sel string, count i
 			return
 		}
 		if curr != 0 {
-			message, errGettingMessage := getMessage(gp.MessageId(curr))
+			message, errGettingMessage := redisGetMessage(gp.MessageId(curr))
 			if errGettingMessage != nil {
 				return messages, errGettingMessage
 			} else {
@@ -249,8 +222,6 @@ func redisGetMessages(convId gp.ConversationId, index int64, sel string, count i
 }
 
 //TODO: get a message which doesn't embed a gp.User
-//TODO: Use redis' GetUser instead of func.go
-//TODO: Eliminate Printf
 func redisGetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -266,22 +237,20 @@ func redisGetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 		return message, err
 	}
 	if by != 0 {
-		message.By, err = getUser(by)
+		message.By, err = redisGetUser(by)
 		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
+			return
 		}
 	}
 	message.Time, err = time.Parse(time.RFC3339, timeString)
 	return message, err
 }
 
-//TODO: Eliminate Printf
-//TODO: Return an error
-func redisAddAllMessages(convId gp.ConversationId) {
+func redisAddAllMessages(convId gp.ConversationId) (err error) {
 	conf := gp.GetConfig()
 	messages, err := db.GetMessages(convId, 0, "start", conf.MessageCache)
 	if err != nil {
-		log.Printf("%v", err)
+		return
 	}
 	conn := pool.Get()
 	defer conn.Close()
@@ -292,6 +261,7 @@ func redisAddAllMessages(convId gp.ConversationId) {
 		conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339), key+":seen", message.Seen)
 		conn.Flush()
 	}
+	return nil
 }
 
 /********************************************************************
@@ -314,18 +284,21 @@ func redisAddPost(post gp.PostSmall) {
 }
 
 //TODO: Remove dependence on getUser
-//TODO: Remove dependence on getUserNetworks
-func redisAddNewPost(userId gp.UserId, text string, postId gp.PostId) {
+//TODO: Pass in post object!
+func redisAddNewPost(userId gp.UserId, text string, postId gp.PostId, network gp.NetworkId) (err error) {
 	var post gp.PostSmall
 	post.Id = postId
-	post.By, _ = getUser(userId)
+	post.By, err = db.GetUser(userId)
+	if err != nil {
+		return
+	}
 	post.Time = time.Now().UTC()
 	post.Text = text
-	networks, err := getUserNetworks(userId)
 	if err == nil {
 		go redisAddPost(post)
-		go redisAddNetworkPost(networks[0].Id, post)
+		go redisAddNetworkPost(network, post)
 	}
+	return nil
 }
 
 func redisAddNetworkPost(network gp.NetworkId, post gp.PostSmall) {
@@ -342,7 +315,6 @@ func redisAddNetworkPost(network gp.NetworkId, post gp.PostSmall) {
 }
 
 //TODO: return a version of a post which doesn't embed gp.User / images / comment count / like count.
-//TODO: Use local version of getUser / getPostImages / getCommentCount / likeCount rather than func.go.
 func redisGetPost(postId gp.PostId) (post gp.PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
@@ -362,9 +334,15 @@ func redisGetPost(postId gp.PostId) (post gp.PostSmall, err error) {
 		return post, err
 	}
 	post.Post.Time, _ = time.Parse(time.RFC3339, t)
-	post.Post.Images = getPostImages(postId)
-	post.CommentCount = getCommentCount(postId)
-	post.LikeCount, err = likeCount(postId)
+	post.Post.Images, err = db.GetPostImages(postId)
+	if err != nil {
+		return
+	}
+	post.CommentCount, err = redisGetCommentCount(postId)
+	if err != nil {
+		return
+	}
+	post.LikeCount, err = db.LikeCount(postId)
 	if err != nil {
 		return
 	}
@@ -372,10 +350,9 @@ func redisGetPost(postId gp.PostId) (post gp.PostSmall, err error) {
 }
 
 //TODO: Return posts which don't embed a user
-func redisGetNetworkPosts(id gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
+func redisGetPosts(id gp.NetworkId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	conf := gp.GetConfig()
 
 	key := fmt.Sprintf("networks:%d:posts", id)
 	var start, finish int
@@ -390,7 +367,7 @@ func redisGetNetworkPosts(id gp.NetworkId, index int64, sel string) (posts []gp.
 			return posts, ErrEmptyCache
 		}
 		start = rindex + 1
-		finish = rindex + conf.MessagePageSize
+		finish = rindex + count
 	case sel == "after":
 		rindex := -1
 		rindex, err = redis.Int(conn.Do("ZREVRANK", key, index))
@@ -400,14 +377,14 @@ func redisGetNetworkPosts(id gp.NetworkId, index int64, sel string) (posts []gp.
 		if rindex < 1 {
 			return posts, ErrEmptyCache
 		}
-		start = rindex - conf.PostPageSize
+		start = rindex - count
 		if start < 0 {
 			start = 0
 		}
 		finish = rindex - 1
 	default:
 		start = int(index)
-		finish = int(index) + conf.PostPageSize - 1
+		finish = int(index) + count - 1
 	}
 	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, finish))
 	if err != nil {
@@ -460,7 +437,7 @@ func redisAddAllPosts(netId gp.NetworkId) {
 func redisUpdateConversation(id gp.ConversationId) {
 	conn := pool.Get()
 	defer conn.Close()
-	participants := getParticipants(id)
+	participants := db.GetParticipants(id)
 	for _, user := range participants {
 		key := fmt.Sprintf("users:%d:conversations", user.Id)
 		//nb: this means that the last activity time for a conversation will
@@ -494,8 +471,7 @@ func redisSetConversationParticipants(convId gp.ConversationId, participants []g
 }
 
 //TODO: Return []gp.UserId.
-//TODO: Use getUser from redis
-func redisGetConversationParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
+func redisGetParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
@@ -512,7 +488,7 @@ func redisGetConversationParticipants(convId gp.ConversationId) (participants []
 		if err != nil {
 			return
 		}
-		user, err = getUser(user.Id)
+		user, err = redisGetUser(user.Id)
 		if err != nil {
 			return
 		}
@@ -522,13 +498,11 @@ func redisGetConversationParticipants(convId gp.ConversationId) (participants []
 }
 
 //TODO: return []gp.ConversationId.
-//TODO: remove dependence on func.go's getParticipants, conversationExpiry, getLastMessage.
-func redisGetConversations(id gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
-	conf := gp.GetConfig()
+func redisGetConversations(id gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conn := pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(conf.ConversationPageSize)-1, "WITHSCORES"))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(count)-1, "WITHSCORES"))
 	if err != nil {
 		return
 	}
@@ -548,12 +522,15 @@ func redisGetConversations(id gp.UserId, start int64) (conversations []gp.Conver
 		conv := gp.ConversationSmall{}
 		conv.Id = gp.ConversationId(curr)
 		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
-		conv.Conversation.Participants = getParticipants(conv.Id)
-		expiry, err := conversationExpiry(conv.Id)
+		conv.Conversation.Participants, err  = redisGetParticipants(conv.Id)
+		if err != nil {
+			return
+		}
+		expiry, err := redisConversationExpiry(conv.Id)
 		if err == nil {
 			conv.Expiry = &expiry
 		}
-		LastMessage, err := getLastMessage(conv.Id)
+		LastMessage, err := redisGetLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
 		}
