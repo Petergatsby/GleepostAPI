@@ -522,7 +522,7 @@ func redisGetConversations(id gp.UserId, start int64, count int) (conversations 
 		conv := gp.ConversationSmall{}
 		conv.Id = gp.ConversationId(curr)
 		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
-		conv.Conversation.Participants, err  = redisGetParticipants(conv.Id)
+		conv.Conversation.Participants, err = redisGetParticipants(conv.Id)
 		if err != nil {
 			return
 		}

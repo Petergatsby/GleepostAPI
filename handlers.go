@@ -37,6 +37,7 @@ func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 var EBADTOKEN = gp.APIerror{"Invalid credentials"}
 var EUNSUPPORTED = gp.APIerror{"Method not supported"}
 var ENOTFOUND = gp.APIerror{"404 not found"}
+
 /*********************************************************************************
 
 Begin http handlers!
