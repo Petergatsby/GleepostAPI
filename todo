@@ -20,7 +20,6 @@
 --Comments
 
 -Register
---send verification email
 --log registration event
 
 -Login
@@ -39,8 +38,6 @@
 -Change name
 
 -Name in registration process
-
--Facebook registration
 
 -Websockets
 
