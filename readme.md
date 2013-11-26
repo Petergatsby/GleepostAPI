@@ -314,7 +314,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-	"expiry": { time: "2013-11-13T22:11:32.956855553Z" }
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 	},
 	{"id":2,
 	"participants" [
@@ -347,7 +347,7 @@ example responses:
 		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { time: "2013-11-13T22:11:32.956855553Z" }
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 }
 ```
 
@@ -413,7 +413,7 @@ seen=51
 		}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { time: "2013-11-13T22:11:32.956855553Z" },
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
 	"messages": [
 		{
 			"id": 52,
@@ -475,7 +475,7 @@ example responses:
 		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { time: "2013-11-13T22:11:32.956855553Z" }
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 }
 ```
 
