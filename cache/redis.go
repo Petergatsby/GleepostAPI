@@ -42,7 +42,7 @@ func Publish(msg gp.Message, convId gp.ConversationId) {
 	conn := pool.Get()
 	defer conn.Close()
 	participants := db.GetParticipants(convId)
-	JSONmsg, _ := json.Marshal(msg)
+	JSONmsg, _ := json.Marshal(gp.RedisMessage{msg, convId})
 	for _, user := range participants {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
 	}

@@ -51,6 +51,11 @@ type Message struct {
 	Seen bool      `json:"seen"`
 }
 
+type RedisMessage struct {
+	Message
+	Conversation ConversationId `json:"conversation_id"`
+}
+
 type Token struct {
 	UserId UserId    `json:"id"`
 	Token  string    `json:"value"`
