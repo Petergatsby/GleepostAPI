@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
@@ -69,7 +69,7 @@ func checkPassStrength(pass string) (err error) {
 	return nil
 }
 
-func getLastMessage(id gp.ConversationId) (message gp.Message, err error) {
+func GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	message, err = cache.GetLastMessage(id)
 	if err != nil {
 		message, err = db.GetLastMessage(id)
@@ -81,7 +81,7 @@ func getLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	return
 }
 
-func validateToken(id gp.UserId, token string) bool {
+func ValidateToken(id gp.UserId, token string) bool {
 	//If the db is down, this will fail for everyone who doesn't have a cached
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
@@ -95,7 +95,7 @@ func validateToken(id gp.UserId, token string) bool {
 	}
 }
 
-func validatePass(user string, pass string) (id gp.UserId, err error) {
+func ValidatePass(user string, pass string) (id gp.UserId, err error) {
 	passBytes := []byte(pass)
 	hash, id, err := db.GetHash(user, pass)
 	if err != nil {
@@ -110,7 +110,7 @@ func validatePass(user string, pass string) (id gp.UserId, err error) {
 	}
 }
 
-func createAndStoreToken(id gp.UserId) (gp.Token, error) {
+func CreateAndStoreToken(id gp.UserId) (gp.Token, error) {
 	token := createToken(id)
 	err := db.AddToken(token)
 	cache.PutToken(token)
@@ -121,7 +121,7 @@ func createAndStoreToken(id gp.UserId) (gp.Token, error) {
 	}
 }
 
-func getUser(id gp.UserId) (user gp.User, err error) {
+func GetUser(id gp.UserId) (user gp.User, err error) {
 	/* Hits the cache then the db
 	only I'm not 100% confident yet with what
 	happens when you attempt to get a redis key
@@ -136,7 +136,7 @@ func getUser(id gp.UserId) (user gp.User, err error) {
 	return
 }
 
-func getCommentCount(id gp.PostId) (count int) {
+func GetCommentCount(id gp.PostId) (count int) {
 	count, err := cache.GetCommentCount(id)
 	if err != nil {
 		count = db.GetCommentCount(id)
@@ -144,14 +144,14 @@ func getCommentCount(id gp.PostId) (count int) {
 	return count
 }
 
-func createComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
-	post, err := getPost(postId)
+func CreateComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
+	post, err := GetPost(postId)
 	if err != nil {
 		return
 	}
 	commId, err = db.CreateComment(postId, userId, text)
 	if err == nil {
-		user, e := getUser(userId)
+		user, e := GetUser(userId)
 		if e != nil {
 			return commId, e
 		}
@@ -162,7 +162,7 @@ func createComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.C
 	return commId, err
 }
 
-func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
+func GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	nets, err = cache.GetUserNetwork(id)
 	if err != nil {
 		nets, err = db.GetUserNetworks(id)
@@ -177,7 +177,7 @@ func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	return
 }
 
-func getParticipants(convId gp.ConversationId) []gp.User {
+func GetParticipants(convId gp.ConversationId) []gp.User {
 	participants, err := cache.GetParticipants(convId)
 	if err != nil {
 		participants = db.GetParticipants(convId)
@@ -186,7 +186,7 @@ func getParticipants(convId gp.ConversationId) []gp.User {
 	return participants
 }
 
-func getMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
+func GetMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
 	conf := gp.GetConfig()
 	messages, err = cache.GetMessages(convId, index, sel, conf.MessagePageSize)
 	if err != nil {
@@ -197,7 +197,7 @@ func getMessages(convId gp.ConversationId, index int64, sel string) (messages []
 	return
 }
 
-func getConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
+func GetConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
 	conf := gp.GetConfig()
 	conversations, err = cache.GetConversations(userId, start, conf.ConversationPageSize)
 	if err != nil {
@@ -216,12 +216,12 @@ func addAllConversations(userId gp.UserId) (err error) {
 	return
 }
 
-func getConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
+func GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
 	//cache.GetConversation
 	return db.GetConversation(convId)
 }
 
-func getMessage(msgId gp.MessageId) (message gp.Message, err error) {
+func GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	message, err = cache.GetMessage(msgId)
 	return message, err
 }
@@ -235,12 +235,12 @@ func updateConversation(id gp.ConversationId) (err error) {
 	return nil
 }
 
-func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
+func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
 	messageId, err = db.AddMessage(convId, userId, text)
 	if err != nil {
 		return
 	}
-	user, err := getUser(userId)
+	user, err := GetUser(userId)
 	if err != nil {
 		return
 	}
@@ -252,14 +252,14 @@ func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 	return
 }
 
-func getFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
+func GetFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
 	conv.Id = convId
 	conv.LastActivity, err = ConversationLastActivity(convId)
 	if err != nil {
 		return
 	}
-	conv.Participants = getParticipants(convId)
-	conv.Messages, err = getMessages(convId, start, "start")
+	conv.Participants = GetParticipants(convId)
+	conv.Messages, err = GetMessages(convId, start, "start")
 	return
 }
 
@@ -267,21 +267,21 @@ func ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error)
 	return db.ConversationActivity(convId)
 }
 
-func getPostImages(postId gp.PostId) (images []string) {
+func GetPostImages(postId gp.PostId) (images []string) {
 	images, _ = db.GetPostImages(postId)
 	return
 }
 
-func addPostImage(postId gp.PostId, url string) (err error) {
+func AddPostImage(postId gp.PostId, url string) (err error) {
 	return db.AddPostImage(postId, url)
 }
 
-func getProfile(id gp.UserId) (user gp.Profile, err error) {
+func GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	user, err = db.GetProfile(id)
 	if err != nil {
 		return
 	}
-	nets, err := getUserNetworks(user.Id)
+	nets, err := GetUserNetworks(user.Id)
 	if err != nil {
 		return
 	}
@@ -289,8 +289,8 @@ func getProfile(id gp.UserId) (user gp.Profile, err error) {
 	return
 }
 
-func awaitOneMessage(userId gp.UserId) (resp []byte) {
-	c := getMessageChan(userId)
+func AwaitOneMessage(userId gp.UserId) (resp []byte) {
+	c := GetMessageChan(userId)
 	select {
 	case resp = <-c:
 		return
@@ -299,12 +299,12 @@ func awaitOneMessage(userId gp.UserId) (resp []byte) {
 	}
 }
 
-func getMessageChan(userId gp.UserId) (c chan []byte) {
+func GetMessageChan(userId gp.UserId) (c chan []byte) {
 	return cache.MessageChan(userId)
 }
 
-func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
-	networks, err := getUserNetworks(userId)
+func AddPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
+	networks, err := GetUserNetworks(userId)
 	if err != nil {
 		return
 	}
@@ -315,7 +315,7 @@ func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
 	return
 }
 
-func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
+func GetPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
 	conf := gp.GetConfig()
 	posts, err = cache.GetPosts(netId, index, conf.PostPageSize, sel)
 	if err != nil {
@@ -325,7 +325,7 @@ func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall
 	return
 }
 
-func getComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
+func GetComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
 	conf := gp.GetConfig()
 	if start+int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
 		comments, err = cache.GetComments(id, start)
@@ -339,8 +339,8 @@ func getComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
 	return
 }
 
-func createConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
-	networks, err := getUserNetworks(id)
+func CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+	networks, err := GetUserNetworks(id)
 	if err != nil {
 		return
 	}
@@ -348,7 +348,7 @@ func createConversation(id gp.UserId, nParticipants int, live bool) (conversatio
 	if err != nil {
 		return
 	}
-	user, err := getUser(id)
+	user, err := GetUser(id)
 	if err != nil {
 		return
 	}
@@ -360,7 +360,7 @@ func createConversation(id gp.UserId, nParticipants int, live bool) (conversatio
 	return
 }
 
-func validateEmail(email string) (validates bool, err error) {
+func ValidateEmail(email string) (validates bool, err error) {
 	if !looksLikeEmail(email) {
 		return false, nil
 	} else {
@@ -381,7 +381,7 @@ func testEmail(email string, rules []gp.Rule) bool {
 	return false
 }
 
-func registerUser(user string, pass string, email string) (userId gp.UserId, err error) {
+func RegisterUser(user string, pass string, email string) (userId gp.UserId, err error) {
 	userId, err = createUser(user, pass, email)
 	if err != nil {
 		return
@@ -424,12 +424,12 @@ func generateAndSendVerification(userId gp.UserId, user string, email string) (e
 	return
 }
 
-func getContacts(user gp.UserId) (contacts []gp.Contact, err error) {
+func GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	return db.GetContacts(user)
 }
 
-func addContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
-	user, err = getUser(addee)
+func AddContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
+	user, err = GetUser(addee)
 	if err != nil {
 		return
 	} else {
@@ -441,12 +441,12 @@ func addContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
 	}
 }
 
-func acceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err error) {
+func AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err error) {
 	err = db.UpdateContact(user, toAccept)
 	if err != nil {
 		return
 	}
-	contact.User, err = getUser(toAccept)
+	contact.User, err = GetUser(toAccept)
 	if err != nil {
 		return
 	}
@@ -456,7 +456,7 @@ func acceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err 
 	return
 }
 
-func addDevice(user gp.UserId, deviceType string, deviceId string) (device gp.Device, err error) {
+func AddDevice(user gp.UserId, deviceType string, deviceId string) (device gp.Device, err error) {
 	err = db.AddDevice(user, deviceType, deviceId)
 	if err != nil {
 		return
@@ -467,11 +467,11 @@ func addDevice(user gp.UserId, deviceType string, deviceId string) (device gp.De
 	return
 }
 
-func getDevices(user gp.UserId) (devices []gp.Device, err error) {
+func GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	return db.GetDevices(user)
 }
 
-func deleteDevice(user gp.UserId, deviceId string) (err error) {
+func DeleteDevice(user gp.UserId, deviceId string) (err error) {
 	return db.DeleteDevice(user, deviceId)
 }
 
@@ -479,7 +479,7 @@ func generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners [
 	return db.RandomPartners(id, count, network)
 }
 
-func markConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
+func MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
 	err = db.MarkRead(id, convId, upTo)
 	if err != nil {
 		return
@@ -517,7 +517,7 @@ func getS3() (s *s3.S3) {
 	return
 }
 
-func storeFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
+func StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
 	switch {
@@ -556,11 +556,11 @@ func userAddUpload(id gp.UserId, url string) (err error) {
 	return db.AddUpload(id, url)
 }
 
-func userUploadExists(id gp.UserId, url string) (exists bool, err error) {
+func UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
 	return db.UploadExists(id, url)
 }
 
-func setProfileImage(id gp.UserId, url string) (err error) {
+func SetProfileImage(id gp.UserId, url string) (err error) {
 	err = db.SetProfileImage(id, url)
 	if err == nil {
 		go cache.SetProfileImage(id, url)
@@ -568,7 +568,7 @@ func setProfileImage(id gp.UserId, url string) (err error) {
 	return
 }
 
-func setBusyStatus(id gp.UserId, busy bool) (err error) {
+func SetBusyStatus(id gp.UserId, busy bool) (err error) {
 	err = db.SetBusyStatus(id, busy)
 	if err == nil {
 		go cache.SetBusyStatus(id, busy)
@@ -589,11 +589,11 @@ func userIsOnline(id gp.UserId) bool {
 	return cache.UserIsOnline(id)
 }
 
-func getUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
+func GetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
 	return db.GetUserNotifications(id)
 }
 
-func markNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err error) {
+func MarkNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err error) {
 	return db.MarkNotificationsSeen(id, upTo)
 }
 
@@ -627,26 +627,26 @@ func assignNetworks(user gp.UserId, email string) (networks int, err error) {
 	return
 }
 
-func getPost(postId gp.PostId) (post gp.Post, err error) {
+func GetPost(postId gp.PostId) (post gp.Post, err error) {
 	return db.GetPost(postId)
 }
 
-func getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
-	post.Post, err = getPost(postId)
+func GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
+	post.Post, err = GetPost(postId)
 	if err != nil {
 		return
 	}
-	post.Comments, err = getComments(postId, 0)
+	post.Comments, err = GetComments(postId, 0)
 	if err != nil {
 		return
 	}
-	post.Likes, err = getLikes(postId)
+	post.Likes, err = GetLikes(postId)
 	return
 }
 
-func addLike(user gp.UserId, postId gp.PostId) (err error) {
+func AddLike(user gp.UserId, postId gp.PostId) (err error) {
 	//TODO: add like to redis
-	post, err := getPost(postId)
+	post, err := GetPost(postId)
 	if err != nil {
 		return
 	} else {
@@ -660,18 +660,18 @@ func addLike(user gp.UserId, postId gp.PostId) (err error) {
 	return
 }
 
-func delLike(user gp.UserId, post gp.PostId) (err error) {
+func DelLike(user gp.UserId, post gp.PostId) (err error) {
 	return db.RemoveLike(user, post)
 }
 
-func getLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
+func GetLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
 	l, err := db.GetLikes(post)
 	if err != nil {
 		return
 	}
 	for _, like := range l {
 		lf := gp.LikeFull{}
-		lf.User, err = getUser(like.UserID)
+		lf.User, err = GetUser(like.UserID)
 		if err != nil {
 			return
 		}
@@ -753,6 +753,6 @@ func UserWithEmail(email string) (id gp.UserId, err error) {
 	return db.UserWithEmail(email)
 }
 
-func terminateConversation(convId gp.ConversationId) (err error) {
+func TerminateConversation(convId gp.ConversationId) (err error) {
 	return db.TerminateConversation(convId)
 }

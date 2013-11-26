@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ func DebugToken(token string) {
 	fmt.Printf("%v", err)
 }
 
-func ValidateToken(fbToken string) (token FacebookToken, err error) {
+func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	conf := gp.GetConfig()
 	res, err := facebook.Get("/debug_token", facebook.Params{
 		"access_token": token,
@@ -55,7 +55,7 @@ func ValidateToken(fbToken string) (token FacebookToken, err error) {
 }
 
 func FacebookLogin(fbToken string) (token gp.Token, err error) {
-	t, err := ValidateToken(fbToken)
+	t, err := FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}
@@ -72,7 +72,7 @@ func FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
 }
 
 func FacebookRegister(fbToken string, email string) (err error) {
-	t, err := ValidateToken(fbToken)
+	t, err := FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}

@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"github.com/anachronistic/apns"
@@ -14,7 +14,7 @@ func notify(user gp.UserId) {
 	payload.Badge = 1337
 	payload.Sound = "default"
 
-	devices, err := getDevices(user)
+	devices, err := GetDevices(user)
 	if err != nil {
 		log.Println(err)
 	}
@@ -35,7 +35,7 @@ func notificationPush(user gp.UserId) {
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
 	payload := apns.NewPayload()
 
-	devices, err := getDevices(user)
+	devices, err := GetDevices(user)
 	if err != nil {
 		log.Println(err)
 	}
@@ -65,10 +65,10 @@ func messagePush(message gp.Message, convId gp.ConversationId) {
 	}
 	payload.Alert = d
 	payload.Sound = "default"
-	recipients := getParticipants(convId)
+	recipients := GetParticipants(convId)
 	for _, user := range recipients {
 		if user.Id != message.By.Id {
-			devices, err := getDevices(user.Id)
+			devices, err := GetDevices(user.Id)
 			if err != nil {
 				log.Println(err)
 			}
