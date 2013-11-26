@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"github.com/draaglom/GleepostAPI/db"
 	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/cache"
 	"io"
 	"io/ioutil"
 	"launchpad.net/goamz/aws"
@@ -69,10 +70,10 @@ func checkPassStrength(pass string) (err error) {
 }
 
 func getLastMessage(id gp.ConversationId) (message gp.Message, err error) {
-	message, err = redisGetLastMessage(id)
+	message, err = cache.GetLastMessage(id)
 	if err != nil {
 		message, err = db.GetLastMessage(id)
-		go redisAddAllMessages(id)
+		go cache.AddAllMessages(id)
 		if err != nil {
 			return
 		}
@@ -87,7 +88,7 @@ func validateToken(id gp.UserId, token string) bool {
 	conf := gp.GetConfig()
 	if conf.LoginOverride {
 		return (true)
-	} else if redisTokenExists(id, token) {
+	} else if cache.TokenExists(id, token) {
 		return (true)
 	} else {
 		return db.TokenExists(id, token)
@@ -112,7 +113,7 @@ func validatePass(user string, pass string) (id gp.UserId, err error) {
 func createAndStoreToken(id gp.UserId) (gp.Token, error) {
 	token := createToken(id)
 	err := db.AddToken(token)
-	redisPutToken(token)
+	cache.PutToken(token)
 	if err != nil {
 		return token, err
 	} else {
@@ -125,18 +126,18 @@ func getUser(id gp.UserId) (user gp.User, err error) {
 	only I'm not 100% confident yet with what
 	happens when you attempt to get a redis key
 	that doesn't exist in redigo! */
-	user, err = redisGetUser(id)
+	user, err = cache.GetUser(id)
 	if err != nil {
 		user, err = db.GetUser(id)
 		if err == nil {
-			redisSetUser(user)
+			cache.SetUser(user)
 		}
 	}
 	return
 }
 
 func getCommentCount(id gp.PostId) (count int) {
-	count, err := redisGetCommentCount(id)
+	count, err := cache.GetCommentCount(id)
 	if err != nil {
 		count = db.GetCommentCount(id)
 	}
@@ -156,13 +157,13 @@ func createComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.C
 		}
 		comment := gp.Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
 		go createNotification("commented", userId, post.By.Id, true, postId)
-		go redisAddComment(postId, comment)
+		go cache.AddComment(postId, comment)
 	}
 	return commId, err
 }
 
 func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
-	nets, err = redisGetUserNetwork(id)
+	nets, err = cache.GetUserNetwork(id)
 	if err != nil {
 		nets, err = db.GetUserNetworks(id)
 		if err != nil {
@@ -171,26 +172,26 @@ func getUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 		if len(nets) == 0 {
 			return nets, gp.APIerror{"User has no networks!"}
 		}
-		redisSetUserNetwork(id, nets[0])
+		cache.SetUserNetwork(id, nets[0])
 	}
 	return
 }
 
 func getParticipants(convId gp.ConversationId) []gp.User {
-	participants, err := redisGetParticipants(convId)
+	participants, err := cache.GetParticipants(convId)
 	if err != nil {
 		participants = db.GetParticipants(convId)
-		go redisSetConversationParticipants(convId, participants)
+		go cache.SetConversationParticipants(convId, participants)
 	}
 	return participants
 }
 
 func getMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
 	conf := gp.GetConfig()
-	messages, err = redisGetMessages(convId, index, sel, conf.MessagePageSize)
+	messages, err = cache.GetMessages(convId, index, sel, conf.MessagePageSize)
 	if err != nil {
 		messages, err = db.GetMessages(convId, index, sel, conf.MessagePageSize)
-		go redisAddAllMessages(convId)
+		go cache.AddAllMessages(convId)
 		return
 	}
 	return
@@ -198,7 +199,7 @@ func getMessages(convId gp.ConversationId, index int64, sel string) (messages []
 
 func getConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
 	conf := gp.GetConfig()
-	conversations, err = redisGetConversations(userId, start, conf.ConversationPageSize)
+	conversations, err = cache.GetConversations(userId, start, conf.ConversationPageSize)
 	if err != nil {
 		conversations, err = db.GetConversations(userId, start, conf.ConversationPageSize)
 		go addAllConversations(userId)
@@ -210,18 +211,18 @@ func addAllConversations(userId gp.UserId) (err error) {
 	conf := gp.GetConfig()
 	conversations, err := db.GetConversations(userId, 0, conf.ConversationPageSize)
 	for _, conv := range conversations {
-		go redisAddConversation(conv.Conversation)
+		go cache.AddConversation(conv.Conversation)
 	}
 	return
 }
 
 func getConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
-	//redisGetConversation
+	//cache.GetConversation
 	return db.GetConversation(convId)
 }
 
 func getMessage(msgId gp.MessageId) (message gp.Message, err error) {
-	message, err = redisGetMessage(msgId)
+	message, err = cache.GetMessage(msgId)
 	return message, err
 }
 
@@ -230,7 +231,7 @@ func updateConversation(id gp.ConversationId) (err error) {
 	if err != nil {
 		return err
 	}
-	go redisUpdateConversation(id)
+	go cache.UpdateConversation(id)
 	return nil
 }
 
@@ -244,8 +245,8 @@ func addMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 		return
 	}
 	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
-	go redisPublish(msg, convId)
-	go redisAddMessage(msg, convId)
+	go cache.Publish(msg, convId)
+	go cache.AddMessage(msg, convId)
 	go updateConversation(convId)
 	go messagePush(msg, convId)
 	return
@@ -299,7 +300,7 @@ func awaitOneMessage(userId gp.UserId) (resp []byte) {
 }
 
 func getMessageChan(userId gp.UserId) (c chan []byte) {
-	return redisMessageChan(userId)
+	return cache.MessageChan(userId)
 }
 
 func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
@@ -309,17 +310,17 @@ func addPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
 	}
 	postId, err = db.AddPost(userId, text, networks[0].Id)
 	if err == nil {
-		go redisAddNewPost(userId, text, postId, networks[0].Id)
+		go cache.AddNewPost(userId, text, postId, networks[0].Id)
 	}
 	return
 }
 
 func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
 	conf := gp.GetConfig()
-	posts, err = redisGetPosts(netId, index, conf.PostPageSize, sel)
+	posts, err = cache.GetPosts(netId, index, conf.PostPageSize, sel)
 	if err != nil {
 		posts, err = db.GetPosts(netId, index, conf.PostPageSize, sel)
-		go redisAddAllPosts(netId)
+		go cache.AddAllPosts(netId)
 	}
 	return
 }
@@ -327,10 +328,10 @@ func getPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall
 func getComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
 	conf := gp.GetConfig()
 	if start+int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
-		comments, err = redisGetComments(id, start)
+		comments, err = cache.GetComments(id, start)
 		if err != nil {
 			comments, err = db.GetComments(id, start, conf.CommentPageSize)
-			go redisAddAllComments(id)
+			go cache.AddAllComments(id)
 		}
 	} else {
 		comments, err = db.GetComments(id, start, conf.CommentPageSize)
@@ -354,7 +355,7 @@ func createConversation(id gp.UserId, nParticipants int, live bool) (conversatio
 	participants = append(participants, user)
 	conversation, err = db.CreateConversation(id, participants, live)
 	if err == nil {
-		go redisAddConversation(conversation)
+		go cache.AddConversation(conversation)
 	}
 	return
 }
@@ -483,9 +484,9 @@ func markConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.Messag
 	if err != nil {
 		return
 	}
-	err = redisMarkConversationSeen(id, convId, upTo)
+	err = cache.MarkConversationSeen(id, convId, upTo)
 	if err != nil {
-		go redisAddAllMessages(convId)
+		go cache.AddAllMessages(convId)
 	}
 	conversation, err = db.GetConversation(convId)
 	return
@@ -562,7 +563,7 @@ func userUploadExists(id gp.UserId, url string) (exists bool, err error) {
 func setProfileImage(id gp.UserId, url string) (err error) {
 	err = db.SetProfileImage(id, url)
 	if err == nil {
-		go redisSetProfileImage(id, url)
+		go cache.SetProfileImage(id, url)
 	}
 	return
 }
@@ -570,7 +571,7 @@ func setProfileImage(id gp.UserId, url string) (err error) {
 func setBusyStatus(id gp.UserId, busy bool) (err error) {
 	err = db.SetBusyStatus(id, busy)
 	if err == nil {
-		go redisSetBusyStatus(id, busy)
+		go cache.SetBusyStatus(id, busy)
 	}
 	return
 }
@@ -581,11 +582,11 @@ func BusyStatus(id gp.UserId) (busy bool, err error) {
 }
 
 func userPing(id gp.UserId) {
-	redisUserPing(id)
+	cache.UserPing(id)
 }
 
 func userIsOnline(id gp.UserId) bool {
-	return redisUserIsOnline(id)
+	return cache.UserIsOnline(id)
 }
 
 func getUserNotifications(id gp.UserId) (notifications []interface{}, err error) {

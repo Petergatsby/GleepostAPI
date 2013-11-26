@@ -3,16 +3,11 @@ package main
 
 import (
 	"github.com/draaglom/GleepostAPI/gp"
-	"github.com/garyburd/redigo/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"time"
-)
-
-var (
-	pool *redis.Pool
 )
 
 func main() {
@@ -23,7 +18,6 @@ func main() {
 		ReadTimeout:  70 * time.Second,
 		WriteTimeout: 70 * time.Second,
 	}
-	pool = redis.NewPool(RedisDial, 100)
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
 	http.HandleFunc(conf.UrlBase+"/newconversation", newConversationHandler)
