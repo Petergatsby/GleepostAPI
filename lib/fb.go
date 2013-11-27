@@ -62,6 +62,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	}
 	token.Expiry = expiry
 	token.FBUser = uint64(data["user_id"].(float64))
+	scopes := data["scopes"].([]interface{})
 	for _, scope := range data["scopes"] {
 		token.Scopes = append(token.Scopes, scope.(string))
 	}
