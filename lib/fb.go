@@ -37,41 +37,19 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("Result: %v\n", res)
-	fmt.Println(res.Get("data.app_id"))
-	fmt.Println(res.Get("app_id"))
-	fmt.Println(res.Get("data.0.app_id"))
-	fmt.Println(res.Get("data"))
-	fmt.Println(res["data"])
 	data := res["data"].(map[string]interface{})
-	fmt.Println(data["app_id"])
 	var id string
-	err = res.DecodeField("app_id", id)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	}
-	fmt.Println(id)
-	err = res.DecodeField("data.app_id", id)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	}
-	fmt.Println(id)
-	err = res.DecodeField("AppId", id)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-	}
-	fmt.Println(id)
-	id = res.Get("data.app_id").(string)
+	id = data["app_id"].(string)
 	if id != conf.Facebook.AppID {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var unix int64
-	unix = res.Get("data.expires_at").(int64)
+	unix = data["expires_at"].(int64)
 	if time.Unix(unix, 0).After(time.Now()) {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var valid bool
-	valid = res.Get("data.is_valid").(bool)
+	valid = data["is_valid"].(bool)
 	if !valid {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
