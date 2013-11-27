@@ -49,8 +49,8 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var unix int64
-	unix = int64(data["expires_at"].(float64))
-	if !time.Unix(unix, 0).After(time.Now()) {
+	expiry := time.Unix(int64(data["expires_at"].(float64)), 0)
+	if !expiry.After(time.Now()) {
 		fmt.Println("Token expired already")
 		return token, gp.APIerror{"Bad facebook token"}
 	}
@@ -60,9 +60,9 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		fmt.Println("Token isn't valid")
 		return token, gp.APIerror{"Bad facebook token"}
 	}
-	s := struct{Data FacebookToken}{token}
-	err = res.Decode(&s)
-	fmt.Printf("%v\n", err)
+	token.Expiry = expiry
+	token.FBUser = uint64(data["id"].(float64))
+	token.Scopes = data["scopes"].([]string)
 	fmt.Printf("%v\n", token)
 	return
 }
