@@ -66,7 +66,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
-	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ?"
+	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL"
 	sqlStmt["fbInsert"] = "INSERT INTO facebook (fb_id, email) VALUES (?, ?)"
 	sqlStmt["selectFBemail"] = "SELECT email FROM facebook WHERE fb_id = ?"
 	sqlStmt["fbInsertVerification"] = "REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)"
@@ -268,7 +268,7 @@ func BusyStatus(id gp.UserId) (busy bool, err error) {
 }
 
 func UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
-	err = stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
+	err = stmt["idFromFacebook"].QueryRow(fbid).Scan(&i)
 	return
 }
 
