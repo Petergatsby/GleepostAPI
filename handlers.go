@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"log"
 )
 
 //Note to self: validateToken should probably return an error at some point
