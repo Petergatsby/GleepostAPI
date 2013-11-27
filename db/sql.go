@@ -268,7 +268,7 @@ func BusyStatus(id gp.UserId) (busy bool, err error) {
 }
 
 func UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
-	err = stmt["idFromFacebook"].QueryRow(fbid).Scan(id)
+	err = stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
 	return
 }
 
@@ -278,7 +278,7 @@ func SetVerificationToken(id gp.UserId, token string) (err error) {
 }
 
 func VerificationTokenExists(token string) (id gp.UserId, err error) {
-	err = stmt["verificationExists"].QueryRow(token).Scan(id)
+	err = stmt["verificationExists"].QueryRow(token).Scan(&id)
 	return
 }
 
@@ -288,7 +288,7 @@ func Verify(id gp.UserId) (err error) {
 }
 
 func GetEmail(id gp.UserId) (email string, err error) {
-	err = stmt["emailSelect"].QueryRow(id).Scan(email)
+	err = stmt["emailSelect"].QueryRow(id).Scan(&email)
 	return
 }
 
