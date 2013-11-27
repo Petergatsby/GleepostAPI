@@ -66,7 +66,6 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	for _, scope := range scopes {
 		token.Scopes = append(token.Scopes, scope.(string))
 	}
-	fmt.Printf("%v\n", token)
 	return
 }
 

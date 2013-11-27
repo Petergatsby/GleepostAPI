@@ -768,6 +768,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
 			}
+			log.Println("Should be unverified response")
 			jsonResponse(w, []byte("{\"status\":\"unverified\"}"), 201)
 			return
 		}
