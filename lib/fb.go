@@ -28,7 +28,7 @@ func DebugToken(token string) {
 
 func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	conf := gp.GetConfig()
-	app := fb.New(conf.Facebook.AppId, conf.Facebook.AppSecret)
+	app := facebook.New(conf.Facebook.AppID, conf.Facebook.AppSecret)
 	appToken := app.AppAccessToken()
 	res, err := facebook.Get("/debug_token", facebook.Params{
 		"access_token": appToken,
