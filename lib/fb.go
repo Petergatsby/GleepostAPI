@@ -48,7 +48,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var unix int64
-	unix = data["expires_at"].(int64)
+	unix = int64(data["expires_at"].(float64))
 	if time.Unix(unix, 0).After(time.Now()) {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
