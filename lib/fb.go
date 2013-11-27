@@ -35,9 +35,9 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		"input_token": fbToken,
 	})
 	if err != nil {
-		fmt.Printf("Facebook error: %v", err)
 		return
 	}
+	fmt.Printf("Result: %v\n", res)
 	var id string
 	id = res["app_id"].(string)
 	if id != conf.Facebook.AppID {
