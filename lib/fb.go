@@ -54,6 +54,11 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		fmt.Printf("%v\n", err)
 	}
 	fmt.Println(id)
+	err = res.DecodeField("AppId", id)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+	fmt.Println(id)
 	id = res.Get("data.app_id").(string)
 	if id != conf.Facebook.AppID {
 		return token, gp.APIerror{"Bad facebook token"}
