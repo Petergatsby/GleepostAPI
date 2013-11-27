@@ -45,6 +45,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		return
 	}
 	if appid != tokenappid {
+		fmt.Println("App id doesn't match")
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var unix int64
