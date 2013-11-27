@@ -32,6 +32,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		"access_token": fbToken,
 	})
 	if err != nil {
+		fmt.Printf("Facebook error: %v", err)
 		return
 	}
 	var id string
