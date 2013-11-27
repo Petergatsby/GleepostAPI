@@ -769,7 +769,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			log.Println("Should be unverified response")
-			jsonResponse(w, []byte("{\"status\":\"unverified\"}"), 201)
+			jsonResponse(w, []byte(`{"status":"unverified"}`), 201)
 			return
 		}
 		log.Println("Token: ", token)
