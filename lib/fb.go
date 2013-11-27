@@ -39,17 +39,17 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	}
 	fmt.Printf("Result: %v\n", res)
 	var id string
-	id = res["app_id"].(string)
+	id = res.Get("data.app_id").(string)
 	if id != conf.Facebook.AppID {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var unix int64
-	unix = res["expires_at"].(int64)
+	unix = res.Get("data.expires_at").(int64)
 	if time.Unix(unix, 0).After(time.Now()) {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var valid bool
-	valid = res["is_valid"].(bool)
+	valid = res.Get("data.is_valid").(bool)
 	if !valid {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
