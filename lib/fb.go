@@ -42,6 +42,8 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	fmt.Println(res.Get("app_id"))
 	fmt.Println(res.Get("data.0.app_id"))
 	fmt.Println(res.Get("data"))
+	fmt.Println(res["data"])
+	fmt.Println(res["data"]["app_id"])
 	var id string
 	id = res.Get("data.app_id").(string)
 	if id != conf.Facebook.AppID {
