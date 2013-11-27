@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"github.com/draaglom/GleepostAPI/gp"
 	"github.com/draaglom/GleepostAPI/lib"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
-	"log"
 )
 
 //Note to self: validateToken should probably return an error at some point
@@ -769,7 +769,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			log.Println("Should be unverified response")
-			jsonResponse(w, []byte(`{"status":"unverified"}`), 201)
+			jsonResponse(w, struct{ status string }{"unverified"}, 201)
 			return
 		}
 		log.Println("Token: ", token)
@@ -790,7 +790,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 400)
 				return
 			}
-			jsonResponse(w, []byte(`{"verified":true}`), 200)
+			jsonResponse(w, struct{ verified bool }{true}, 200)
 			return
 		}
 		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
