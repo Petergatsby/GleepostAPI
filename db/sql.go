@@ -268,7 +268,7 @@ func BusyStatus(id gp.UserId) (busy bool, err error) {
 }
 
 func UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
-	err = stmt["idFromFacebook"].QueryRow(fbid).Scan(&i)
+	err = stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
 	return
 }
 
