@@ -51,11 +51,13 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	var unix int64
 	unix = int64(data["expires_at"].(float64))
 	if time.Unix(unix, 0).After(time.Now()) {
+		fmt.Println("Token expired already")
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var valid bool
 	valid = data["is_valid"].(bool)
 	if !valid {
+		fmt.Println("Token isn't valid")
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	err = res.Decode(token)
