@@ -61,7 +61,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	token.Expiry = expiry
-	token.FBUser = uint64(data["id"].(float64))
+	token.FBUser = uint64(data["user_id"].(float64))
 	token.Scopes = data["scopes"].([]string)
 	fmt.Printf("%v\n", token)
 	return
