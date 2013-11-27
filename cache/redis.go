@@ -570,7 +570,9 @@ func SetConversationExpiry(conv gp.Conversation) {
 func AddConversation(conv gp.Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
-	go SetConversationExpiry(conv)
+	if conv.Expiry != nil {
+		go SetConversationExpiry(conv)
+	}
 	for _, participant := range conv.Participants {
 		key := fmt.Sprintf("users:%d:conversations", participant.Id)
 		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.Id)

@@ -750,7 +750,6 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		token, err := lib.FacebookLogin(fbToken)
 		if err != nil {
-			log.Println(err)
 			if len(email) < 3 {
 				jsonResponse(w, gp.APIerror{"Email required"}, 400)
 				return
