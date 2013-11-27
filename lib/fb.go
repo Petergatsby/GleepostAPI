@@ -38,8 +38,8 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("%v\n", data)
 	data := res["data"].(map[string]interface{})
+	fmt.Printf("%v\n", data)
 	tokenappid := uint64(data["app_id"].(float64))
 	appid, err := strconv.ParseUint(conf.Facebook.AppID, 10, 64)
 	if err != nil {
