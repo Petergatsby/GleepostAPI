@@ -769,7 +769,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			log.Println("Should be unverified response")
-			jsonResponse(w, struct{ status string }{"unverified"}, 201)
+			jsonResponse(w, struct{ Status string `json:"status"` }{"unverified"}, 201)
 			return
 		}
 		log.Println("Token: ", token)
@@ -790,7 +790,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 400)
 				return
 			}
-			jsonResponse(w, struct{ verified bool }{true}, 200)
+			jsonResponse(w, struct{ Verified bool `json:"verified"` }{true}, 200)
 			return
 		}
 		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
