@@ -768,6 +768,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			jsonResponse(w, []byte("{\"status\":\"unverified\"}"), 201)
+			return
 		}
 		jsonResponse(w, token, 201)
 	} else {
