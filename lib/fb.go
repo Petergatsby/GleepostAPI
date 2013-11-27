@@ -6,6 +6,7 @@ import (
 	"github.com/draaglom/GleepostAPI/gp"
 	"github.com/huandu/facebook"
 	"time"
+	"strconv"
 )
 
 type FacebookToken struct {
@@ -38,9 +39,12 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		return
 	}
 	data := res["data"].(map[string]interface{})
-	var id string
-	id = data["app_id"].(string)
-	if id != conf.Facebook.AppID {
+	tokenappid := uint64(data["app_id"].(float64))
+	appid, err := strconv.ParseUint(conf.Facebook.AppID, 10, 64)
+	if err != nil {
+		return
+	}
+	if appid != tokenappid {
 		return token, gp.APIerror{"Bad facebook token"}
 	}
 	var unix int64
