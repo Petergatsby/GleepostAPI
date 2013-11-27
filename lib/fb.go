@@ -49,8 +49,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 		fmt.Println("App id doesn't match")
 		return token, gp.APIerror{"Bad facebook token"}
 	}
-	//expiry := time.Unix(int64(data["expires_at"].(float64)), 0)
-	expiry := time.Now().Add(20 * time.Second)
+	expiry := time.Unix(int64(data["expires_at"].(float64)), 0)
 	if !expiry.After(time.Now()) {
 		fmt.Println("Token expired already")
 		return token, gp.APIerror{"Bad facebook token"}
