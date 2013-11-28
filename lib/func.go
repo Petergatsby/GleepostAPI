@@ -205,10 +205,10 @@ func GetConversations(userId gp.UserId, start int64) (conversations []gp.Convers
 		go addAllConversations(userId)
 	} else {
 		//This is here because cache.GetConversations doesn't get the expiry itself...
-		for _, c := range(conversations) {
+		for i, c := range(conversations) {
 			exp, err := Expiry(c.Id)
 			if err == nil {
-				c.Expiry = &exp
+				conversations[i].Expiry = &exp
 			}
 		}
 	}
