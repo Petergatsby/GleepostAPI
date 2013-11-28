@@ -534,10 +534,6 @@ func GetConversations(id gp.UserId, start int64, count int) (conversations []gp.
 		if err != nil {
 			return
 		}
-		expiry, err := ConversationExpiry(conv.Id)
-		if err == nil {
-			conv.Expiry = &expiry
-		}
 		LastMessage, err := GetLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -559,11 +555,11 @@ func ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) 
 	return
 }
 
-func SetConversationExpiry(conv gp.Conversation) {
+func SetConversationExpiry(convId gp.ConversationId, expiry gp.Expiry) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:expiry", conv.Id)
-	conn.Send("SET", key, conv.Expiry.Time.Unix())
+	key := fmt.Sprintf("conversations:%d:expiry", convId)
+	conn.Send("SET", key, expiry.Time.Unix())
 	conn.Flush()
 }
 
@@ -571,7 +567,7 @@ func AddConversation(conv gp.Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
 	if conv.Expiry != nil {
-		go SetConversationExpiry(conv)
+		go SetConversationExpiry(conv.Id, *conv.Expiry)
 	}
 	for _, participant := range conv.Participants {
 		key := fmt.Sprintf("users:%d:conversations", participant.Id)

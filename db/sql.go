@@ -399,7 +399,7 @@ func GetConversations(userId gp.UserId, start int64, count int) (conversations [
 	for rows.Next() {
 		var conv gp.ConversationSmall
 		var t string
-		err = rows.Scan(&conv.Conversation.Id, &t)
+		err = rows.Scan(&conv.Id, &t)
 		if err != nil {
 			return conversations, err
 		}
@@ -408,6 +408,10 @@ func GetConversations(userId gp.UserId, start int64, count int) (conversations [
 		LastMessage, err := GetLastMessage(conv.Id)
 		if err == nil {
 			conv.LastMessage = &LastMessage
+		}
+		Expiry, err := ConversationExpiry(conv.Id)
+		if err != nil {
+			conv.Expiry = &Expiry
 		}
 		conversations = append(conversations, conv)
 	}

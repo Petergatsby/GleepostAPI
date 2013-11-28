@@ -203,6 +203,25 @@ func GetConversations(userId gp.UserId, start int64) (conversations []gp.Convers
 	if err != nil {
 		conversations, err = db.GetConversations(userId, start, conf.ConversationPageSize)
 		go addAllConversations(userId)
+	} else {
+		//This is here because cache.GetConversations doesn't get the expiry itself...
+		for _, c := range(conversations) {
+			exp, err := Expiry(c.Id)
+			if err == nil {
+				c.Expiry = &exp
+			}
+		}
+	}
+	return
+}
+
+func Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+	expiry, err = cache.ConversationExpiry(convId)
+	if err != nil {
+		expiry, err = db.ConversationExpiry(convId)
+		if err == nil {
+			cache.SetConversationExpiry(convId, expiry)
+		}
 	}
 	return
 }
@@ -687,10 +706,6 @@ func hasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 
 func likeCount(post gp.PostId) (count int, err error) {
 	return db.LikeCount(post)
-}
-
-func conversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
-	return db.ConversationExpiry(convId)
 }
 
 func verificationUrl(token string) (url string) {
