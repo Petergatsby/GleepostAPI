@@ -410,7 +410,7 @@ func GetConversations(userId gp.UserId, start int64, count int) (conversations [
 			conv.LastMessage = &LastMessage
 		}
 		Expiry, err := ConversationExpiry(conv.Id)
-		if err != nil {
+		if err == nil {
 			conv.Expiry = &Expiry
 		}
 		conversations = append(conversations, conv)
