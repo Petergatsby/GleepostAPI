@@ -700,7 +700,9 @@ func verificationUrl(token string) (url string) {
 
 //TODO: send an actual link
 func issueVerificationEmail(email string, name string, token string) (err error) {
-	err = send(email, name+", verify your Gleepost account!", verificationUrl(token))
+	url := verificationUrl(token)
+	html := "<html><body><a href=" + url + ">Verify your account here</a></body></html>"
+	err = sendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
 
