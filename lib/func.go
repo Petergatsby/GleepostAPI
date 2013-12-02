@@ -447,17 +447,30 @@ func GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	return db.GetContacts(user)
 }
 
-func AddContact(adder gp.UserId, addee gp.UserId) (user gp.User, err error) {
-	user, err = GetUser(addee)
+func AddContact(adder gp.UserId, addee gp.UserId) (contact gp.Contact, err error) {
+	user, err := GetUser(addee)
 	if err != nil {
 		return
-	} else {
-		err = db.AddContact(adder, addee)
-		if err == nil {
-			go createNotification("added_you", adder, addee, false, 0)
-		}
+	}
+	exists, err := ContactRequestExists(addee, adder)
+	if err != nil {
 		return
 	}
+	if exists {
+		return AcceptContact(adder, addee)
+	}
+	err = db.AddContact(adder, addee)
+	if err == nil {
+		go createNotification("added_you", adder, addee, false, 0)
+	}
+	contact.User = user
+	contact.YouConfirmed = true
+	contact.TheyConfirmed = false
+	return
+}
+
+func ContactRequestExists(adder gp.UserId, addee gp.UserId) (exists bool, err error) {
+	return db.ContactRequestExists(adder, addee)
 }
 
 func AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err error) {
