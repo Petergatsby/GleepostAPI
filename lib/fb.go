@@ -78,7 +78,7 @@ func FacebookLogin(fbToken string) (token gp.Token, err error) {
 	if err != nil {
 		return
 	}
-	token = CreateAndStoreToken(userId)
+	token, err = CreateAndStoreToken(userId)
 	return
 }
 
