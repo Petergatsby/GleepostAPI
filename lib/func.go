@@ -9,10 +9,6 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"io"
-	"io/ioutil"
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
-	"mime/multipart"
 	"regexp"
 	"strings"
 	"time"
@@ -67,18 +63,6 @@ func checkPassStrength(pass string) (err error) {
 		return &ETOOWEAK
 	}
 	return nil
-}
-
-func GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
-	message, err = cache.GetLastMessage(id)
-	if err != nil {
-		message, err = db.GetLastMessage(id)
-		go cache.AddAllMessages(id)
-		if err != nil {
-			return
-		}
-	}
-	return
 }
 
 func ValidateToken(id gp.UserId, token string) bool {
@@ -136,32 +120,6 @@ func GetUser(id gp.UserId) (user gp.User, err error) {
 	return
 }
 
-func GetCommentCount(id gp.PostId) (count int) {
-	count, err := cache.GetCommentCount(id)
-	if err != nil {
-		count = db.GetCommentCount(id)
-	}
-	return count
-}
-
-func CreateComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
-	post, err := GetPost(postId)
-	if err != nil {
-		return
-	}
-	commId, err = db.CreateComment(postId, userId, text)
-	if err == nil {
-		user, e := GetUser(userId)
-		if e != nil {
-			return commId, e
-		}
-		comment := gp.Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
-		go createNotification("commented", userId, post.By.Id, true, postId)
-		go cache.AddComment(postId, comment)
-	}
-	return commId, err
-}
-
 func GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	nets, err = cache.GetUserNetwork(id)
 	if err != nil {
@@ -177,132 +135,6 @@ func GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	return
 }
 
-func GetParticipants(convId gp.ConversationId) []gp.User {
-	participants, err := cache.GetParticipants(convId)
-	if err != nil {
-		participants = db.GetParticipants(convId)
-		go cache.SetConversationParticipants(convId, participants)
-	}
-	return participants
-}
-
-func GetMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
-	conf := gp.GetConfig()
-	messages, err = cache.GetMessages(convId, index, sel, conf.MessagePageSize)
-	if err != nil {
-		messages, err = db.GetMessages(convId, index, sel, conf.MessagePageSize)
-		go cache.AddAllMessages(convId)
-		return
-	}
-	return
-}
-
-func GetConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
-	conf := gp.GetConfig()
-	conversations, err = cache.GetConversations(userId, start, conf.ConversationPageSize)
-	if err != nil {
-		conversations, err = db.GetConversations(userId, start, conf.ConversationPageSize)
-		go addAllConversations(userId)
-	} else {
-		//This is here because cache.GetConversations doesn't get the expiry itself...
-		for i, c := range(conversations) {
-			exp, err := Expiry(c.Id)
-			if err == nil {
-				conversations[i].Expiry = &exp
-			}
-		}
-	}
-	return
-}
-
-func Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
-	expiry, err = cache.ConversationExpiry(convId)
-	if err != nil {
-		expiry, err = db.ConversationExpiry(convId)
-		if err == nil {
-			cache.SetConversationExpiry(convId, expiry)
-		}
-	}
-	return
-}
-
-func DeleteExpiry(convId gp.ConversationId) (err error) {
-	err = db.DeleteConversationExpiry(convId)
-	if err == nil {
-		go cache.DelConversationExpiry(convId)
-	}
-	return
-}
-
-func addAllConversations(userId gp.UserId) (err error) {
-	conf := gp.GetConfig()
-	conversations, err := db.GetConversations(userId, 0, conf.ConversationPageSize)
-	for _, conv := range conversations {
-		go cache.AddConversation(conv.Conversation)
-	}
-	return
-}
-
-func GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
-	//cache.GetConversation
-	return db.GetConversation(convId)
-}
-
-func GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
-	message, err = cache.GetMessage(msgId)
-	return message, err
-}
-
-func updateConversation(id gp.ConversationId) (err error) {
-	err = db.UpdateConversation(id)
-	if err != nil {
-		return err
-	}
-	go cache.UpdateConversation(id)
-	return nil
-}
-
-func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
-	messageId, err = db.AddMessage(convId, userId, text)
-	if err != nil {
-		return
-	}
-	user, err := GetUser(userId)
-	if err != nil {
-		return
-	}
-	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
-	go cache.Publish(msg, convId)
-	go cache.AddMessage(msg, convId)
-	go updateConversation(convId)
-	go messagePush(msg, convId)
-	return
-}
-
-func GetFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
-	conv.Id = convId
-	conv.LastActivity, err = ConversationLastActivity(convId)
-	if err != nil {
-		return
-	}
-	conv.Participants = GetParticipants(convId)
-	conv.Messages, err = GetMessages(convId, start, "start")
-	return
-}
-
-func ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
-	return db.ConversationActivity(convId)
-}
-
-func GetPostImages(postId gp.PostId) (images []string) {
-	images, _ = db.GetPostImages(postId)
-	return
-}
-
-func AddPostImage(postId gp.PostId, url string) (err error) {
-	return db.AddPostImage(postId, url)
-}
-
 func GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	user, err = db.GetProfile(id)
 	if err != nil {
@@ -313,77 +145,6 @@ func GetProfile(id gp.UserId) (user gp.Profile, err error) {
 		return
 	}
 	user.Network = nets[0]
-	return
-}
-
-func AwaitOneMessage(userId gp.UserId) (resp []byte) {
-	c := GetMessageChan(userId)
-	select {
-	case resp = <-c:
-		return
-	case <-time.After(60 * time.Second):
-		return []byte("{}")
-	}
-}
-
-func GetMessageChan(userId gp.UserId) (c chan []byte) {
-	return cache.MessageChan(userId)
-}
-
-func AddPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
-	networks, err := GetUserNetworks(userId)
-	if err != nil {
-		return
-	}
-	postId, err = db.AddPost(userId, text, networks[0].Id)
-	if err == nil {
-		go cache.AddNewPost(userId, text, postId, networks[0].Id)
-	}
-	return
-}
-
-func GetPosts(netId gp.NetworkId, index int64, sel string) (posts []gp.PostSmall, err error) {
-	conf := gp.GetConfig()
-	posts, err = cache.GetPosts(netId, index, conf.PostPageSize, sel)
-	if err != nil {
-		posts, err = db.GetPosts(netId, index, conf.PostPageSize, sel)
-		go cache.AddAllPosts(netId)
-	}
-	return
-}
-
-func GetComments(id gp.PostId, start int64) (comments []gp.Comment, err error) {
-	conf := gp.GetConfig()
-	if start+int64(conf.CommentPageSize) <= int64(conf.CommentCache) {
-		comments, err = cache.GetComments(id, start)
-		if err != nil {
-			comments, err = db.GetComments(id, start, conf.CommentPageSize)
-			go cache.AddAllComments(id)
-		}
-	} else {
-		comments, err = db.GetComments(id, start, conf.CommentPageSize)
-	}
-	return
-}
-
-func CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
-	networks, err := GetUserNetworks(id)
-	if err != nil {
-		return
-	}
-	participants, err := generatePartners(id, nParticipants-1, networks[0].Id)
-	if err != nil {
-		return
-	}
-	user, err := GetUser(id)
-	if err != nil {
-		return
-	}
-	participants = append(participants, user)
-	conversation, err = db.CreateConversation(id, participants, live)
-	if err == nil {
-		go cache.AddConversation(conversation)
-	}
 	return
 }
 
@@ -515,89 +276,8 @@ func DeleteDevice(user gp.UserId, deviceId string) (err error) {
 	return db.DeleteDevice(user, deviceId)
 }
 
-func generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
-	return db.RandomPartners(id, count, network)
-}
-
-func MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
-	err = db.MarkRead(id, convId, upTo)
-	if err != nil {
-		return
-	}
-	err = cache.MarkConversationSeen(id, convId, upTo)
-	if err != nil {
-		go cache.AddAllMessages(convId)
-	}
-	conversation, err = db.GetConversation(convId)
-	return
-}
-
 func setNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
 	return db.SetNetwork(userId, netId)
-}
-
-func randomFilename(extension string) (string, error) {
-	hash := sha256.New()
-	random := make([]byte, 32) //Number pulled out of my... ahem.
-	_, err := io.ReadFull(rand.Reader, random)
-	if err == nil {
-		hash.Write(random)
-		digest := hex.EncodeToString(hash.Sum(nil))
-		return digest + extension, nil
-	} else {
-		return "", err
-	}
-}
-
-func getS3() (s *s3.S3) {
-	conf := gp.GetConfig()
-	var auth aws.Auth
-	auth.AccessKey, auth.SecretKey = conf.AWS.KeyId, conf.AWS.SecretKey
-	s = s3.New(auth, aws.EUWest)
-	return
-}
-
-func StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
-	var filename string
-	var contenttype string
-	switch {
-	case strings.HasSuffix(header.Filename, ".jpg"):
-		filename, err = randomFilename(".jpg")
-		contenttype = "image/jpeg"
-	case strings.HasSuffix(header.Filename, ".jpeg"):
-		filename, err = randomFilename(".jpg")
-		contenttype = "image/jpeg"
-	case strings.HasSuffix(header.Filename, ".png"):
-		filename, err = randomFilename(".png")
-		contenttype = "image/png"
-	default:
-		return "", gp.APIerror{"Unsupported file type"}
-	}
-	if err != nil {
-		return "", gp.APIerror{err.Error()}
-	}
-	//store on s3
-	s := getS3()
-	bucket := s.Bucket("gpimg")
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-	err = bucket.Put(filename, data, contenttype, s3.PublicRead)
-	url = bucket.URL(filename)
-	if err != nil {
-		return "", err
-	}
-	err = userAddUpload(id, url)
-	return url, err
-}
-
-func userAddUpload(id gp.UserId, url string) (err error) {
-	return db.AddUpload(id, url)
-}
-
-func UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
-	return db.UploadExists(id, url)
 }
 
 func SetProfileImage(id gp.UserId, url string) (err error) {
@@ -667,68 +347,6 @@ func assignNetworks(user gp.UserId, email string) (networks int, err error) {
 	return
 }
 
-func GetPost(postId gp.PostId) (post gp.Post, err error) {
-	return db.GetPost(postId)
-}
-
-func GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
-	post.Post, err = GetPost(postId)
-	if err != nil {
-		return
-	}
-	post.Comments, err = GetComments(postId, 0)
-	if err != nil {
-		return
-	}
-	post.Likes, err = GetLikes(postId)
-	return
-}
-
-func AddLike(user gp.UserId, postId gp.PostId) (err error) {
-	//TODO: add like to redis
-	post, err := GetPost(postId)
-	if err != nil {
-		return
-	} else {
-		err = db.CreateLike(user, postId)
-		if err != nil {
-			return
-		} else {
-			createNotification("liked", user, post.By.Id, true, postId)
-		}
-	}
-	return
-}
-
-func DelLike(user gp.UserId, post gp.PostId) (err error) {
-	return db.RemoveLike(user, post)
-}
-
-func GetLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
-	l, err := db.GetLikes(post)
-	if err != nil {
-		return
-	}
-	for _, like := range l {
-		lf := gp.LikeFull{}
-		lf.User, err = GetUser(like.UserID)
-		if err != nil {
-			return
-		}
-		lf.Time = like.Time
-		likes = append(likes, lf)
-	}
-	return
-}
-
-func hasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
-	return db.HasLiked(user, post)
-}
-
-func likeCount(post gp.PostId) (count int, err error) {
-	return db.LikeCount(post)
-}
-
 func verificationUrl(token string) (url string) {
 	url = "https://gleepost.com/verification.html?token=" + token
 	return
@@ -789,12 +407,4 @@ func Verify(token string) (err error) {
 
 func UserWithEmail(email string) (id gp.UserId, err error) {
 	return db.UserWithEmail(email)
-}
-
-func TerminateConversation(convId gp.ConversationId) (err error) {
-	err = db.TerminateConversation(convId)
-	if err == nil {
-		go cache.TerminateConversation(convId)
-	}
-	return
 }
