@@ -552,6 +552,7 @@ HTTP 200
 required parameters: id, token, user
 
 Adds the user with id [user] to the current contact list.
+If this user has already added you, it will accept them.
 
 example responses:
 
