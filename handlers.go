@@ -354,6 +354,27 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			return
 		}
 		w.WriteHeader(204)
+	case convIdString2 != nil && r.Method == "PUT":
+		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
+		convId := gp.ConversationId(_convId)
+		expires, err := strconv.ParseBool(r.FormValue("expiry"))
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		if expires == false {
+			err = lib.DeleteExpiry(convId)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+		}
+		conversation, err := lib.GetConversation(userId, convId)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		}
+		jsonResponse(w, conversation, 200)
 	case convIdString2 != nil:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:

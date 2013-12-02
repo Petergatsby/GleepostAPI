@@ -29,7 +29,7 @@ URL: https://gleepost.com/api/v0.23/
 
 /conversations [[GET]](#get-conversations)
 
-/conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id)
+/conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id) [[PUT]](#get-conversationsconversation-id)
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
@@ -378,6 +378,17 @@ example responses:
 		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 ]
 ```
+
+##PUT /conversations/[conversation-id]
+required parameters:
+id=[user-id]
+token=[token]
+expiry=[bool]
+
+Set expiry = false and a conversation's expiry will be deleted.
+Will return the updated conversation object.
+NB: This probably isn't the right place to put this. Will change in a future release.
+
 
 ##POST /conversations/[conversation-id]/messages
 required parameters: id, token, text
