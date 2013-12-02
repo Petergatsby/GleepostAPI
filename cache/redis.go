@@ -546,11 +546,12 @@ func GetConversations(id gp.UserId, start int64, count int) (conversations []gp.
 func ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:expiry", convId)
-	t, err := redis.Int(conn.Do("GET", key))
+	key := fmt.Sprintf("conversations:%d", convId)
+	t, err := redis.Int(conn.Do("GET", key + ":expiry"))
 	if err != nil {
 		return
 	}
+	expiry.Ended, err = redis.Bool(conn.Do("GET", key + ":ended"))
 	expiry.Time = time.Unix(int64(t), 0).UTC()
 	return
 }
@@ -558,8 +559,8 @@ func ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) 
 func SetConversationExpiry(convId gp.ConversationId, expiry gp.Expiry) {
 	conn := pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:expiry", convId)
-	conn.Send("SET", key, expiry.Time.Unix())
+	key := fmt.Sprintf("conversations:%d", convId)
+	conn.Send("MSET", key + ":expiry", expiry.Time.Unix(), key + ":ended", expiry.Ended)
 	conn.Flush()
 }
 
@@ -574,6 +575,15 @@ func AddConversation(conv gp.Conversation) {
 		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.Id)
 	}
 	conn.Flush()
+}
+
+func TerminateConversation(convId gp.ConversationId) (err error) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:ended", convId)
+	conn.Send("SET", key, true)
+	conn.Flush()
+	return
 }
 
 /********************************************************************

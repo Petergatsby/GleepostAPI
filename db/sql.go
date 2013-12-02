@@ -83,6 +83,7 @@ func prepare(db *sql.DB) (err error) {
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["conversationSetExpiry"] = "REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
+	sqlStmt["deleteExpiry"] = "DELETE FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["endConversation"] = "UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	sqlStmt["participantSelect"] = "SELECT participant_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
@@ -438,6 +439,11 @@ func ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) 
 		return
 	}
 	expiry.Time, err = time.Parse(mysqlTime, t)
+	return
+}
+
+func DeleteConversationExpiry(convId gp.ConversationId) (err error) {
+	_, err = stmt["deleteExpiry"].Exec(convId)
 	return
 }
 

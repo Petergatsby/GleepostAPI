@@ -784,5 +784,9 @@ func UserWithEmail(email string) (id gp.UserId, err error) {
 }
 
 func TerminateConversation(convId gp.ConversationId) (err error) {
-	return db.TerminateConversation(convId)
+	err = db.TerminateConversation(convId)
+	if err == nil {
+		go cache.TerminateConversation(convId)
+	}
+	return
 }
