@@ -226,6 +226,14 @@ func Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	return
 }
 
+func DeleteExpiry(convId gp.ConversationId) (err error) {
+	err = db.DeleteConversationExpiry(convId)
+	if err == nil {
+		go cache.DelConversationExpiry(convId)
+	}
+	return
+}
+
 func addAllConversations(userId gp.UserId) (err error) {
 	conf := gp.GetConfig()
 	conversations, err := db.GetConversations(userId, 0, conf.ConversationPageSize)

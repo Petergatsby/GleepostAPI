@@ -564,6 +564,14 @@ func SetConversationExpiry(convId gp.ConversationId, expiry gp.Expiry) {
 	conn.Flush()
 }
 
+func DelConversationExpiry(convId gp.ConversationId) {
+	conn := pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d", convId)
+	conn.Send("DEL", key + ":expiry", key + ":ended")
+	conn.Flush()
+}
+
 func AddConversation(conv gp.Conversation) {
 	conn := pool.Get()
 	defer conn.Close()
