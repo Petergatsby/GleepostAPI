@@ -2,8 +2,8 @@ package lib
 
 import (
 	"fmt"
-	"github.com/draaglom/GleepostAPI/db"
-	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/lib/db"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/huandu/facebook"
 	"time"
 	"strconv"

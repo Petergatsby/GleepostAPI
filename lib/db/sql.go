@@ -3,7 +3,7 @@ package db
 
 import (
 	"database/sql"
-	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"

@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	_ "net/http/pprof"

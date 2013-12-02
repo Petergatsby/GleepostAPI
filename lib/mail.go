@@ -2,7 +2,7 @@ package lib
 
 import (
 	"fmt"
-	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/smtp"
 )

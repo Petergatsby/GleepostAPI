@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/draaglom/GleepostAPI/gp"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib"
 	"log"
 	"net/http"
