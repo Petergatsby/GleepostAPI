@@ -147,11 +147,10 @@ func GetMessages(convId gp.ConversationId, index int64, sel string) (messages []
 	return
 }
 
-func GetConversations(userId gp.UserId, start int64) (conversations []gp.ConversationSmall, err error) {
-	conf := gp.GetConfig()
-	conversations, err = cache.GetConversations(userId, start, conf.ConversationPageSize)
+func GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+	conversations, err = cache.GetConversations(userId, start, count)
 	if err != nil {
-		conversations, err = db.GetConversations(userId, start, conf.ConversationPageSize)
+		conversations, err = db.GetConversations(userId, start, count)
 		go addAllConversations(userId)
 	} else {
 		//This is here because cache.GetConversations doesn't get the expiry itself...
@@ -192,6 +191,37 @@ func DeleteExpiry(convId gp.ConversationId) (err error) {
 	err = db.DeleteConversationExpiry(convId)
 	if err == nil {
 		go cache.DelConversationExpiry(convId)
+	}
+	return
+}
+
+//UnExpireBetweenUsers should fetch all of users[0] conversations, find the ones which contain
+//exactly the same participants as users and delete its expiry(if it exists).
+func UnExpireBetween(users []gp.UserId) (err error) {
+	if len(users) < 2 {
+		return gp.APIerror{">1 user required?"}
+	}
+	conversations, err := db.GetConversations(users[0], 0, 99999)
+	if err != nil {
+		return
+	}
+	for _, c := range(conversations) {
+		n := 0
+		if len(users) == len(c.Participants) {
+			for _, p := range(c.Participants) {
+				for _, u := range(users) {
+					if u == p.Id {
+						n++
+					}
+				}
+			}
+		}
+		if n == len(users) {
+			err = DeleteExpiry(c.Id)
+			if err != nil {
+				return
+			}
+		}
 	}
 	return
 }

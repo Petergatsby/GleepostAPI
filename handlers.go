@@ -240,7 +240,8 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			start = 0
 		}
-		conversations, err := lib.GetConversations(userId, start)
+		conf := gp.GetConfig()
+		conversations, err := lib.GetConversations(userId, start, conf.ConversationPageSize)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {

@@ -254,6 +254,7 @@ func AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err 
 	contact.YouConfirmed = true
 	contact.TheyConfirmed = true
 	go createNotification("accepted_you", user, toAccept, false, 0)
+	go UnExpireBetween([]gp.UserId{user, toAccept})
 	return
 }
 
