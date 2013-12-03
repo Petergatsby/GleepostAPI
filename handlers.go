@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"code.google.com/p/go.net/websocket"
 )
 
 //Note to self: validateToken should probably return an error at some point
@@ -822,5 +823,15 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 	} else {
 		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func jsonServer(ws *websocket.Conn) {
+	c := lib.GetMessageChan(2395)
+	for {
+		select {
+		case message := <-c:
+			ws.Write(message)
+		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	_ "net/http/pprof"
 	"runtime"
 	"time"
+	"code.google.com/p/go.net/websocket"
 )
 
 func main() {
@@ -38,5 +39,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
 	http.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	http.HandleFunc(conf.UrlBase+"/verify/", verificationHandler)
+	http.Handle(conf.UrlBase+"/ws", websocket.Handler(websocket.Handler(jsonServer)))
 	server.ListenAndServe()
 }
