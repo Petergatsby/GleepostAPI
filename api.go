@@ -2,13 +2,13 @@
 package main
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"time"
-	"code.google.com/p/go.net/websocket"
 )
 
 func main() {
@@ -19,6 +19,8 @@ func main() {
 		ReadTimeout:  70 * time.Second,
 		WriteTimeout: 70 * time.Second,
 	}
+	wsconfig, _ := websocket.NewConfig(conf.UrlBase+"/ws", "gleepost.com/api")
+	wsserver := websocket.Server{Config: *wsconfig, Handler: jsonServer}
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
 	http.HandleFunc(conf.UrlBase+"/newconversation", newConversationHandler)
@@ -39,6 +41,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
 	http.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	http.HandleFunc(conf.UrlBase+"/verify/", verificationHandler)
-	http.Handle(conf.UrlBase+"/ws", websocket.Handler(websocket.Handler(jsonServer)))
+	http.HandleFunc(conf.UrlBase+"/ws", wsserver.ServeHTTP)
 	server.ListenAndServe()
 }

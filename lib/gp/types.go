@@ -286,3 +286,12 @@ func init() {
 	configInit()
 }
 
+type MsgQueue struct {
+	Commands chan QueueCommand
+	Messages chan []byte
+}
+
+type QueueCommand struct {
+	Command string
+	Value string
+}

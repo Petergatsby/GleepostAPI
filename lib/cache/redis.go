@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-//TODO: turn into module
-
 var (
 	pool *redis.Pool
 )
@@ -24,7 +22,6 @@ func init() {
 		General
 ********************************************************************/
 
-//TODO: Unexport
 func redisDial() (redis.Conn, error) {
 	conf := gp.GetConfig()
 	conn, err := redis.Dial(conf.Redis.Proto, conf.Redis.Address)
@@ -818,4 +815,45 @@ func TokenExists(id gp.UserId, token string) bool {
 		return false
 	}
 	return exists
+}
+
+func EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
+	conn := pool.Get()
+	defer conn.Close()
+	psc := redis.PubSubConn{Conn: conn}
+	psc.Subscribe(subscriptions)
+	go controller(&psc, events.Commands)
+	go messageReceiver(&psc, events.Messages)
+	return events
+}
+
+func messageReceiver(psc *redis.PubSubConn, messages chan<-[]byte) {
+	for {
+		switch n := psc.Receive().(type) {
+		case redis.Message:
+			messages <- n.Data
+		case redis.Subscription:
+			if n.Count == 0 {
+				close(messages)
+				return
+			}
+		case error:
+			log.Println(n)
+			close(messages)
+			return
+		}
+	}
+}
+
+func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
+	for {
+		command, ok := <-commands
+		if !ok {
+			return
+		}
+		if command.Command == "UNSUBSCRIBE" && command.Value == "" {
+			psc.Unsubscribe()
+			return
+		}
+	}
 }

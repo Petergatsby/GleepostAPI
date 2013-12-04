@@ -1,14 +1,14 @@
 package main
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"encoding/json"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
-	"code.google.com/p/go.net/websocket"
 )
 
 //Note to self: validateToken should probably return an error at some point
@@ -827,10 +827,10 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func jsonServer(ws *websocket.Conn) {
-	c := lib.GetMessageChan(2395)
+	events := lib.EventSubscribe([]string{"2395"})
 	for {
 		select {
-		case message := <-c:
+		case message := <-events.Messages:
 			ws.Write(message)
 		}
 	}
