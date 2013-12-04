@@ -19,7 +19,7 @@ func main() {
 		ReadTimeout:  70 * time.Second,
 		WriteTimeout: 70 * time.Second,
 	}
-	wsconfig, _ := websocket.NewConfig(conf.UrlBase+"/ws", "gleepost.com/api")
+	wsconfig, _ := websocket.NewConfig(conf.UrlBase+"/ws", "gleepost.com/api/v0.24/ws")
 	wsserver := websocket.Server{Config: *wsconfig, Handler: jsonServer}
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
