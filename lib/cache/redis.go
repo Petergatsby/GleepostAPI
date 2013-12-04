@@ -818,6 +818,9 @@ func TokenExists(id gp.UserId, token string) bool {
 }
 
 func EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
+	commands := make(chan gp.QueueCommand)
+	messages := make(chan []byte)
+	events = gp.MsgQueue{Commands: commands, Messages: messages}
 	conn := pool.Get()
 	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
