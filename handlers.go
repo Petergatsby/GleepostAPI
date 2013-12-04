@@ -833,7 +833,7 @@ func jsonServer(ws *websocket.Conn) {
 		n, err := ws.Write(message)
 		if err != nil {
 			log.Println("Saw an error: ", err)
-			events.Commands<-gp.QueueCommand{Command:"UNSUBSCRIBE", Value:""}
+			events.Commands <- gp.QueueCommand{Command: "UNSUBSCRIBE", Value: ""}
 			close(events.Commands)
 		}
 		log.Println("Sent bytes: ", n)
