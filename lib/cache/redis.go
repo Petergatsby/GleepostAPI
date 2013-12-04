@@ -822,7 +822,6 @@ func EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	messages := make(chan []byte)
 	events = gp.MsgQueue{Commands: commands, Messages: messages}
 	conn := pool.Get()
-	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
 	psc.Subscribe(subscriptions)
 	go controller(&psc, events.Commands)
@@ -838,6 +837,7 @@ func messageReceiver(psc *redis.PubSubConn, messages chan<-[]byte) {
 		case redis.Subscription:
 			if n.Count == 0 {
 				close(messages)
+				psc.Conn.Close()
 				return
 			}
 		case error:
