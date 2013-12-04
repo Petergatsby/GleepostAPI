@@ -826,7 +826,9 @@ func EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	conn := pool.Get()
 	log.Println("Got a redis connection")
 	psc := redis.PubSubConn{Conn: conn}
-	psc.Subscribe(subscriptions)
+	for _, s := range subscriptions {
+		psc.Subscribe(s)
+	}
 	log.Println("Subscribed to some stuff: ", subscriptions)
 	go controller(&psc, events.Commands)
 	log.Println("Launched a goroutine to listen for unsub")
