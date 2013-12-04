@@ -819,13 +819,19 @@ func TokenExists(id gp.UserId, token string) bool {
 
 func EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	commands := make(chan gp.QueueCommand)
+	log.Println("Made a new command channel")
 	messages := make(chan []byte)
+	log.Println("Made a new message channel")
 	events = gp.MsgQueue{Commands: commands, Messages: messages}
 	conn := pool.Get()
+	log.Println("Got a redis connection")
 	psc := redis.PubSubConn{Conn: conn}
 	psc.Subscribe(subscriptions)
+	log.Println("Subscribed to some stuff")
 	go controller(&psc, events.Commands)
+	log.Println("Launched a goroutine to listen for unsub")
 	go messageReceiver(&psc, events.Messages)
+	log.Println("Launched a goroutine to get messages")
 	return events
 }
 
@@ -833,14 +839,17 @@ func messageReceiver(psc *redis.PubSubConn, messages chan<-[]byte) {
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:
+			log.Println("Got a message: ", n.Data)
 			messages <- n.Data
 		case redis.Subscription:
+			log.Println("Saw a subscription event: ", n.Count)
 			if n.Count == 0 {
 				close(messages)
 				psc.Conn.Close()
 				return
 			}
 		case error:
+			log.Println("Saw an error: ", n)
 			log.Println(n)
 			close(messages)
 			return
@@ -854,6 +863,7 @@ func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
 		if !ok {
 			return
 		}
+		log.Println("Got a command: ", command)
 		if command.Command == "UNSUBSCRIBE" && command.Value == "" {
 			psc.Unsubscribe()
 			return
