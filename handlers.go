@@ -829,9 +829,13 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 func jsonServer(ws *websocket.Conn) {
 	events := lib.EventSubscribe([]string{"2395"})
 	for {
-		select {
-		case message := <-events.Messages:
-			ws.Write(message)
+		message := <-events.Messages
+		n, err := ws.Write(message)
+		if err != nil {
+			log.Println("Saw an error: ", err)
+			events.Commands<-gp.QueueCommand{Command:"UNSUBSCRIBE", Value:""}
+			close(events.Commands)
 		}
+		log.Println("Sent bytes: ", n)
 	}
 }
