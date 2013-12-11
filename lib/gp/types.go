@@ -295,3 +295,9 @@ type QueueCommand struct {
 	Command string
 	Value string
 }
+
+type Event struct {
+	Type	 string `json:"type"`
+	Location string `json:"location,omitempty"`
+	Data	 interface{} `json:"data"`
+}

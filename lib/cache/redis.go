@@ -46,6 +46,17 @@ func Publish(msg gp.Message, convId gp.ConversationId) {
 	conn.Flush()
 }
 
+func PublishEvent(etype string, where string, data interface{}, channels []string) {
+	conn := pool.Get()
+	defer conn.Close()
+	event := gp.Event{Type:etype, Location:where, Data:data}
+	JSONEvent, _ := json.Marshal(event)
+	for _, channel := range channels {
+		conn.Send("PUBLISH", channel, JSONEvent)
+	}
+	conn.Flush()
+}
+
 //TODO: Delete Printf
 func Subscribe(c chan []byte, userId gp.UserId) {
 	conn := pool.Get()
