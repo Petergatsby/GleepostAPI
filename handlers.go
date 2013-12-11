@@ -827,7 +827,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func jsonServer(ws *websocket.Conn) {
-	events := lib.EventSubscribe([]string{"2395"})
+	events := lib.EventSubscribe([]string{"m:2395"})
 	for {
 		message, ok := <-events.Messages
 		if !ok {
