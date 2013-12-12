@@ -827,7 +827,15 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func jsonServer(ws *websocket.Conn) {
-	events := lib.EventSubscribe([]string{"m:2395"})
+	r := ws.Request()
+	defer ws.Close()
+	userId, err := authenticate(r)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	//Change this. 12/12/13
+	events := lib.EventSubscribe(lib.MessageChannelKeys([]gp.User{gp.User{Id:userId}}))
 	for {
 		message, ok := <-events.Messages
 		if !ok {
