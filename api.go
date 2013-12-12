@@ -19,8 +19,6 @@ func main() {
 		ReadTimeout:  70 * time.Second,
 		WriteTimeout: 70 * time.Second,
 	}
-	wsconfig, _ := websocket.NewConfig(conf.UrlBase+"/ws", "gleepost.com/api/v0.24/ws")
-	wsserver := websocket.Server{Config: *wsconfig, Handler: jsonServer}
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
 	http.HandleFunc(conf.UrlBase+"/newconversation", newConversationHandler)
@@ -41,6 +39,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
 	http.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	http.HandleFunc(conf.UrlBase+"/verify/", verificationHandler)
-	http.HandleFunc(conf.UrlBase+"/ws", wsserver.ServeHTTP)
+	http.Handle(conf.UrlBase+"/ws", websocket.Handler(jsonServer))
 	server.ListenAndServe()
 }
