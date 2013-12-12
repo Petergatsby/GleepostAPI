@@ -831,11 +831,11 @@ func jsonServer(ws *websocket.Conn) {
 	defer ws.Close()
 	userId, err := authenticate(r)
 	if err != nil {
-		log.Println(err)
+		ws.Write([]byte(err.Error()))
 		return
 	}
 	//Change this. 12/12/13
-	events := lib.EventSubscribe(lib.MessageChannelKeys([]gp.User{gp.User{Id:userId}}))
+	events := lib.EventSubscribe(lib.MessageChannelKeys([]gp.User{gp.User{Id: userId}}))
 	for {
 		message, ok := <-events.Messages
 		if !ok {
