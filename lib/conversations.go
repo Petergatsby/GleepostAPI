@@ -117,7 +117,7 @@ func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 }
 
 func ConversationURI(convId gp.ConversationId) (uri string) {
-	return fmt.Sprintf("conversations/%d", convId)
+	return fmt.Sprintf("/conversations/%d", convId)
 }
 
 func MessageChannelKeys(participants []gp.User) (keys []string) {

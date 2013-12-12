@@ -9,7 +9,7 @@ An event looks like this:
 ```
 {
 	"type":"message",
-	"location":"conversations/67",
+	"location":"/conversations/67",
 	"data":{"id":1173,"by":{"id":9,"username":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/59bdb3c4a4151cc7ab41137eecbcc4d461291f72cfd6b6516b12de00a7ad1a94.jpg"},"text":"testing12345678901234","timestamp":"2013-12-12T15:20:54.665361234Z","seen":false}
 }
 ```
@@ -26,7 +26,7 @@ An event with type "message" is the replacement for a long-poll message. It cont
 ```
 {
 	"type":"message",
-	"location":"conversations/67",
+	"location":"/conversations/67",
 	"data":{"id":1173,"by":{"id":9,"username":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/59bdb3c4a4151cc7ab41137eecbcc4d461291f72cfd6b6516b12de00a7ad1a94.jpg"},"text":"testing12345678901234","timestamp":"2013-12-12T15:20:54.665361234Z","seen":false}
 }
 ```
