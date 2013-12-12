@@ -1,7 +1,7 @@
-#Gleepost API / V0.23
+#Gleepost API / V0.24
 
 
-URL: https://gleepost.com/api/v0.23/
+URL: https://gleepost.com/api/v0.24/
 
 ##Notes:
 
@@ -40,6 +40,8 @@ URL: https://gleepost.com/api/v0.23/
 /newgroupconversation [[POST]](#post-newgroupconversation)
 
 /longpoll [[GET]](#get-longpoll)
+
+/ws [[GET]](#get-ws)
 
 /contacts [[GET]](#get-contacts) [[POST]](#post-contacts)
 
@@ -529,6 +531,13 @@ example responses:
 	"conversation_id":5
 }
 ```
+
+##GET /ws
+Required parameters:
+id=[user-id]
+token=[token]
+
+See [the websockets readme.](websockets.md)
 
 ##GET /contacts
 required parameters:
