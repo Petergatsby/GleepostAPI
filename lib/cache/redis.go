@@ -852,7 +852,7 @@ func messageReceiver(psc *redis.PubSubConn, messages chan<-[]byte) {
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:
-			log.Println("Got a message: ", n.Data)
+			log.Printf("Got a message: %s", n.Data)
 			messages <- n.Data
 		case redis.Subscription:
 			log.Println("Saw a subscription event: ", n.Count)

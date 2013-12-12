@@ -850,6 +850,6 @@ func jsonServer(ws *websocket.Conn) {
 			close(events.Commands)
 			return
 		}
-		log.Printf("Sent bytes: %s", n)
+		log.Println("Sent bytes: ", n)
 	}
 }
