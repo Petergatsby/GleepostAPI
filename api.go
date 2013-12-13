@@ -8,7 +8,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
-	"time"
 )
 
 func main() {
@@ -16,8 +15,6 @@ func main() {
 	conf := gp.GetConfig()
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
-		ReadTimeout:  70 * time.Second,
-		WriteTimeout: 70 * time.Second,
 	}
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
