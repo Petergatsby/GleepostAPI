@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-//TODO: turn into module
-
 var (
 	pool *redis.Pool
 )
@@ -24,7 +22,6 @@ func init() {
 		General
 ********************************************************************/
 
-//TODO: Unexport
 func redisDial() (redis.Conn, error) {
 	conf := gp.GetConfig()
 	conn, err := redis.Dial(conf.Redis.Proto, conf.Redis.Address)
@@ -45,6 +42,17 @@ func Publish(msg gp.Message, convId gp.ConversationId) {
 	JSONmsg, _ := json.Marshal(gp.RedisMessage{msg, convId})
 	for _, user := range participants {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
+	}
+	conn.Flush()
+}
+
+func PublishEvent(etype string, where string, data interface{}, channels []string) {
+	conn := pool.Get()
+	defer conn.Close()
+	event := gp.Event{Type:etype, Location:where, Data:data}
+	JSONEvent, _ := json.Marshal(event)
+	for _, channel := range channels {
+		conn.Send("PUBLISH", channel, JSONEvent)
 	}
 	conn.Flush()
 }
@@ -818,4 +826,60 @@ func TokenExists(id gp.UserId, token string) bool {
 		return false
 	}
 	return exists
+}
+
+func EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
+	commands := make(chan gp.QueueCommand)
+	log.Println("Made a new command channel")
+	messages := make(chan []byte)
+	log.Println("Made a new message channel")
+	events = gp.MsgQueue{Commands: commands, Messages: messages}
+	conn := pool.Get()
+	log.Println("Got a redis connection")
+	psc := redis.PubSubConn{Conn: conn}
+	for _, s := range subscriptions {
+		psc.Subscribe(s)
+	}
+	log.Println("Subscribed to some stuff: ", subscriptions)
+	go controller(&psc, events.Commands)
+	log.Println("Launched a goroutine to listen for unsub")
+	go messageReceiver(&psc, events.Messages)
+	log.Println("Launched a goroutine to get messages")
+	return events
+}
+
+func messageReceiver(psc *redis.PubSubConn, messages chan<-[]byte) {
+	for {
+		switch n := psc.Receive().(type) {
+		case redis.Message:
+			log.Printf("Got a message: %s", n.Data)
+			messages <- n.Data
+		case redis.Subscription:
+			log.Println("Saw a subscription event: ", n.Count)
+			if n.Count == 0 {
+				close(messages)
+				psc.Conn.Close()
+				return
+			}
+		case error:
+			log.Println("Saw an error: ", n)
+			log.Println(n)
+			close(messages)
+			return
+		}
+	}
+}
+
+func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
+	for {
+		command, ok := <-commands
+		if !ok {
+			return
+		}
+		log.Println("Got a command: ", command)
+		if command.Command == "UNSUBSCRIBE" && command.Value == "" {
+			psc.Unsubscribe()
+			return
+		}
+	}
 }

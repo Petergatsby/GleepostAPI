@@ -1,9 +1,10 @@
 package main
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"encoding/json"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/http"
 	"regexp"
@@ -822,5 +823,33 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 	} else {
 		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func jsonServer(ws *websocket.Conn) {
+	r := ws.Request()
+	defer ws.Close()
+	userId, err := authenticate(r)
+	if err != nil {
+		ws.Write([]byte(err.Error()))
+		return
+	}
+	//Change this. 12/12/13
+	events := lib.EventSubscribe(lib.MessageChannelKeys([]gp.User{gp.User{Id: userId}}))
+	for {
+		message, ok := <-events.Messages
+		if !ok {
+			log.Println("Message channel is closed...")
+			ws.Close()
+			return
+		}
+		n, err := ws.Write(message)
+		if err != nil {
+			log.Println("Saw an error: ", err)
+			events.Commands <- gp.QueueCommand{Command: "UNSUBSCRIBE", Value: ""}
+			close(events.Commands)
+			return
+		}
+		log.Println("Sent bytes: ", n)
 	}
 }

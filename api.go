@@ -2,21 +2,19 @@
 package main
 
 import (
+	"code.google.com/p/go.net/websocket"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
-	"time"
 )
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := gp.GetConfig()
 	server := &http.Server{
-		Addr:         ":" + conf.Port,
-		ReadTimeout:  70 * time.Second,
-		WriteTimeout: 70 * time.Second,
+		Addr: ":" + conf.Port,
 	}
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
@@ -38,5 +36,6 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
 	http.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	http.HandleFunc(conf.UrlBase+"/verify/", verificationHandler)
+	http.Handle(conf.UrlBase+"/ws", websocket.Handler(jsonServer))
 	server.ListenAndServe()
 }

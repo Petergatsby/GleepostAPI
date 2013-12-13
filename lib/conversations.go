@@ -5,6 +5,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"time"
+	"fmt"
 )
 
 func TerminateConversation(convId gp.ConversationId) (err error) {
@@ -106,10 +107,24 @@ func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 	}
 	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
 	go cache.Publish(msg, convId)
+	participants := db.GetParticipants(convId)
+	chans := MessageChannelKeys(participants)
+	go cache.PublishEvent("message", ConversationURI(convId), msg, chans)
 	go cache.AddMessage(msg, convId)
 	go updateConversation(convId)
 	go messagePush(msg, convId)
 	return
+}
+
+func ConversationURI(convId gp.ConversationId) (uri string) {
+	return fmt.Sprintf("/conversations/%d", convId)
+}
+
+func MessageChannelKeys(participants []gp.User) (keys []string) {
+	for _, u := range participants {
+		keys = append(keys, fmt.Sprintf("m:%d", u.Id))
+	}
+	return keys
 }
 
 func GetFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
