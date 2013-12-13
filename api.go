@@ -14,7 +14,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := gp.GetConfig()
 	server := &http.Server{
-		Addr:         ":" + conf.Port,
+		Addr: ":" + conf.Port,
 	}
 	http.HandleFunc(conf.UrlBase+"/login", loginHandler)
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
