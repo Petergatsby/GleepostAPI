@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"fmt"
 )
 
 var ETOOWEAK = gp.APIerror{"Password too weak!"}
@@ -319,11 +320,16 @@ func MarkNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err error) {
 }
 
 func createNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (err error) {
-	_, err = db.CreateNotification(ntype, by, recipient, isPN, post)
+	notification, err := db.CreateNotification(ntype, by, recipient, isPN, post)
 	if err == nil {
 		go notificationPush(recipient)
+		go cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
 	}
 	return
+}
+
+func NotificationChannelKey(id gp.UserId) (channel string) {
+	return fmt.Sprintf("n:%d", id)
 }
 
 func assignNetworks(user gp.UserId, email string) (networks int, err error) {

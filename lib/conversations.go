@@ -50,8 +50,14 @@ func CreateConversation(id gp.UserId, nParticipants int, live bool) (conversatio
 	conversation, err = db.CreateConversation(id, participants, live)
 	if err == nil {
 		go cache.AddConversation(conversation)
+		go NewConversationEvent(conversation)
 	}
 	return
+}
+
+func NewConversationEvent(conversation gp.Conversation) {
+		chans := ConversationChannelKeys(conversation.Participants)
+		go cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
 }
 
 func AwaitOneMessage(userId gp.UserId) (resp []byte) {
@@ -108,7 +114,7 @@ func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messag
 	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
 	go cache.Publish(msg, convId)
 	participants := db.GetParticipants(convId)
-	chans := MessageChannelKeys(participants)
+	chans := ConversationChannelKeys(participants)
 	go cache.PublishEvent("message", ConversationURI(convId), msg, chans)
 	go cache.AddMessage(msg, convId)
 	go updateConversation(convId)
@@ -120,9 +126,9 @@ func ConversationURI(convId gp.ConversationId) (uri string) {
 	return fmt.Sprintf("/conversations/%d", convId)
 }
 
-func MessageChannelKeys(participants []gp.User) (keys []string) {
+func ConversationChannelKeys(participants []gp.User) (keys []string) {
 	for _, u := range participants {
-		keys = append(keys, fmt.Sprintf("m:%d", u.Id))
+		keys = append(keys, fmt.Sprintf("c:%d", u.Id))
 	}
 	return keys
 }
