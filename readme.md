@@ -57,7 +57,7 @@ URL: https://gleepost.com/api/v0.24/
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
-/notifications [[GET]](#post-notifications) [[PUT]](#put-notifications)
+/notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
 
 /verify/[token] [[POST]](#post-verifytoken)
 
