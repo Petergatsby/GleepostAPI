@@ -34,6 +34,11 @@ An event with type "message" is the replacement for a long-poll message. It cont
 ###New conversation
 An event with type "new-conversation" is triggered every time you are placed in a new conversation. It contains a location (the URI of the conversation) and the data payload is the conversation object.
 ```
+{
+	"type":"new-conversation",
+	"location":"/conversations/1595",
+	"data":{"id":1595,"lastActivity":"2013-12-16T14:13:27.609454716Z","participants":[{"id":2147,"username":"PaulLoran","profile_image":""},{"id":9,"username":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/59bdb3c4a4151cc7ab41137eecbcc4d461291f72cfd6b6516b12de00a7ad1a94.jpg"}],"expiry":{"time":"2013-12-16T14:23:27.609455414Z","ended":false}}
+}
 ```
 
 ###Notification
