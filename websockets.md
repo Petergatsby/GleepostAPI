@@ -44,6 +44,11 @@ An event with type "new-conversation" is triggered every time you are placed in 
 ###Notification
 An event with type "notification" is triggered every time you recieve a new notification. Its location is simply "/notifications" (see note). It contains a notification object.
 ```
+ {
+	"type":"notification",
+	"location":"/notifications",
+	"data":{"id":596,"type":"added_you","time":"2013-12-16T14:33:40.260990792Z","user":{"id":2395,"username":"TestingUser","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/5c780da1230506100f037abf88d74d88cb0556510c49af40c95ee02e0a35ad57.png"}}
+}
 ```
 
 Note: The location might be changed in future to the location that the notification "happened" (particular post, user, etc).
