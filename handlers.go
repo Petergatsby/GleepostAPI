@@ -835,7 +835,9 @@ func jsonServer(ws *websocket.Conn) {
 		return
 	}
 	//Change this. 12/12/13
-	events := lib.EventSubscribe(lib.ConversationChannelKeys([]gp.User{gp.User{Id: userId}}))
+	chans := lib.ConversationChannelKeys([]gp.User{gp.User{Id: userId}})
+	chans = append(chans, lib.NotificationChannelKey(userId))
+	events := lib.EventSubscribe(chans)
 	for {
 		message, ok := <-events.Messages
 		if !ok {
