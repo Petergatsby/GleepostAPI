@@ -30,3 +30,15 @@ An event with type "message" is the replacement for a long-poll message. It cont
 	"data":{"id":1173,"by":{"id":9,"username":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/59bdb3c4a4151cc7ab41137eecbcc4d461291f72cfd6b6516b12de00a7ad1a94.jpg"},"text":"testing12345678901234","timestamp":"2013-12-12T15:20:54.665361234Z","seen":false}
 }
 ```
+
+###New conversation
+An event with type "new-conversation" is triggered every time you are placed in a new conversation. It contains a location (the URI of the conversation) and the data payload is the conversation object.
+```
+```
+
+###Notification
+An event with type "notification" is triggered every time you recieve a new notification. Its location is simply "/notifications" (see note). It contains a notification object.
+```
+```
+
+Note: The location might be changed in future to the location that the notification "happened" (particular post, user, etc).
