@@ -2,66 +2,65 @@ package lib
 
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/db"
-	"github.com/draaglom/GleepostAPI/lib/cache"
 	"time"
 	"fmt"
+	"log"
 )
 
-func TerminateConversation(convId gp.ConversationId) (err error) {
-	err = db.TerminateConversation(convId)
+func (api *API)TerminateConversation(convId gp.ConversationId) (err error) {
+	err = api.db.TerminateConversation(convId)
 	if err == nil {
-		go cache.TerminateConversation(convId)
+		go api.cache.TerminateConversation(convId)
 	}
 	return
 }
 
-func generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
-	return db.RandomPartners(id, count, network)
+func (api *API)generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
+	return api.db.RandomPartners(id, count, network)
 }
 
-func MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
-	err = db.MarkRead(id, convId, upTo)
+func (api *API)MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
+	err = api.db.MarkRead(id, convId, upTo)
 	if err != nil {
 		return
 	}
-	err = cache.MarkConversationSeen(id, convId, upTo)
+	err = api.cache.MarkConversationSeen(id, convId, upTo)
 	if err != nil {
-		go cache.AddAllMessages(convId)
+		go api.FillMessageCache(convId)
 	}
-	conversation, err = db.GetConversation(convId)
+	conversation, err = api.db.GetConversation(convId)
 	return
 }
 
-func CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
-	networks, err := GetUserNetworks(id)
+func (api *API)CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+	networks, err := api.GetUserNetworks(id)
 	if err != nil {
 		return
 	}
-	participants, err := generatePartners(id, nParticipants-1, networks[0].Id)
+	participants, err := api.generatePartners(id, nParticipants-1, networks[0].Id)
 	if err != nil {
 		return
 	}
-	user, err := GetUser(id)
+	user, err := api.GetUser(id)
 	if err != nil {
 		return
 	}
 	participants = append(participants, user)
-	conversation, err = db.CreateConversation(id, participants, live)
+	conversation, err = api.db.CreateConversation(id, participants, live)
 	if err == nil {
-		go cache.AddConversation(conversation)
-		go NewConversationEvent(conversation)
+		go api.cache.AddConversation(conversation)
+		go api.NewConversationEvent(conversation)
 	}
 	return
 }
 
-func NewConversationEvent(conversation gp.Conversation) {
+func (api *API)NewConversationEvent(conversation gp.Conversation) {
 		chans := ConversationChannelKeys(conversation.Participants)
-		go cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
+		go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
 }
 
-func AwaitOneMessage(userId gp.UserId) (resp []byte) {
-	c := GetMessageChan(userId)
+func (api *API)AwaitOneMessage(userId gp.UserId) (resp []byte) {
+	c := api.GetMessageChan(userId)
 	select {
 	case resp = <-c:
 		return
@@ -70,55 +69,57 @@ func AwaitOneMessage(userId gp.UserId) (resp []byte) {
 	}
 }
 
-func GetMessageChan(userId gp.UserId) (c chan []byte) {
-	return cache.MessageChan(userId)
+func (api *API)GetMessageChan(userId gp.UserId) (c chan []byte) {
+	return api.cache.MessageChan(userId)
 }
 
-func addAllConversations(userId gp.UserId) (err error) {
+//TODO: pass in count from outside
+func (api *API)addAllConversations(userId gp.UserId) (err error) {
 	conf := gp.GetConfig()
-	conversations, err := db.GetConversations(userId, 0, conf.ConversationPageSize)
+	conversations, err := api.db.GetConversations(userId, 0, conf.ConversationPageSize)
 	for _, conv := range conversations {
-		go cache.AddConversation(conv.Conversation)
+		go api.cache.AddConversation(conv.Conversation)
 	}
 	return
 }
 
-func GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
+func (api *API)GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
 	//cache.GetConversation
-	return db.GetConversation(convId)
+	return api.db.GetConversation(convId)
 }
 
-func GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
-	message, err = cache.GetMessage(msgId)
+func (api *API)GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
+	message, err = api.cache.GetMessage(msgId)
 	return message, err
 }
 
-func updateConversation(id gp.ConversationId) (err error) {
-	err = db.UpdateConversation(id)
+func (api *API)updateConversation(id gp.ConversationId) (err error) {
+	err = api.db.UpdateConversation(id)
 	if err != nil {
 		return err
 	}
-	go cache.UpdateConversation(id)
+	participants := api.db.GetParticipants(id)
+	go api.cache.UpdateConversationLists(participants, id)
 	return nil
 }
 
-func AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
-	messageId, err = db.AddMessage(convId, userId, text)
+func (api *API)AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
+	messageId, err = api.db.AddMessage(convId, userId, text)
 	if err != nil {
 		return
 	}
-	user, err := GetUser(userId)
+	user, err := api.GetUser(userId)
 	if err != nil {
 		return
 	}
 	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
-	go cache.Publish(msg, convId)
-	participants := db.GetParticipants(convId)
+	participants := api.db.GetParticipants(convId)
+	go api.cache.Publish(msg, participants, convId)
 	chans := ConversationChannelKeys(participants)
-	go cache.PublishEvent("message", ConversationURI(convId), msg, chans)
-	go cache.AddMessage(msg, convId)
-	go updateConversation(convId)
-	go messagePush(msg, convId)
+	go api.cache.PublishEvent("message", ConversationURI(convId), msg, chans)
+	go api.cache.AddMessage(msg, convId)
+	go api.updateConversation(convId)
+	go api.messagePush(msg, convId)
 	return
 }
 
@@ -133,50 +134,62 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 	return keys
 }
 
-func GetFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
+func (api *API)GetFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
 	conv.Id = convId
-	conv.LastActivity, err = ConversationLastActivity(convId)
+	conv.LastActivity, err = api.ConversationLastActivity(convId)
 	if err != nil {
 		return
 	}
-	conv.Participants = GetParticipants(convId)
-	conv.Messages, err = GetMessages(convId, start, "start")
+	conv.Participants = api.GetParticipants(convId)
+	conv.Messages, err = api.GetMessages(convId, start, "start")
 	return
 }
 
-func ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
-	return db.ConversationActivity(convId)
+func (api *API)ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
+	return api.db.ConversationActivity(convId)
 }
 
-func GetParticipants(convId gp.ConversationId) []gp.User {
-	participants, err := cache.GetParticipants(convId)
+func (api *API)GetParticipants(convId gp.ConversationId) []gp.User {
+	participants, err := api.cache.GetParticipants(convId)
 	if err != nil {
-		participants = db.GetParticipants(convId)
-		go cache.SetConversationParticipants(convId, participants)
+		participants = api.db.GetParticipants(convId)
+		go api.cache.SetConversationParticipants(convId, participants)
 	}
 	return participants
 }
 
-func GetMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
+//todo: pass in message count
+func (api *API)GetMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
 	conf := gp.GetConfig()
-	messages, err = cache.GetMessages(convId, index, sel, conf.MessagePageSize)
+	messages, err = api.cache.GetMessages(convId, index, sel, conf.MessagePageSize)
 	if err != nil {
-		messages, err = db.GetMessages(convId, index, sel, conf.MessagePageSize)
-		go cache.AddAllMessages(convId)
+		messages, err = api.db.GetMessages(convId, index, sel, conf.MessagePageSize)
+		go api.FillMessageCache(convId)
 		return
 	}
 	return
 }
 
-func GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
-	conversations, err = cache.GetConversations(userId, start, count)
+func (api *API)FillMessageCache(convId gp.ConversationId) (err error) {
+	conf := gp.GetConfig()
+	messages, err := api.db.GetMessages(convId, 0, "start", conf.MessageCache)
 	if err != nil {
-		conversations, err = db.GetConversations(userId, start, count)
-		go addAllConversations(userId)
+		log.Println(err)
+		return(err)
+	}
+	go api.cache.AddMessages(convId, messages)
+	return
+}
+
+func (api *API)GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+	conversations, err = api.cache.GetConversations(userId, start, count)
+	if err != nil {
+		conversations, err = api.db.GetConversations(userId, start, count)
+		go api.addAllConversations(userId)
 	} else {
-		//This is here because cache.GetConversations doesn't get the expiry itself...
+		//This is here because api.cache.GetConversations doesn't get the expiry itself...
 		for i, c := range(conversations) {
-			exp, err := Expiry(c.Id)
+			exp, err := api.Expiry(c.Id)
 			if err == nil {
 				conversations[i].Expiry = &exp
 			}
@@ -185,11 +198,11 @@ func GetConversations(userId gp.UserId, start int64, count int) (conversations [
 	return
 }
 
-func GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
-	message, err = cache.GetLastMessage(id)
+func (api *API)GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
+	message, err = api.cache.GetLastMessage(id)
 	if err != nil {
-		message, err = db.GetLastMessage(id)
-		go cache.AddAllMessages(id)
+		message, err = api.db.GetLastMessage(id)
+		go api.FillMessageCache(id)
 		if err != nil {
 			return
 		}
@@ -197,32 +210,32 @@ func GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	return
 }
 
-func Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
-	expiry, err = cache.ConversationExpiry(convId)
+func (api *API)Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+	expiry, err = api.cache.ConversationExpiry(convId)
 	if err != nil {
-		expiry, err = db.ConversationExpiry(convId)
+		expiry, err = api.db.ConversationExpiry(convId)
 		if err == nil {
-			cache.SetConversationExpiry(convId, expiry)
+			api.cache.SetConversationExpiry(convId, expiry)
 		}
 	}
 	return
 }
 
-func DeleteExpiry(convId gp.ConversationId) (err error) {
-	err = db.DeleteConversationExpiry(convId)
+func (api *API)DeleteExpiry(convId gp.ConversationId) (err error) {
+	err = api.db.DeleteConversationExpiry(convId)
 	if err == nil {
-		go cache.DelConversationExpiry(convId)
+		go api.cache.DelConversationExpiry(convId)
 	}
 	return
 }
 
 //UnExpireBetweenUsers should fetch all of users[0] conversations, find the ones which contain
 //exactly the same participants as users and delete its expiry(if it exists).
-func UnExpireBetween(users []gp.UserId) (err error) {
+func (api *API)UnExpireBetween(users []gp.UserId) (err error) {
 	if len(users) < 2 {
 		return gp.APIerror{">1 user required?"}
 	}
-	conversations, err := db.GetConversations(users[0], 0, 99999)
+	conversations, err := api.db.GetConversations(users[0], 0, 99999)
 	if err != nil {
 		return
 	}
@@ -238,7 +251,7 @@ func UnExpireBetween(users []gp.UserId) (err error) {
 			}
 		}
 		if n == len(users) {
-			err = DeleteExpiry(c.Id)
+			err = api.DeleteExpiry(c.Id)
 			if err != nil {
 				return
 			}

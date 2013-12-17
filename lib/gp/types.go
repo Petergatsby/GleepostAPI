@@ -82,6 +82,13 @@ type PostFull struct {
 	Likes    []LikeFull `json:"likes"`
 }
 
+type PostCore struct {
+	Id     PostId    `json:"id"`
+	By     User      `json:"by"`
+	Time   time.Time `json:"timestamp"`
+	Text   string    `json:"text"`
+}
+
 type Comment struct {
 	Id   CommentId `json:"id"`
 	Post PostId    `json:"-"`
@@ -201,8 +208,8 @@ type PostNotification struct {
 	Post PostId `json:"post"`
 }
 
-func (c *Config) ConnectionString() string {
-	return c.Mysql.User + ":" + c.Mysql.Pass + "@tcp(" + c.Mysql.Host + ":" + c.Mysql.Port + ")/gleepost?charset=utf8"
+func (c *MysqlConfig) ConnectionString() string {
+	return c.User + ":" + c.Pass + "@tcp(" + c.Host + ":" + c.Port + ")/gleepost?charset=utf8"
 }
 
 type APIerror struct {

@@ -11,12 +11,19 @@ import (
 	"strconv"
 )
 
+var api *lib.API
+
+func init() {
+	conf := gp.GetConfig()
+	api = lib.New(*conf)
+}
+
 //Note to self: validateToken should probably return an error at some point
 func authenticate(r *http.Request) (userId gp.UserId, err error) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
 	userId = gp.UserId(id)
 	token := r.FormValue("token")
-	success := lib.ValidateToken(userId, token)
+	success := api.ValidateToken(userId, token)
 	if success {
 		return userId, nil
 	} else {
@@ -73,7 +80,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	case len(email) == 0:
 		jsonResponse(w, gp.APIerror{"Missing parameter: email"}, 400)
 	default:
-		validates, err := lib.ValidateEmail(email)
+		validates, err := api.ValidateEmail(email)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
@@ -82,7 +89,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, gp.APIerror{"Invalid Email"}, 400)
 			return
 		}
-		id, err := lib.RegisterUser(user, pass, email)
+		id, err := api.RegisterUser(user, pass, email)
 		if err != nil {
 			_, ok := err.(gp.APIerror)
 			if ok { //Duplicate user/email or password too short
@@ -111,12 +118,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 	user := r.FormValue("user")
 	pass := r.FormValue("pass")
-	id, err := lib.ValidatePass(user, pass)
+	id, err := api.ValidatePass(user, pass)
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err == nil:
-		token, err := lib.CreateAndStoreToken(id)
+		token, err := api.CreateAndStoreToken(id)
 		if err == nil {
 			jsonResponse(w, token, 200)
 		} else {
@@ -153,18 +160,18 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			after = 0
 		}
-		networks, err := lib.GetUserNetworks(userId)
+		networks, err := api.GetUserNetworks(userId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
 			var posts []gp.PostSmall
 			switch {
 			case after > 0:
-				posts, err = lib.GetPosts(networks[0].Id, after, "after")
+				posts, err = api.GetPosts(networks[0].Id, after, "after")
 			case before > 0:
-				posts, err = lib.GetPosts(networks[0].Id, before, "before")
+				posts, err = api.GetPosts(networks[0].Id, before, "before")
 			default:
-				posts, err = lib.GetPosts(networks[0].Id, start, "start")
+				posts, err = api.GetPosts(networks[0].Id, start, "start")
 			}
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
@@ -181,7 +188,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "POST":
 		text := r.FormValue("text")
-		postId, err := lib.AddPost(userId, text)
+		postId, err := api.AddPost(userId, text)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -201,7 +208,7 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		conversation, err := lib.CreateConversation(userId, 2, true)
+		conversation, err := api.CreateConversation(userId, 2, true)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -219,7 +226,7 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		conversation, err := lib.CreateConversation(userId, 4, true)
+		conversation, err := api.CreateConversation(userId, 4, true)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -242,7 +249,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			start = 0
 		}
 		conf := gp.GetConfig()
-		conversations, err := lib.GetConversations(userId, start, conf.ConversationPageSize)
+		conversations, err := api.GetConversations(userId, start, conf.ConversationPageSize)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -287,11 +294,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		var messages []gp.Message
 		switch {
 		case after > 0:
-			messages, err = lib.GetMessages(convId, after, "after")
+			messages, err = api.GetMessages(convId, after, "after")
 		case before > 0:
-			messages, err = lib.GetMessages(convId, before, "before")
+			messages, err = api.GetMessages(convId, before, "before")
 		default:
-			messages, err = lib.GetMessages(convId, start, "start")
+			messages, err = api.GetMessages(convId, start, "start")
 		}
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
@@ -310,7 +317,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		_convId, _ := strconv.ParseUint(convIdString[1], 10, 64)
 		convId := gp.ConversationId(_convId)
 		text := r.FormValue("text")
-		messageId, err := lib.AddMessage(convId, userId, text)
+		messageId, err := api.AddMessage(convId, userId, text)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -327,7 +334,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			_upTo = 0
 		}
 		upTo := gp.MessageId(_upTo)
-		conversation, err := lib.MarkConversationSeen(userId, convId, upTo)
+		conversation, err := api.MarkConversationSeen(userId, convId, upTo)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -342,7 +349,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if err != nil {
 			start = 0
 		}
-		conv, err := lib.GetFullConversation(convId, start)
+		conv, err := api.GetFullConversation(convId, start)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		}
@@ -350,7 +357,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 	case convIdString2 != nil && r.Method == "DELETE":
 		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
 		convId := gp.ConversationId(_convId)
-		err := lib.TerminateConversation(convId)
+		err := api.TerminateConversation(convId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
@@ -365,13 +372,13 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			return
 		}
 		if expires == false {
-			err = lib.DeleteExpiry(convId)
+			err = api.DeleteExpiry(convId)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
 			}
 		}
-		conversation, err := lib.GetConversation(userId, convId)
+		conversation, err := api.GetConversation(userId, convId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
@@ -405,7 +412,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			start = 0
 		}
-		comments, err := lib.GetComments(postId, start)
+		comments, err := api.GetComments(postId, start)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -423,7 +430,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 64)
 		postId := gp.PostId(_id)
 		text := r.FormValue("text")
-		commentId, err := lib.CreateComment(postId, userId, text)
+		commentId, err := api.CreateComment(postId, userId, text)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -432,7 +439,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 	case commIdStringB != nil && r.Method == "GET":
 		_id, _ := strconv.ParseUint(commIdStringB[1], 10, 64)
 		postId := gp.PostId(_id)
-		post, err := lib.GetPostFull(postId)
+		post, err := api.GetPostFull(postId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -442,13 +449,13 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		_id, _ := strconv.ParseUint(commIdStringC[1], 10, 64)
 		postId := gp.PostId(_id)
 		url := r.FormValue("url")
-		exists, err := lib.UserUploadExists(userId, url)
+		exists, err := api.UserUploadExists(userId, url)
 		if exists && err == nil {
-			err := lib.AddPostImage(postId, url)
+			err := api.AddPostImage(postId, url)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
-				images := lib.GetPostImages(postId)
+				images := api.GetPostImages(postId)
 				jsonResponse(w, images, 201)
 			}
 		} else {
@@ -462,14 +469,14 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		case err != nil:
 			jsonResponse(w, gp.APIerror{err.Error()}, 400)
 		case liked:
-			err = lib.AddLike(userId, postId)
+			err = api.AddLike(userId, postId)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
 				jsonResponse(w, gp.Liked{Post: postId, Liked: true}, 200)
 			}
 		default:
-			err = lib.DelLike(userId, postId)
+			err = api.DelLike(userId, postId)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
@@ -494,7 +501,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	case userIdString != nil:
 		u, _ := strconv.ParseUint(userIdString[1], 10, 64)
 		profileId := gp.UserId(u)
-		user, err := lib.GetProfile(profileId)
+		user, err := api.GetProfile(profileId)
 		if err != nil {
 			if err == gp.ENOSUCHUSER {
 				jsonResponse(w, gp.APIerror{err.Error()}, 404)
@@ -519,7 +526,7 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		//awaitOneMessage will block until a message arrives over redis
-		message := lib.AwaitOneMessage(userId)
+		message := api.AwaitOneMessage(userId)
 		w.Write(message)
 	}
 }
@@ -531,7 +538,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		contacts, err := lib.GetContacts(userId)
+		contacts, err := api.GetContacts(userId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -544,7 +551,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		_otherId, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
 		otherId := gp.UserId(_otherId)
-		contact, err := lib.AddContact(userId, otherId)
+		contact, err := api.AddContact(userId, otherId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -574,7 +581,7 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 			accepted = false
 		}
 		if accepted {
-			contact, err := lib.AcceptContact(userId, contactId)
+			contact, err := api.AcceptContact(userId, contactId)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
@@ -599,7 +606,7 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
 		deviceId := r.FormValue("device_id")
-		device, err := lib.AddDevice(userId, deviceType, deviceId)
+		device, err := api.AddDevice(userId, deviceType, deviceId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -622,7 +629,7 @@ func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		regex, _ := regexp.Compile("devices/([:alnum:]+)/?$")
 		deviceIdString := regex.FindStringSubmatch(r.URL.Path)
 		if deviceIdString != nil {
-			err := lib.DeleteDevice(userId, deviceIdString[1])
+			err := api.DeleteDevice(userId, deviceIdString[1])
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
@@ -649,7 +656,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, gp.APIerror{err.Error()}, 400)
 		} else {
 			defer file.Close()
-			url, err := lib.StoreFile(userId, file, header)
+			url, err := api.StoreFile(userId, file, header)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 400)
 			} else {
@@ -668,7 +675,7 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		url := r.FormValue("url")
-		exists, err := lib.UserUploadExists(userId, url)
+		exists, err := api.UserUploadExists(userId, url)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 400)
 			return
@@ -676,11 +683,11 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 		if !exists {
 			jsonResponse(w, gp.APIerror{"Image doesn't exist!"}, 400)
 		} else {
-			err = lib.SetProfileImage(userId, url)
+			err = api.SetProfileImage(userId, url)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
-				user, err := lib.GetProfile(userId)
+				user, err := api.GetProfile(userId)
 				if err != nil {
 					jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				}
@@ -702,14 +709,14 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, gp.APIerror{"Bad input"}, 400)
 		}
-		err = lib.SetBusyStatus(userId, status)
+		err = api.SetBusyStatus(userId, status)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
 			jsonResponse(w, &gp.BusyStatus{status}, 200)
 		}
 	case r.Method == "GET":
-		status, err := lib.BusyStatus(userId)
+		status, err := api.BusyStatus(userId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
@@ -731,11 +738,11 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			_upTo = 0
 		}
 		notificationId := gp.NotificationId(_upTo)
-		err = lib.MarkNotificationsSeen(userId, notificationId)
+		err = api.MarkNotificationsSeen(userId, notificationId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
-			notifications, err := lib.GetUserNotifications(userId)
+			notifications, err := api.GetUserNotifications(userId)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
@@ -747,7 +754,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "GET":
-		notifications, err := lib.GetUserNotifications(userId)
+		notifications, err := api.GetUserNotifications(userId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -771,13 +778,13 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, gp.APIerror{"Bad token"}, 400)
 			return
 		}
-		token, err := lib.FacebookLogin(fbToken)
+		token, err := api.FacebookLogin(fbToken)
 		if err != nil {
 			if len(email) < 3 {
 				jsonResponse(w, gp.APIerror{"Email required"}, 400)
 				return
 			}
-			validates, err := lib.ValidateEmail(email)
+			validates, err := api.ValidateEmail(email)
 			if !validates {
 				jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
 				return
@@ -786,7 +793,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
 			}
-			err = lib.FacebookRegister(fbToken, email)
+			err = api.FacebookRegister(fbToken, email)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
@@ -810,7 +817,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		tokenString := regex.FindStringSubmatch(r.URL.Path)
 		if tokenString != nil {
 			token := tokenString[1]
-			err := lib.Verify(token)
+			err := api.Verify(token)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 400)
 				return
@@ -837,7 +844,7 @@ func jsonServer(ws *websocket.Conn) {
 	//Change this. 12/12/13
 	chans := lib.ConversationChannelKeys([]gp.User{gp.User{Id: userId}})
 	chans = append(chans, lib.NotificationChannelKey(userId))
-	events := lib.EventSubscribe(chans)
+	events := api.EventSubscribe(chans)
 	for {
 		message, ok := <-events.Messages
 		if !ok {

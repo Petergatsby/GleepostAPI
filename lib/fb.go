@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/huandu/facebook"
 	"time"
@@ -69,37 +68,37 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	return
 }
 
-func FacebookLogin(fbToken string) (token gp.Token, err error) {
+func (api *API)FacebookLogin(fbToken string) (token gp.Token, err error) {
 	t, err := FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}
-	userId, err := FBGetGPUser(t.FBUser)
+	userId, err := api.FBGetGPUser(t.FBUser)
 	if err != nil {
 		return
 	}
-	token, err = CreateAndStoreToken(userId)
+	token, err = api.CreateAndStoreToken(userId)
 	return
 }
 
-func FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
-	return db.UserIdFromFB(fbid)
+func (api *API)FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
+	return api.db.UserIdFromFB(fbid)
 }
 
-func FacebookRegister(fbToken string, email string) (err error) {
+func (api *API)FacebookRegister(fbToken string, email string) (err error) {
 	t, err := FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}
-	err = db.CreateFBUser(t.FBUser, email)
+	err = api.db.CreateFBUser(t.FBUser, email)
 	if err == nil {
-		err = FBissueVerification(t.FBUser)
+		err = api.FBissueVerification(t.FBUser)
 	}
 	return
 }
 
-func FBissueVerification(fbid uint64) (err error) {
-	email, err := FBGetEmail(fbid)
+func (api *API)FBissueVerification(fbid uint64) (err error) {
+	email, err := api.FBGetEmail(fbid)
 	if err != nil {
 		return
 	}
@@ -107,7 +106,7 @@ func FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	err = db.CreateFBVerification(fbid, random)
+	err = api.db.CreateFBVerification(fbid, random)
 	if err != nil {
 		return
 	}
@@ -115,7 +114,7 @@ func FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	err = issueVerificationEmail(email, name, random)
+	err = api.issueVerificationEmail(email, name, random)
 	return
 }
 
@@ -125,14 +124,14 @@ func FBName(fbid uint64) (name string, err error) {
 	return res["name"].(string), err
 }
 
-func FBVerify(token string) (fbid uint64, err error) {
-	return db.FBVerificationExists(token)
+func (api *API)FBVerify(token string) (fbid uint64, err error) {
+	return api.db.FBVerificationExists(token)
 }
 
-func FBGetEmail(fbid uint64) (email string, err error) {
-	return db.FBUserEmail(fbid)
+func (api *API)FBGetEmail(fbid uint64) (email string, err error) {
+	return api.db.FBUserEmail(fbid)
 }
 
-func UserSetFB(userId gp.UserId, fbid uint64) (err error) {
-	return db.FBSetGPUser(fbid, userId)
+func (api *API)UserSetFB(userId gp.UserId, fbid uint64) (err error) {
+	return api.db.FBSetGPUser(fbid, userId)
 }

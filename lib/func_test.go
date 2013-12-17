@@ -1,11 +1,17 @@
-package main
+package lib
 
-import "testing"
-import "time"
+import (
+	"testing"
+	"time"
+)
 
 const (
 	testDb = "testdb"
 )
+
+func init() {
+
+}
 
 func TestCreateToken(t *testing.T) {
 	token := createToken(9)

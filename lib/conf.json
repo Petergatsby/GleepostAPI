@@ -1,0 +1,46 @@
+{
+	"UrlBase":"/api/v0.23",
+	"Port":"8080",
+	"LoginOverride":false,
+	"RegisterOverride":true,
+	"MessageCache":1000,
+	"PostCache":5000,
+	"CommentCache":100,
+	"MessagePageSize":20,
+	"PostPageSize":20,
+	"CommentPageSize":20,
+	"ConversationPageSize":20,
+	"OnlineTimeout":300,
+	"Expiry":600,
+	"Mysql": {
+		"MaxConns":100,
+		"User":"gp",
+		"Pass":"PnOaw3XzP6Tlq6fWvvVv",
+		"Host":"localhost",
+		"Port":"3306"
+	},
+	"Redis": {
+		"Proto":"tcp",
+		"Address":"146.185.138.53:6379"
+	},
+	"AWS": {
+		"KeyId":"",
+		"SecretKey":""
+	},
+	"APNS": {
+		"CertFile":"",
+		"KeyFile":""
+	},
+	"Email": {
+		"User":"",
+		"Pass":"",
+		"Server":"",
+		"Port":,
+		"From":"",
+		"FromHeader":""
+	},
+	"Facebook": {
+		"AppId":"",
+		"AppSecret":""
+	}	
+}

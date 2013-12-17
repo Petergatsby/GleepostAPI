@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"io"
 	"io/ioutil"
@@ -35,7 +34,7 @@ func getS3() (s *s3.S3) {
 	return
 }
 
-func StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
+func (api *API)StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
 	switch {
@@ -66,15 +65,15 @@ func StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) 
 	if err != nil {
 		return "", err
 	}
-	err = userAddUpload(id, url)
+	err = api.userAddUpload(id, url)
 	return url, err
 }
 
-func userAddUpload(id gp.UserId, url string) (err error) {
-	return db.AddUpload(id, url)
+func (api *API)userAddUpload(id gp.UserId, url string) (err error) {
+	return api.db.AddUpload(id, url)
 }
 
-func UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
-	return db.UploadExists(id, url)
+func (api *API)UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
+	return api.db.UploadExists(id, url)
 }
 

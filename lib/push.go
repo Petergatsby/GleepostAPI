@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func notify(user gp.UserId) {
+func (api *API)notify(user gp.UserId) {
 	conf := gp.GetConfig()
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
 	payload := apns.NewPayload()
@@ -14,7 +14,7 @@ func notify(user gp.UserId) {
 	payload.Badge = 1337
 	payload.Sound = "default"
 
-	devices, err := GetDevices(user)
+	devices, err := api.GetDevices(user)
 	if err != nil {
 		log.Println(err)
 	}
@@ -30,12 +30,12 @@ func notify(user gp.UserId) {
 	}
 }
 
-func notificationPush(user gp.UserId) {
+func (api *API)notificationPush(user gp.UserId) {
 	conf := gp.GetConfig()
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
 	payload := apns.NewPayload()
 
-	devices, err := GetDevices(user)
+	devices, err := api.GetDevices(user)
 	if err != nil {
 		log.Println(err)
 	}
@@ -51,7 +51,7 @@ func notificationPush(user gp.UserId) {
 	}
 }
 
-func messagePush(message gp.Message, convId gp.ConversationId) {
+func (api *API)messagePush(message gp.Message, convId gp.ConversationId) {
 	conf := gp.GetConfig()
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
 	payload := apns.NewPayload()
@@ -65,10 +65,10 @@ func messagePush(message gp.Message, convId gp.ConversationId) {
 	}
 	payload.Alert = d
 	payload.Sound = "default"
-	recipients := GetParticipants(convId)
+	recipients := api.GetParticipants(convId)
 	for _, user := range recipients {
 		if user.Id != message.By.Id {
-			devices, err := GetDevices(user.Id)
+			devices, err := api.GetDevices(user.Id)
 			if err != nil {
 				log.Println(err)
 			}
