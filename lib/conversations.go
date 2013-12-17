@@ -1,13 +1,13 @@
 package lib
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"time"
 	"fmt"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
+	"time"
 )
 
-func (api *API)TerminateConversation(convId gp.ConversationId) (err error) {
+func (api *API) TerminateConversation(convId gp.ConversationId) (err error) {
 	err = api.db.TerminateConversation(convId)
 	if err == nil {
 		go api.cache.TerminateConversation(convId)
@@ -15,11 +15,11 @@ func (api *API)TerminateConversation(convId gp.ConversationId) (err error) {
 	return
 }
 
-func (api *API)generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
+func (api *API) generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	return api.db.RandomPartners(id, count, network)
 }
 
-func (api *API)MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (conversation gp.ConversationAndMessages, err error) {
+func (api *API) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	err = api.db.MarkRead(id, convId, upTo)
 	if err != nil {
 		return
@@ -28,11 +28,10 @@ func (api *API)MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo
 	if err != nil {
 		go api.FillMessageCache(convId)
 	}
-	conversation, err = api.db.GetConversation(convId)
 	return
 }
 
-func (api *API)CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+func (api *API) CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
 	networks, err := api.GetUserNetworks(id)
 	if err != nil {
 		return
@@ -46,7 +45,11 @@ func (api *API)CreateConversation(id gp.UserId, nParticipants int, live bool) (c
 		return
 	}
 	participants = append(participants, user)
-	conversation, err = api.db.CreateConversation(id, participants, live)
+	var expiry *gp.Expiry
+	if live {
+		expiry = gp.NewExpiry(time.Duration(api.Config.Expiry) * time.Second)
+	}
+	conversation, err = api.db.CreateConversation(id, participants, expiry)
 	if err == nil {
 		go api.cache.AddConversation(conversation)
 		go api.NewConversationEvent(conversation)
@@ -54,12 +57,12 @@ func (api *API)CreateConversation(id gp.UserId, nParticipants int, live bool) (c
 	return
 }
 
-func (api *API)NewConversationEvent(conversation gp.Conversation) {
-		chans := ConversationChannelKeys(conversation.Participants)
-		go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
+func (api *API) NewConversationEvent(conversation gp.Conversation) {
+	chans := ConversationChannelKeys(conversation.Participants)
+	go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
 }
 
-func (api *API)AwaitOneMessage(userId gp.UserId) (resp []byte) {
+func (api *API) AwaitOneMessage(userId gp.UserId) (resp []byte) {
 	c := api.GetMessageChan(userId)
 	select {
 	case resp = <-c:
@@ -69,31 +72,28 @@ func (api *API)AwaitOneMessage(userId gp.UserId) (resp []byte) {
 	}
 }
 
-func (api *API)GetMessageChan(userId gp.UserId) (c chan []byte) {
+func (api *API) GetMessageChan(userId gp.UserId) (c chan []byte) {
 	return api.cache.MessageChan(userId)
 }
 
-//TODO: pass in count from outside
-func (api *API)addAllConversations(userId gp.UserId) (err error) {
-	conf := gp.GetConfig()
-	conversations, err := api.db.GetConversations(userId, 0, conf.ConversationPageSize)
+func (api *API) addAllConversations(userId gp.UserId) (err error) {
+	conversations, err := api.db.GetConversations(userId, 0, 2000)
 	for _, conv := range conversations {
 		go api.cache.AddConversation(conv.Conversation)
 	}
 	return
 }
 
-func (api *API)GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
-	//cache.GetConversation
-	return api.db.GetConversation(convId)
+func (api *API) GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
+	return api.db.GetConversation(convId, api.Config.ConversationPageSize)
 }
 
-func (api *API)GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
+func (api *API) GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	message, err = api.cache.GetMessage(msgId)
 	return message, err
 }
 
-func (api *API)updateConversation(id gp.ConversationId) (err error) {
+func (api *API) updateConversation(id gp.ConversationId) (err error) {
 	err = api.db.UpdateConversation(id)
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func (api *API)updateConversation(id gp.ConversationId) (err error) {
 	return nil
 }
 
-func (api *API)AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
+func (api *API) AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
 	messageId, err = api.db.AddMessage(convId, userId, text)
 	if err != nil {
 		return
@@ -134,22 +134,22 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 	return keys
 }
 
-func (api *API)GetFullConversation(convId gp.ConversationId, start int64) (conv gp.ConversationAndMessages, err error) {
+func (api *API) GetFullConversation(convId gp.ConversationId, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.Id = convId
 	conv.LastActivity, err = api.ConversationLastActivity(convId)
 	if err != nil {
 		return
 	}
 	conv.Participants = api.GetParticipants(convId)
-	conv.Messages, err = api.GetMessages(convId, start, "start")
+	conv.Messages, err = api.GetMessages(convId, start, "start", count)
 	return
 }
 
-func (api *API)ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
+func (api *API) ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {
 	return api.db.ConversationActivity(convId)
 }
 
-func (api *API)GetParticipants(convId gp.ConversationId) []gp.User {
+func (api *API) GetParticipants(convId gp.ConversationId) []gp.User {
 	participants, err := api.cache.GetParticipants(convId)
 	if err != nil {
 		participants = api.db.GetParticipants(convId)
@@ -159,36 +159,34 @@ func (api *API)GetParticipants(convId gp.ConversationId) []gp.User {
 }
 
 //todo: pass in message count
-func (api *API)GetMessages(convId gp.ConversationId, index int64, sel string) (messages []gp.Message, err error) {
-	conf := gp.GetConfig()
-	messages, err = api.cache.GetMessages(convId, index, sel, conf.MessagePageSize)
+func (api *API) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+	messages, err = api.cache.GetMessages(convId, index, sel, count)
 	if err != nil {
-		messages, err = api.db.GetMessages(convId, index, sel, conf.MessagePageSize)
+		messages, err = api.db.GetMessages(convId, index, sel, count)
 		go api.FillMessageCache(convId)
 		return
 	}
 	return
 }
 
-func (api *API)FillMessageCache(convId gp.ConversationId) (err error) {
-	conf := gp.GetConfig()
-	messages, err := api.db.GetMessages(convId, 0, "start", conf.MessageCache)
+func (api *API) FillMessageCache(convId gp.ConversationId) (err error) {
+	messages, err := api.db.GetMessages(convId, 0, "start", api.Config.Redis.MessageCache)
 	if err != nil {
 		log.Println(err)
-		return(err)
+		return (err)
 	}
 	go api.cache.AddMessages(convId, messages)
 	return
 }
 
-func (api *API)GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+func (api *API) GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations, err = api.cache.GetConversations(userId, start, count)
 	if err != nil {
 		conversations, err = api.db.GetConversations(userId, start, count)
 		go api.addAllConversations(userId)
 	} else {
 		//This is here because api.cache.GetConversations doesn't get the expiry itself...
-		for i, c := range(conversations) {
+		for i, c := range conversations {
 			exp, err := api.Expiry(c.Id)
 			if err == nil {
 				conversations[i].Expiry = &exp
@@ -198,7 +196,7 @@ func (api *API)GetConversations(userId gp.UserId, start int64, count int) (conve
 	return
 }
 
-func (api *API)GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
+func (api *API) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	message, err = api.cache.GetLastMessage(id)
 	if err != nil {
 		message, err = api.db.GetLastMessage(id)
@@ -210,7 +208,7 @@ func (api *API)GetLastMessage(id gp.ConversationId) (message gp.Message, err err
 	return
 }
 
-func (api *API)Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+func (api *API) Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	expiry, err = api.cache.ConversationExpiry(convId)
 	if err != nil {
 		expiry, err = api.db.ConversationExpiry(convId)
@@ -221,7 +219,7 @@ func (api *API)Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	return
 }
 
-func (api *API)DeleteExpiry(convId gp.ConversationId) (err error) {
+func (api *API) DeleteExpiry(convId gp.ConversationId) (err error) {
 	err = api.db.DeleteConversationExpiry(convId)
 	if err == nil {
 		go api.cache.DelConversationExpiry(convId)
@@ -231,7 +229,7 @@ func (api *API)DeleteExpiry(convId gp.ConversationId) (err error) {
 
 //UnExpireBetweenUsers should fetch all of users[0] conversations, find the ones which contain
 //exactly the same participants as users and delete its expiry(if it exists).
-func (api *API)UnExpireBetween(users []gp.UserId) (err error) {
+func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 	if len(users) < 2 {
 		return gp.APIerror{">1 user required?"}
 	}
@@ -239,11 +237,11 @@ func (api *API)UnExpireBetween(users []gp.UserId) (err error) {
 	if err != nil {
 		return
 	}
-	for _, c := range(conversations) {
+	for _, c := range conversations {
 		n := 0
 		if len(users) == len(c.Participants) {
-			for _, p := range(c.Participants) {
-				for _, u := range(users) {
+			for _, p := range c.Participants {
+				for _, u := range users {
 					if u == p.Id {
 						n++
 					}
@@ -259,4 +257,3 @@ func (api *API)UnExpireBetween(users []gp.UserId) (err error) {
 	}
 	return
 }
-

@@ -3,16 +3,72 @@ package main
 
 import (
 	"code.google.com/p/go.net/websocket"
+	"encoding/json"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
+	"io/ioutil"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
 	"runtime"
+	"sync"
+	"syscall"
 )
+
+var (
+	config     *gp.Config
+	configLock = new(sync.RWMutex)
+)
+
+func loadConfig(fail bool) {
+	file, err := ioutil.ReadFile("conf.json")
+	if err != nil {
+		log.Println("Opening config failed: ", err)
+		if fail {
+			os.Exit(1)
+		}
+	}
+
+	c := new(gp.Config)
+	if err = json.Unmarshal(file, c); err != nil {
+		log.Println("Parsing config failed: ", err)
+		if fail {
+			os.Exit(1)
+		}
+	}
+	configLock.Lock()
+	config = c
+	configLock.Unlock()
+}
+
+func GetConfig() *gp.Config {
+	configLock.RLock()
+	defer configLock.RUnlock()
+	return config
+}
+
+func configInit() {
+	loadConfig(true)
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGUSR2)
+	go func() {
+		for {
+			<-s
+			loadConfig(false)
+			log.Println("Reloaded")
+		}
+	}()
+}
+
+func init() {
+	configInit()
+}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	conf := gp.GetConfig()
+	conf := GetConfig()
 	server := &http.Server{
 		Addr: ":" + conf.Port,
 	}

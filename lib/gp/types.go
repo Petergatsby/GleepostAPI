@@ -2,13 +2,6 @@ package gp
 
 import (
 	"time"
-	"io/ioutil"
-	"sync"
-	"syscall"
-	"encoding/json"
-	"os"
-	"os/signal"
-	"log"
 )
 
 type UserId uint64
@@ -83,10 +76,10 @@ type PostFull struct {
 }
 
 type PostCore struct {
-	Id     PostId    `json:"id"`
-	By     User      `json:"by"`
-	Time   time.Time `json:"timestamp"`
-	Text   string    `json:"text"`
+	Id   PostId    `json:"id"`
+	By   User      `json:"by"`
+	Time time.Time `json:"timestamp"`
+	Text string    `json:"text"`
 }
 
 type Comment struct {
@@ -139,8 +132,11 @@ type MysqlConfig struct {
 }
 
 type RedisConfig struct {
-	Proto   string
-	Address string
+	Proto        string
+	Address      string
+	MessageCache int
+	PostCache    int
+	CommentCache int
 }
 
 type AWSConfig struct {
@@ -163,8 +159,8 @@ type EmailConfig struct {
 }
 
 type FacebookConfig struct {
-	AppID      string
-	AppSecret  string
+	AppID     string
+	AppSecret string
 }
 
 type Config struct {
@@ -172,9 +168,6 @@ type Config struct {
 	Port                 string
 	LoginOverride        bool
 	RegisterOverride     bool
-	MessageCache         int
-	PostCache            int
-	CommentCache         int
 	MessagePageSize      int
 	PostPageSize         int
 	CommentPageSize      int
@@ -186,7 +179,7 @@ type Config struct {
 	AWS                  AWSConfig
 	APNS                 APNSConfig
 	Email                EmailConfig
-	Facebook	     FacebookConfig
+	Facebook             FacebookConfig
 }
 
 type Device struct {
@@ -234,8 +227,12 @@ type Liked struct {
 }
 
 type Expiry struct {
-	Time time.Time `json:"time"`
-	Ended bool     `json:"ended"`
+	Time  time.Time `json:"time"`
+	Ended bool      `json:"ended"`
+}
+
+func NewExpiry(d time.Duration) *Expiry {
+	return &Expiry{Time: time.Now().Add(d), Ended: false}
 }
 
 func (e APIerror) Error() string {
@@ -244,55 +241,6 @@ func (e APIerror) Error() string {
 
 var ENOSUCHUSER = APIerror{"No such user."}
 
-var (
-	config     *Config
-	configLock = new(sync.RWMutex)
-)
-
-func loadConfig(fail bool) {
-	file, err := ioutil.ReadFile("conf.json")
-	if err != nil {
-		log.Println("Opening config failed: ", err)
-		if fail {
-			os.Exit(1)
-		}
-	}
-
-	c := new(Config)
-	if err = json.Unmarshal(file, c); err != nil {
-		log.Println("Parsing config failed: ", err)
-		if fail {
-			os.Exit(1)
-		}
-	}
-	configLock.Lock()
-	config = c
-	configLock.Unlock()
-}
-
-func GetConfig() *Config {
-	configLock.RLock()
-	defer configLock.RUnlock()
-	return config
-}
-
-func configInit() {
-	loadConfig(true)
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGUSR2)
-	go func() {
-		for {
-			<-s
-			loadConfig(false)
-			log.Println("Reloaded")
-		}
-	}()
-}
-
-func init() {
-	configInit()
-}
-
 type MsgQueue struct {
 	Commands chan QueueCommand
 	Messages chan []byte
@@ -300,11 +248,11 @@ type MsgQueue struct {
 
 type QueueCommand struct {
 	Command string
-	Value string
+	Value   string
 }
 
 type Event struct {
-	Type	 string `json:"type"`
-	Location string `json:"location,omitempty"`
-	Data	 interface{} `json:"data"`
+	Type     string      `json:"type"`
+	Location string      `json:"location,omitempty"`
+	Data     interface{} `json:"data"`
 }

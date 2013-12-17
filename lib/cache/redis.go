@@ -15,7 +15,7 @@ import (
 ********************************************************************/
 
 type Cache struct {
-	pool *redis.Pool
+	pool   *redis.Pool
 	config gp.RedisConfig
 }
 
@@ -23,7 +23,7 @@ func New(conf gp.RedisConfig) (cache *Cache) {
 	cache.pool = redis.NewPool(getDialer(conf), 100)
 	return
 }
-func getDialer(conf gp.RedisConfig) (func() (redis.Conn, error)) {
+func getDialer(conf gp.RedisConfig) func() (redis.Conn, error) {
 	f := func() (redis.Conn, error) {
 		conn, err := redis.Dial(conf.Proto, conf.Address)
 		return conn, err
@@ -37,7 +37,7 @@ var ErrEmptyCache = gp.APIerror{"Not in redis!"}
 		Messages
 ********************************************************************/
 
-func (c *Cache)Publish(msg gp.Message, participants []gp.User, convId gp.ConversationId) {
+func (c *Cache) Publish(msg gp.Message, participants []gp.User, convId gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	JSONmsg, _ := json.Marshal(gp.RedisMessage{msg, convId})
@@ -47,10 +47,10 @@ func (c *Cache)Publish(msg gp.Message, participants []gp.User, convId gp.Convers
 	conn.Flush()
 }
 
-func (c *Cache)PublishEvent(etype string, where string, data interface{}, channels []string) {
+func (c *Cache) PublishEvent(etype string, where string, data interface{}, channels []string) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	event := gp.Event{Type:etype, Location:where, Data:data}
+	event := gp.Event{Type: etype, Location: where, Data: data}
 	JSONEvent, _ := json.Marshal(event)
 	for _, channel := range channels {
 		conn.Send("PUBLISH", channel, JSONEvent)
@@ -59,7 +59,7 @@ func (c *Cache)PublishEvent(etype string, where string, data interface{}, channe
 }
 
 //TODO: Delete Printf
-func (c *Cache)Subscribe(messages chan []byte, userId gp.UserId) {
+func (c *Cache) Subscribe(messages chan []byte, userId gp.UserId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
@@ -77,13 +77,13 @@ func (c *Cache)Subscribe(messages chan []byte, userId gp.UserId) {
 	}
 }
 
-func (c *Cache)MessageChan(userId gp.UserId) (messages chan []byte) {
+func (c *Cache) MessageChan(userId gp.UserId) (messages chan []byte) {
 	messages = make(chan []byte)
 	go c.Subscribe(messages, userId)
 	return
 }
 
-func (c *Cache)AddMessage(msg gp.Message, convId gp.ConversationId) {
+func (c *Cache) AddMessage(msg gp.Message, convId gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -92,7 +92,7 @@ func (c *Cache)AddMessage(msg gp.Message, convId gp.ConversationId) {
 	go c.SetMessage(msg)
 }
 
-func (c *Cache)GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
+func (c *Cache) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", id)
@@ -104,7 +104,7 @@ func (c *Cache)GetLastMessage(id gp.ConversationId) (message gp.Message, err err
 	return message, err
 }
 
-func (c *Cache)AddMessages(convId gp.ConversationId, messages []gp.Message) {
+func (c *Cache) AddMessages(convId gp.ConversationId, messages []gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -115,7 +115,7 @@ func (c *Cache)AddMessages(convId gp.ConversationId, messages []gp.Message) {
 	conn.Flush()
 }
 
-func (c *Cache)SetMessage(message gp.Message) {
+func (c *Cache) SetMessage(message gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", message.Id)
@@ -123,7 +123,7 @@ func (c *Cache)SetMessage(message gp.Message) {
 	conn.Flush()
 }
 
-func (c *Cache)MessageSeen(msgId gp.MessageId) {
+func (c *Cache) MessageSeen(msgId gp.MessageId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d:seen", msgId)
@@ -131,7 +131,7 @@ func (c *Cache)MessageSeen(msgId gp.MessageId) {
 	conn.Flush()
 }
 
-func (c *Cache)MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
+func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -174,7 +174,7 @@ func (c *Cache)MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo
 	return
 }
 
-func (c *Cache)GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (c *Cache) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -239,7 +239,7 @@ func (c *Cache)GetMessages(convId gp.ConversationId, index int64, sel string, co
 }
 
 //TODO: get a message which doesn't embed a gp.User
-func (c *Cache)GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
+func (c *Cache) GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", msgId)
@@ -263,9 +263,8 @@ func (c *Cache)GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	return message, err
 }
 
-func (c *Cache)AddAllMessagesFromDB(convId gp.ConversationId, db db.DB) (err error) {
-	conf := gp.GetConfig()
-	messages, err := db.GetMessages(convId, 0, "start", conf.MessageCache)
+func (c *Cache) AddMessagesFromDB(convId gp.ConversationId, db db.DB) (err error) {
+	messages, err := db.GetMessages(convId, 0, "start", c.config.MessageCache)
 	if err != nil {
 		return
 	}
@@ -285,7 +284,7 @@ func (c *Cache)AddAllMessagesFromDB(convId gp.ConversationId, db db.DB) (err err
 		Posts
 ********************************************************************/
 
-func (c *Cache)AddPosts(net gp.NetworkId, posts []gp.Post) (err error) {
+func (c *Cache) AddPosts(net gp.NetworkId, posts []gp.Post) (err error) {
 	for _, post := range posts {
 		go c.AddPost(post)
 		err = c.AddPostToNetwork(post, net)
@@ -296,7 +295,7 @@ func (c *Cache)AddPosts(net gp.NetworkId, posts []gp.Post) (err error) {
 	return
 }
 
-func (c *Cache)AddPost(post gp.Post) {
+func (c *Cache) AddPost(post gp.Post) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", post.Id)
@@ -304,7 +303,7 @@ func (c *Cache)AddPost(post gp.Post) {
 	conn.Flush()
 }
 
-func (c *Cache)AddPostToNetwork(post gp.Post, network gp.NetworkId) (err error) {
+func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkId) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d:posts", network)
@@ -318,7 +317,7 @@ func (c *Cache)AddPostToNetwork(post gp.Post, network gp.NetworkId) (err error) 
 	return nil
 }
 
-func (c *Cache)GetPost(postId gp.PostId) (post gp.PostCore, err error) {
+func (c *Cache) GetPost(postId gp.PostId) (post gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", postId)
@@ -341,7 +340,7 @@ func (c *Cache)GetPost(postId gp.PostId) (post gp.PostCore, err error) {
 }
 
 //TODO: Return posts which don't embed a user
-func (c *Cache)GetPosts(id gp.NetworkId, index int64, count int, sel string) (posts []gp.PostCore, err error) {
+func (c *Cache) GetPosts(id gp.NetworkId, index int64, count int, sel string) (posts []gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 
@@ -403,9 +402,8 @@ func (c *Cache)GetPosts(id gp.NetworkId, index int64, count int, sel string) (po
 	return
 }
 
-func (c *Cache)AddAllPostsFromDB(netId gp.NetworkId, db *db.DB) {
-	conf := gp.GetConfig()
-	posts, err := db.GetPosts(netId, 0, conf.PostCache, "start")
+func (c *Cache) AddPostsFromDB(netId gp.NetworkId, db *db.DB) {
+	posts, err := db.GetPosts(netId, 0, c.config.PostCache, "start")
 	if err != nil {
 		log.Println(err)
 	}
@@ -424,7 +422,7 @@ func (c *Cache)AddAllPostsFromDB(netId gp.NetworkId, db *db.DB) {
 		Conversations
 ********************************************************************/
 
-func (c *Cache)UpdateConversationLists(participants []gp.User, id gp.ConversationId) {
+func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	for _, user := range participants {
@@ -438,7 +436,7 @@ func (c *Cache)UpdateConversationLists(participants []gp.User, id gp.Conversatio
 	conn.Flush()
 }
 
-func (c *Cache)GetConversationMessageCount(convId gp.ConversationId) (count int, err error) {
+func (c *Cache) GetConversationMessageCount(convId gp.ConversationId) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convId)
@@ -449,7 +447,7 @@ func (c *Cache)GetConversationMessageCount(convId gp.ConversationId) (count int,
 	return count, nil
 }
 
-func (c *Cache)SetConversationParticipants(convId gp.ConversationId, participants []gp.User) {
+func (c *Cache) SetConversationParticipants(convId gp.ConversationId, participants []gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
@@ -460,7 +458,7 @@ func (c *Cache)SetConversationParticipants(convId gp.ConversationId, participant
 }
 
 //TODO: Return []gp.UserId.
-func (c *Cache)GetParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
+func (c *Cache) GetParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convId)
@@ -487,7 +485,7 @@ func (c *Cache)GetParticipants(convId gp.ConversationId) (participants []gp.User
 }
 
 //TODO: return []gp.ConversationId.
-func (c *Cache)GetConversations(id gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+func (c *Cache) GetConversations(id gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
@@ -524,36 +522,36 @@ func (c *Cache)GetConversations(id gp.UserId, start int64, count int) (conversat
 	return
 }
 
-func (c *Cache)ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+func (c *Cache) ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d", convId)
-	t, err := redis.Int(conn.Do("GET", key + ":expiry"))
+	t, err := redis.Int(conn.Do("GET", key+":expiry"))
 	if err != nil {
 		return
 	}
-	expiry.Ended, err = redis.Bool(conn.Do("GET", key + ":ended"))
+	expiry.Ended, err = redis.Bool(conn.Do("GET", key+":ended"))
 	expiry.Time = time.Unix(int64(t), 0).UTC()
 	return
 }
 
-func (c *Cache)SetConversationExpiry(convId gp.ConversationId, expiry gp.Expiry) {
+func (c *Cache) SetConversationExpiry(convId gp.ConversationId, expiry gp.Expiry) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d", convId)
-	conn.Send("MSET", key + ":expiry", expiry.Time.Unix(), key + ":ended", expiry.Ended)
+	conn.Send("MSET", key+":expiry", expiry.Time.Unix(), key+":ended", expiry.Ended)
 	conn.Flush()
 }
 
-func (c *Cache)DelConversationExpiry(convId gp.ConversationId) {
+func (c *Cache) DelConversationExpiry(convId gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d", convId)
-	conn.Send("DEL", key + ":expiry", key + ":ended")
+	conn.Send("DEL", key+":expiry", key+":ended")
 	conn.Flush()
 }
 
-func (c *Cache)AddConversation(conv gp.Conversation) {
+func (c *Cache) AddConversation(conv gp.Conversation) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	if conv.Expiry != nil {
@@ -566,7 +564,7 @@ func (c *Cache)AddConversation(conv gp.Conversation) {
 	conn.Flush()
 }
 
-func (c *Cache)TerminateConversation(convId gp.ConversationId) (err error) {
+func (c *Cache) TerminateConversation(convId gp.ConversationId) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:ended", convId)
@@ -579,7 +577,7 @@ func (c *Cache)TerminateConversation(convId gp.ConversationId) (err error) {
 		Comments
 ********************************************************************/
 
-func (c *Cache)GetCommentCount(id gp.PostId) (count int, err error) {
+func (c *Cache) GetCommentCount(id gp.PostId) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
@@ -591,7 +589,7 @@ func (c *Cache)GetCommentCount(id gp.PostId) (count int, err error) {
 	}
 }
 
-func (c *Cache)AddComment(id gp.PostId, comment gp.Comment) {
+func (c *Cache) AddComment(id gp.PostId, comment gp.Comment) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
@@ -601,9 +599,8 @@ func (c *Cache)AddComment(id gp.PostId, comment gp.Comment) {
 	conn.Flush()
 }
 
-func (c *Cache)AddAllCommentsFromDB(postId gp.PostId, db *db.DB) {
-	conf := gp.GetConfig()
-	comments, err := db.GetComments(postId, 0, conf.CommentCache)
+func (c *Cache) AddAllCommentsFromDB(postId gp.PostId, db *db.DB) {
+	comments, err := db.GetComments(postId, 0, c.config.CommentCache)
 	if err != nil {
 		log.Println(err)
 	}
@@ -618,12 +615,11 @@ func (c *Cache)AddAllCommentsFromDB(postId gp.PostId, db *db.DB) {
 	}
 }
 
-func (c *Cache)GetComments(postId gp.PostId, start int64) (comments []gp.Comment, err error) {
+func (c *Cache) GetComments(postId gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	conf := gp.GetConfig()
 	key := fmt.Sprintf("posts:%d:comments", postId)
-	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(conf.CommentPageSize)-1))
+	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(count)-1))
 	if err != nil {
 		return
 	}
@@ -648,7 +644,7 @@ func (c *Cache)GetComments(postId gp.PostId, start int64) (comments []gp.Comment
 	return
 }
 
-func (c *Cache)GetComment(commentId gp.CommentId) (comment gp.Comment, err error) {
+func (c *Cache) GetComment(commentId gp.CommentId) (comment gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("comments:%d", commentId)
@@ -674,7 +670,7 @@ func (c *Cache)GetComment(commentId gp.CommentId) (comment gp.Comment, err error
 		Networks
 ********************************************************************/
 
-func (c *Cache)GetUserNetwork(userId gp.UserId) (networks []gp.Network, err error) {
+func (c *Cache) GetUserNetwork(userId gp.UserId) (networks []gp.Network, err error) {
 	/* Part 1 of the transition to one network per user (why did I ever allow more :| */
 	//this returns a slice of 1 network to keep compatible with dbGetNetworks
 	conn := c.pool.Get()
@@ -696,7 +692,7 @@ func (c *Cache)GetUserNetwork(userId gp.UserId) (networks []gp.Network, err erro
 	return networks, nil
 }
 
-func (c *Cache)SetUserNetwork(userId gp.UserId, network gp.Network) {
+func (c *Cache) SetUserNetwork(userId gp.UserId, network gp.Network) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d:network", userId)
@@ -708,7 +704,7 @@ func (c *Cache)SetUserNetwork(userId gp.UserId, network gp.Network) {
 		Users
 ********************************************************************/
 
-func (c *Cache)SetUser(user gp.User) {
+func (c *Cache) SetUser(user gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	BaseKey := fmt.Sprintf("users:%d", user.Id)
@@ -716,7 +712,7 @@ func (c *Cache)SetUser(user gp.User) {
 	conn.Flush()
 }
 
-func (c *Cache)GetUser(id gp.UserId) (user gp.User, err error) {
+func (c *Cache) GetUser(id gp.UserId) (user gp.User, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d", id)
@@ -737,7 +733,7 @@ func (c *Cache)GetUser(id gp.UserId) (user gp.User, err error) {
 	return user, nil
 }
 
-func (c *Cache)SetProfileImage(id gp.UserId, url string) {
+func (c *Cache) SetProfileImage(id gp.UserId, url string) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:profile_image", id)
@@ -745,7 +741,7 @@ func (c *Cache)SetProfileImage(id gp.UserId, url string) {
 	conn.Flush()
 }
 
-func (c *Cache)SetBusyStatus(id gp.UserId, busy bool) {
+func (c *Cache) SetBusyStatus(id gp.UserId, busy bool) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:busy", id)
@@ -753,16 +749,15 @@ func (c *Cache)SetBusyStatus(id gp.UserId, busy bool) {
 	conn.Flush()
 }
 
-func (c *Cache)UserPing(id gp.UserId) {
-	conf := gp.GetConfig()
+func (c *Cache) UserPing(id gp.UserId, timeout int) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:busy", id)
-	conn.Send("SETEX", key, conf.OnlineTimeout, 1)
+	conn.Send("SETEX", key, timeout, 1)
 	conn.Flush()
 }
 
-func (c *Cache)UserIsOnline(id gp.UserId) (online bool) {
+func (c *Cache) UserIsOnline(id gp.UserId) (online bool) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:busy", id)
@@ -777,7 +772,7 @@ func (c *Cache)UserIsOnline(id gp.UserId) (online bool) {
 		Tokens
 ********************************************************************/
 
-func (c *Cache)PutToken(token gp.Token) {
+func (c *Cache) PutToken(token gp.Token) {
 	/* Set a session token in redis.
 		We use the token value as part of the redis key
 	        so that a user may have more than one concurrent session
@@ -790,7 +785,7 @@ func (c *Cache)PutToken(token gp.Token) {
 	conn.Flush()
 }
 
-func (c *Cache)TokenExists(id gp.UserId, token string) bool {
+func (c *Cache) TokenExists(id gp.UserId, token string) bool {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:token:%s", id, token)
@@ -801,7 +796,7 @@ func (c *Cache)TokenExists(id gp.UserId, token string) bool {
 	return exists
 }
 
-func (c *Cache)EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
+func (c *Cache) EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	commands := make(chan gp.QueueCommand)
 	log.Println("Made a new command channel")
 	messages := make(chan []byte)
@@ -821,7 +816,7 @@ func (c *Cache)EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	return events
 }
 
-func messageReceiver(psc *redis.PubSubConn, messages chan<-[]byte) {
+func messageReceiver(psc *redis.PubSubConn, messages chan<- []byte) {
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:

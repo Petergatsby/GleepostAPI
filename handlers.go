@@ -14,7 +14,7 @@ import (
 var api *lib.API
 
 func init() {
-	conf := gp.GetConfig()
+	conf := GetConfig()
 	api = lib.New(*conf)
 }
 
@@ -167,11 +167,11 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			var posts []gp.PostSmall
 			switch {
 			case after > 0:
-				posts, err = api.GetPosts(networks[0].Id, after, "after")
+				posts, err = api.GetPosts(networks[0].Id, after, "after", api.Config.PostPageSize)
 			case before > 0:
-				posts, err = api.GetPosts(networks[0].Id, before, "before")
+				posts, err = api.GetPosts(networks[0].Id, before, "before", api.Config.PostPageSize)
 			default:
-				posts, err = api.GetPosts(networks[0].Id, start, "start")
+				posts, err = api.GetPosts(networks[0].Id, start, "start", api.Config.PostPageSize)
 			}
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
@@ -248,8 +248,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			start = 0
 		}
-		conf := gp.GetConfig()
-		conversations, err := api.GetConversations(userId, start, conf.ConversationPageSize)
+		conversations, err := api.GetConversations(userId, start, api.Config.ConversationPageSize)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -294,11 +293,11 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		var messages []gp.Message
 		switch {
 		case after > 0:
-			messages, err = api.GetMessages(convId, after, "after")
+			messages, err = api.GetMessages(convId, after, "after", api.Config.MessagePageSize)
 		case before > 0:
-			messages, err = api.GetMessages(convId, before, "before")
+			messages, err = api.GetMessages(convId, before, "before", api.Config.MessagePageSize)
 		default:
-			messages, err = api.GetMessages(convId, start, "start")
+			messages, err = api.GetMessages(convId, start, "start", api.Config.MessagePageSize)
 		}
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
@@ -334,10 +333,15 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 			_upTo = 0
 		}
 		upTo := gp.MessageId(_upTo)
-		conversation, err := api.MarkConversationSeen(userId, convId, upTo)
+		err = api.MarkConversationSeen(userId, convId, upTo)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
+			conversation, err := api.GetConversation(userId, convId)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
 			jsonResponse(w, conversation, 200)
 		}
 	case convIdString != nil: //Unsuported method
@@ -349,7 +353,7 @@ func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
 		if err != nil {
 			start = 0
 		}
-		conv, err := api.GetFullConversation(convId, start)
+		conv, err := api.GetFullConversation(convId, start, api.Config.MessagePageSize)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		}
@@ -412,7 +416,7 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			start = 0
 		}
-		comments, err := api.GetComments(postId, start)
+		comments, err := api.GetComments(postId, start, api.Config.CommentPageSize)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -773,7 +777,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		fbToken := r.FormValue("token")
 		email := r.FormValue("email")
-		_, err := lib.FBValidateToken(fbToken)
+		_, err := api.FBValidateToken(fbToken)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{"Bad token"}, 400)
 			return

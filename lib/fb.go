@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/huandu/facebook"
-	"time"
 	"strconv"
+	"time"
 )
 
 type FacebookToken struct {
@@ -26,13 +26,16 @@ func DebugToken(token string) {
 	fmt.Printf("%v", err)
 }
 
-func FBValidateToken(fbToken string) (token FacebookToken, err error) {
-	conf := gp.GetConfig()
-	app := facebook.New(conf.Facebook.AppID, conf.Facebook.AppSecret)
+type FB struct {
+	config gp.FacebookConfig
+}
+
+func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error) {
+	app := facebook.New(api.fb.config.AppID, api.fb.config.AppSecret)
 	appToken := app.AppAccessToken()
 	res, err := facebook.Get("/debug_token", facebook.Params{
 		"access_token": appToken,
-		"input_token": fbToken,
+		"input_token":  fbToken,
 	})
 	if err != nil {
 		return
@@ -40,7 +43,7 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	data := res["data"].(map[string]interface{})
 	fmt.Printf("%v\n", data)
 	tokenappid := uint64(data["app_id"].(float64))
-	appid, err := strconv.ParseUint(conf.Facebook.AppID, 10, 64)
+	appid, err := strconv.ParseUint(api.fb.config.AppID, 10, 64)
 	if err != nil {
 		return
 	}
@@ -68,8 +71,8 @@ func FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	return
 }
 
-func (api *API)FacebookLogin(fbToken string) (token gp.Token, err error) {
-	t, err := FBValidateToken(fbToken)
+func (api *API) FacebookLogin(fbToken string) (token gp.Token, err error) {
+	t, err := api.FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}
@@ -81,12 +84,12 @@ func (api *API)FacebookLogin(fbToken string) (token gp.Token, err error) {
 	return
 }
 
-func (api *API)FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
+func (api *API) FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
 	return api.db.UserIdFromFB(fbid)
 }
 
-func (api *API)FacebookRegister(fbToken string, email string) (err error) {
-	t, err := FBValidateToken(fbToken)
+func (api *API) FacebookRegister(fbToken string, email string) (err error) {
+	t, err := api.FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}
@@ -97,7 +100,7 @@ func (api *API)FacebookRegister(fbToken string, email string) (err error) {
 	return
 }
 
-func (api *API)FBissueVerification(fbid uint64) (err error) {
+func (api *API) FBissueVerification(fbid uint64) (err error) {
 	email, err := api.FBGetEmail(fbid)
 	if err != nil {
 		return
@@ -124,14 +127,14 @@ func FBName(fbid uint64) (name string, err error) {
 	return res["name"].(string), err
 }
 
-func (api *API)FBVerify(token string) (fbid uint64, err error) {
+func (api *API) FBVerify(token string) (fbid uint64, err error) {
 	return api.db.FBVerificationExists(token)
 }
 
-func (api *API)FBGetEmail(fbid uint64) (email string, err error) {
+func (api *API) FBGetEmail(fbid uint64) (email string, err error) {
 	return api.db.FBUserEmail(fbid)
 }
 
-func (api *API)UserSetFB(userId gp.UserId, fbid uint64) (err error) {
+func (api *API) UserSetFB(userId gp.UserId, fbid uint64) (err error) {
 	return api.db.FBSetGPUser(fbid, userId)
 }

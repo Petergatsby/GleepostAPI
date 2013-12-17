@@ -1,4 +1,4 @@
-//db handles 
+//db handles
 package db
 
 import (
@@ -20,9 +20,9 @@ var (
 )
 
 type DB struct {
-	stmt map[string]*sql.Stmt
+	stmt     map[string]*sql.Stmt
 	database *sql.DB
-	config gp.MysqlConfig
+	config   gp.MysqlConfig
 }
 
 func New(conf gp.MysqlConfig) (db *DB) {
@@ -137,7 +137,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		Network
 ********************************************************************/
 
-func (db *DB)GetRules() (rules []gp.Rule, err error) {
+func (db *DB) GetRules() (rules []gp.Rule, err error) {
 	s := db.stmt["ruleSelect"]
 	rows, err := s.Query()
 	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
@@ -155,7 +155,7 @@ func (db *DB)GetRules() (rules []gp.Rule, err error) {
 	return
 }
 
-func (db *DB)GetUserNetworks(id gp.UserId) (networks []gp.Network, err error) {
+func (db *DB) GetUserNetworks(id gp.UserId) (networks []gp.Network, err error) {
 	s := db.stmt["networkSelect"]
 	rows, err := s.Query(id)
 	defer rows.Close()
@@ -175,7 +175,7 @@ func (db *DB)GetUserNetworks(id gp.UserId) (networks []gp.Network, err error) {
 	return
 }
 
-func (db *DB)SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
+func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 	_, err = db.stmt["networkInsert"].Exec(userId, networkId)
 	return
 }
@@ -184,7 +184,7 @@ func (db *DB)SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 		User
 ********************************************************************/
 
-func (db *DB)RegisterUser(user string, hash []byte, email string) (gp.UserId, error) {
+func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserId, error) {
 	s := db.stmt["createUser"]
 	res, err := s.Exec(user, hash, email)
 	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
@@ -197,13 +197,13 @@ func (db *DB)RegisterUser(user string, hash []byte, email string) (gp.UserId, er
 	}
 }
 
-func (db *DB)GetHash(user string, pass string) (hash []byte, id gp.UserId, err error) {
+func (db *DB) GetHash(user string, pass string) (hash []byte, id gp.UserId, err error) {
 	s := db.stmt["passSelect"]
 	err = s.QueryRow(user).Scan(&id, &hash)
 	return
 }
 
-func (db *DB)GetUser(id gp.UserId) (user gp.User, err error) {
+func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
 	var av sql.NullString
 	s := db.stmt["userSelect"]
 	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av)
@@ -222,7 +222,7 @@ func (db *DB)GetUser(id gp.UserId) (user gp.User, err error) {
 }
 
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
-func (db *DB)GetProfile(id gp.UserId) (user gp.Profile, err error) {
+func (db *DB) GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	var av, desc sql.NullString
 	s := db.stmt["profileSelect"]
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
@@ -243,72 +243,72 @@ func (db *DB)GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	return
 }
 
-func (db *DB)SetProfileImage(id gp.UserId, url string) (err error) {
+func (db *DB) SetProfileImage(id gp.UserId, url string) (err error) {
 	_, err = db.stmt["setAvatar"].Exec(url, id)
 	return
 }
 
-func (db *DB)SetBusyStatus(id gp.UserId, busy bool) (err error) {
+func (db *DB) SetBusyStatus(id gp.UserId, busy bool) (err error) {
 	_, err = db.stmt["setBusy"].Exec(busy, id)
 	return
 }
 
-func (db *DB)BusyStatus(id gp.UserId) (busy bool, err error) {
+func (db *DB) BusyStatus(id gp.UserId) (busy bool, err error) {
 	err = db.stmt["getBusy"].QueryRow(id).Scan(&busy)
 	return
 }
 
-func (db *DB)UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
+func (db *DB) UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
 	err = db.stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
 	return
 }
 
-func (db *DB)SetVerificationToken(id gp.UserId, token string) (err error) {
+func (db *DB) SetVerificationToken(id gp.UserId, token string) (err error) {
 	_, err = db.stmt["insertVerification"].Exec(id, token)
 	return
 }
 
-func (db *DB)VerificationTokenExists(token string) (id gp.UserId, err error) {
+func (db *DB) VerificationTokenExists(token string) (id gp.UserId, err error) {
 	err = db.stmt["verificationExists"].QueryRow(token).Scan(&id)
 	return
 }
 
-func (db *DB)Verify(id gp.UserId) (err error) {
+func (db *DB) Verify(id gp.UserId) (err error) {
 	_, err = db.stmt["verify"].Exec(id)
 	return
 }
 
-func (db *DB)GetEmail(id gp.UserId) (email string, err error) {
+func (db *DB) GetEmail(id gp.UserId) (email string, err error) {
 	err = db.stmt["emailSelect"].QueryRow(id).Scan(&email)
 	return
 }
 
-func (db *DB)UserWithEmail(email string) (id gp.UserId, err error) {
+func (db *DB) UserWithEmail(email string) (id gp.UserId, err error) {
 	err = db.stmt["userWithEmail"].QueryRow(email).Scan(&id)
 	return
 }
 
-func (db *DB)CreateFBUser(fbId uint64, email string) (err error) {
+func (db *DB) CreateFBUser(fbId uint64, email string) (err error) {
 	_, err = db.stmt["fbInsert"].Exec(fbId, email)
 	return
 }
 
-func (db *DB)FBUserEmail(fbid uint64) (email string, err error) {
+func (db *DB) FBUserEmail(fbid uint64) (email string, err error) {
 	err = db.stmt["selectFBemail"].QueryRow(fbid).Scan(&email)
 	return
 }
 
-func (db *DB)CreateFBVerification(fbid uint64, token string) (err error) {
+func (db *DB) CreateFBVerification(fbid uint64, token string) (err error) {
 	_, err = db.stmt["fbInsertVerification"].Exec(fbid, token)
 	return
 }
 
-func (db *DB)FBVerificationExists(token string) (fbid uint64, err error) {
+func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 	err = db.stmt["fbVerificationExists"].QueryRow(token).Scan(&fbid)
 	return
 }
 
-func (db *DB)FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
+func (db *DB) FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
 	_, err = db.stmt["fbSetGPUser"].Exec(fbid, userId)
 	return
 }
@@ -317,7 +317,7 @@ func (db *DB)FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
 		Conversation
 ********************************************************************/
 
-func (db *DB)CreateConversation(id gp.UserId, participants []gp.User, live bool) (conversation gp.Conversation, err error) {
+func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
 	s := db.stmt["conversationInsert"]
 	r, _ := s.Exec(id)
 	cId, _ := r.LastInsertId()
@@ -335,15 +335,14 @@ func (db *DB)CreateConversation(id gp.UserId, participants []gp.User, live bool)
 	}
 	conversation.Participants = participants
 	conversation.LastActivity = time.Now().UTC()
-	if live {
-		conf := gp.GetConfig()
-		conversation.Expiry = &gp.Expiry{Time:time.Now().Add(time.Duration(conf.Expiry) * time.Second), Ended:false}
+	if expiry != nil {
+		conversation.Expiry = expiry
 		err = db.ConversationSetExpiry(conversation.Id, *conversation.Expiry)
 	}
 	return
 }
 
-func (db *DB)RandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
+func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	s := db.stmt["randomSelect"]
 	rows, err := s.Query(network)
 	if err != nil {
@@ -369,7 +368,7 @@ func (db *DB)RandomPartners(id gp.UserId, count int, network gp.NetworkId) (part
 	return
 }
 
-func (db *DB)UpdateConversation(id gp.ConversationId) (err error) {
+func (db *DB) UpdateConversation(id gp.ConversationId) (err error) {
 	s := db.stmt["conversationUpdate"]
 	_, err = s.Exec(id)
 	log.Println("DB hit: updateConversation convid ")
@@ -379,7 +378,7 @@ func (db *DB)UpdateConversation(id gp.ConversationId) (err error) {
 	return err
 }
 
-func (db *DB)GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+func (db *DB) GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	s := db.stmt["conversationSelect"]
 	rows, err := s.Query(userId, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
@@ -409,7 +408,7 @@ func (db *DB)GetConversations(userId gp.UserId, start int64, count int) (convers
 	return conversations, nil
 }
 
-func (db *DB)ConversationActivity(convId gp.ConversationId) (t time.Time, err error) {
+func (db *DB) ConversationActivity(convId gp.ConversationId) (t time.Time, err error) {
 	s := db.stmt["conversationActivity"]
 	var tstring string
 	err = s.QueryRow(convId).Scan(&tstring)
@@ -420,7 +419,7 @@ func (db *DB)ConversationActivity(convId gp.ConversationId) (t time.Time, err er
 	return
 }
 
-func (db *DB)ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+func (db *DB) ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	s := db.stmt["conversationExpiry"]
 	var t string
 	err = s.QueryRow(convId).Scan(&t, &expiry.Ended)
@@ -431,24 +430,23 @@ func (db *DB)ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err
 	return
 }
 
-func (db *DB)DeleteConversationExpiry(convId gp.ConversationId) (err error) {
+func (db *DB) DeleteConversationExpiry(convId gp.ConversationId) (err error) {
 	_, err = db.stmt["deleteExpiry"].Exec(convId)
 	return
 }
 
-func (db *DB)TerminateConversation(convId gp.ConversationId) (err error) {
+func (db *DB) TerminateConversation(convId gp.ConversationId) (err error) {
 	_, err = db.stmt["endConversation"].Exec(convId)
 	return
 }
 
-func (db *DB)ConversationSetExpiry(convId gp.ConversationId, expiry gp.Expiry) (err error) {
+func (db *DB) ConversationSetExpiry(convId gp.ConversationId, expiry gp.Expiry) (err error) {
 	s := db.stmt["conversationSetExpiry"]
 	_, err = s.Exec(convId, expiry.Time)
 	return
 }
 
-func (db *DB)GetConversation(convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
-	conf := gp.GetConfig()
+func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation gp.ConversationAndMessages, err error) {
 	conversation.Id = convId
 	conversation.LastActivity, err = db.ConversationActivity(convId)
 	if err != nil {
@@ -459,13 +457,13 @@ func (db *DB)GetConversation(convId gp.ConversationId) (conversation gp.Conversa
 	if err == nil {
 		conversation.Expiry = &expiry
 	}
-	conversation.Messages, err = db.GetMessages(convId, 0, "start", conf.MessagePageSize)
+	conversation.Messages, err = db.GetMessages(convId, 0, "start", count)
 	return
 }
 
 //GetParticipants returns all of the participants in conv.
 //TODO: Return an error when appropriate
-func (db *DB)GetParticipants(conv gp.ConversationId) []gp.User {
+func (db *DB) GetParticipants(conv gp.ConversationId) []gp.User {
 	s := db.stmt["participantSelect"]
 	rows, err := s.Query(conv)
 	log.Println("DB hit: getParticipants convid (user.id)")
@@ -485,7 +483,7 @@ func (db *DB)GetParticipants(conv gp.ConversationId) []gp.User {
 	return (participants)
 }
 
-func (db *DB)GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
+func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	var timeString string
 	var by gp.UserId
 	s := db.stmt["lastMessageSelect"]
@@ -508,7 +506,7 @@ func (db *DB)GetLastMessage(id gp.ConversationId) (message gp.Message, err error
 		Post
 ********************************************************************/
 
-func (db *DB)AddPost(userId gp.UserId, text string, network gp.NetworkId) (postId gp.PostId, err error) {
+func (db *DB) AddPost(userId gp.UserId, text string, network gp.NetworkId) (postId gp.PostId, err error) {
 	s := db.stmt["postInsert"]
 	res, err := s.Exec(userId, text, network)
 	if err != nil {
@@ -523,7 +521,7 @@ func (db *DB)AddPost(userId gp.UserId, text string, network gp.NetworkId) (postI
 }
 
 //GetPosts finds posts in the network netId.
-func (db *DB)GetPosts(netId gp.NetworkId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
+func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
 	var s *sql.Stmt
 	switch {
 	case sel == "start":
@@ -571,7 +569,7 @@ func (db *DB)GetPosts(netId gp.NetworkId, index int64, count int, sel string) (p
 	return
 }
 
-func (db *DB)GetPostImages(postId gp.PostId) (images []string, err error) {
+func (db *DB) GetPostImages(postId gp.PostId) (images []string, err error) {
 	s := db.stmt["imageSelect"]
 	rows, err := s.Query(postId)
 	defer rows.Close()
@@ -590,12 +588,12 @@ func (db *DB)GetPostImages(postId gp.PostId) (images []string, err error) {
 	return
 }
 
-func (db *DB)AddPostImage(postId gp.PostId, url string) (err error) {
+func (db *DB) AddPostImage(postId gp.PostId, url string) (err error) {
 	_, err = db.stmt["imageInsert"].Exec(postId, url)
 	return
 }
 
-func (db *DB)CreateComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
+func (db *DB) CreateComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postId, userId, text); err == nil {
 		cId, err := res.LastInsertId()
@@ -606,7 +604,7 @@ func (db *DB)CreateComment(postId gp.PostId, userId gp.UserId, text string) (com
 	}
 }
 
-func (db *DB)GetComments(postId gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
+func (db *DB) GetComments(postId gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
 	s := db.stmt["commentSelect"]
 	rows, err := s.Query(postId, start, count)
 	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
@@ -633,7 +631,7 @@ func (db *DB)GetComments(postId gp.PostId, start int64, count int) (comments []g
 	return comments, nil
 }
 
-func (db *DB)GetCommentCount(id gp.PostId) (count int) {
+func (db *DB) GetCommentCount(id gp.PostId) (count int) {
 	s := db.stmt["commentCountSelect"]
 	err := s.QueryRow(id).Scan(&count)
 	if err != nil {
@@ -644,7 +642,7 @@ func (db *DB)GetCommentCount(id gp.PostId) (count int) {
 
 //GetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
-func (db *DB)GetPost(postId gp.PostId) (post gp.Post, err error) {
+func (db *DB) GetPost(postId gp.PostId) (post gp.Post, err error) {
 	s := db.stmt["postSelect"]
 	post.Id = postId
 	var by gp.UserId
@@ -669,7 +667,7 @@ func (db *DB)GetPost(postId gp.PostId) (post gp.Post, err error) {
 		Message
 ********************************************************************/
 
-func (db *DB)AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (id gp.MessageId, err error) {
+func (db *DB) AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (id gp.MessageId, err error) {
 	log.Printf("Adding message to db: %d, %d %s", convId, userId, text)
 	s := db.stmt["messageInsert"]
 	res, err := s.Exec(convId, userId, text)
@@ -687,8 +685,8 @@ func (db *DB)AddMessage(convId gp.ConversationId, userId gp.UserId, text string)
 //I don't know what will happen if you give sel something else, probably a null pointer
 //exception.
 //TODO: This could return a message which doesn't embed a user
-//BUG(Patrick): Should return an error when sel isn't right! 
-func (db *DB)GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+//BUG(Patrick): Should return an error when sel isn't right!
+func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	var s *sql.Stmt
 	switch {
 	case sel == "after":
@@ -728,7 +726,7 @@ func (db *DB)GetMessages(convId gp.ConversationId, index int64, sel string, coun
 //MarkRead will set all messages in the conversation convId read = true
 //up to and including upTo and excluding messages sent by user id.
 //TODO: This won't generalize to >2 participants
-func (db *DB)MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
+func (db *DB) MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	_, err = db.stmt["messagesRead"].Exec(convId, upTo, id)
 	return
 }
@@ -737,7 +735,7 @@ func (db *DB)MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId)
 		Token
 ********************************************************************/
 
-func (db *DB)TokenExists(id gp.UserId, token string) bool {
+func (db *DB) TokenExists(id gp.UserId, token string) bool {
 	var expiry string
 	s := db.stmt["tokenSelect"]
 	err := s.QueryRow(id, token).Scan(&expiry)
@@ -752,7 +750,7 @@ func (db *DB)TokenExists(id gp.UserId, token string) bool {
 	}
 }
 
-func (db *DB)AddToken(token gp.Token) (err error) {
+func (db *DB) AddToken(token gp.Token) (err error) {
 	s := db.stmt["tokenInsert"]
 	_, err = s.Exec(token.UserId, token.Token, token.Expiry)
 	return
@@ -762,7 +760,7 @@ func (db *DB)AddToken(token gp.Token) (err error) {
 		Contact
 ********************************************************************/
 
-func (db *DB)AddContact(adder gp.UserId, addee gp.UserId) (err error) {
+func (db *DB) AddContact(adder gp.UserId, addee gp.UserId) (err error) {
 	log.Println("DB hit: addContact")
 	s := db.stmt["contactInsert"]
 	_, err = s.Exec(adder, addee)
@@ -771,7 +769,7 @@ func (db *DB)AddContact(adder gp.UserId, addee gp.UserId) (err error) {
 
 //GetContacts retrieves all the contacts for user.
 //TODO: This could return contacts which doesn't embed a user
-func (db *DB)GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
+func (db *DB) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	s := db.stmt["contactSelect"]
 	rows, err := s.Query(user, user)
 	log.Println("DB hit: db.GetContacts")
@@ -808,27 +806,28 @@ func (db *DB)GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	return
 }
 
-func (db *DB)UpdateContact(user gp.UserId, contact gp.UserId) (err error) {
+func (db *DB) UpdateContact(user gp.UserId, contact gp.UserId) (err error) {
 	s := db.stmt["contactUpdate"]
 	_, err = s.Exec(user, contact)
 	return
 }
 
-func (db *DB)ContactRequestExists(adder gp.UserId, addee gp.UserId) (exists bool, err error) {
+func (db *DB) ContactRequestExists(adder gp.UserId, addee gp.UserId) (exists bool, err error) {
 	err = db.stmt["contactExists"].QueryRow(adder, addee).Scan(&exists)
 	return
 }
+
 /********************************************************************
 		Device
 ********************************************************************/
 
-func (db *DB)AddDevice(user gp.UserId, deviceType string, deviceId string) (err error) {
+func (db *DB) AddDevice(user gp.UserId, deviceType string, deviceId string) (err error) {
 	s := db.stmt["deviceInsert"]
 	_, err = s.Exec(user, deviceType, deviceId)
 	return
 }
 
-func (db *DB)GetDevices(user gp.UserId) (devices []gp.Device, err error) {
+func (db *DB) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	s := db.stmt["deviceSelect"]
 	rows, err := s.Query(user)
 	if err != nil {
@@ -845,7 +844,7 @@ func (db *DB)GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	return
 }
 
-func (db *DB)DeleteDevice(user gp.UserId, device string) (err error) {
+func (db *DB) DeleteDevice(user gp.UserId, device string) (err error) {
 	s := db.stmt["deviceDelete"]
 	_, err = s.Exec(user, device)
 	return
@@ -855,12 +854,12 @@ func (db *DB)DeleteDevice(user gp.UserId, device string) (err error) {
 		Upload
 ********************************************************************/
 
-func (db *DB)AddUpload(user gp.UserId, url string) (err error) {
+func (db *DB) AddUpload(user gp.UserId, url string) (err error) {
 	_, err = db.stmt["userUpload"].Exec(user, url)
 	return
 }
 
-func (db *DB)UploadExists(user gp.UserId, url string) (exists bool, err error) {
+func (db *DB) UploadExists(user gp.UserId, url string) (exists bool, err error) {
 	err = db.stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
 	return
 }
@@ -869,7 +868,7 @@ func (db *DB)UploadExists(user gp.UserId, url string) (exists bool, err error) {
 		Notification
 ********************************************************************/
 
-func (db *DB)GetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
+func (db *DB) GetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
 	s := db.stmt["notificationSelect"]
 	rows, err := s.Query(id)
 	if err != nil {
@@ -904,12 +903,12 @@ func (db *DB)GetUserNotifications(id gp.UserId) (notifications []interface{}, er
 	return
 }
 
-func (db *DB)MarkNotificationsSeen(user gp.UserId, upTo gp.NotificationId) (err error) {
+func (db *DB) MarkNotificationsSeen(user gp.UserId, upTo gp.NotificationId) (err error) {
 	_, err = db.stmt["notificationUpdate"].Exec(user, upTo)
 	return
 }
 
-func (db *DB)CreateNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (notification interface{}, err error) {
+func (db *DB) CreateNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (notification interface{}, err error) {
 	var res sql.Result
 	if isPN {
 		s := db.stmt["postNotificationInsert"]
@@ -944,7 +943,7 @@ func (db *DB)CreateNotification(ntype string, by gp.UserId, recipient gp.UserId,
 	}
 }
 
-func (db *DB)CreateLike(user gp.UserId, post gp.PostId) (err error) {
+func (db *DB) CreateLike(user gp.UserId, post gp.PostId) (err error) {
 	_, err = db.stmt["addLike"].Exec(post, user)
 	// Suppress duplicate entry errors
 	if err != nil {
@@ -955,12 +954,12 @@ func (db *DB)CreateLike(user gp.UserId, post gp.PostId) (err error) {
 	return
 }
 
-func (db *DB)RemoveLike(user gp.UserId, post gp.PostId) (err error) {
+func (db *DB) RemoveLike(user gp.UserId, post gp.PostId) (err error) {
 	_, err = db.stmt["delLike"].Exec(post, user)
 	return
 }
 
-func (db *DB)GetLikes(post gp.PostId) (likes []gp.Like, err error) {
+func (db *DB) GetLikes(post gp.PostId) (likes []gp.Like, err error) {
 	rows, err := db.stmt["likeSelect"].Query(post)
 	defer rows.Close()
 	if err != nil {
@@ -982,12 +981,12 @@ func (db *DB)GetLikes(post gp.PostId) (likes []gp.Like, err error) {
 	return
 }
 
-func (db *DB)HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
+func (db *DB) HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 	err = db.stmt["likeExists"].QueryRow(post, user).Scan(&liked)
 	return
 }
 
-func (db *DB)LikeCount(post gp.PostId) (count int, err error) {
+func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
 	err = db.stmt["likeCount"].QueryRow(post).Scan(&count)
 	return
 }

@@ -6,9 +6,12 @@ import (
 	"log"
 )
 
-func (api *API)notify(user gp.UserId) {
-	conf := gp.GetConfig()
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
+type Pusher struct {
+	config gp.APNSConfig
+}
+
+func (api *API) notify(user gp.UserId) {
+	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	payload.Alert = "Sup"
 	payload.Badge = 1337
@@ -30,9 +33,8 @@ func (api *API)notify(user gp.UserId) {
 	}
 }
 
-func (api *API)notificationPush(user gp.UserId) {
-	conf := gp.GetConfig()
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
+func (api *API) notificationPush(user gp.UserId) {
+	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 
 	devices, err := api.GetDevices(user)
@@ -51,9 +53,8 @@ func (api *API)notificationPush(user gp.UserId) {
 	}
 }
 
-func (api *API)messagePush(message gp.Message, convId gp.ConversationId) {
-	conf := gp.GetConfig()
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", conf.APNS.CertFile, conf.APNS.KeyFile)
+func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
+	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "MSG"

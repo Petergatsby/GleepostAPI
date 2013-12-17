@@ -26,15 +26,14 @@ func randomFilename(extension string) (string, error) {
 	}
 }
 
-func getS3() (s *s3.S3) {
-	conf := gp.GetConfig()
+func (api *API) getS3() (s *s3.S3) {
 	var auth aws.Auth
-	auth.AccessKey, auth.SecretKey = conf.AWS.KeyId, conf.AWS.SecretKey
+	auth.AccessKey, auth.SecretKey = api.Config.AWS.KeyId, api.Config.AWS.SecretKey
 	s = s3.New(auth, aws.EUWest)
 	return
 }
 
-func (api *API)StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
+func (api *API) StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
 	switch {
@@ -54,7 +53,7 @@ func (api *API)StoreFile(id gp.UserId, file multipart.File, header *multipart.Fi
 		return "", gp.APIerror{err.Error()}
 	}
 	//store on s3
-	s := getS3()
+	s := api.getS3()
 	bucket := s.Bucket("gpimg")
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
@@ -69,11 +68,10 @@ func (api *API)StoreFile(id gp.UserId, file multipart.File, header *multipart.Fi
 	return url, err
 }
 
-func (api *API)userAddUpload(id gp.UserId, url string) (err error) {
+func (api *API) userAddUpload(id gp.UserId, url string) (err error) {
 	return api.db.AddUpload(id, url)
 }
 
-func (api *API)UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
+func (api *API) UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
 	return api.db.UploadExists(id, url)
 }
-
