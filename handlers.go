@@ -14,6 +14,7 @@ import (
 var api *lib.API
 
 func init() {
+	configInit()
 	conf := GetConfig()
 	api = lib.New(*conf)
 }
@@ -736,7 +737,7 @@ func changePassHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method =="POST":
+	case r.Method == "POST":
 		oldPass := r.FormValue("old")
 		newPass := r.FormValue("new")
 		err := api.ChangePass(userId, oldPass, newPass)

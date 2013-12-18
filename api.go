@@ -62,10 +62,6 @@ func configInit() {
 	}()
 }
 
-func init() {
-	configInit()
-}
-
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := GetConfig()
