@@ -15,7 +15,7 @@ import (
 var (
 	config     *gp.Config
 	configLock = new(sync.RWMutex)
-	api *lib.API
+	api        *lib.API
 )
 
 func init() {

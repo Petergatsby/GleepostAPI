@@ -20,6 +20,8 @@ type Cache struct {
 }
 
 func New(conf gp.RedisConfig) (cache *Cache) {
+	cache = new(Cache)
+	cache.config = conf
 	cache.pool = redis.NewPool(getDialer(conf), 100)
 	return
 }
