@@ -25,6 +25,7 @@ type API struct {
 }
 
 func New(conf gp.Config) (api *API) {
+	api = new(API)
 	api.cache = cache.New(conf.Redis)
 	api.db = db.New(conf.Mysql)
 	api.Config = conf
