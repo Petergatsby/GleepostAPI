@@ -9,14 +9,19 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"sync"
 )
 
-var api *lib.API
+var (
+	config     *gp.Config
+	configLock = new(sync.RWMutex)
+	api *lib.API
+)
 
 func init() {
 	configInit()
-	conf := GetConfig()
-	api = lib.New(*conf)
+	config = GetConfig()
+	api = lib.New(*config)
 }
 
 //Note to self: validateToken should probably return an error at some point

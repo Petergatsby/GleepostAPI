@@ -13,13 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync"
 	"syscall"
-)
-
-var (
-	config     *gp.Config
-	configLock = new(sync.RWMutex)
 )
 
 func loadConfig(fail bool) {
