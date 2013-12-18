@@ -27,6 +27,7 @@ type DB struct {
 
 func New(conf gp.MysqlConfig) (db *DB) {
 	var err error
+	db = new(DB)
 	db.database, err = sql.Open("mysql", conf.ConnectionString())
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
