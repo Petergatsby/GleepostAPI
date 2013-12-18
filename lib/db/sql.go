@@ -51,6 +51,8 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["userSelect"] = "SELECT id, name, avatar FROM users WHERE id=?"
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE name = ?"
+	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
+	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
 	sqlStmt["randomSelect"] = "SELECT id, name, avatar FROM users LEFT JOIN user_network ON id = user_id WHERE network_id = ? ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
@@ -197,9 +199,19 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserId, e
 	}
 }
 
-func (db *DB) GetHash(user string, pass string) (hash []byte, id gp.UserId, err error) {
+func (db *DB) GetHash(user string) (hash []byte, id gp.UserId, err error) {
 	s := db.stmt["passSelect"]
 	err = s.QueryRow(user).Scan(&id, &hash)
+	return
+}
+
+func (db *DB) GetHashById(id gp.UserId) (hash []byte, err error) {
+	err = db.stmt["hashById"].QueryRow(id).Scan(&hash)
+	return
+}
+
+func (db *DB) PassUpdate(id gp.UserId, newHash []byte) (err error) {
+	_, err = db.stmt["passUpdate"].Exec(newHash, id)
 	return
 }
 

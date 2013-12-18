@@ -731,6 +731,26 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func changePassHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method =="POST":
+		oldPass := r.FormValue("old")
+		newPass := r.FormValue("new")
+		err := api.ChangePass(userId, oldPass, newPass)
+		if err != nil {
+			//Assuming that most errors will be bad input for now
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		w.WriteHeader(204)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
 func notificationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {

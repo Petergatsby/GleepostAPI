@@ -55,6 +55,8 @@ URL: https://gleepost.com/api/v0.24/
 
 /profile/profile_image [[POST]](#post-profileprofile_image)
 
+/profile/change_pass [[POST]](#post-profilechange_pass)
+
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
@@ -659,6 +661,13 @@ HTTP 200
 	"course":"Computer Science"
 }
 ```
+
+##POST /profile/change_pass
+required parameters: id, token, old, new
+
+old is the user's old password; new is the password the user is changing to.
+
+If it fails it will return 400, on success 204.
 
 ##POST /profile/busy
 required parameters: id, token, status

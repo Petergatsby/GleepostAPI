@@ -98,7 +98,7 @@ func (api *API) ValidateToken(id gp.UserId, token string) bool {
 
 func (api *API) ValidatePass(user string, pass string) (id gp.UserId, err error) {
 	passBytes := []byte(pass)
-	hash, id, err := api.db.GetHash(user, pass)
+	hash, id, err := api.db.GetHash(user)
 	if err != nil {
 		return 0, err
 	} else {
@@ -429,4 +429,24 @@ func (api *API) Verify(token string) (err error) {
 
 func (api *API) UserWithEmail(email string) (id gp.UserId, err error) {
 	return api.db.UserWithEmail(email)
+}
+
+func (api *API) ChangePass(userId gp.UserId, oldPass string, newPass string) (err error) {
+	passBytes := []byte(oldPass)
+	hash, err := api.db.GetHashById(userId)
+	if err != nil {
+		return
+	} else {
+		err = bcrypt.CompareHashAndPassword(hash, passBytes)
+		if err != nil {
+			return
+		}
+		hash, err = bcrypt.GenerateFromPassword([]byte(newPass), 10)
+		if err != nil {
+			return
+		}
+		err = api.db.PassUpdate(userId, hash)
+		return
+	}
+
 }
