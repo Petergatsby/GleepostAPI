@@ -18,7 +18,7 @@ It consists of a ["type"](#event-types), an optional "location" (A URI for the r
 
 
 ##Event types
-An event type will be one of: [message](#message)
+An event type will be one of: [message](#message) [new-conversation](#new-conversation) [notification](#notification)
 
 ###Message
 An event with type "message" is the replacement for a long-poll message. It contains a location (the URI of the conversation it is in) and the data payload is the same message object you find in /conversations/[id]/messages.
