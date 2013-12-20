@@ -57,6 +57,19 @@ func (api *API) AddPost(userId gp.UserId, text string) (postId gp.PostId, err er
 	return
 }
 
+func (api *API) AddPostWithImage(userId gp.UserId, text string, image string) (postId gp.PostId, err error) {
+	postId, err = api.AddPost(userId, text)
+	if err != nil {
+		return
+	}
+	exists, err := api.UserUploadExists(userId, image)
+	if exists && err == nil {
+		err = api.AddPostImage(postId, image)
+		return
+	}
+	return
+}
+
 func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
 	ps, err := api.cache.GetPosts(netId, index, count, sel)
 	if err != nil {

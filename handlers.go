@@ -194,7 +194,14 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "POST":
 		text := r.FormValue("text")
-		postId, err := api.AddPost(userId, text)
+		url := r.FormValue("url")
+		var postId gp.PostId
+		switch {
+		case len(url) > 5:
+			postId, err = api.AddPostWithImage(userId, text, url)
+		default:
+			postId, err = api.AddPost(userId, text)
+		}
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {

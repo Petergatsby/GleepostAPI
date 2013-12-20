@@ -167,6 +167,10 @@ example responses:
 
 ##POST /posts
 required parameters: id, token, text
+optional parameters: url
+
+If set, url must be a url previously returned from [/upload](#post-upload).
+If the image url is invalid, the post will be created without an image. 
 
 example responses:
 (http 200)
