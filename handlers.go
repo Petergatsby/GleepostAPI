@@ -850,7 +850,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		regex, _ := regexp.Compile("verify/([a-fA-F0-9]/?$")
+		regex, _ := regexp.Compile("verify/([a-fA-F0-9])/?$")
 		tokenString := regex.FindStringSubmatch(r.URL.Path)
 		if tokenString != nil {
 			token := tokenString[1]
