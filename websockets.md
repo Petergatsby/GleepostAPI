@@ -1,6 +1,6 @@
 #Gleepost Websockets
 
-The websocket system is currently in beta, and it will probably disconnect you every few seconds.
+The websocket system is currently in beta, expect many new events in the coming weeks.
 
 At the moment, this is a receive-only stream of "events". 
 
