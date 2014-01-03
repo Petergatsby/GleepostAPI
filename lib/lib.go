@@ -35,7 +35,7 @@ func New(conf gp.Config) (api *API) {
 }
 
 var ETOOWEAK = gp.APIerror{"Password too weak!"}
-
+var EBADREC  = gp.APIerror{"Bad password recovery token."}
 /********************************************************************
 Top-level functions
 ********************************************************************/
@@ -375,11 +375,23 @@ func (api *API) verificationUrl(token string) (url string) {
 	return
 }
 
+func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
+	url = fmt.Sprintf("https://gleepost.com/recovery/%d/%s", id, token)
+	return
+}
+
 //TODO: send an actual link
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationUrl(token)
 	html := "<html><body><a href=" + url + ">Verify your account here</a></body></html>"
 	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
+	return
+}
+
+func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (err error) {
+	url := api.recoveryUrl(user.Id, token)
+	html := "<html><body><a href=" + url + ">Click here to recover your password.</a></body></html>"
+	err = api.mail.SendHTML(email, user.Name+", recover your Gleepost password!", html)
 	return
 }
 
@@ -450,4 +462,42 @@ func (api *API) ChangePass(userId gp.UserId, oldPass string, newPass string) (er
 		return
 	}
 
+}
+
+func (api *API) RequestReset(email string) (err error) {
+	userId, err := api.UserWithEmail(email)
+	if err != nil {
+		return
+	}
+	user, err := api.GetUser(userId)
+	if err != nil {
+		return
+	}
+	token, err := randomString()
+	if err != nil {
+		return
+	}
+	err = api.db.AddPasswordRecovery(userId, token)
+	if err != nil {
+		return
+	}
+	err = api.issueRecoveryEmail(email, user, token)
+	return
+}
+
+func (api *API) ResetPass(userId gp.UserId, token string, newPass string) (err error) {
+	exists, err := api.db.CheckPasswordRecovery(userId, token)
+	if err != nil {
+		return
+	}
+	if !exists {
+		//ebadtoken
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPass), 10)
+	if err != nil {
+		return
+	}
+	err = api.db.PassUpdate(userId, hash)
+	return
 }

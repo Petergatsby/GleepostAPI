@@ -68,6 +68,9 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
 	sqlStmt["emailSelect"] = "SELECT email FROM users WHERE id = ?"
 	sqlStmt["userWithEmail"] = "SELECT id FROM users WHERE email = ?"
+	sqlStmt["addPasswordRecovery"] = "REPLACE INTO password_recovery (token, user) VALUES (?, ?)"
+	sqlStmt["checkPasswordRecovery"] = "SELECT count(*) FROM password_recovery WHERE user = ? and token = ?"
+	sqlStmt["deletePasswordRecovery"] = "DELETE FROM password_recovery WHERE user = ? and token = ?"
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -323,6 +326,21 @@ func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 
 func (db *DB) FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
 	_, err = db.stmt["fbSetGPUser"].Exec(fbid, userId)
+	return
+}
+
+func (db *DB) AddPasswordRecovery(userId gp.UserId, token string) (err error) {
+	_, err = db.stmt["addPasswordRecovery"].Exec(userId, token)
+	return
+}
+
+func (db *DB) CheckPasswordRecovery(userId gp.UserId, token string) (exists bool, err error) {
+	err = db.stmt["checkPasswordRecovery"].QueryRow(userId, token).Scan(&exists)
+	return
+}
+
+func (db *DB) DeletePasswordRecovery(userId gp.UserId, token string) (err error) {
+	_, err = db.stmt["deletePasswordRecovery"].Exec(userId, token)
 	return
 }
 
