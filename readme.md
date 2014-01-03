@@ -9,6 +9,14 @@ URL: https://gleepost.com/api/v0.24/
 
 * Parameters can be form-encoded in a POST body, or sent as a query string
 
+##Compatibility:
+
+The only thing that should be considered a breaking change to the API is the removal or modification of existing attributes in a previously available resource.
+
+A resource is allowed to gain arbitrary new attributes; a client should continue to operate normally, ignoring any attributes it is not familiar with.
+
+In addition, arbitrary new event types may be added to the websocket interface. The client should ignore any event types it is not familiar with.
+
 ##Available API endpoints:
 
 /register [[POST]](#post-register)
