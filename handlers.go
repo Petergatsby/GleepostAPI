@@ -922,6 +922,9 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 		regex, _ := regexp.Compile("reset/(\\d+)/([:alnum:]+)/?$")
 		submatches := regex.FindStringSubmatch(r.URL.Path)
 		if submatches != nil {
+			for k, v := range submatches {
+				log.Println(k, v)
+			}
 			_id := submatches[1]
 			token := submatches[2]
 			id, err := strconv.ParseUint(_id, 10, 64)
