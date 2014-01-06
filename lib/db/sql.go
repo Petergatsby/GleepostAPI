@@ -330,7 +330,7 @@ func (db *DB) FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
 }
 
 func (db *DB) AddPasswordRecovery(userId gp.UserId, token string) (err error) {
-	_, err = db.stmt["addPasswordRecovery"].Exec(userId, token)
+	_, err = db.stmt["addPasswordRecovery"].Exec(token, userId)
 	return
 }
 
