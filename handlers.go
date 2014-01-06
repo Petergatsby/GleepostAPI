@@ -919,7 +919,7 @@ func requestResetHandler(w http.ResponseWriter, r *http.Request) {
 func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "POST":
-		regex, _ := regexp.Compile("reset/(\\d+)/([:alnum:]+)/?$")
+		regex, _ := regexp.Compile("reset/(\\d+)/(\\w+)/?$")
 		submatches := regex.FindStringSubmatch(r.URL.Path)
 		if submatches != nil {
 			for k, v := range submatches {
