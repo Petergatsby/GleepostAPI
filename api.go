@@ -83,6 +83,8 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
 	http.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	http.HandleFunc(conf.UrlBase+"/verify/", verificationHandler)
+	http.HandleFunc(conf.UrlBase+"/profile/request_reset", requestResetHandler)
+	http.HandleFunc(conf.UrlBase+"/profile/reset/", resetPassHandler)
 	http.Handle(conf.UrlBase+"/ws", websocket.Handler(jsonServer))
 	server.ListenAndServe()
 }

@@ -491,7 +491,7 @@ func (api *API) ResetPass(userId gp.UserId, token string, newPass string) (err e
 		return
 	}
 	if !exists {
-		//ebadtoken
+		err = EBADREC
 		return
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPass), 10)

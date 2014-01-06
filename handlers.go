@@ -899,3 +899,48 @@ func jsonServer(ws *websocket.Conn) {
 		log.Println("Sent bytes: ", n)
 	}
 }
+
+func requestResetHandler(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.Method == "POST":
+		email := r.FormValue("email")
+		err := api.RequestReset(email)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func resetPassHandler(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.Method == "POST":
+		regex, _ := regexp.Compile("reset/(\\d+)/(\\w+)/?$")
+		submatches := regex.FindStringSubmatch(r.URL.Path)
+		if submatches != nil {
+			_id := submatches[1]
+			token := submatches[2]
+			id, err := strconv.ParseUint(_id, 10, 64)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 400)
+				return
+			}
+			userId := gp.UserId(id)
+			pass := r.FormValue("pass")
+			err = api.ResetPass(userId, token, pass)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 400)
+				return
+			}
+			w.WriteHeader(204)
+			return
+		}
+		jsonResponse(w, gp.APIerror{"Bad reset token"}, 400)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}

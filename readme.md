@@ -65,6 +65,10 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 /profile/change_pass [[POST]](#post-profilechange_pass)
 
+/profile/request_reset [[POST]](#post-profilerequest_reset)
+
+/profile/reset/[user-id]/[reset-token] [[POST]](#post-profileresetuser-idreset-token)
+
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
@@ -693,6 +697,22 @@ HTTP 200
 ```
 { "busy":true }
 ```
+
+##POST /profile/request_reset
+required parameters: email
+
+This will issue a password recovery email, if that email is registered.
+A successful response is 204.
+Unsuccessful response is 400.
+
+##POST /profile/reset/[user-id]/[reset-token]
+required parameters: user-id, reset-token, pass
+
+user-id and reset-token are in the password reset link sent to the users' email address.
+pass is the new password.
+
+A successful response (password changed) will be 204.
+An unsuccessful response (bad reset token, password too short) will be 400.
 
 ##GET /profile/busy
 required parameters: id, token
