@@ -66,6 +66,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?, ?)"
 	sqlStmt["verificationExists"] = "SELECT user_id FROM verification WHERE token = ?"
 	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
+	sqlStmt["userIsVerified"] = "SELECT verified FROM users WHERE id = ?"
 	sqlStmt["emailSelect"] = "SELECT email FROM users WHERE id = ?"
 	sqlStmt["userWithEmail"] = "SELECT id FROM users WHERE email = ?"
 	sqlStmt["addPasswordRecovery"] = "REPLACE INTO password_recovery (token, user) VALUES (?, ?)"
@@ -1019,5 +1020,10 @@ func (db *DB) HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 
 func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
 	err = db.stmt["likeCount"].QueryRow(post).Scan(&count)
+	return
+}
+
+func (db *DB) IsVerified(user gp.UserId) (verified bool, err error) {
+	err = db.stmt["userIsVerified"].QueryRow(user).Scan(&verified)
 	return
 }

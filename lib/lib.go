@@ -501,3 +501,7 @@ func (api *API) ResetPass(userId gp.UserId, token string, newPass string) (err e
 	err = api.db.PassUpdate(userId, hash)
 	return
 }
+
+func (api *API) IsVerified(userId gp.UserId) (verified bool, err error) {
+	return api.db.IsVerified(userId)
+}

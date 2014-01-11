@@ -129,11 +129,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err == nil:
-		token, err := api.CreateAndStoreToken(id)
-		if err == nil {
-			jsonResponse(w, token, 200)
-		} else {
+		verified, err := api.IsVerified(id)
+		switch {
+		case err != nil:
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		case !verified:
+			resp := struct{Status string `json:"status"`}{"unverified"}
+			jsonResponse(w, resp, 403)
+		default:
+			token, err := api.CreateAndStoreToken(id)
+			if err == nil {
+				jsonResponse(w, token, 200)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
 		}
 	default:
 		jsonResponse(w, gp.APIerror{"Bad username/password"}, 400)
