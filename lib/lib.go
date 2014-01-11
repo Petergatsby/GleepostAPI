@@ -192,7 +192,7 @@ func (api *API) RegisterUser(user string, pass string, email string) (userId gp.
 	if err != nil {
 		return
 	}
-	err = api.generateAndSendVerification(userId, user, email)
+	err = api.GenerateAndSendVerification(userId, user, email)
 	return
 }
 
@@ -217,7 +217,7 @@ func (api *API) createUser(user string, pass string, email string) (userId gp.Us
 }
 
 //TODO: this might end up using user input directly in an email. Sanitize!
-func (api *API) generateAndSendVerification(userId gp.UserId, user string, email string) (err error) {
+func (api *API) GenerateAndSendVerification(userId gp.UserId, user string, email string) (err error) {
 	random, err := randomString()
 	if err != nil {
 		return

@@ -138,3 +138,7 @@ func (api *API) FBGetEmail(fbid uint64) (email string, err error) {
 func (api *API) UserSetFB(userId gp.UserId, fbid uint64) (err error) {
 	return api.db.FBSetGPUser(fbid, userId)
 }
+
+func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
+	return api.db.FBUserWithEmail(email)
+}

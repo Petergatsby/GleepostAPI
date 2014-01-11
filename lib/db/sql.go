@@ -61,6 +61,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL"
 	sqlStmt["fbInsert"] = "INSERT INTO facebook (fb_id, email) VALUES (?, ?)"
 	sqlStmt["selectFBemail"] = "SELECT email FROM facebook WHERE fb_id = ?"
+	sqlStmt["fbUserByEmail"] = "SELECT fb_id FROM facebook WHERE email = ?"
 	sqlStmt["fbInsertVerification"] = "REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)"
 	sqlStmt["fbSetGPUser"] = "UPDATE facebook SET user_id = ? WHERE fb_id = ?"
 	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?, ?)"
@@ -315,6 +316,10 @@ func (db *DB) FBUserEmail(fbid uint64) (email string, err error) {
 	return
 }
 
+func (db *DB) FBUserWithEmail(email string) (fbid uint64, err error) {
+	err = db.stmt["fbUserByEmail"].QueryRow(email).Scan(&fbid)
+	return
+}
 func (db *DB) CreateFBVerification(fbid uint64, token string) (err error) {
 	_, err = db.stmt["fbInsertVerification"].Exec(fbid, token)
 	return

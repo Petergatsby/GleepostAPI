@@ -134,7 +134,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		case err != nil:
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		case !verified:
-			resp := struct{Status string `json:"status"`}{"unverified"}
+			resp := struct {
+				Status string `json:"status"`
+			}{"unverified"}
 			jsonResponse(w, resp, 403)
 		default:
 			token, err := api.CreateAndStoreToken(id)
@@ -952,6 +954,32 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, gp.APIerror{"Bad reset token"}, 400)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.Method == "POST":
+		email := r.FormValue("email")
+		userId, err := api.UserWithEmail(email)
+		if err != nil {
+			fbid, err := api.FBUserWithEmail(email)
+			if err == nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 400)
+				return
+			}
+			api.FBissueVerification(fbid)
+		} else {
+			user, err := api.GetUser(userId)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			api.GenerateAndSendVerification(userId, user.Name, email)
+		}
+		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}

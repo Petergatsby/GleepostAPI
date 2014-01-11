@@ -1,7 +1,7 @@
-#Gleepost API / V0.24
+#Gleepost API / V0.25
 
 
-URL: https://gleepost.com/api/v0.24/
+URL: https://gleepost.com/api/v0.25/
 
 ##Notes:
 
@@ -93,6 +93,9 @@ example responses:
 ##POST /login
 required parameters: user, pass
 
+Logging in with bad credentials gives HTTP 400.
+Logging in with good credentials but an unverified account gives HTTP 403.
+
 example responses:
 (HTTP 200) 
 ```
@@ -101,6 +104,10 @@ example responses:
 (HTTP 400)
 ```
 {"error":"Bad username/password"}
+```
+(HTTP 403)
+```
+{"status":"unverified"}
 ```
 
 ##POST /fblogin
