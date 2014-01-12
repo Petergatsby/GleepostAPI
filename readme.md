@@ -75,6 +75,8 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 /verify/[token] [[POST]](#post-verifytoken)
 
+/resend_verification [[POST]](#post-resend_verification)
+
 ##POST /register
 required parameters: user, pass, email
 
@@ -822,3 +824,10 @@ HTTP 200
 ```
 {"verified":true}
 ```
+
+##POST /resend_verification
+
+required parameters: email
+Resend a verification email.
+
+If successful, will respond with HTTP 204.

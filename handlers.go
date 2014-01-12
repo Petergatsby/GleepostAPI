@@ -259,8 +259,28 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		conversations, err := api.GetLiveConversations(userId)
+		switch {
+		case err != nil:
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		case len(conversations) == 0:
+			jsonResponse(w, []string{}, 200)
+		default:
+			jsonResponse(w, conversations, 200)
+		}
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	userId, err := authenticate(r)
 	switch {
 	case r.Method != "GET":

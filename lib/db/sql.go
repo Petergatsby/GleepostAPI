@@ -45,7 +45,10 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	stmt = make(map[string]*sql.Stmt)
 	//Network
 	sqlStmt["ruleSelect"] = "SELECT network_id, rule_type, rule_value FROM net_rules"
-	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name FROM user_network INNER JOIN network ON user_network.network_id = network.id WHERE user_id = ?"
+	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name " +
+					"FROM user_network " +
+					"INNER JOIN network ON user_network.network_id = network.id " +
+					"WHERE user_id = ?"
 	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
@@ -54,7 +57,11 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE name = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
-	sqlStmt["randomSelect"] = "SELECT id, name, avatar FROM users LEFT JOIN user_network ON id = user_id WHERE network_id = ? ORDER BY RAND()"
+	sqlStmt["randomSelect"] = "SELECT id, name, avatar " +
+					"FROM users " +
+					"LEFT JOIN user_network ON id = user_id " +
+					"WHERE network_id = ? " +
+					"ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
@@ -76,32 +83,70 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
-	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id WHERE participant_id = ? ORDER BY conversations.last_mod DESC LIMIT ?, ?"
+	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+					"FROM conversation_participants " +
+					"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+					"WHERE participant_id = ? " +
+					"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["conversationSetExpiry"] = "REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
 	sqlStmt["deleteExpiry"] = "DELETE FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["endConversation"] = "UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
-	sqlStmt["participantSelect"] = "SELECT participant_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id WHERE conversation_id=?"
-	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1"
+	sqlStmt["participantSelect"] = "SELECT participant_id " +
+					"FROM conversation_participants " +
+					"JOIN users ON conversation_participants.participant_id = users.id " +
+					"WHERE conversation_id=?"
+	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
+					"FROM chat_messages " +
+					"WHERE conversation_id = ? " +
+					"ORDER BY timestamp DESC LIMIT 1"
+	sqlStmt["liveConversations"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+					"FROM conversation_participants " +
+					"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+					"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+					"WHERE participant_id = ? " +
+					"AND conversation_expirations.ended = 0 " +
+					"ORDER BY conversations.last_mod DESC  " +
+					"LIMIT 0 , 3"
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["wallSelect"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
-	sqlStmt["wallSelectAfter"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? AND id > ? ORDER BY time DESC LIMIT 0, ?"
-	sqlStmt["wallSelectBefore"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? AND id < ? ORDER BY time DESC LIMIT 0, ?"
+	sqlStmt["wallSelectAfter"] = "SELECT id, `by`, time, text " +
+					"FROM wall_posts " +
+					"WHERE network_id = ? AND id > ? " +
+					"ORDER BY time DESC LIMIT 0, ?"
+	sqlStmt["wallSelectBefore"] = "SELECT id, `by`, time, text " +
+					"FROM wall_posts " +
+					"WHERE network_id = ? AND id < ? " +
+					"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp FROM post_comments WHERE post_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
+	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp " +
+					"FROM post_comments " +
+					"WHERE post_id = ? " +
+					"ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?, ?"
-	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id > ? ORDER BY timestamp DESC LIMIT ?"
-	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp, seen FROM chat_messages WHERE conversation_id = ? AND id < ? ORDER BY timestamp DESC LIMIT ?"
-	sqlStmt["messagesRead"] = "UPDATE chat_messages SET seen = 1 WHERE conversation_id=? AND id <= ? AND `from` != ?"
+	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
+					"FROM chat_messages " +
+					"WHERE conversation_id = ? " +
+					"ORDER BY timestamp DESC LIMIT ?, ?"
+	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen " +
+					"FROM chat_messages " +
+					"WHERE conversation_id = ? AND id > ? " +
+					"ORDER BY timestamp DESC LIMIT ?"
+	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp, seen " +
+					"FROM chat_messages " +
+					"WHERE conversation_id = ? AND id < ? " +
+					"ORDER BY timestamp DESC LIMIT ?"
+	sqlStmt["messagesRead"] = "UPDATE chat_messages " +
+					"SET seen = 1 " +
+					"WHERE conversation_id= ? AND id <= ? AND `from` != ?"
 	//Token
 	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
@@ -296,6 +341,11 @@ func (db *DB) Verify(id gp.UserId) (err error) {
 	return
 }
 
+func (db *DB) IsVerified(user gp.UserId) (verified bool, err error) {
+	err = db.stmt["userIsVerified"].QueryRow(user).Scan(&verified)
+	return
+}
+
 func (db *DB) GetEmail(id gp.UserId) (email string, err error) {
 	err = db.stmt["emailSelect"].QueryRow(id).Scan(&email)
 	return
@@ -353,6 +403,37 @@ func (db *DB) DeletePasswordRecovery(userId gp.UserId, token string) (err error)
 /********************************************************************
 		Conversation
 ********************************************************************/
+
+//GetLiveConversations returns the three most recent unfinished live conversations for a given user.
+//TODO: retrieve conversation & expiry in a single query
+func (db *DB) GetLiveConversations(id gp.UserId) (conversations []gp.ConversationSmall, err error) {
+	s := db.stmt["liveConversations"]
+	rows, err := s.Query(id)
+	if err != nil {
+		return conversations, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var conv gp.ConversationSmall
+		var t string
+		err = rows.Scan(&conv.Id, &t)
+		if err != nil {
+			return conversations, err
+		}
+		conv.LastActivity, _ = time.Parse(mysqlTime, t)
+		conv.Participants = db.GetParticipants(conv.Id)
+		LastMessage, err := db.GetLastMessage(conv.Id)
+		if err == nil {
+			conv.LastMessage = &LastMessage
+		}
+		Expiry, err := db.ConversationExpiry(conv.Id)
+		if err == nil {
+			conv.Expiry = &Expiry
+		}
+		conversations = append(conversations, conv)
+	}
+	return conversations, nil
+}
 
 func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
 	s := db.stmt["conversationInsert"]
@@ -1025,10 +1106,5 @@ func (db *DB) HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
 
 func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
 	err = db.stmt["likeCount"].QueryRow(post).Scan(&count)
-	return
-}
-
-func (db *DB) IsVerified(user gp.UserId) (verified bool, err error) {
-	err = db.stmt["userIsVerified"].QueryRow(user).Scan(&verified)
 	return
 }

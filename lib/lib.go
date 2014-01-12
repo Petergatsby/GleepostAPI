@@ -505,3 +505,7 @@ func (api *API) ResetPass(userId gp.UserId, token string, newPass string) (err e
 func (api *API) IsVerified(userId gp.UserId) (verified bool, err error) {
 	return api.db.IsVerified(userId)
 }
+
+func (api *API) GetLiveConversations(userId gp.UserId) (conversations []gp.ConversationSmall, err error) {
+	return api.db.GetLiveConversations(userId)
+}

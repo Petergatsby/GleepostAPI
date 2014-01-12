@@ -66,6 +66,7 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/register", registerHandler)
 	http.HandleFunc(conf.UrlBase+"/newconversation", newConversationHandler)
 	http.HandleFunc(conf.UrlBase+"/newgroupconversation", newGroupConversationHandler)
+	http.HandleFunc(conf.UrlBase+"/conversations/live", liveConversationHandler)
 	http.HandleFunc(conf.UrlBase+"/conversations", conversationHandler)
 	http.HandleFunc(conf.UrlBase+"/conversations/", anotherConversationHandler)
 	http.HandleFunc(conf.UrlBase+"/posts", postHandler)
