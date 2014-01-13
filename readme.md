@@ -166,8 +166,8 @@ example responses:
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
-		"comments":4,
-		"likes":5,
+		"comment_count":4,
+		"like_count":5,
 		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
 	},
 	{
@@ -179,8 +179,8 @@ example responses:
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"Sailor Moon FTW!"
-		"comments":9,
-		"likes":0,
+		"comment_count":9,
+		"like_count":0,
 		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
 	}
 ]
