@@ -325,6 +325,32 @@ example responses:
 {"post":5, "liked":false}
 ```
 
+##GET /conversations/live
+required parameters:
+id=[user-id]
+token=[token]
+Returns up to three live conversations for the current user.
+
+Note: This does not seem to be the ideal URI for this resource.
+What are your thoughts on:
+
+/live_conversations (reflects the fact that live conversations are conceptually different)
+/conversations?live=true (reflects the fact that it is basically a filtered version of the vanilla conversations resource)
+
+```
+[
+	{"id":1,
+	"participants": [
+		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+	],
+	"lastActivity":"2013-09-05T13:09:38Z",
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+	}
+]
+```
+
 ##GET /conversations
 required parameters:
 id=[user-id]

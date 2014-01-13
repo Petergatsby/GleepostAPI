@@ -375,6 +375,10 @@ func (api *API) verificationUrl(token string) (url string) {
 	return
 }
 
+func (api *API) appVerificationUrl(token string) (url string) {
+	return "gleepost://verify/" + token
+}
+
 func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
 	url = fmt.Sprintf("https://gleepost.com/recovery/%d/%s", id, token)
 	return
@@ -383,7 +387,9 @@ func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
 //TODO: send an actual link
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationUrl(token)
-	html := "<html><body><a href=" + url + ">Verify your account here</a></body></html>"
+	appUrl := api.appVerificationUrl(token)
+	html := "<html><body><a href=" + appUrl + ">On your smartphone? Click this to verify your account.</a><br/>"+
+	"Otherwise, <a href=" + url + ">verify your account online here.</a></body></html>"
 	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
