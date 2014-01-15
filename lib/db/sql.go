@@ -52,6 +52,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
+	sqlStmt["setName"] = "UPDATE users SET firstname = ? lastname = ? where id = ?"
 	sqlStmt["userSelect"] = "SELECT id, name, avatar, firstname FROM users WHERE id=?"
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
@@ -248,6 +249,11 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserId, e
 		id, _ := res.LastInsertId()
 		return gp.UserId(id), nil
 	}
+}
+
+func (db *DB) SetUserName(id gp.UserId, firstName, lastName string) (err error) {
+	_, err = db.stmt["setName"].Exec(firstName, lastName, id)
+	return
 }
 
 func (db *DB) GetHash(user string) (hash []byte, id gp.UserId, err error) {

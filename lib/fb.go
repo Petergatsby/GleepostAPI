@@ -113,18 +113,21 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	name, err := FBName(fbid)
+	firstName, _, _, err := FBName(fbid)
 	if err != nil {
 		return
 	}
-	err = api.issueVerificationEmail(email, name, random)
+	err = api.issueVerificationEmail(email, firstName, random)
 	return
 }
 
 //TODO: get name from fb api
-func FBName(fbid uint64) (name string, err error) {
+func FBName(fbid uint64) (firstName, lastName, username string, err error) {
 	res, err := facebook.Get(fmt.Sprintf("/%d", fbid), nil)
-	return res["name"].(string), err
+	firstName = res["first_name"].(string)
+	lastName = res["last_name"].(string)
+	username = res["username"].(string)
+	return firstName, lastName, username, err
 }
 
 func (api *API) FBVerify(token string) (fbid uint64, err error) {

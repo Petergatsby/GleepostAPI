@@ -424,7 +424,7 @@ func (api *API) Verify(token string) (err error) {
 	}
 	userId, err := api.UserWithEmail(email)
 	if err != nil {
-		name, e := FBName(fbid)
+		firstName, lastName, username, e := FBName(fbid)
 		if e != nil {
 			return e
 		}
@@ -432,8 +432,13 @@ func (api *API) Verify(token string) (err error) {
 		if e != nil {
 			return e
 		}
-		id, e := api.createUser(name, random, email)
+		//TODO: Do something different with names, two john smiths are 
+		id, e := api.createUser(username, random, email)
 		if err != nil {
+			return e
+		}
+		e = api.SetUserName(id, firstName, lastName)
+		if e != nil {
 			return e
 		}
 		err = api.db.Verify(id)
@@ -444,6 +449,10 @@ func (api *API) Verify(token string) (err error) {
 		err = api.db.Verify(userId)
 	}
 	return
+}
+
+func (api *API) SetUserName(id gp.UserId, firstName, lastName string) (err error) {
+	return api.db.SetUserName(id, firstName, lastName)
 }
 
 func (api *API) UserWithEmail(email string) (id gp.UserId, err error) {
