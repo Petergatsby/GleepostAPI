@@ -105,7 +105,7 @@ example responses:
 ```
 (HTTP 400)
 ```
-{"error":"Bad username/password"}
+{"error":"Bad email/password"}
 ```
 (HTTP 403)
 ```
@@ -161,7 +161,7 @@ example responses:
 		"id":2,
 		"by": {
 			"id":9,
-			"username":"Patrick",
+			"name":"Patrick",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -174,7 +174,7 @@ example responses:
 		"id":1,
 		"by": {
 			"id":23,
-			"username":"PeterGatsby"
+			"name":"PeterGatsby"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -209,7 +209,7 @@ example responses:
 	"id":2,
 	"by": {
 		"id":9,
-		"username":"Patrick",
+		"name":"Patrick",
 		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 	}
 	"timestamp":"2013-09-05T13:09:38Z",
@@ -218,7 +218,7 @@ example responses:
 		"id":51341,
 		"by": {
 			"id":9,
-			"username":"Patrick"
+			"name":"Patrick"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -228,7 +228,7 @@ example responses:
 		"id":4362346,
 		"by": {
 			"id":545,
-			"username":"SomeoneElse"
+			"name":"SomeoneElse"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -236,13 +236,13 @@ example responses:
 	}],
 	"likes":[{"by": {
 			"id":545,
-			"username":"SomeoneElse"
+			"name":"SomeoneElse"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 			},
 		"timestamp":"2013-09-05T13:09:38Z"},
 		{"by": {
 			"id":545,
-			"username":"SomeoneElse"
+			"name":"SomeoneElse"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 			},
 		"timestamp":"2013-09-05T13:09:38Z"}
@@ -270,7 +270,7 @@ example responses:
 		"id":51341,
 		"by": {
 			"id":9,
-			"username":"Patrick"
+			"name":"Patrick"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -280,7 +280,7 @@ example responses:
 		"id":4362346,
 		"by": {
 			"id":545,
-			"username":"SomeoneElse"
+			"name":"SomeoneElse"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -341,11 +341,11 @@ What are your thoughts on:
 [
 	{"id":1,
 	"participants": [
-		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 	}
 ]
@@ -364,17 +364,17 @@ returns a list of 20 of your conversations ordered by most recent message, start
 [
 	{"id":1,
 	"participants": [
-		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "username":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 	},
 	{"id":2,
 	"participants" [
-		{"id":99999, "username":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":232515, "username":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":232515, "name":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
@@ -393,13 +393,13 @@ example responses:
 {
 	"id":1,
 	"participants": [
-		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"messages": [
-		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":{"id":23, "username":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
@@ -469,12 +469,12 @@ seen=51
 	"participants": [
 		{
 			"id": 9,
-			"username": "Patrick",
+			"name": "Patrick",
 			"profile_image": "https://gleepost.com/uploads/avatar.png"
 		},
 		{
 			"id": 1327,
-			"username": "Meg",
+			"name": "Meg",
 			"profile_image": "",
 		}
 	],
@@ -485,7 +485,7 @@ seen=51
 			"id": 52,
 			"by": {
 				"id": 9,
-				"username": "Patrick",
+				"name": "Patrick",
 				"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
 			},
 			"text": "sup",
@@ -496,7 +496,7 @@ seen=51
 			"id": 51,
 			"by": {
 				"id": 9,
-				"username": "Patrick",
+				"name": "Patrick",
 				"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
 			},
 			"text": "sup",
@@ -518,11 +518,12 @@ example responses:
 ```
 {
 	"id":9,
-	"username":"Patrick",
+	"name":"Patrick",
 	"tagline":"I like computers",
 	"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 	"network": { "id":1, "name":"University of Leeds" },
-	"course":"Computer Science"
+	"course":"Computer Science",
+	"full_name":"Patrick Molgaard"
 }
 ```
 
@@ -537,8 +538,8 @@ example responses:
 {
 	"id":2342342,
 	"participants": [
-		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
@@ -556,10 +557,10 @@ example responses:
 {
 	"id":2342342,
 	"participants": [
-		{"id":9, "username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "username":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":1351, "username":"Someone", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":6124, "username":"SomeoneElse", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":1351, "name":"Someone", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":6124, "name":"SomeoneElse", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z"
 }
@@ -577,7 +578,7 @@ example responses:
 ```
 {
 	"id":53,
-	"by": {"id":9,"username":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+	"by": {"id":9,"name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 	"text":"sup",
 	"timestamp":"2013-09-16T16:58:30.771905595Z",
 	"seen":false,
@@ -608,13 +609,13 @@ HTTP 200
 [
 	{
 		"id":1234,
-		"username":"calgould",
+		"name":"calgould",
 		"you_confirmed":true,
 		"they_confirmed":false,
 	},
 	{
 		"id":21,
-		"username":"petergatsby",
+		"name":"petergatsby",
 		"you_confirmed":false,
 		"they_confirmed":true,
 	}
@@ -633,7 +634,7 @@ HTTP 201
 ```
 {
 	"id":1234,
-	"username":"calgould",
+	"name":"calgould",
 	"you_confirmed":true,
 	"they_confirmed":false,
 }
@@ -649,7 +650,7 @@ HTTP 200
 ```
 {
 	"id":21,
-	"username":"petergatsby",
+	"name":"petergatsby",
 	"you_confirmed":true,
 	"they_confirmed":true,
 }
@@ -705,7 +706,7 @@ HTTP 200
 ```
 {
 	"id":9,
-	"username":"Patrick",
+	"name":"Patrick",
 	"tagline":"I like computers",
 	"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 	"network": { "id":1, "name":"University of Leeds" },

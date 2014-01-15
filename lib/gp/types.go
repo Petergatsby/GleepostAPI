@@ -23,6 +23,7 @@ type Profile struct {
 	Desc    string  `json:"tagline"`
 	Network Network `json:"network"`
 	Course  string  `json:"course"`
+	FullName string `json:"full_name"`
 }
 
 type Contact struct {

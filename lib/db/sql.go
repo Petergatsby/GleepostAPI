@@ -53,7 +53,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
 	sqlStmt["userSelect"] = "SELECT id, name, avatar FROM users WHERE id=?"
-	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
+	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
@@ -286,9 +286,9 @@ func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
 
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (db *DB) GetProfile(id gp.UserId) (user gp.Profile, err error) {
-	var av, desc sql.NullString
+	var av, desc, firstName, lastName sql.NullString
 	s := db.stmt["profileSelect"]
-	err = s.QueryRow(id).Scan(&user.Name, &desc, &av)
+	err = s.QueryRow(id).Scan(&user.Name, &desc, &av, &firstName, &lastName)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -301,6 +301,12 @@ func (db *DB) GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	}
 	if desc.Valid {
 		user.Desc = desc.String
+	}
+	if firstName.Valid {
+		user.Name = firstName.String
+	}
+	if lastName.Valid {
+		user.FullName = firstName.String + " " + lastName.String
 	}
 	user.Id = id
 	return
