@@ -14,7 +14,7 @@ type NotificationId uint64
 
 type User struct {
 	Id     UserId `json:"id"`
-	Name   string `json:"username"`
+	Name   string `json:"name"`
 	Avatar string `json:"profile_image"`
 }
 
