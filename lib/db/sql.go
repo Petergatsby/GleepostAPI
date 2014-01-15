@@ -52,7 +52,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	sqlStmt["userSelect"] = "SELECT id, name, avatar FROM users WHERE id=?"
+	sqlStmt["userSelect"] = "SELECT id, name, avatar, firstname FROM users WHERE id=?"
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
@@ -267,15 +267,18 @@ func (db *DB) PassUpdate(id gp.UserId, newHash []byte) (err error) {
 }
 
 func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
-	var av sql.NullString
+	var av, firstName sql.NullString
 	s := db.stmt["userSelect"]
-	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av)
+	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av, &firstName)
 	log.Println("DB hit: db.GetUser id(user.Name, user.Id, user.Avatar)")
 	if err != nil {
 		return
 	}
 	if av.Valid {
 		user.Avatar = av.String
+	}
+	if firstName.Valid {
+		user.Name = firstName.String
 	}
 	if err != nil {
 		return user, err
