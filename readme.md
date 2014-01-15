@@ -93,7 +93,7 @@ example responses:
 ```
 
 ##POST /login
-required parameters: user, pass
+required parameters: email, pass
 
 Logging in with bad credentials gives HTTP 400.
 Logging in with good credentials but an unverified account gives HTTP 403.

@@ -54,7 +54,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
 	sqlStmt["userSelect"] = "SELECT id, name, avatar FROM users WHERE id=?"
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar FROM users WHERE id = ?"
-	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE name = ?"
+	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
 	sqlStmt["randomSelect"] = "SELECT id, name, avatar " +

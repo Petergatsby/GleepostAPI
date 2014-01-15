@@ -111,7 +111,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	/* POST /login
-		requires parameters: user, pass
+		requires parameters: email, pass
 		example responses:
 		HTTP 200
 	        {
@@ -122,9 +122,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		HTTP 400
 		{"error":"Bad username/password"}
 	*/
-	user := r.FormValue("user")
+	email := r.FormValue("email")
 	pass := r.FormValue("pass")
-	id, err := api.ValidatePass(user, pass)
+	id, err := api.ValidatePass(email, pass)
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)

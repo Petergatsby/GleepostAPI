@@ -97,9 +97,9 @@ func (api *API) ValidateToken(id gp.UserId, token string) bool {
 	}
 }
 
-func (api *API) ValidatePass(user string, pass string) (id gp.UserId, err error) {
+func (api *API) ValidatePass(email string, pass string) (id gp.UserId, err error) {
 	passBytes := []byte(pass)
-	hash, id, err := api.db.GetHash(user)
+	hash, id, err := api.db.GetHash(email)
 	if err != nil {
 		return 0, err
 	} else {
