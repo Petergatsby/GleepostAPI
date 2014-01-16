@@ -52,7 +52,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	sqlStmt["setName"] = "UPDATE users SET firstname = ? lastname = ? where id = ?"
+	sqlStmt["setName"] = "UPDATE users SET firstname = ?, lastname = ? where id = ?"
 	sqlStmt["userSelect"] = "SELECT id, name, avatar, firstname FROM users WHERE id=?"
 	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?"
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
