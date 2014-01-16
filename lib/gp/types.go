@@ -75,7 +75,7 @@ type PostSmall struct {
 	Post
 	CommentCount int `json:"comment_count"`
 	LikeCount    int `json:"like_count"`
-	Likes	     []LikeFull `json:"likes"`
+	Likes	     []LikeFull `json:"likes,omitempty"`
 }
 
 type PostFull struct {

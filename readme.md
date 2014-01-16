@@ -168,6 +168,19 @@ example responses:
 		"text":"This is a cool post for cool people!",
 		"comment_count":4,
 		"like_count":5,
+		"likes":[{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"},
+			{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"}
+		],
 		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
 	},
 	{
