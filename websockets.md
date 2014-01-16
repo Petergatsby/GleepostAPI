@@ -18,7 +18,7 @@ It consists of a ["type"](#event-types), an optional "location" (A URI for the r
 
 
 ##Event types
-An event type will be one of: [message](#message) [new-conversation](#new-conversation) [notification](#notification)
+An event type will be one of: [message](#message) [new-conversation](#new-conversation) [ended-conversation](#ended-conversation) [notification](#notification)
 
 ###Message
 An event with type "message" is the replacement for a long-poll message. It contains a location (the URI of the conversation it is in) and the data payload is the same message object you find in /conversations/[id]/messages.
@@ -38,6 +38,16 @@ An event with type "new-conversation" is triggered every time you are placed in 
 	"type":"new-conversation",
 	"location":"/conversations/1595",
 	"data":{"id":1595,"lastActivity":"2013-12-16T14:13:27.609454716Z","participants":[{"id":2147,"username":"PaulLoran","profile_image":""},{"id":9,"username":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/59bdb3c4a4151cc7ab41137eecbcc4d461291f72cfd6b6516b12de00a7ad1a94.jpg"}],"expiry":{"time":"2013-12-16T14:23:27.609455414Z","ended":false}}
+}
+```
+
+###Ended conversation
+An event with type "ended-conversation" is triggered every time a conversation you participate in is terminated. It contains a location (the URI of the conversation) and the data payload is tge conversation object.
+```
+{
+	"type":"ended-conversation",
+	"location":"/conversations/1595",
+	"data":{"id":1595,"lastActivity":"2013-12-16T14:13:27.609454716Z","participants":[{"id":2147,"username":"PaulLoran","profile_image":""},{"id":9,"username":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/59bdb3c4a4151cc7ab41137eecbcc4d461291f72cfd6b6516b12de00a7ad1a94.jpg"}],"expiry":{"time":"2013-12-16T14:23:27.609455414Z","ended":true}}
 }
 ```
 
