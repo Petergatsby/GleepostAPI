@@ -56,6 +56,13 @@ type Token struct {
 	Expiry time.Time `json:"expiry"`
 }
 
+type PostCore struct {
+	Id   PostId    `json:"id"`
+	By   User      `json:"by"`
+	Time time.Time `json:"timestamp"`
+	Text string    `json:"text"`
+}
+
 type Post struct {
 	Id     PostId    `json:"id"`
 	By     User      `json:"by"`
@@ -68,19 +75,13 @@ type PostSmall struct {
 	Post
 	CommentCount int `json:"comment_count"`
 	LikeCount    int `json:"like_count"`
+	Likes	     []LikeFull `json:"likes"`
 }
 
 type PostFull struct {
 	Post
 	Comments []Comment  `json:"comments"`
 	Likes    []LikeFull `json:"likes"`
-}
-
-type PostCore struct {
-	Id   PostId    `json:"id"`
-	By   User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-	Text string    `json:"text"`
 }
 
 type Comment struct {

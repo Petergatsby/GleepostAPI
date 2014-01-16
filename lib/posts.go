@@ -95,7 +95,7 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.Text = p.Text
 	post.Images = api.GetPostImages(p.Id)
 	post.CommentCount = api.GetCommentCount(p.Id)
-	post.LikeCount, err = api.likeCount(p.Id)
+	post.LikeCount, post.Likes,  err = api.LikesAndCount(p.Id)
 	if err != nil {
 		return
 	}
@@ -171,4 +171,13 @@ func (api *API) hasLiked(user gp.UserId, post gp.PostId) (liked bool, err error)
 
 func (api *API) likeCount(post gp.PostId) (count int, err error) {
 	return api.db.LikeCount(post)
+}
+
+func (api *API) LikesAndCount(post gp.PostId) (count int, likes []gp.LikeFull, err error) {
+	likes, err = api.GetLikes(post)
+	if err != nil {
+		return
+	}
+	count, err = api.likeCount(post)
+	return
 }
