@@ -11,6 +11,7 @@ func (api *API) TerminateConversation(convId gp.ConversationId) (err error) {
 	err = api.db.TerminateConversation(convId)
 	if err == nil {
 		go api.cache.TerminateConversation(convId)
+		go api.EndConversationEvent(convId)
 	}
 	return
 }
@@ -62,6 +63,16 @@ func (api *API) NewConversationEvent(conversation gp.Conversation) {
 	go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
 }
 
+func (api *API) EndConversationEvent(conversation gp.ConversationId) {
+	conv, err := api.getConversation(conversation)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	chans := ConversationChannelKeys(conv.Participants)
+	go api.cache.PublishEvent("ended-conversation", ConversationURI(conversation), conv, chans)
+}
+
 func (api *API) AwaitOneMessage(userId gp.UserId) (resp []byte) {
 	c := api.GetMessageChan(userId)
 	select {
@@ -84,7 +95,14 @@ func (api *API) addAllConversations(userId gp.UserId) (err error) {
 	return
 }
 
+//GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
+//TODO: Restrict access to correct userId
+//TODO: defer actual operation to getConversation
 func (api *API) GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
+	return api.db.GetConversation(convId, api.Config.ConversationPageSize)
+}
+
+func (api *API) getConversation(convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
 	return api.db.GetConversation(convId, api.Config.ConversationPageSize)
 }
 
