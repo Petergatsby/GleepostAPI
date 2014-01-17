@@ -74,6 +74,13 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 	ps, err := api.cache.GetPosts(netId, index, count, sel)
 	if err != nil {
 		posts, err = api.db.GetPosts(netId, index, count, sel)
+		for i, p := range posts {
+			p.Likes, err = api.GetLikes(p.Id)
+			if err != nil {
+				return
+			}
+			posts[i] = p
+		}
 		go api.cache.AddPostsFromDB(netId, api.db)
 	} else {
 		var post gp.PostSmall
