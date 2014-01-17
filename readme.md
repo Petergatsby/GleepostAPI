@@ -787,7 +787,7 @@ HTTP 200
 		"id":99999,
 		"type":"added_you",
 		"time":"2013-09-16T16:58:30.771905595Z",
-		"by": {
+		"user": {
 			"id":9,
 			"name":"Patrick",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
@@ -797,7 +797,7 @@ HTTP 200
 		"id":135235,
 		"type":"accepted_you",
 		"time":"2013-09-16T16:58:30.771905595Z",
-		"by": {
+		"user": {
 			"id":21,
 			"name":"Petergatsby",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
@@ -808,7 +808,7 @@ HTTP 200
 		"type":"commented",
 		"post":5,
 		"time":"2013-09-16T16:58:30.771905595Z",
-		"by": {
+		"user": {
 			"id":2395,
 			"name":"testing_user,
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
@@ -819,7 +819,7 @@ HTTP 200
 		"type":"liked",
 		"post":5,
 		"time":"2013-09-16T16:58:30.771905595Z",
-		"by": {
+		"user": {
 			"id":2395,
 			"name":"testing_user,
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
