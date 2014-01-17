@@ -145,7 +145,9 @@ func (api *API) AddLike(user gp.UserId, postId gp.PostId) (err error) {
 		if err != nil {
 			return
 		} else {
-			api.createNotification("liked", user, post.By.Id, true, postId)
+			if user != post.By.Id {
+				api.createNotification("liked", user, post.By.Id, true, postId)
+			}
 		}
 	}
 	return
