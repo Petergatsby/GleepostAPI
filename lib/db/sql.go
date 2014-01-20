@@ -134,7 +134,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
 	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , id FROM categories WHERE tag = ?"
 	sqlStmt["listCategories"] = "SELECT id, tag, name FROM post_categories WHERE 1"
-	sqlStmt["postCategories"] = "SELECT id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_id = ?"
+	sqlStmt["postCategories"] = "SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
@@ -896,6 +896,24 @@ func (db *DB) TagPost(post gp.PostId, tags ...string) (err error) {
 		if err != nil {
 			return
 		}
+	}
+	return
+}
+
+//PostCategories returns all the categories which post belongs to.
+func (db *DB) PostCategories(post gp.PostId) (categories []gp.PostCategory, err error) {
+	rows, err := db.stmt["postCategories"].Query(post)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		c := gp.PostCategory{}
+		err = rows.Scan(&c.Id, &c.Tag, &c.Name)
+		if err != nil {
+			return
+		}
+		categories = append(categories, c)
 	}
 	return
 }

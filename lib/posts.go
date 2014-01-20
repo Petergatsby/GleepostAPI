@@ -89,6 +89,10 @@ func (api *API) tagPost(post gp.PostId, tags ...string) (err error) {
 	return api.db.TagPost(post, tags...)
 }
 
+func (api *API) postCategories(post gp.PostId) (categories []gp.PostCategory, err error) {
+	return api.db.PostCategories(post)
+}
+
 func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
 	ps, err := api.cache.GetPosts(netId, index, count, sel)
 	if err != nil {
