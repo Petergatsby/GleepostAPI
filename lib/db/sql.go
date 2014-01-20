@@ -132,8 +132,8 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
 	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
-	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , id FROM categories WHERE tag = ?"
-	sqlStmt["listCategories"] = "SELECT id, tag, name FROM post_categories WHERE 1"
+	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?"
+	sqlStmt["listCategories"] = "SELECT id, tag, name FROM categories WHERE 1"
 	sqlStmt["postCategories"] = "SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
