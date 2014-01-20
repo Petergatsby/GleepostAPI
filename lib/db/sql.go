@@ -131,6 +131,10 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 					"ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
+	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
+	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , id FROM categories WHERE tag = ?"
+	sqlStmt["listCategories"] = "SELECT id, tag, name FROM post_categories WHERE 1"
+	sqlStmt["postCategories"] = "SELECT id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_id = ?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
@@ -861,6 +865,38 @@ func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, cou
 //TODO: This won't generalize to >2 participants
 func (db *DB) MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	_, err = db.stmt["messagesRead"].Exec(convId, upTo, id)
+	return
+}
+
+//AddCategory marks the post id as a member of category.
+func (db *DB) AddCategory(id gp.PostId, category gp.CategoryId) (err error) {
+	_, err = db.stmt["categoryAdd"].Exec(id, category)
+	return
+}
+
+//CategoryList returns all existing categories.
+func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
+	rows, err := db.stmt["listCategories"].Query()
+	defer rows.Close()
+	for rows.Next(){
+		c := gp.PostCategory{}
+		err = rows.Scan(&c.Id, &c.Tag, &c.Name)
+		if err != nil {
+			return
+		}
+		categories = append(categories, c)
+	}
+	return
+}
+
+//SetCategories accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
+func (db *DB) TagPost(post gp.PostId, tags ...string) (err error) {
+	for _, tag := range(tags) {
+		_, err = db.stmt["addCategoryWhereExists"].Exec(post, tag)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 

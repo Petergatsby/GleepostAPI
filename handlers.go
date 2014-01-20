@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -206,12 +207,17 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		text := r.FormValue("text")
 		url := r.FormValue("url")
+		tags := r.FormValue("tags")
 		var postId gp.PostId
+		var ts []string
 		switch {
+		case len(tags) > 1:
+			ts = strings.Split(tags, ",")
+			fallthrough
 		case len(url) > 5:
-			postId, err = api.AddPostWithImage(userId, text, url)
+			postId, err = api.AddPostWithImage(userId, text, url, ts...)
 		default:
-			postId, err = api.AddPost(userId, text)
+			postId, err = api.AddPost(userId, text, ts...)
 		}
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)

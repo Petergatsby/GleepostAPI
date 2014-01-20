@@ -42,13 +42,19 @@ func (api *API) AddPostImage(postId gp.PostId, url string) (err error) {
 	return api.db.AddPostImage(postId, url)
 }
 
-func (api *API) AddPost(userId gp.UserId, text string) (postId gp.PostId, err error) {
+func (api *API) AddPost(userId gp.UserId, text string, tags ...string) (postId gp.PostId, err error) {
 	networks, err := api.GetUserNetworks(userId)
 	if err != nil {
 		return
 	}
 	postId, err = api.db.AddPost(userId, text, networks[0].Id)
 	if err == nil {
+		if len(tags) > 0 {
+			err = api.TagPost(postId, tags...)
+			if err != nil {
+				return
+			}
+		}
 		user, err := api.db.GetUser(userId)
 		if err == nil {
 			post := gp.Post{Id: postId, By: user, Text: text, Time: time.Now().UTC()}
@@ -59,8 +65,8 @@ func (api *API) AddPost(userId gp.UserId, text string) (postId gp.PostId, err er
 	return
 }
 
-func (api *API) AddPostWithImage(userId gp.UserId, text string, image string) (postId gp.PostId, err error) {
-	postId, err = api.AddPost(userId, text)
+func (api *API) AddPostWithImage(userId gp.UserId, text string, image string, tags ...string) (postId gp.PostId, err error) {
+	postId, err = api.AddPost(userId, text, tags...)
 	if err != nil {
 		return
 	}
@@ -70,6 +76,17 @@ func (api *API) AddPostWithImage(userId gp.UserId, text string, image string) (p
 		return
 	}
 	return
+}
+
+//
+func (api *API) TagPost(post gp.PostId, tags ...string) (err error) {
+	//TODO: Only allow the post owner to tag
+	return api.tagPost(post, tags...)
+}
+
+func (api *API) tagPost(post gp.PostId, tags ...string) (err error) {
+	//TODO: Stick this shit in cache
+	return api.db.TagPost(post, tags...)
 }
 
 func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {

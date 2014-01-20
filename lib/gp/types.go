@@ -228,6 +228,14 @@ type Liked struct {
 	Liked bool   `json:"liked"`
 }
 
+type CategoryId uint64
+
+type PostCategory struct {
+	Id	CategoryId
+	Tag	string
+	Name	string
+}
+
 type Expiry struct {
 	Time  time.Time `json:"time"`
 	Ended bool      `json:"ended"`
