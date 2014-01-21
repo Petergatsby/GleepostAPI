@@ -153,6 +153,9 @@ before=[id]
 after=[id]
 returns a list of 20 posts ordered by time, starting before/after [id]
 
+filter=[tag]
+Returns only posts belonging to this category tag. 
+
 example responses:
 (HTTP 200)
 ```
