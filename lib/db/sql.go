@@ -128,7 +128,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM wall_posts " +
 		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
 		"JOIN categories ON post_categories.category_id = categories.id " +
-		"WHERE network_id = ? AND categories.tag = ? AND id > ? " +
+		"WHERE network_id = ? AND categories.tag = ? AND wall_posts.id > ? " +
 		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["wallSelectBefore"] = "SELECT id, `by`, time, text " +
 		"FROM wall_posts " +
@@ -138,7 +138,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM wall_posts " +
 		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
 		"JOIN categories ON post_categories.category_id = categories.id " +
-		"WHERE network_id = ? AND categories.tag = ? AND id < ? " +
+		"WHERE network_id = ? AND categories.tag = ? AND wall_posts.id < ? " +
 		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
