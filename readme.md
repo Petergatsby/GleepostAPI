@@ -166,6 +166,7 @@ example responses:
 		}
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
+		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 		"comment_count":4,
 		"like_count":5,
 		"likes":[{"by": {
@@ -201,10 +202,15 @@ example responses:
 
 ##POST /posts
 required parameters: id, token, text
-optional parameters: url
+optional parameters: url, tags
 
 If set, url must be a url previously returned from [/upload](#post-upload).
 If the image url is invalid, the post will be created without an image. 
+
+If set, tags must be a comma-delimited list of category "tags". Any of those tags which exist will be added to the post - any which do not exist are silently ignored.
+
+eg:
+tags=for-sale,event,salsa
 
 example responses:
 (http 200)
@@ -227,6 +233,7 @@ example responses:
 	}
 	"timestamp":"2013-09-05T13:09:38Z",
 	"text":"This is a cool post for cool people!",
+	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 	"comments": [{
 		"id":51341,
 		"by": {
