@@ -182,15 +182,20 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
-			var posts []gp.PostSmall
+			var selector string
+			var index int64
 			switch {
 			case after > 0:
-				posts, err = api.GetPosts(networks[0].Id, after, "after", api.Config.PostPageSize)
+				selector = "after"
+				index = after
 			case before > 0:
-				posts, err = api.GetPosts(networks[0].Id, before, "before", api.Config.PostPageSize)
+				selector = "before"
+				index = before
 			default:
-				posts, err = api.GetPosts(networks[0].Id, start, "start", api.Config.PostPageSize)
+				selector = "start"
+				index = start
 			}
+			posts, err := api.GetPosts(networks[0].Id, index, selector, api.Config.PostPageSize)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			}
