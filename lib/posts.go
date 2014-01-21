@@ -125,7 +125,11 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.Text = p.Text
 	post.Images = api.GetPostImages(p.Id)
 	post.CommentCount = api.GetCommentCount(p.Id)
-	post.LikeCount, post.Likes,  err = api.LikesAndCount(p.Id)
+	post.Categories, err = api.postCategories(p.Id)
+	if err != nil {
+		return
+	}
+	post.LikeCount, post.Likes, err = api.LikesAndCount(p.Id)
 	if err != nil {
 		return
 	}
@@ -147,6 +151,10 @@ func (api *API) GetPost(postId gp.PostId) (post gp.Post, err error) {
 
 func (api *API) GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	post.Post, err = api.GetPost(postId)
+	if err != nil {
+		return
+	}
+	post.Categories, err = api.postCategories(postId)
 	if err != nil {
 		return
 	}

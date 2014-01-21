@@ -21,7 +21,7 @@ func (m *Mailer) NewHeader() *Header {
 	return &h
 }
 
-func New(config gp.EmailConfig) (*Mailer) {
+func New(config gp.EmailConfig) *Mailer {
 	return &Mailer{config: config}
 }
 

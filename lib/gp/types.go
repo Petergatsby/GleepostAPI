@@ -20,10 +20,10 @@ type User struct {
 
 type Profile struct {
 	User
-	Desc    string  `json:"tagline"`
-	Network Network `json:"network"`
-	Course  string  `json:"course"`
-	FullName string `json:"full_name"`
+	Desc     string  `json:"tagline"`
+	Network  Network `json:"network"`
+	Course   string  `json:"course"`
+	FullName string  `json:"full_name"`
 }
 
 type Contact struct {
@@ -64,18 +64,19 @@ type PostCore struct {
 }
 
 type Post struct {
-	Id     PostId    `json:"id"`
-	By     User      `json:"by"`
-	Time   time.Time `json:"timestamp"`
-	Text   string    `json:"text"`
-	Images []string  `json:"images"`
+	Id         PostId         `json:"id"`
+	By         User           `json:"by"`
+	Time       time.Time      `json:"timestamp"`
+	Text       string         `json:"text"`
+	Images     []string       `json:"images"`
+	Categories []PostCategory `json:"categories"`
 }
 
 type PostSmall struct {
 	Post
-	CommentCount int `json:"comment_count"`
-	LikeCount    int `json:"like_count"`
-	Likes	     []LikeFull `json:"likes,omitempty"`
+	CommentCount int        `json:"comment_count"`
+	LikeCount    int        `json:"like_count"`
+	Likes        []LikeFull `json:"likes,omitempty"`
 }
 
 type PostFull struct {
@@ -231,9 +232,9 @@ type Liked struct {
 type CategoryId uint64
 
 type PostCategory struct {
-	Id	CategoryId
-	Tag	string
-	Name	string
+	Id   CategoryId
+	Tag  string
+	Name string
 }
 
 type Expiry struct {

@@ -46,9 +46,9 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	//Network
 	sqlStmt["ruleSelect"] = "SELECT network_id, rule_type, rule_value FROM net_rules"
 	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name " +
-					"FROM user_network " +
-					"INNER JOIN network ON user_network.network_id = network.id " +
-					"WHERE user_id = ?"
+		"FROM user_network " +
+		"INNER JOIN network ON user_network.network_id = network.id " +
+		"WHERE user_id = ?"
 	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
@@ -59,10 +59,10 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
 	sqlStmt["randomSelect"] = "SELECT id, name, avatar " +
-					"FROM users " +
-					"LEFT JOIN user_network ON id = user_id " +
-					"WHERE network_id = ? " +
-					"ORDER BY RAND()"
+		"FROM users " +
+		"LEFT JOIN user_network ON id = user_id " +
+		"WHERE network_id = ? " +
+		"ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
@@ -85,10 +85,10 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
 	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-					"FROM conversation_participants " +
-					"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-					"WHERE participant_id = ? " +
-					"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"WHERE participant_id = ? " +
+		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["conversationSetExpiry"] = "REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
@@ -96,39 +96,39 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["endConversation"] = "UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?"
 	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
 	sqlStmt["participantSelect"] = "SELECT participant_id " +
-					"FROM conversation_participants " +
-					"JOIN users ON conversation_participants.participant_id = users.id " +
-					"WHERE conversation_id=?"
+		"FROM conversation_participants " +
+		"JOIN users ON conversation_participants.participant_id = users.id " +
+		"WHERE conversation_id=?"
 	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
-					"FROM chat_messages " +
-					"WHERE conversation_id = ? " +
-					"ORDER BY timestamp DESC LIMIT 1"
+		"FROM chat_messages " +
+		"WHERE conversation_id = ? " +
+		"ORDER BY timestamp DESC LIMIT 1"
 	sqlStmt["liveConversations"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-					"FROM conversation_participants " +
-					"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-					"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-					"WHERE participant_id = ? " +
-					"AND conversation_expirations.ended = 0 " +
-					"ORDER BY conversations.last_mod DESC  " +
-					"LIMIT 0 , 3"
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? " +
+		"AND conversation_expirations.ended = 0 " +
+		"ORDER BY conversations.last_mod DESC  " +
+		"LIMIT 0 , 3"
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["wallSelect"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
 	sqlStmt["wallSelectAfter"] = "SELECT id, `by`, time, text " +
-					"FROM wall_posts " +
-					"WHERE network_id = ? AND id > ? " +
-					"ORDER BY time DESC LIMIT 0, ?"
+		"FROM wall_posts " +
+		"WHERE network_id = ? AND id > ? " +
+		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["wallSelectBefore"] = "SELECT id, `by`, time, text " +
-					"FROM wall_posts " +
-					"WHERE network_id = ? AND id < ? " +
-					"ORDER BY time DESC LIMIT 0, ?"
+		"FROM wall_posts " +
+		"WHERE network_id = ? AND id < ? " +
+		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
 	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp " +
-					"FROM post_comments " +
-					"WHERE post_id = ? " +
-					"ORDER BY timestamp DESC LIMIT ?, ?"
+		"FROM post_comments " +
+		"WHERE post_id = ? " +
+		"ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
 	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
@@ -138,20 +138,20 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
-					"FROM chat_messages " +
-					"WHERE conversation_id = ? " +
-					"ORDER BY timestamp DESC LIMIT ?, ?"
+		"FROM chat_messages " +
+		"WHERE conversation_id = ? " +
+		"ORDER BY timestamp DESC LIMIT ?, ?"
 	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen " +
-					"FROM chat_messages " +
-					"WHERE conversation_id = ? AND id > ? " +
-					"ORDER BY timestamp DESC LIMIT ?"
+		"FROM chat_messages " +
+		"WHERE conversation_id = ? AND id > ? " +
+		"ORDER BY timestamp DESC LIMIT ?"
 	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp, seen " +
-					"FROM chat_messages " +
-					"WHERE conversation_id = ? AND id < ? " +
-					"ORDER BY timestamp DESC LIMIT ?"
+		"FROM chat_messages " +
+		"WHERE conversation_id = ? AND id < ? " +
+		"ORDER BY timestamp DESC LIMIT ?"
 	sqlStmt["messagesRead"] = "UPDATE chat_messages " +
-					"SET seen = 1 " +
-					"WHERE conversation_id= ? AND id <= ? AND `from` != ?"
+		"SET seen = 1 " +
+		"WHERE conversation_id= ? AND id <= ? AND `from` != ?"
 	//Token
 	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
@@ -878,7 +878,7 @@ func (db *DB) AddCategory(id gp.PostId, category gp.CategoryId) (err error) {
 func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
 	rows, err := db.stmt["listCategories"].Query()
 	defer rows.Close()
-	for rows.Next(){
+	for rows.Next() {
 		c := gp.PostCategory{}
 		err = rows.Scan(&c.Id, &c.Tag, &c.Name)
 		if err != nil {
@@ -891,7 +891,7 @@ func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
 
 //SetCategories accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
 func (db *DB) TagPost(post gp.PostId, tags ...string) (err error) {
-	for _, tag := range(tags) {
+	for _, tag := range tags {
 		_, err = db.stmt["addCategoryWhereExists"].Exec(post, tag)
 		if err != nil {
 			return

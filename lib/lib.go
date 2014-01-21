@@ -35,7 +35,8 @@ func New(conf gp.Config) (api *API) {
 }
 
 var ETOOWEAK = gp.APIerror{"Password too weak!"}
-var EBADREC  = gp.APIerror{"Bad password recovery token."}
+var EBADREC = gp.APIerror{"Bad password recovery token."}
+
 /********************************************************************
 Top-level functions
 ********************************************************************/
@@ -388,8 +389,8 @@ func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationUrl(token)
 	appUrl := api.appVerificationUrl(token)
-	html := "<html><body><a href=" + appUrl + ">On your smartphone? Click this to verify your account.</a><br/>"+
-	"Otherwise, <a href=" + url + ">verify your account online here.</a></body></html>"
+	html := "<html><body><a href=" + appUrl + ">On your smartphone? Click this to verify your account.</a><br/>" +
+		"Otherwise, <a href=" + url + ">verify your account online here.</a></body></html>"
 	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
@@ -432,7 +433,7 @@ func (api *API) Verify(token string) (err error) {
 		if e != nil {
 			return e
 		}
-		//TODO: Do something different with names, two john smiths are 
+		//TODO: Do something different with names, two john smiths are
 		id, e := api.createUser(username, random, email)
 		if err != nil {
 			return e
