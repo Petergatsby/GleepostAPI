@@ -124,7 +124,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM wall_posts " +
 		"WHERE network_id = ? AND id > ? " +
 		"ORDER BY time DESC LIMIT 0, ?"
-	sqlStmt["wallSelectCategoryAfter"] = "SELECT id, `by`, time, text " +
+	sqlStmt["wallSelectCategoryAfter"] = "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
 		"JOIN categories ON post_categories.category_id = categories.id " +
@@ -134,7 +134,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM wall_posts " +
 		"WHERE network_id = ? AND id < ? " +
 		"ORDER BY time DESC LIMIT 0, ?"
-	sqlStmt["wallSelectCategoryBefore"] = "SELECT id, `by`, time, text " +
+	sqlStmt["wallSelectCategoryBefore"] = "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
 		"JOIN categories ON post_categories.category_id = categories.id " +
