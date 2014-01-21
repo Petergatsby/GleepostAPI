@@ -114,13 +114,31 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["wallSelect"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
+	sqlStmt["wallSelectCategory"] = "SELECT wall_posts.id, `by`, time, text " +
+		"FROM wall_posts " +
+		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+		"JOIN categories ON post_categories.category_id = categories.id " +
+		"WHERE network_id = ? AND categories.tag = ? " +
+		"ORDER BY time DESC LIMIT ?, ?"
 	sqlStmt["wallSelectAfter"] = "SELECT id, `by`, time, text " +
 		"FROM wall_posts " +
 		"WHERE network_id = ? AND id > ? " +
 		"ORDER BY time DESC LIMIT 0, ?"
+	sqlStmt["wallSelectCategoryAfter"] = "SELECT id, `by`, time, text " +
+		"FROM wall_posts " +
+		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+		"JOIN categories ON post_categories.category_id = categories.id " +
+		"WHERE network_id = ? AND categories.tag = ? AND id > ?" +
+		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["wallSelectBefore"] = "SELECT id, `by`, time, text " +
 		"FROM wall_posts " +
 		"WHERE network_id = ? AND id < ? " +
+		"ORDER BY time DESC LIMIT 0, ?"
+	sqlStmt["wallSelectCategoryBefore"] = "SELECT id, `by`, time, text " +
+		"FROM wall_posts " +
+		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+		"JOIN categories ON post_categories.category_id = categories.id " +
+		"WHERE network_id = ? AND categories.tag = ? AND id < ?" +
 		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
@@ -671,6 +689,55 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 		return posts, gp.APIerror{"Invalid selector"}
 	}
 	rows, err := s.Query(netId, index, count)
+	defer rows.Close()
+	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var post gp.PostSmall
+		var t string
+		var by gp.UserId
+		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By, err = db.GetUser(by)
+		if err != nil {
+			return posts, err
+		}
+		post.CommentCount = db.GetCommentCount(post.Id)
+		post.Images, err = db.GetPostImages(post.Id)
+		if err != nil {
+			return
+		}
+		post.LikeCount, err = db.LikeCount(post.Id)
+		if err != nil {
+			return
+		}
+		posts = append(posts, post)
+	}
+	return
+}
+
+//GetPosts finds posts in the network netId.
+func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel string, categoryTag string) (posts []gp.PostSmall, err error) {
+	var s *sql.Stmt
+	switch {
+	case sel == "start":
+		s = db.stmt["wallSelectCategory"]
+	case sel == "before":
+		s = db.stmt["wallSelectCategoryBefore"]
+	case sel == "after":
+		s = db.stmt["wallSelectCategoryAfter"]
+	default:
+		return posts, gp.APIerror{"Invalid selector"}
+	}
+	rows, err := s.Query(netId, categoryTag, index, count)
 	defer rows.Close()
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {

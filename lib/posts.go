@@ -118,6 +118,24 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 	return
 }
 
+//GetPostsByCategory acts the same as getPosts but only returns posts which are in the category with tag category.
+//It has no caching layer at the moment.
+//Should restrict access based on user.
+func (api *API) GetPostsByCategory(netId gp.NetworkId, index int64, sel string, count int, category string) (posts []gp.PostSmall, err error) {
+	posts, err = api.db.GetPostsByCategory(netId, index, count, sel, category)
+	if err != nil {
+		return
+	}
+	for i, p := range posts {
+		p.Likes, err = api.GetLikes(p.Id)
+		if err != nil {
+			return
+		}
+		posts[i] = p
+	}
+	return
+}
+
 func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.Id = p.Id
 	post.By = p.By

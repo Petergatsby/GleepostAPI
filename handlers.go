@@ -178,10 +178,12 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			after = 0
 		}
+		filter := r.FormValue("filter")
 		networks, err := api.GetUserNetworks(userId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
+			//First: which paging scheme are we using
 			var selector string
 			var index int64
 			switch {
@@ -195,7 +197,14 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 				selector = "start"
 				index = start
 			}
-			posts, err := api.GetPosts(networks[0].Id, index, selector, api.Config.PostPageSize)
+			//Then: if we have a filter
+			var posts []gp.PostSmall
+			switch {
+			case len(filter) > 0:
+				posts, err = api.GetPostsByCategory(networks[0].Id, index, selector, api.Config.PostPageSize, filter)
+			default:
+				posts, err = api.GetPosts(networks[0].Id, index, selector, api.Config.PostPageSize)
+			}
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			}
