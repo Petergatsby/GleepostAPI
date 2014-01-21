@@ -69,7 +69,7 @@ type Post struct {
 	Time       time.Time      `json:"timestamp"`
 	Text       string         `json:"text"`
 	Images     []string       `json:"images"`
-	Categories []PostCategory `json:"categories"`
+	Categories []PostCategory `json:"categories,omitempty"`
 }
 
 type PostSmall struct {
