@@ -1028,7 +1028,7 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "GET":
-		resp := struct{message string}{"Check out gleepost! https://gleepost.com"}
+		resp := struct{ message string }{"Check out gleepost! https://gleepost.com"}
 		jsonResponse(w, resp, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
