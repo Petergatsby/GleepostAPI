@@ -232,9 +232,9 @@ type Liked struct {
 type CategoryId uint64
 
 type PostCategory struct {
-	Id   CategoryId
-	Tag  string
-	Name string
+	Id   CategoryId `json:"id"`
+	Tag  string	`json:"tag"`
+	Name string	`json:"name"`
 }
 
 type Expiry struct {
