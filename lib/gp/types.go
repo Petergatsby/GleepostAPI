@@ -81,8 +81,10 @@ type PostSmall struct {
 
 type PostFull struct {
 	Post
-	Comments []Comment  `json:"comments"`
-	Likes    []LikeFull `json:"likes"`
+	CommentCount int        `json:"comment_count"`
+	LikeCount    int        `json:"like_count"`
+	Comments     []Comment  `json:"comments"`
+	Likes        []LikeFull `json:"likes"`
 }
 
 type Comment struct {
@@ -233,8 +235,8 @@ type CategoryId uint64
 
 type PostCategory struct {
 	Id   CategoryId `json:"id"`
-	Tag  string	`json:"tag"`
-	Name string	`json:"name"`
+	Tag  string     `json:"tag"`
+	Name string     `json:"name"`
 }
 
 type Expiry struct {
