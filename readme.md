@@ -237,6 +237,8 @@ example responses:
 	"timestamp":"2013-09-05T13:09:38Z",
 	"text":"This is a cool post for cool people!",
 	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+	"comment_count":4,
+	"like_count":5,
 	"comments": [{
 		"id":51341,
 		"by": {
