@@ -18,6 +18,10 @@ func (api *API) GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	if err != nil {
 		return
 	}
+	post.Attribs, err = api.GetPostAttribs(postId)
+	if err != nil {
+		return
+	}
 	post.CommentCount = api.GetCommentCount(postId)
 	post.Comments, err = api.GetComments(postId, 0, api.Config.CommentPageSize)
 	if err != nil {
@@ -33,6 +37,10 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 		posts, err = api.db.GetPosts(netId, index, count, sel)
 		for i, p := range posts {
 			p.Likes, err = api.GetLikes(p.Id)
+			if err != nil {
+				return
+			}
+			p.Attribs, err = api.GetPostAttribs(p.Id)
 			if err != nil {
 				return
 			}
@@ -65,6 +73,10 @@ func (api *API) GetPostsByCategory(netId gp.NetworkId, index int64, sel string, 
 		if err != nil {
 			return
 		}
+		p.Attribs, err = api.GetPostAttribs(p.Id)
+		if err != nil {
+			return
+		}
 		posts[i] = p
 	}
 	return
@@ -78,6 +90,10 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.Images = api.GetPostImages(p.Id)
 	post.CommentCount = api.GetCommentCount(p.Id)
 	post.Categories, err = api.postCategories(p.Id)
+	if err != nil {
+		return
+	}
+	post.Attribs, err = api.GetPostAttribs(p.Id)
 	if err != nil {
 		return
 	}
@@ -250,4 +266,8 @@ func (api *API) DelLike(user gp.UserId, post gp.PostId) (err error) {
 //SetPostAttribs associates a s<F6>
 func (api *API) SetPostAttribs(post gp.PostId, attribs map[string]string) (err error) {
 	return api.db.SetPostAttribs(post, attribs)
+}
+
+func (api *API) GetPostAttribs(post gp.PostId) (attribs map[string]string, err error) {
+	return api.db.GetPostAttribs(post)
 }
