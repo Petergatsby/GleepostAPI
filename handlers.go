@@ -40,6 +40,7 @@ func authenticate(r *http.Request) (userId gp.UserId, err error) {
 
 func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	marshaled, err := json.Marshal(resp)
 	if err != nil {
 		marshaled, _ = json.Marshal(gp.APIerror{err.Error()})
@@ -222,16 +223,24 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("text")
 		url := r.FormValue("url")
 		tags := r.FormValue("tags")
+		attstr := r.FormValue("attribs")
+		attribs := make(map[string]string)
 		var postId gp.PostId
 		var ts []string
 		switch {
 		case len(tags) > 1:
 			ts = strings.Split(tags, ",")
 			fallthrough
+		case len(attstr) > 1:
+			atts := strings.Split(attstr, ",")
+			for i := 0; i < len(atts); i += 2 {
+				attribs[atts[i]] = atts[i+1]
+			}
+			fallthrough
 		case len(url) > 5:
-			postId, err = api.AddPostWithImage(userId, text, url, ts...)
+			postId, err = api.AddPostWithImage(userId, text, attribs, url, ts...)
 		default:
-			postId, err = api.AddPost(userId, text, ts...)
+			postId, err = api.AddPost(userId, text, attribs, ts...)
 		}
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)

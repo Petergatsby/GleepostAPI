@@ -172,7 +172,7 @@ func (api *API) AddPostImage(postId gp.PostId, url string) (err error) {
 	return api.db.AddPostImage(postId, url)
 }
 
-func (api *API) AddPost(userId gp.UserId, text string, tags ...string) (postId gp.PostId, err error) {
+func (api *API) AddPost(userId gp.UserId, text string, attribs map[string]string, tags ...string) (postId gp.PostId, err error) {
 	networks, err := api.GetUserNetworks(userId)
 	if err != nil {
 		return
@@ -181,6 +181,12 @@ func (api *API) AddPost(userId gp.UserId, text string, tags ...string) (postId g
 	if err == nil {
 		if len(tags) > 0 {
 			err = api.TagPost(postId, tags...)
+			if err != nil {
+				return
+			}
+		}
+		if len(attribs) > 0 {
+			err = api.SetPostAttribs(postId, attribs)
 			if err != nil {
 				return
 			}
@@ -195,8 +201,8 @@ func (api *API) AddPost(userId gp.UserId, text string, tags ...string) (postId g
 	return
 }
 
-func (api *API) AddPostWithImage(userId gp.UserId, text string, image string, tags ...string) (postId gp.PostId, err error) {
-	postId, err = api.AddPost(userId, text, tags...)
+func (api *API) AddPostWithImage(userId gp.UserId, text string, attribs map[string]string, image string, tags ...string) (postId gp.PostId, err error) {
+	postId, err = api.AddPost(userId, text, attribs, tags...)
 	if err != nil {
 		return
 	}
@@ -239,4 +245,9 @@ func (api *API) AddLike(user gp.UserId, postId gp.PostId) (err error) {
 
 func (api *API) DelLike(user gp.UserId, post gp.PostId) (err error) {
 	return api.db.RemoveLike(user, post)
+}
+
+//SetPostAttribs associates a s<F6>
+func (api *API) SetPostAttribs(post gp.PostId, attribs map[string]string) (err error) {
+	return api.db.SetPostAttribs(post, attribs)
 }

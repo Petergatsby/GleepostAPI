@@ -153,6 +153,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?"
 	sqlStmt["listCategories"] = "SELECT id, tag, name FROM categories WHERE 1"
 	sqlStmt["postCategories"] = "SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?"
+	sqlStmt["setPostAttribs"] = "REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
 	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
@@ -864,6 +865,41 @@ func (db *DB) GetPost(postId gp.PostId) (post gp.Post, err error) {
 		return
 	}
 	post.Images, err = db.GetPostImages(postId)
+	return
+}
+
+//SetPostAttribs associates all the attribute:value pairs in attrib with post.
+//At the moment, it doesn't check if these attributes are at all reasonable;
+//the onus is on the viewer of the attributes to look for just the ones which make sense,
+//and on the caller of this function to ensure that the values conform to a particular format.
+func (db *DB) SetPostAttribs(post gp.PostId, attribs map[string]string) (err error) {
+	s := db.stmt["setPostAttribs"]
+	for attrib, value := range attribs {
+		_, err = s.Exec(post, attrib, value)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//GetPostAttribs returns a map of all attributes associated with post.
+func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]string, err error) {
+	s := db.stmt["getPostAttribs"]
+	rows, err := s.Query(post)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	attribs = make(map[string]string)
+	for rows.Next() {
+		var attrib, val string
+		err = rows.Scan(&attrib, &val)
+		if err != nil {
+			return
+		}
+		attribs[attrib] = val
+	}
 	return
 }
 
