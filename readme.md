@@ -205,7 +205,7 @@ example responses:
 
 ##POST /posts
 required parameters: id, token, text
-optional parameters: url, tags
+optional parameters: url, tags, attribs
 
 If set, url must be a url previously returned from [/upload](#post-upload).
 If the image url is invalid, the post will be created without an image. 
@@ -214,6 +214,11 @@ If set, tags must be a comma-delimited list of category "tags". Any of those tag
 
 eg:
 tags=for-sale,event,salsa
+
+If set, attribs must be a comma-delimited list of key,value attributes. These are currently completely unvalidated freeform text.
+
+The only purpose of this so far is to support a "event-time" attribute for posts with tag "event".
+If providing event-time, please provide it in RFC 3339 format!
 
 example responses:
 (http 200)
