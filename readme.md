@@ -170,6 +170,9 @@ example responses:
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+		"attribs": {
+			"event-time":"2013-09-05T13:09:38Z"
+		},
 		"comment_count":4,
 		"like_count":5,
 		"likes":[{"by": {
@@ -242,6 +245,9 @@ example responses:
 	"timestamp":"2013-09-05T13:09:38Z",
 	"text":"This is a cool post for cool people!",
 	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+	"attribs": {
+		"event-time":"2013-09-05T13:09:38Z"
+	},
 	"comment_count":4,
 	"like_count":5,
 	"comments": [{
