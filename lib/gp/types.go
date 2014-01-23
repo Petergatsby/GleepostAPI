@@ -64,12 +64,13 @@ type PostCore struct {
 }
 
 type Post struct {
-	Id         PostId         `json:"id"`
-	By         User           `json:"by"`
-	Time       time.Time      `json:"timestamp"`
-	Text       string         `json:"text"`
-	Images     []string       `json:"images"`
-	Categories []PostCategory `json:"categories,omitempty"`
+	Id         PostId            `json:"id"`
+	By         User              `json:"by"`
+	Time       time.Time         `json:"timestamp"`
+	Text       string            `json:"text"`
+	Images     []string          `json:"images"`
+	Categories []PostCategory    `json:"categories,omitempty"`
+	Attribs    map[string]string `json:"attribs"`
 }
 
 type PostSmall struct {
