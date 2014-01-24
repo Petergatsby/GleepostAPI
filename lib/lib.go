@@ -352,7 +352,7 @@ func NotificationChannelKey(id gp.UserId) (channel string) {
 
 func (api *API) assignNetworks(user gp.UserId, email string) (networks int, err error) {
 	if api.Config.RegisterOverride {
-		api.setNetwork(user, 1338) //Highlands and Islands :D
+		api.setNetwork(user, 1911) //Highlands and Islands :D
 	} else {
 		rules, e := api.db.GetRules()
 		if e != nil {
