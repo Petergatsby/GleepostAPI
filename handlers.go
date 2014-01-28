@@ -233,7 +233,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			fallthrough
 		case len(attstr) > 1:
 			atts := strings.Split(attstr, ",")
-			for i := 0; i + 1 < len(atts); i += 2 {
+			for i := 0; i+1 < len(atts); i += 2 {
 				attribs[atts[i]] = atts[i+1]
 			}
 			fallthrough
