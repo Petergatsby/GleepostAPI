@@ -54,6 +54,7 @@ func (api *API) notificationPush(user gp.UserId) {
 }
 
 func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
+	log.Println("Trying to send a push notification")
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -74,6 +75,7 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 				log.Println(err)
 			}
 			for _, device := range devices {
+				log.Println("Sending push notification to device: ", device)
 				pn := apns.NewPushNotification()
 				pn.DeviceToken = device.Id
 				pn.AddPayload(payload)
