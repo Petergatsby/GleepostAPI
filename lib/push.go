@@ -75,14 +75,16 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 				log.Println(err)
 			}
 			for _, device := range devices {
-				log.Println("Sending push notification to device: ", device)
-				pn := apns.NewPushNotification()
-				pn.DeviceToken = device.Id
-				pn.AddPayload(payload)
-				pn.Set("conv", convId)
-				resp := client.Send(pn)
-				if resp.Error != nil {
-					log.Println("Error:", resp.Error)
+				if device.Type == "ios" {
+					log.Println("Sending push notification to device: ", device)
+					pn := apns.NewPushNotification()
+					pn.DeviceToken = device.Id
+					pn.AddPayload(payload)
+					pn.Set("conv", convId)
+					resp := client.Send(pn)
+					if resp.Error != nil {
+						log.Println("Error:", resp.Error)
+					}
 				}
 			}
 		}
