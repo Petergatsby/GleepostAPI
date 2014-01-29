@@ -261,7 +261,7 @@ func newConversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		conversation, err := api.CreateConversation(userId, 2, true)
+		conversation, err := api.CreateRandomConversation(userId, 2, true)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
@@ -279,7 +279,7 @@ func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		conversation, err := api.CreateConversation(userId, 4, true)
+		conversation, err := api.CreateRandomConversation(userId, 4, true)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {

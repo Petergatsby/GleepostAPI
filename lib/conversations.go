@@ -32,7 +32,21 @@ func (api *API) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upT
 	return
 }
 
-func (api *API) CreateConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+func (api *API) CreateConversation(initiator gp.UserId, participants []gp.User, live bool) (conversation gp.Conversation, err error) {
+	var expiry *gp.Expiry
+	if live {
+		expiry = gp.NewExpiry(time.Duration(api.Config.Expiry) * time.Second)
+	}
+	conversation, err = api.db.CreateConversation(initiator, participants, expiry)
+	if err == nil {
+		go api.cache.AddConversation(conversation)
+		go api.NewConversationEvent(conversation)
+	}
+	return
+}
+
+//CreateRandomConversation generates a new conversation for user id witn nParticipants participants.
+func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
 	networks, err := api.GetUserNetworks(id)
 	if err != nil {
 		return
@@ -46,16 +60,7 @@ func (api *API) CreateConversation(id gp.UserId, nParticipants int, live bool) (
 		return
 	}
 	participants = append(participants, user)
-	var expiry *gp.Expiry
-	if live {
-		expiry = gp.NewExpiry(time.Duration(api.Config.Expiry) * time.Second)
-	}
-	conversation, err = api.db.CreateConversation(id, participants, expiry)
-	if err == nil {
-		go api.cache.AddConversation(conversation)
-		go api.NewConversationEvent(conversation)
-	}
-	return
+	return api.CreateConversation(id, participants, live)
 }
 
 func (api *API) NewConversationEvent(conversation gp.Conversation) {
