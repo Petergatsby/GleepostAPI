@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var ENOTALLOWED = gp.APIerror{"You're not allowed to message this user!"}
+
 func (api *API) TerminateConversation(convId gp.ConversationId) (err error) {
 	err = api.db.TerminateConversation(convId)
 	if err == nil {
@@ -61,6 +63,37 @@ func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live b
 	}
 	participants = append(participants, user)
 	return api.CreateConversation(id, participants, live)
+}
+
+//CreateConversationWith generates a new conversation with a particular group of participants.
+func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, live bool) (conversation gp.Conversation, err error) {
+	var participants []gp.User
+	user, err := api.GetUser(initiator)
+	if err != nil {
+		return
+	}
+	participants = append(participants, user)
+	for _, id := range with {
+		//TODO: Handle error
+		canContact, _ := api.CanContact(initiator, id) 
+		if canContact {
+			user, err = api.GetUser(id)
+			if err != nil {
+				return
+			}
+			participants = append(participants, user)
+		} else {
+			err = &ENOTALLOWED
+			return
+		}
+	}
+	return api.CreateConversation(initiator, participants, live)
+}
+
+//CanContact returns true if the initiator is allowed to contact the recipient.
+//TODO: actually do something.
+func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactable bool, err error){
+	return true, nil
 }
 
 func (api *API) NewConversationEvent(conversation gp.Conversation) {
