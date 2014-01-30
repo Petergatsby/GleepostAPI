@@ -303,7 +303,7 @@ func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
 	log.Println("DB hit: db.GetUser id(user.Name, user.Id, user.Avatar)")
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return user, &gp.ENOSUCHUSER
+			err = &gp.ENOSUCHUSER
 		}
 		return
 	}
@@ -313,11 +313,7 @@ func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
 	if firstName.Valid {
 		user.Name = firstName.String
 	}
-	if err != nil {
-		return user, err
-	} else {
-		return user, nil
-	}
+	return
 }
 
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
