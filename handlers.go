@@ -330,8 +330,10 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case len(user_ids) < 1:
 				jsonResponse(w, &ETOOFEW, 400)
+				return
 			case len(user_ids) > 10:
 				jsonResponse(w, &ETOOMANY, 400)
+				return
 			default:
 				conversation, err = api.CreateConversationWith(userId, user_ids, false)
 			}
