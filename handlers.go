@@ -305,6 +305,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		var conversation gp.Conversation
 		if err != nil {
 			random = true
+			err = nil
 		}
 		if random {
 			partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
