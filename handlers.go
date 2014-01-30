@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"reflect"
 )
 
 var (
@@ -342,6 +343,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			e, ok := err.(gp.APIerror)
+			log.Println(reflect.TypeOf(err))
 			log.Println(ok)
 			if ok && e == gp.ENOSUCHUSER {
 				jsonResponse(w, e, 400)
