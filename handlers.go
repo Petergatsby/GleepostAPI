@@ -230,16 +230,16 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		attribs := make(map[string]string)
 		var postId gp.PostId
 		var ts []string
-		switch {
-		case len(tags) > 1:
+		if len(tags) > 1 {
 			ts = strings.Split(tags, ",")
-			fallthrough
-		case len(attstr) > 1:
+		}
+		if len(attstr) > 1 {
 			atts := strings.Split(attstr, ",")
 			for i := 0; i+1 < len(atts); i += 2 {
 				attribs[atts[i]] = atts[i+1]
 			}
-			fallthrough
+		}
+		switch {
 		case len(url) > 5:
 			postId, err = api.AddPostWithImage(userId, text, attribs, url, ts...)
 		default:
@@ -310,8 +310,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
 			switch {
 			case err != nil:
-				partners = 0
-				fallthrough
+				partners = 2
 			case partners > 4:
 				partners = 4
 			case partners < 2:
