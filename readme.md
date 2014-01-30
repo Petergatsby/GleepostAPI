@@ -1,7 +1,7 @@
-#Gleepost API / V0.27
+#Gleepost API / V0.28
 
 
-URL: https://gleepost.com/api/v0.27/
+URL: https://gleepost.com/api/v0.28/
 
 ##Notes:
 
@@ -35,7 +35,7 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 /posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
 
-/conversations [[GET]](#get-conversations)
+/conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
 
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id) [[PUT]](#get-conversationsconversation-id)
 
@@ -43,9 +43,11 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 /user/[user-id] [[GET]](#get-useruser-id)
 
-/newconversation [[POST]](#post-newconversation)
+/newconversation [[POST]](#post-newconversation) DEPRECATED, use [[/conversations]](#post-conversations)
 
-/newgroupconversation [[POST]](#post-newgroupconversation)
+
+/newgroupconversation [[POST]](#post-newgroupconversation) DEPRECATED, use [[/conversations]](#post-conversations)
+
 
 /longpoll [[GET]](#get-longpoll)
 
@@ -418,6 +420,40 @@ returns a list of 20 of your conversations ordered by most recent message, start
 ]
 ```
 
+##POST /conversations
+required parameters:
+id=[user-id]
+token=[token]
+
+optional parameters:
+random=[true/false], defaults to true
+
+If random = true, you should provide:
+participant_count=[2 <= n <= 4], defaults to 2
+
+if random = false, you should provide:
+participants=[user_id],[user_id],[user_id],...
+(a comma-delimited list of user_ids to start a conversation with.
+
+example responses:
+(HTTP 200)
+```
+{
+	"id":1,
+	"participants": [
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+	],
+	"messages": [
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
+	],
+	"lastActivity":"2013-09-05T13:09:38Z",
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+}
+```
+
 ##GET /conversations/[conversation-id]
 required parameters:
 id=[user-id]
@@ -564,43 +600,12 @@ example responses:
 ```
 
 ##POST /newconversation
-required parameters: id, token
 
-note: POST so it doesn't get accidentally repeated :)
-This will return a conversation with two participants.
-
-example responses:
-```
-{
-	"id":2342342,
-	"participants": [
-		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
-	],
-	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
-}
-```
+DEPRECATED, use [[/conversations]](#post-conversations)
 
 ##POST /newgroupconversation
-required parameters: id, token
 
-note: POST so it doesn't get accidentally repeated :)
-This will return a conversation with more than two participants.
-
-example responses:
-```
-{
-	"id":2342342,
-	"participants": [
-		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":1351, "name":"Someone", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":6124, "name":"SomeoneElse", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
-	],
-	"lastActivity":"2013-09-05T13:09:38Z"
-}
-```
+DEPRECATED, use [[/conversations]](#post-conversations)
 
 ##GET /longpoll
 required parameters:

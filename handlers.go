@@ -304,7 +304,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 		random, err := strconv.ParseBool(r.FormValue("random"))
 		var conversation gp.Conversation
 		if err != nil {
-			random = false
+			random = true
 		}
 		if random {
 			partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
@@ -319,7 +319,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			conversation, err = api.CreateRandomConversation(userId, int(partners), true)
 		} else {
-			idstring := r.FormValue("users")
+			idstring := r.FormValue("participants")
 			ids := strings.Split(idstring, ",")
 			user_ids := make([]gp.UserId, 0, 10)
 			for _, _id := range ids {
