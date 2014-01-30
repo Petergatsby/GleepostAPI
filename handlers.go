@@ -340,7 +340,7 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 		if err != nil {
-			jsonResponse(w, err, 500)
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
 			jsonResponse(w, conversation, 201)
 		}
