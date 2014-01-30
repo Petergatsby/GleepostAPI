@@ -19,6 +19,9 @@ var (
 	api        *lib.API
 )
 
+var ETOOFEW = gp.APIerror{"Must have at least one valid recipient."}
+var ETOOMANY = gp.APIerror{"Cannot send a message to more than 10 recipients"}
+
 func init() {
 	configInit()
 	config = GetConfig()
@@ -252,42 +255,6 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func newConversationHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
-	switch {
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	case err != nil:
-		jsonResponse(w, &EBADTOKEN, 400)
-	default:
-		conversation, err := api.CreateRandomConversation(userId, 2, true)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		} else {
-			jsonResponse(w, conversation, 201)
-		}
-	}
-}
-
-func newGroupConversationHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
-	switch {
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	case err != nil:
-		jsonResponse(w, &EBADTOKEN, 400)
-	default:
-		conversation, err := api.CreateRandomConversation(userId, 4, true)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		} else {
-			jsonResponse(w, conversation, 201)
-		}
-	}
-}
-
 func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
@@ -312,11 +279,9 @@ func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 func conversationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
-	case r.Method != "GET":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	default:
+	case r.Method == "GET":
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -335,6 +300,51 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, conversations, 200)
 			}
 		}
+	case r.Method == "POST":
+		random, err := strconv.ParseBool(r.FormValue("random"))
+		var conversation gp.Conversation
+		if err != nil {
+			random = false
+		}
+		if random {
+			partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
+			switch {
+			case err != nil:
+				partners = 0
+				fallthrough
+			case partners > 4:
+				partners = 4
+			case partners < 2:
+				partners = 2
+			}
+			conversation, err = api.CreateRandomConversation(userId, int(partners), true)
+		} else {
+			idstring := r.FormValue("users")
+			ids := strings.Split(idstring, ",")
+			user_ids := make([]gp.UserId, 0, 10)
+			for _, _id := range ids {
+				id, err := strconv.ParseUint(_id, 10, 64)
+				if err == nil {
+					user_ids = append(user_ids, gp.UserId(id))
+				}
+			}
+			switch {
+			case len(user_ids) < 1:
+				jsonResponse(w, &ETOOFEW, 400)
+			case len(user_ids) > 10:
+				jsonResponse(w, &ETOOMANY, 400)
+			default:
+				conversation, err = api.CreateConversationWith(userId, user_ids, false)
+			}
+
+		}
+		if err != nil {
+			jsonResponse(w, err, 500)
+		} else {
+			jsonResponse(w, conversation, 201)
+		}
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 

@@ -75,7 +75,7 @@ func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, li
 	participants = append(participants, user)
 	for _, id := range with {
 		//TODO: Handle error
-		canContact, _ := api.CanContact(initiator, id) 
+		canContact, _ := api.CanContact(initiator, id)
 		if canContact {
 			user, err = api.GetUser(id)
 			if err != nil {
