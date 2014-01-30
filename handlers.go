@@ -340,7 +340,11 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			if err == gp.ENOSUCHUSER {
+				jsonResponse(w, err, 400)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
 		} else {
 			jsonResponse(w, conversation, 201)
 		}
