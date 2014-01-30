@@ -7,11 +7,11 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/http"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-	"reflect"
 )
 
 var (
@@ -342,10 +342,10 @@ func conversationHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 		if err != nil {
-			e, ok := err.(gp.APIerror)
+			e, ok := err.(*gp.APIerror)
 			log.Println(reflect.TypeOf(err))
 			log.Println(ok)
-			if ok && e == gp.ENOSUCHUSER {
+			if ok && *e == gp.ENOSUCHUSER {
 				jsonResponse(w, e, 400)
 			} else {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
