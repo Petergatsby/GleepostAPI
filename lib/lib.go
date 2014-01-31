@@ -41,7 +41,7 @@ var EBADREC = gp.APIerror{"Bad password recovery token."}
 Top-level functions
 ********************************************************************/
 
-func randomString() (random string, err error) {
+func RandomString() (random string, err error) {
 	hash := sha256.New()
 	randombuf := make([]byte, 32) //Number pulled out of my... ahem.
 	_, err = io.ReadFull(rand.Reader, randombuf)
@@ -58,7 +58,7 @@ func randomString() (random string, err error) {
 //createtoken might do with returning an error
 //why would it break though
 func createToken(userId gp.UserId) gp.Token {
-	random, err := randomString()
+	random, err := RandomString()
 	if err != nil {
 		return (gp.Token{userId, "foo", time.Now().UTC()})
 	} else {
@@ -188,8 +188,13 @@ func (api *API) testEmail(email string, rules []gp.Rule) bool {
 	return false
 }
 
-func (api *API) RegisterUser(user string, pass string, email string) (userId gp.UserId, err error) {
+//RegisterUser accepts a username, password, email address, firstname and lastname. It will return an error if user or email aren't unique, or if pass is too short.
+func (api *API) RegisterUser(user, pass, email, first, last string) (userId gp.UserId, err error) {
 	userId, err = api.createUser(user, pass, email)
+	if err != nil {
+		return
+	}
+	err = api.SetUserName(userId, first, last)
 	if err != nil {
 		return
 	}
@@ -219,7 +224,7 @@ func (api *API) createUser(user string, pass string, email string) (userId gp.Us
 
 //TODO: this might end up using user input directly in an email. Sanitize!
 func (api *API) GenerateAndSendVerification(userId gp.UserId, user string, email string) (err error) {
-	random, err := randomString()
+	random, err := RandomString()
 	if err != nil {
 		return
 	}
@@ -429,7 +434,7 @@ func (api *API) Verify(token string) (err error) {
 		if e != nil {
 			return e
 		}
-		random, e := randomString()
+		random, e := RandomString()
 		if e != nil {
 			return e
 		}
@@ -489,7 +494,7 @@ func (api *API) RequestReset(email string) (err error) {
 	if err != nil {
 		return
 	}
-	token, err := randomString()
+	token, err := RandomString()
 	if err != nil {
 		return
 	}

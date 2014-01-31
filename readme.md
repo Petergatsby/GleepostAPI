@@ -82,7 +82,7 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 /resend_verification [[POST]](#post-resend_verification)
 
 ##POST /register
-required parameters: user, pass, email
+required parameters: first, last, pass, email
 
 Password must be at least 5 characters long.
 

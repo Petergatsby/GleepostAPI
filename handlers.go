@@ -77,16 +77,19 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	//Note to self: maybe check cache for user before trying to register
-	user := r.FormValue("user")
 	pass := r.FormValue("pass")
 	email := r.FormValue("email")
+	first := r.FormValue("first")
+	last := r.FormValue("last")
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
-	case len(user) == 0:
 		//Note to future self : would be neater if
 		//we returned _all_ errors not just the first
-		jsonResponse(w, gp.APIerror{"Missing parameter: user"}, 400)
+	case len(first) < 2:
+		jsonResponse(w, gp.APIerror{"Missing parameter: first"}, 400)
+	case len(last) < 1:
+		jsonResponse(w, gp.APIerror{"Missing parameter: last"}, 400)
 	case len(pass) == 0:
 		jsonResponse(w, gp.APIerror{"Missing parameter: pass"}, 400)
 	case len(email) == 0:
@@ -101,7 +104,9 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, gp.APIerror{"Invalid Email"}, 400)
 			return
 		}
-		id, err := api.RegisterUser(user, pass, email)
+		rand, _ := lib.RandomString()
+		user := first + "." + last + rand
+		id, err := api.RegisterUser(user, pass, email, first, last)
 		if err != nil {
 			_, ok := err.(gp.APIerror)
 			if ok { //Duplicate user/email or password too short

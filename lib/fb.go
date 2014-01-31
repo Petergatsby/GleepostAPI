@@ -105,7 +105,7 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	random, err := randomString()
+	random, err := RandomString()
 	if err != nil {
 		return
 	}
