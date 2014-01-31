@@ -65,6 +65,8 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 /profile/profile_image [[POST]](#post-profileprofile_image)
 
+/profile/name [[POST]](#post-profilename)
+
 /profile/change_pass [[POST]](#post-profilechange_pass)
 
 /profile/request_reset [[POST]](#post-profilerequest_reset)
@@ -754,6 +756,13 @@ HTTP 200
 	"course":"Computer Science"
 }
 ```
+
+##POST /profile/name
+required parameters: id, token, first, last
+
+/name allows the user to set their name if it is not set already.
+
+On success, it will return HTTP 204.
 
 ##POST /profile/change_pass
 required parameters: id, token, old, new

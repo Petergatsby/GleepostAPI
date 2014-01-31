@@ -21,6 +21,7 @@ var (
 
 var ETOOFEW = gp.APIerror{"Must have at least one valid recipient."}
 var ETOOMANY = gp.APIerror{"Cannot send a message to more than 10 recipients"}
+var EBADINPUT = gp.APIerror{"Missing parameter: first / last"}
 
 func init() {
 	configInit()
@@ -833,6 +834,25 @@ func changePassHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			//Assuming that most errors will be bad input for now
 			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		w.WriteHeader(204)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func changeNameHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "POST":
+		firstName := r.FormValue("first")
+		lastName := r.FormValue("last")
+		err := api.SetUserName(userId, firstName, lastName)
+		if err != nil {
+			jsonResponse(w, &EBADINPUT, 400)
 			return
 		}
 		w.WriteHeader(204)
