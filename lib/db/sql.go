@@ -169,9 +169,9 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? AND id < ? " +
 		"ORDER BY timestamp DESC LIMIT ?"
-	sqlStmt["messagesRead"] = "UPDATE chat_messages " +
-		"SET seen = 1 " +
-		"WHERE conversation_id= ? AND id <= ? AND `from` != ?"
+	sqlStmt["messagesRead"] = "UPDATE conversation_participants" +
+		"SET last_read = ? " +
+		"WHERE conversation_id= ? AND `participant_id` = ?"
 	//Token
 	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
@@ -968,7 +968,7 @@ func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, cou
 //up to and including upTo and excluding messages sent by user id.
 //TODO: This won't generalize to >2 participants
 func (db *DB) MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
-	_, err = db.stmt["messagesRead"].Exec(convId, upTo, id)
+	_, err = db.stmt["messagesRead"].Exec(upTo, convId, id)
 	return
 }
 
