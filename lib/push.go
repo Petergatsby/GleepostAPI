@@ -37,6 +37,13 @@ func (api *API) notificationPush(user gp.UserId) {
 	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 
+	notifications, err := api.GetUserNotifications(user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	payload.Badge = len(notifications)
+
 	devices, err := api.GetDevices(user)
 	if err != nil {
 		log.Println(err)
