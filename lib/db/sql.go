@@ -184,6 +184,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["deviceInsert"] = "REPLACE INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)"
 	sqlStmt["deviceSelect"] = "SELECT user_id, device_type, device_id FROM devices WHERE user_id = ?"
 	sqlStmt["deviceDelete"] = "DELETE FROM devices WHERE user_id = ? AND device_id = ?"
+	sqlStmt["feedbackDelete"] = "DELETE FROM devices WHERE device_id = ? AND last_update < ?"
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
@@ -1137,6 +1138,12 @@ func (db *DB) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 func (db *DB) DeleteDevice(user gp.UserId, device string) (err error) {
 	s := db.stmt["deviceDelete"]
 	_, err = s.Exec(user, device)
+	return
+}
+
+func (db *DB) Feedback(deviceId string, timestamp time.Time) (err error) {
+	s := db.stmt["feedbackDelete"]
+	_, err = s.Exec(deviceId, timestamp)
 	return
 }
 

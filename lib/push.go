@@ -4,6 +4,7 @@ import (
 	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
+	"time"
 )
 
 type Pusher struct {
@@ -95,5 +96,30 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 				}
 			}
 		}
+	}
+}
+
+func (api *API) CheckFeedbackService() {
+	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	log.Println("Connected to feedback service")
+	go client.ListenForFeedback()
+	for {
+		select {
+		case resp := <-apns.FeedbackChannel:
+			api.DeviceFeedback(resp.DeviceToken, resp.Timestamp)
+		case <-apns.ShutdownChannel:
+			log.Println("feedback service ended")
+			return
+		}
+	}
+}
+
+//FeedbackDaemon checks the APNS feedback service every frequency seconds.
+func (api *API) FeedbackDaemon(frequency int) {
+	duration := time.Duration(frequency) * time.Second
+	c := time.Tick(duration)
+	for {
+		<-c
+		go api.CheckFeedbackService()
 	}
 }

@@ -27,6 +27,7 @@ func init() {
 	configInit()
 	config = GetConfig()
 	api = lib.New(*config)
+	go api.FeedbackDaemon(3600)
 }
 
 //Note to self: validateToken should probably return an error at some point

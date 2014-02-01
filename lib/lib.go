@@ -530,3 +530,8 @@ func (api *API) IsVerified(userId gp.UserId) (verified bool, err error) {
 func (api *API) GetLiveConversations(userId gp.UserId) (conversations []gp.ConversationSmall, err error) {
 	return api.db.GetLiveConversations(userId)
 }
+
+func (api *API) DeviceFeedback(deviceId string, timestamp uint32) (err error) {
+	t := time.Unix(int64(timestamp), 0)
+	return api.db.Feedback(deviceId, t)
+}
