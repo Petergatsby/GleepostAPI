@@ -117,11 +117,12 @@ func (c *Cache) AddMessages(convId gp.ConversationId, messages []gp.Message) {
 	conn.Flush()
 }
 
+//SetMessage caches message.
 func (c *Cache) SetMessage(message gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", message.Id)
-	conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339), key+":seen", message.Seen)
+	conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339))
 	conn.Flush()
 }
 
@@ -207,19 +208,21 @@ func (c *Cache) GetMessages(convId gp.ConversationId, index int64, sel string, c
 	return
 }
 
+//GetMessage attempts to retrieve the message with id msgId from cache. If it doesn't exist in the cache it returns an error. Maybe.
 //TODO: get a message which doesn't embed a gp.User
+//TODO: return an APIerror when the message doesn't exist.
 func (c *Cache) GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", msgId)
-	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":time", key+":seen"))
+	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":time"))
 	if err != nil {
 		return message, err
 	}
 	message.Id = msgId
 	var timeString string
 	var by gp.UserId
-	if _, err = redis.Scan(reply, &by, &message.Text, &timeString, &message.Seen); err != nil {
+	if _, err = redis.Scan(reply, &by, &message.Text, &timeString); err != nil {
 		return message, err
 	}
 	if by != 0 {
@@ -232,6 +235,7 @@ func (c *Cache) GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 	return message, err
 }
 
+//AddMessagesFromDB takes up to config.MessageCache messages from the database and adds them to the cache.
 func (c *Cache) AddMessagesFromDB(convId gp.ConversationId, db db.DB) (err error) {
 	messages, err := db.GetMessages(convId, 0, "start", c.config.MessageCache)
 	if err != nil {
@@ -243,7 +247,7 @@ func (c *Cache) AddMessagesFromDB(convId gp.ConversationId, db db.DB) (err error
 	for _, message := range messages {
 		key := fmt.Sprintf("messages:%d", message.Id)
 		conn.Send("ZADD", zkey, message.Time.Unix(), message.Id)
-		conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339), key+":seen", message.Seen)
+		conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339))
 		conn.Flush()
 	}
 	return nil

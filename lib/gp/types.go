@@ -42,7 +42,6 @@ type Message struct {
 	By   User      `json:"by"`
 	Text string    `json:"text"`
 	Time time.Time `json:"timestamp"`
-	Seen bool      `json:"seen"`
 }
 
 type RedisMessage struct {

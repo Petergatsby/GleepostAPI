@@ -99,7 +99,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM conversation_participants " +
 		"JOIN users ON conversation_participants.participant_id = users.id " +
 		"WHERE conversation_id=?"
-	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
+	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? " +
 		"ORDER BY timestamp DESC LIMIT 1"
@@ -157,15 +157,15 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["getPostAttribs"] = "SELECT attrib, value FROM post_attribs WHERE post_id=?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp, seen " +
+	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? " +
 		"ORDER BY timestamp DESC LIMIT ?, ?"
-	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp, seen " +
+	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? AND id > ? " +
 		"ORDER BY timestamp DESC LIMIT ?"
-	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp, seen " +
+	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? AND id < ? " +
 		"ORDER BY timestamp DESC LIMIT ?"
@@ -640,12 +640,13 @@ func (db *DB) GetParticipants(conv gp.ConversationId) []gp.User {
 	return (participants)
 }
 
+//GetLastMessage retrieves the most recent message in conversation id.
 func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	var timeString string
 	var by gp.UserId
 	s := db.stmt["lastMessageSelect"]
-	err = s.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
-	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time, message.seen)")
+	err = s.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString)
+	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time)")
 	if err != nil {
 		return message, err
 	} else {
@@ -938,7 +939,7 @@ func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, cou
 		s = db.stmt["messageSelect"]
 	}
 	rows, err := s.Query(convId, index, count)
-	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time, message.seen)")
+	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time)")
 	if err != nil {
 		return
 	}
@@ -947,7 +948,7 @@ func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, cou
 		var message gp.Message
 		var timeString string
 		var by gp.UserId
-		err = rows.Scan(&message.Id, &by, &message.Text, &timeString, &message.Seen)
+		err = rows.Scan(&message.Id, &by, &message.Text, &timeString)
 		if err != nil {
 			log.Printf("%v", err)
 		}

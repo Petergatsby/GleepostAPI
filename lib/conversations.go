@@ -156,6 +156,7 @@ func (api *API) updateConversation(id gp.ConversationId) (err error) {
 	return nil
 }
 
+//AddMessage creates a new message from userId in conversation convId.
 func (api *API) AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
 	messageId, err = api.db.AddMessage(convId, userId, text)
 	if err != nil {
@@ -165,7 +166,7 @@ func (api *API) AddMessage(convId gp.ConversationId, userId gp.UserId, text stri
 	if err != nil {
 		return
 	}
-	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC(), false}
+	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC()}
 	participants := api.db.GetParticipants(convId)
 	go api.cache.Publish(msg, participants, convId)
 	chans := ConversationChannelKeys(participants)
