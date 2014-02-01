@@ -22,6 +22,7 @@ func (api *API) generatePartners(id gp.UserId, count int, network gp.NetworkId) 
 	return api.db.RandomPartners(id, count, network)
 }
 
+//MarkConversationSeen sets the "read" location to upTo for user id in conversation convId.
 func (api *API) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
 	err = api.db.MarkRead(id, convId, upTo)
 	if err != nil {
@@ -122,6 +123,7 @@ func (api *API) GetMessageChan(userId gp.UserId) (c chan []byte) {
 	return api.cache.MessageChan(userId)
 }
 
+//TODO: use conf.ConversationPageSize
 func (api *API) addAllConversations(userId gp.UserId) (err error) {
 	conversations, err := api.db.GetConversations(userId, 0, 2000)
 	for _, conv := range conversations {

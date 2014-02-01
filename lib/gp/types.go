@@ -44,6 +44,11 @@ type Message struct {
 	Time time.Time `json:"timestamp"`
 }
 
+type Read struct {
+	UserId   UserId    `json:"user"`
+	LastRead MessageId `json:"last_read"`
+}
+
 type RedisMessage struct {
 	Message
 	Conversation ConversationId `json:"conversation_id"`
@@ -115,6 +120,7 @@ type Conversation struct {
 	Id           ConversationId `json:"id"`
 	LastActivity time.Time      `json:"lastActivity"`
 	Participants []User         `json:"participants"`
+	Read	     []Read	    `json:"read,omitempty"`
 	Expiry       *Expiry        `json:"expiry,omitempty"`
 }
 

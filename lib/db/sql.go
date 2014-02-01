@@ -618,6 +618,23 @@ func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation
 	return
 }
 
+//GetReadStatus returns all the positions the participants in this conversation have read to. It omits participants who haven't read.
+func (db *DB) GetReadStatus(convId gp.ConversationId) (read []gp.Read, err error) {
+	rows, err := db.stmt["readStatus"].Query(convId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var r gp.Read
+		err = rows.Scan(&r.UserId, &r.LastRead)
+		if err != nil {
+			return
+		}
+		read = append(read, r)
+	}
+	return
+}
 //GetParticipants returns all of the participants in conv.
 //TODO: Return an error when appropriate
 func (db *DB) GetParticipants(conv gp.ConversationId) []gp.User {

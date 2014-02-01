@@ -136,6 +136,12 @@ func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upT
 	return
 }
 
+func (c *Cache) SetReadStatus(convId gp.ConversationId, read []gp.Read) () {
+	for _, r := range read {
+		c.MarkConversationSeen(r.UserId, convId, r.LastRead)
+	}
+}
+
 func (c *Cache) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -521,6 +527,9 @@ func (c *Cache) AddConversation(conv gp.Conversation) {
 	defer conn.Close()
 	if conv.Expiry != nil {
 		go c.SetConversationExpiry(conv.Id, *conv.Expiry)
+	}
+	if len(conv.Read) > 0 {
+		go c.SetReadStatus(conv.Id, conv.Read)
 	}
 	for _, participant := range conv.Participants {
 		key := fmt.Sprintf("users:%d:conversations", participant.Id)
