@@ -126,14 +126,6 @@ func (c *Cache) SetMessage(message gp.Message) {
 	conn.Flush()
 }
 
-func (c *Cache) MessageSeen(msgId gp.MessageId) {
-	conn := c.pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("messages:%d:seen", msgId)
-	conn.Send("SET", key, true)
-	conn.Flush()
-}
-
 //MarkConversationSeen registers the id:upTo (last read) pair in redis for convId
 func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) () {
 	conn := c.pool.Get()
