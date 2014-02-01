@@ -136,7 +136,7 @@ func (api *API) addAllConversations(userId gp.UserId) (err error) {
 //TODO: Restrict access to correct userId
 //TODO: defer actual operation to getConversation
 func (api *API) GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
-	return api.db.GetConversation(convId, api.Config.ConversationPageSize)
+	return api.getConversation(convId)
 }
 
 func (api *API) getConversation(convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
@@ -197,8 +197,18 @@ func (api *API) GetFullConversation(convId gp.ConversationId, start int64, count
 		return
 	}
 	conv.Participants = api.GetParticipants(convId)
+	conv.Read, err = api.readStatus(convId)
+	if err != nil {
+		return
+	}
 	conv.Messages, err = api.GetMessages(convId, start, "start", count)
 	return
+}
+
+//readStatus returns the point all participants have read until in a conversation, omitting any participants who have read nothing.
+//TODO: Use cache
+func (api *API) readStatus(convId gp.ConversationId) (read []gp.Read, err error) {
+	return api.db.GetReadStatus(convId)
 }
 
 func (api *API) ConversationLastActivity(convId gp.ConversationId) (t time.Time, err error) {

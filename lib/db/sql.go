@@ -111,6 +111,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"AND conversation_expirations.ended = 0 " +
 		"ORDER BY conversations.last_mod DESC  " +
 		"LIMIT 0 , 3"
+	sqlStmt["readStatus"] = "SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?"
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["wallSelect"] = "SELECT id, `by`, time, text FROM wall_posts WHERE network_id = ? ORDER BY time DESC LIMIT ?, ?"
@@ -560,6 +561,10 @@ func (db *DB) GetConversations(userId gp.UserId, start int64, count int) (conver
 		if err == nil {
 			conv.Expiry = &Expiry
 		}
+		read, err := db.GetReadStatus(conv.Id)
+		if err == nil {
+			conv.Read = read
+		}
 		conversations = append(conversations, conv)
 	}
 	return conversations, nil
@@ -603,6 +608,7 @@ func (db *DB) ConversationSetExpiry(convId gp.ConversationId, expiry gp.Expiry) 
 	return
 }
 
+//GetConversation returns the conversation convId, including up to count messages.
 func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation gp.ConversationAndMessages, err error) {
 	conversation.Id = convId
 	conversation.LastActivity, err = db.ConversationActivity(convId)
@@ -610,6 +616,10 @@ func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation
 		return
 	}
 	conversation.Participants = db.GetParticipants(convId)
+	read, err := db.GetReadStatus(convId)
+	if err == nil {
+		conversation.Read = read
+	}
 	expiry, err := db.ConversationExpiry(convId)
 	if err == nil {
 		conversation.Expiry = &expiry
@@ -631,7 +641,9 @@ func (db *DB) GetReadStatus(convId gp.ConversationId) (read []gp.Read, err error
 		if err != nil {
 			return
 		}
-		read = append(read, r)
+		if r.LastRead > 0 {
+			read = append(read, r)
+		}
 	}
 	return
 }

@@ -480,7 +480,11 @@ func (c *Cache) GetConversations(id gp.UserId, start int64, count int) (conversa
 		conv := gp.ConversationSmall{}
 		conv.Id = gp.ConversationId(curr)
 		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
-		conv.Conversation.Participants, err = c.GetParticipants(conv.Id)
+		conv.Participants, err = c.GetParticipants(conv.Id)
+		if err != nil {
+			return
+		}
+		conv.Read, err = c.GetRead(conv.Id)
 		if err != nil {
 			return
 		}
@@ -489,6 +493,30 @@ func (c *Cache) GetConversations(id gp.UserId, start int64, count int) (conversa
 			conv.LastMessage = &LastMessage
 		}
 		conversations = append(conversations, conv)
+	}
+	return
+}
+
+//GetRead returns the point which participants have read up to in conversation convId.
+func (c *Cache) GetRead(convId gp.ConversationId) (read []gp.Read, err error) {
+	conn := c.pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("conversations:%d:read", convId)
+	values, err := redis.Values(conn.Do("HGETALL", key))
+	if err != nil {
+		return
+	}
+	if len(values) < 1 {
+		err = ErrEmptyCache
+		return
+	}
+	for len(values) > 0 {
+		var r gp.Read
+		values, err = redis.Scan(values, &r.UserId, &r.LastRead)
+		if err != nil {
+			return
+		}
+		read = append(read, r)
 	}
 	return
 }
