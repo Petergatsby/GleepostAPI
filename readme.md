@@ -385,7 +385,7 @@ What are your thoughts on:
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 	}
 ]
@@ -408,7 +408,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
 	},
 	{"id":2,
@@ -417,7 +417,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 		{"id":232515, "name":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
+	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z"}
 	}
 ]
 ```
@@ -447,9 +447,9 @@ example responses:
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"messages": [
-		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
@@ -471,9 +471,9 @@ example responses:
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"messages": [
-		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
@@ -502,9 +502,9 @@ Given [before], it returns at most 20 of the messages received immediately befor
 example responses:
 ```
 [
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false},
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z", "seen":false}
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 ]
 ```
 
@@ -563,8 +563,7 @@ seen=51
 				"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
 			},
 			"text": "sup",
-			"timestamp": "2013-09-16T16:58:23Z",
-			"seen": false
+			"timestamp": "2013-09-16T16:58:23Z"
 		},
 		{
 			"id": 51,
@@ -574,8 +573,7 @@ seen=51
 				"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
 			},
 			"text": "sup",
-			"timestamp": "2013-09-16T16:58:30Z",
-			"seen": true
+			"timestamp": "2013-09-16T16:58:30Z"
 		}
 	]
 }
@@ -624,7 +622,6 @@ example responses:
 	"by": {"id":9,"name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 	"text":"sup",
 	"timestamp":"2013-09-16T16:58:30.771905595Z",
-	"seen":false,
 	"conversation_id":5
 }
 ```
