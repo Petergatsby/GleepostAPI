@@ -27,10 +27,7 @@ func (api *API) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upT
 	if err != nil {
 		return
 	}
-	err = api.cache.MarkConversationSeen(id, convId, upTo)
-	if err != nil {
-		go api.FillMessageCache(convId)
-	}
+	api.cache.MarkConversationSeen(id, convId, upTo)
 	return
 }
 

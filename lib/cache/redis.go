@@ -133,46 +133,13 @@ func (c *Cache) MessageSeen(msgId gp.MessageId) {
 	conn.Flush()
 }
 
-func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
+//MarkConversationSeen registers the id:upTo (last read) pair in redis for convId
+func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) () {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messages", convId)
-	index := -1
-	index, err = redis.Int(conn.Do("ZRANK", key, upTo))
-	if err != nil {
-		return
-	}
-	if index == 0 {
-		return redis.Error("That message isn't in redis!")
-	}
-	values, err := redis.Values(conn.Do("ZRANGE", key, 0, index))
-	if err != nil {
-		return
-	}
-	if len(values) == 0 {
-		return redis.Error("No messages for this conversation in redis.")
-	}
-	for len(values) > 0 {
-		curr := -1
-		values, err = redis.Scan(values, &curr)
-		if err != nil {
-			return
-		}
-		if curr == -1 {
-			return
-		}
-		if curr != 0 {
-			//This mightn't work correctly but it's okay since I will throw this code out soon. For future me: the date today is: 25/11/13
-			message, errGettingMessage := c.GetMessage(gp.MessageId(curr))
-			if errGettingMessage != nil {
-				return errGettingMessage
-			} else {
-				if message.By.Id != id {
-					go c.MessageSeen(message.Id)
-				}
-			}
-		}
-	}
+	key := fmt.Sprintf("conversations:%d:read", convId)
+	conn.Send("HSET", key, id, upTo)
+	conn.Flush()
 	return
 }
 
