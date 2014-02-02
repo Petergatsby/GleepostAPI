@@ -144,10 +144,10 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	sqlStmt["commentSelect"] = "SELECT id, `by`, text, timestamp " +
+	sqlStmt["commentSelect"] = "SELECT id, `by`, text, `timestamp` " +
 		"FROM post_comments " +
 		"WHERE post_id = ? " +
-		"ORDER BY timestamp DESC LIMIT ?, ?"
+		"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
 	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
