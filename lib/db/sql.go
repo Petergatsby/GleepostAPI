@@ -158,18 +158,18 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["getPostAttribs"] = "SELECT attrib, value FROM post_attribs WHERE post_id=?"
 	//Message
 	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	sqlStmt["messageSelect"] = "SELECT id, `from`, text, timestamp" +
+	sqlStmt["messageSelect"] = "SELECT id, `from`, text, `timestamp`" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? " +
-		"ORDER BY timestamp DESC LIMIT ?, ?"
-	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, timestamp" +
+		"ORDER BY `timestamp` DESC LIMIT ?, ?"
+	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, `timestamp`" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? AND id > ? " +
-		"ORDER BY timestamp DESC LIMIT ?"
-	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, timestamp" +
+		"ORDER BY `timestamp` DESC LIMIT ?"
+	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, `timestamp`" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? AND id < ? " +
-		"ORDER BY timestamp DESC LIMIT ?"
+		"ORDER BY `timestamp` DESC LIMIT ?"
 	sqlStmt["messagesRead"] = "UPDATE conversation_participants " +
 		"SET last_read = ? " +
 		"WHERE `conversation_id` = ? AND `participant_id` = ?"
