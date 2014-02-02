@@ -170,7 +170,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? AND id < ? " +
 		"ORDER BY timestamp DESC LIMIT ?"
-	sqlStmt["messagesRead"] = "UPDATE conversation_participants" +
+	sqlStmt["messagesRead"] = "UPDATE conversation_participants " +
 		"SET last_read = ? " +
 		"WHERE `conversation_id` = ? AND `participant_id` = ?"
 	//Token
