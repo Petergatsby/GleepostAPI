@@ -172,7 +172,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"ORDER BY timestamp DESC LIMIT ?"
 	sqlStmt["messagesRead"] = "UPDATE conversation_participants" +
 		"SET last_read = ? " +
-		"WHERE conversation_id= ? AND `participant_id` = ?"
+		"WHERE `conversation_id` = ? AND `participant_id` = ?"
 	//Token
 	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
 	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
