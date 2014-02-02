@@ -99,10 +99,10 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM conversation_participants " +
 		"JOIN users ON conversation_participants.participant_id = users.id " +
 		"WHERE conversation_id=?"
-	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, timestamp" +
+	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, `timestamp`" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? " +
-		"ORDER BY timestamp DESC LIMIT 1"
+		"ORDER BY `timestamp` DESC LIMIT 1"
 	sqlStmt["liveConversations"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
