@@ -384,6 +384,7 @@ What are your thoughts on:
 		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
+	"read":[{"user":9,"last_read":1000}],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
@@ -407,6 +408,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
+	"read":[{"user":9,"last_read":1000}],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
@@ -470,6 +472,7 @@ example responses:
 		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
+	"read":[{"user":9,"last_read":1000}],
 	"messages": [
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
