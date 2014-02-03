@@ -198,7 +198,7 @@ func (api *API) RegisterUser(user, pass, email, first, last string) (userId gp.U
 	if err != nil {
 		return
 	}
-	err = api.GenerateAndSendVerification(userId, user, email)
+	err = api.GenerateAndSendVerification(userId, first, email)
 	return
 }
 
