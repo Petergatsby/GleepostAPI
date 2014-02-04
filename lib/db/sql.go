@@ -780,6 +780,7 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 	defer rows.Close()
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {
+		log.Println("GetPostsByCategory has errored ", netId, index, sel, count, categoryTag)
 		return
 	}
 	for rows.Next() {
