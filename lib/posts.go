@@ -3,6 +3,7 @@ package lib
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"time"
+	"log"
 )
 
 func (api *API) GetPost(postId gp.PostId) (post gp.Post, err error) {
@@ -65,10 +66,12 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 //Should restrict access based on user.
 func (api *API) GetPostsByCategory(netId gp.NetworkId, index int64, sel string, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetPostsByCategory(netId, index, count, sel, category)
+	log.Println(category)
 	if err != nil {
 		return
 	}
 	for i, p := range posts {
+		log.Println(p)
 		p.Likes, err = api.GetLikes(p.Id)
 		if err != nil {
 			return
