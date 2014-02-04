@@ -212,7 +212,6 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			var posts []gp.PostSmall
 			switch {
 			case len(filter) > 0:
-				log.Println("GetPostsByCategory", networks[0].Id, index, selector, api.Config.PostPageSize, filter)
 				posts, err = api.GetPostsByCategory(networks[0].Id, index, selector, api.Config.PostPageSize, filter)
 			default:
 				posts, err = api.GetPosts(networks[0].Id, index, selector, api.Config.PostPageSize)
