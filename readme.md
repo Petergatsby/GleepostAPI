@@ -19,11 +19,24 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 ##Available API endpoints:
 
+###Public endpoints:
+These endpoints are accessible to the world.
+
 /register [[POST]](#post-register)
 
 /login [[POST]](#post-login)
 
 /fblogin [[POST]](#post-fblogin)
+
+/profile/request_reset [[POST]](#post-profilerequest_reset)
+
+/verify/[token] [[POST]](#post-verifytoken)
+
+/resend_verification [[POST]](#post-resend_verification)
+
+###Authenticated endpoints:
+These endpoints require authentication to access.
+You must send an <id, token> pair with a request, which you can generate with /login or /fblogin
 
 /posts [[GET]](#get-posts) [[POST]](#post-posts)
 
@@ -69,17 +82,11 @@ In addition, arbitrary new event types may be added to the websocket interface. 
 
 /profile/change_pass [[POST]](#post-profilechange_pass)
 
-/profile/request_reset [[POST]](#post-profilerequest_reset)
-
 /profile/reset/[user-id]/[reset-token] [[POST]](#post-profileresetuser-idreset-token)
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
-
-/verify/[token] [[POST]](#post-verifytoken)
-
-/resend_verification [[POST]](#post-resend_verification)
 
 ##POST /register
 required parameters: first, last, pass, email
