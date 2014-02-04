@@ -765,7 +765,6 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 
 //GetPosts finds posts in the network netId.
 func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel string, categoryTag string) (posts []gp.PostSmall, err error) {
-	log.Println("GetPostsByCategory")
 	var s *sql.Stmt
 	switch {
 	case sel == "start":
@@ -784,6 +783,7 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 		return
 	}
 	for rows.Next() {
+		log.Println("Got a post")
 		var post gp.PostSmall
 		var t string
 		var by gp.UserId
@@ -808,6 +808,7 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 				return
 			}
 			posts = append(posts, post)
+			log.Println("Added a post")
 		} else {
 			log.Println("Bad post: ", post)
 		}
