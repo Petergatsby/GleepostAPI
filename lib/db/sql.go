@@ -745,7 +745,6 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 		}
 		post.By, err = db.GetUser(by)
 		if err != nil {
-			log.Println(post)
 			return posts, err
 		}
 		post.CommentCount = db.GetCommentCount(post.Id)
@@ -795,6 +794,7 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 		}
 		post.By, err = db.GetUser(by)
 		if err != nil {
+			log.Println(post)
 			return posts, err
 		}
 		post.CommentCount = db.GetCommentCount(post.Id)
