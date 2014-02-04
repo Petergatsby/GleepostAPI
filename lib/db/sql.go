@@ -744,19 +744,21 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 			return posts, err
 		}
 		post.By, err = db.GetUser(by)
-		if err != nil {
+		if err == nil {
 			return posts, err
+			post.CommentCount = db.GetCommentCount(post.Id)
+			post.Images, err = db.GetPostImages(post.Id)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.Id)
+			if err != nil {
+				return
+			}
+			posts = append(posts, post)
+		} else {
+			log.Println("Bad post: ", post)
 		}
-		post.CommentCount = db.GetCommentCount(post.Id)
-		post.Images, err = db.GetPostImages(post.Id)
-		if err != nil {
-			return
-		}
-		post.LikeCount, err = db.LikeCount(post.Id)
-		if err != nil {
-			return
-		}
-		posts = append(posts, post)
 	}
 	return
 }
@@ -793,20 +795,21 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 			return posts, err
 		}
 		post.By, err = db.GetUser(by)
-		if err != nil {
-			log.Println(post)
+		if err == nil {
 			return posts, err
+			post.CommentCount = db.GetCommentCount(post.Id)
+			post.Images, err = db.GetPostImages(post.Id)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.Id)
+			if err != nil {
+				return
+			}
+			posts = append(posts, post)
+		} else {
+			log.Println("Bad post: ", post)
 		}
-		post.CommentCount = db.GetCommentCount(post.Id)
-		post.Images, err = db.GetPostImages(post.Id)
-		if err != nil {
-			return
-		}
-		post.LikeCount, err = db.LikeCount(post.Id)
-		if err != nil {
-			return
-		}
-		posts = append(posts, post)
 	}
 	return
 }
