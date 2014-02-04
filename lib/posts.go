@@ -65,8 +65,8 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 //It has no caching layer at the moment.
 //Should restrict access based on user.
 func (api *API) GetPostsByCategory(netId gp.NetworkId, index int64, sel string, count int, category string) (posts []gp.PostSmall, err error) {
+	log.Println("GetPostsByCategory")
 	posts, err = api.db.GetPostsByCategory(netId, index, count, sel, category)
-	log.Println(len(posts))
 	if err != nil {
 		return
 	}
