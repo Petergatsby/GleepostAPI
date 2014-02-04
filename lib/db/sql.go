@@ -780,7 +780,7 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 	defer rows.Close()
 	log.Printf("DB hit: getPostsByCategory network: %s category: %s index: %d count: %d", netId, categoryTag, index, count)
 	if err != nil {
-		log.Println("Errored")
+		log.Println(err)
 		return
 	}
 	for rows.Next() {
@@ -789,16 +789,18 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 		var t string
 		var by gp.UserId
 		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		log.Println("Scanned a post")
 		if err != nil {
+			log.Println("Error scanning post: ", err)
 			return posts, err
 		}
 		post.Time, err = time.Parse(mysqlTime, t)
 		if err != nil {
+			log.Println("Error parsing time: ", err)
 			return posts, err
 		}
 		post.By, err = db.GetUser(by)
 		if err == nil {
-			return posts, err
 			post.CommentCount = db.GetCommentCount(post.Id)
 			post.Images, err = db.GetPostImages(post.Id)
 			if err != nil {
