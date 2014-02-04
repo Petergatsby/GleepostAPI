@@ -778,7 +778,7 @@ func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel
 	}
 	rows, err := s.Query(netId, categoryTag, index, count)
 	defer rows.Close()
-	log.Printf("DB hit: getPostsByCategory network: %s category: %s index: %d count: %d")
+	log.Printf("DB hit: getPostsByCategory network: %s category: %s index: %d count: %d", netId, categoryTag, index, count)
 	if err != nil {
 		log.Println("Errored")
 		return
