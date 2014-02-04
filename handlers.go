@@ -218,6 +218,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
 			}
 			if len(posts) == 0 {
 				// this is an ugly hack. But I can't immediately
