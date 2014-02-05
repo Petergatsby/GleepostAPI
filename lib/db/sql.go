@@ -724,6 +724,52 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 		Post
 ********************************************************************/
 
+//GetUserPosts returns the most recent count posts by userId after the post with id after.
+func (db *DB) GetUserPosts(userId gp.UserId, after int64, count int) (posts []gp.PostSmall, err error) {
+	getPostsByUser := "SELECT wall_posts.id, `by`, time, text " +
+			"FROM wall_posts " +
+			"WHERE by = ? AND id > ? " +
+			"ORDER BY time DESC LIMIT 0, ?"
+	s, err := db.prepare(getPostsByUser)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(userId, after, count)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PostSmall
+		var t string
+		var by gp.UserId
+		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			post.CommentCount = db.GetCommentCount(post.Id)
+			post.Images, err = db.GetPostImages(post.Id)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.Id)
+			if err != nil {
+				return
+			}
+			posts = append(posts, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
+	return
+}
+
 func (db *DB) AddPost(userId gp.UserId, text string, network gp.NetworkId) (postId gp.PostId, err error) {
 	s := db.stmt["postInsert"]
 	res, err := s.Exec(userId, text, network)
