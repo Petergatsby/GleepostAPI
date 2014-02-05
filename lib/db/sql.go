@@ -718,7 +718,7 @@ func (db *DB) AddPost(userId gp.UserId, text string, network gp.NetworkId) (post
 //GetLive returns a list of events whose event time is after "after", ordered by time.
 func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
 	s := db.stmt["liveSelect"]
-	rows, err := s.Query(netId, after, count)
+	rows, err := s.Query(netId, after.Unix(), count)
 	if err != nil {
 		return
 	}
