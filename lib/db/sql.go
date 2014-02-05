@@ -728,7 +728,7 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 func (db *DB) GetUserPosts(userId gp.UserId, after int64, count int) (posts []gp.PostSmall, err error) {
 	getPostsByUser := "SELECT wall_posts.id, `by`, time, text " +
 			"FROM wall_posts " +
-			"WHERE by = ? AND id > ? " +
+			"WHERE `by` = ? AND id > ? " +
 			"ORDER BY time DESC LIMIT 0, ?"
 	s, err := db.prepare(getPostsByUser)
 	if err != nil {
