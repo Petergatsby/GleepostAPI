@@ -593,6 +593,8 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 func userHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := authenticate(r)
+	regexPosts, _ := regexp.Compile("user/(\\d+)/posts/?$")
+	userIdPosts := regexPosts.FindStringSubmatch(r.URL.Path)
 	regexUser, _ := regexp.Compile("user/(\\d+)/?$")
 	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
@@ -600,6 +602,33 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method != "GET":
 		jsonResponse(w, EUNSUPPORTED, 405)
+	case userIdPosts != nil:
+		_after := r.FormValue("after")
+		after , err := strconv.ParseInt(_after, 10, 64)
+		if err != nil {
+			after = 0
+		}
+		_uid, err := strconv.ParseInt(userIdPosts[1], 10, 64)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		uid := gp.UserId(_uid)
+		posts, err := api.GetUserPosts(uid, after, api.Config.PostPageSize)
+		if err != nil {
+			jsonResponse(w, &gp.APIerror{err.Error()}, 500)
+			return
+		}
+		if len(posts) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+			return
+		}
+		jsonResponse(w, posts, 200)
+		
 	case userIdString != nil:
 		u, _ := strconv.ParseUint(userIdString[1], 10, 64)
 		profileId := gp.UserId(u)
@@ -1118,5 +1147,4 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
-
 }

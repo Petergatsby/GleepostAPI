@@ -68,6 +68,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /user/[user-id] [[GET]](#get-useruser-id)
 
+/user/[user-id]/posts [[GET]](#get-useruser-idposts)
+
 /newconversation [[POST]](#post-newconversation) DEPRECATED, use [[/conversations]](#post-conversations)
 
 
@@ -649,6 +651,16 @@ example responses:
 	"course":"Computer Science",
 	"full_name":"Patrick Molgaard"
 }
+```
+
+##GET /user/[user-id]/posts
+required parameters:
+id=[user-id]
+token=[token]
+
+example responses:
+```
+
 ```
 
 ##POST /newconversation
