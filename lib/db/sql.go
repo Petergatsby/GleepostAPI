@@ -737,7 +737,6 @@ func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []g
 		}
 		post.By, err = db.GetUser(by)
 		if err == nil {
-			return posts, err
 			post.CommentCount = db.GetCommentCount(post.Id)
 			post.Images, err = db.GetPostImages(post.Id)
 			if err != nil {
@@ -788,7 +787,6 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 		}
 		post.By, err = db.GetUser(by)
 		if err == nil {
-			return posts, err
 			post.CommentCount = db.GetCommentCount(post.Id)
 			post.Images, err = db.GetPostImages(post.Id)
 			if err != nil {
