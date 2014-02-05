@@ -41,17 +41,24 @@ func New(conf gp.MysqlConfig) (db *DB) {
 	return db
 }
 
+//prepare wraps sql.DB.Prepare, storing prepared statements in a map.
+func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
+	stmt, ok := db.stmt[statement]
+	if ok {
+		return
+	} else {
+		stmt, err = db.database.Prepare(statement)
+		if err == nil {
+			db.stmt[statement] = stmt
+		}
+		return
+	}
+}
+
 //why.png
 func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt = make(map[string]string)
 	stmt = make(map[string]*sql.Stmt)
-	//Network
-	sqlStmt["ruleSelect"] = "SELECT network_id, rule_type, rule_value FROM net_rules"
-	sqlStmt["networkSelect"] = "SELECT user_network.network_id, network.name " +
-		"FROM user_network " +
-		"INNER JOIN network ON user_network.network_id = network.id " +
-		"WHERE user_id = ?"
-	sqlStmt["networkInsert"] = "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	//User
 	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
 	sqlStmt["setName"] = "UPDATE users SET firstname = ?, lastname = ? where id = ?"
@@ -225,7 +232,11 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 ********************************************************************/
 
 func (db *DB) GetRules() (rules []gp.Rule, err error) {
-	s := db.stmt["ruleSelect"]
+	ruleSelect := "SELECT network_id, rule_type, rule_value FROM net_rules"
+	s, err := db.prepare(ruleSelect)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query()
 	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
 	if err != nil {
@@ -243,7 +254,14 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 }
 
 func (db *DB) GetUserNetworks(id gp.UserId) (networks []gp.Network, err error) {
-	s := db.stmt["networkSelect"]
+	networkSelect :=  "SELECT user_network.network_id, network.name " +
+		"FROM user_network " +
+		"INNER JOIN network ON user_network.network_id = network.id " +
+		"WHERE user_id = ?"
+	s, err := db.prepare(networkSelect)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(id)
 	defer rows.Close()
 	log.Println("DB hit: getUserNetworks userid (network.id, network.name)")
@@ -263,7 +281,12 @@ func (db *DB) GetUserNetworks(id gp.UserId) (networks []gp.Network, err error) {
 }
 
 func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
-	_, err = db.stmt["networkInsert"].Exec(userId, networkId)
+	networkInsert := "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
+	s, err := db.prepare(networkInsert)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userId, networkId)
 	return
 }
 
