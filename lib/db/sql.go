@@ -995,9 +995,11 @@ func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, er
 			return
 		}
 		if attrib == "event-time" {
+			log.Println("event-time")
 			var unix int64
 			unix, err = strconv.ParseInt(val, 10, 64)
 			if err == nil {
+				log.Println("no error")
 				attribs[attrib] = time.Unix(unix, 0)
 			}
 		} else {
