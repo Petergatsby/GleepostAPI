@@ -717,10 +717,10 @@ func (db *DB) AddPost(userId gp.UserId, text string, network gp.NetworkId) (post
 func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
 	s := db.stmt["liveSelect"]
 	rows, err := s.Query(netId, after, count)
-	defer rows.Close()
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var post gp.PostSmall
 		var t string
