@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"fmt"
 )
 
 func loadConfig(fail bool) {
@@ -56,7 +57,17 @@ func configInit() {
 	}()
 }
 
+func ascii() {
+	fmt.Println(`  ________.__                                       __   `)
+	fmt.Println(` /  _____/|  |   ____   ____ ______   ____  _______/  |_ `)
+	fmt.Println(`/   \  ___|  | _/ __ \_/ __ \\____ \ /  _ \/  ___/\   __\`)
+	fmt.Println(`\    \_\  \  |_\  ___/\  ___/|  |_> >  <_> )___ \  |  |  `)
+	fmt.Println(` \______  /____/\___  >\___  >   __/ \____/____  > |__|  `)
+	fmt.Println(`        \/          \/     \/|__|              \/        `)
+}
+
 func main() {
+	ascii()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	conf := GetConfig()
 	server := &http.Server{
