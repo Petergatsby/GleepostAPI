@@ -90,7 +90,7 @@ func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, li
 
 //CanContact returns true if the initiator is allowed to contact the recipient.
 //TODO: actually do something.
-func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactable bool, err error){
+func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactable bool, err error) {
 	return true, nil
 }
 

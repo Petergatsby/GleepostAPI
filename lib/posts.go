@@ -2,8 +2,8 @@ package lib
 
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"time"
 	"strconv"
+	"time"
 )
 
 var EBADTIME = gp.APIerror{"Could not parse as a time"}
