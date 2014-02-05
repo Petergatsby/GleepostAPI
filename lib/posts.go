@@ -290,7 +290,7 @@ func (api *API) DelLike(user gp.UserId, post gp.PostId) (err error) {
 	return api.db.RemoveLike(user, post)
 }
 
-//SetPostAttribs associates a s<F6>
+//SetPostAttribs associates a set of key, value pairs with a particular post
 func (api *API) SetPostAttribs(post gp.PostId, attribs map[string]string) (err error) {
 	return api.db.SetPostAttribs(post, attribs)
 }

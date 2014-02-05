@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 	"time"
+	"strconv"
 )
 
 const (
@@ -961,6 +962,15 @@ func (db *DB) GetPost(postId gp.PostId) (post gp.Post, err error) {
 func (db *DB) SetPostAttribs(post gp.PostId, attribs map[string]string) (err error) {
 	s := db.stmt["setPostAttribs"]
 	for attrib, value := range attribs {
+		//How could I be so foolish to store time strings rather than unix timestamps...
+		if attrib == "event-time" {
+			t, e := time.Parse(value, time.RFC3339)
+			if e != nil {
+				return e
+			}
+			unix := t.Unix()
+			value = strconv.FormatInt(unix, 10)
+		}
 		_, err = s.Exec(post, attrib, value)
 		if err != nil {
 			return
