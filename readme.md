@@ -384,7 +384,30 @@ Live returns the 20 events whose event-time is soonest after "after".
 example responses:
 (http 200)
 ```
-
+[
+	{
+	"id":763,
+	"by":{"id":2395,"name":"TestingUser","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/260a8e71eb2dbfed25b0a0de5ae328cdfc931c5023668955ba660e61705c6800.jpg"},
+	"timestamp":"2014-01-31T09:43:28Z",
+	"text":"Event 1",
+	"images":null,
+	"attribs":{"event-time":"2014-02-05T12:47:59Z"},
+	"comment_count":0,
+	"like_count":0
+	},
+	{
+	"id":760,
+	"by":{"id":2395,"name":"TestingUser","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/260a8e71eb2dbfed25b0a0de5ae328cdfc931c5023668955ba660e61705c6800.jpg"},
+	"timestamp":"2014-01-29T18:05:16Z",
+	"text":"New event after bug!",
+	"images":null,
+	"attribs":{"event-time":"2014-02-05T15:34:39Z"},
+	"comment_count":0,
+	"like_count":1,
+	"likes":[{"by":{"id":2395,"name":"TestingUser","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/260a8e71eb2dbfed25b0a0de5ae328cdfc931c5023668955ba660e61705c6800.jpg"},
+	"timestamp":"2014-02-05T07:00:54Z"}]
+	}
+]
 ```
 
 ##GET /conversations/live
