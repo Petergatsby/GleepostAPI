@@ -4,6 +4,7 @@ package main
 import (
 	"code.google.com/p/go.net/websocket"
 	"encoding/json"
+	"fmt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
@@ -14,7 +15,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"fmt"
 )
 
 func loadConfig(fail bool) {
