@@ -1089,3 +1089,26 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func liveHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		after := r.FormValue("after")
+		posts, err := api.UserGetLive(userId, after, api.Config.PostPageSize)
+		if err != nil {
+			code := 500
+			if err == lib.EBADTIME {
+				code = 400
+			}
+			jsonResponse(w, &gp.APIerror{err.Error()}, code)
+			return
+		}
+		jsonResponse(w, posts, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+
+}

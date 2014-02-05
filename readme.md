@@ -48,6 +48,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
 
+/live [[GET]](#get-live)
+
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
 
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id) [[PUT]](#get-conversationsconversation-id)
@@ -370,6 +372,19 @@ example responses:
 ```
 ```
 {"post":5, "liked":false}
+```
+
+##GET /live
+required parameters: id, token, after
+
+[after] must be either an RFC3339 formatted time string, or a unix timestamp.
+
+Live returns the 20 events whose event-time is soonest after "after".
+
+example responses:
+(http 200)
+```
+
 ```
 
 ##GET /conversations/live

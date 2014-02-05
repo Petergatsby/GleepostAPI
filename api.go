@@ -87,6 +87,7 @@ func main() {
 	http.HandleFunc(conf.UrlBase+"/profile/reset/", resetPassHandler)
 	http.HandleFunc(conf.UrlBase+"/resend_verification", resendVerificationHandler)
 	http.HandleFunc(conf.UrlBase+"/invite_message", inviteMessageHandler)
+	http.HandleFunc(conf.UrlBase+"/live", liveHandler)
 	http.Handle(conf.UrlBase+"/ws", websocket.Handler(jsonServer))
 	server.ListenAndServe()
 }

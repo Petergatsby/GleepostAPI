@@ -40,6 +40,7 @@ func New(conf gp.MysqlConfig) (db *DB) {
 	return db
 }
 
+//why.png
 func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt = make(map[string]string)
 	stmt = make(map[string]*sql.Stmt)
@@ -710,6 +711,46 @@ func (db *DB) AddPost(userId gp.UserId, text string, network gp.NetworkId) (post
 		return 0, err
 	}
 	return postId, nil
+}
+
+//GetLive returns a list of events whose event time is after "after", ordered by time.
+func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
+	s := db.stmt["liveSelect"]
+	rows, err := s.Query(netId, after, count)
+	defer rows.Close()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var post gp.PostSmall
+		var t string
+		var by gp.UserId
+		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			return posts, err
+			post.CommentCount = db.GetCommentCount(post.Id)
+			post.Images, err = db.GetPostImages(post.Id)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.Id)
+			if err != nil {
+				return
+			}
+			posts = append(posts, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
+	return
 }
 
 //GetPosts finds posts in the network netId.

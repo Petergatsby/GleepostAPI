@@ -3,7 +3,10 @@ package lib
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"time"
+	"strconv"
 )
+
+var EBADTIME = gp.APIerror{"Could not parse as a time"}
 
 func (api *API) GetPost(postId gp.PostId) (post gp.Post, err error) {
 	return api.db.GetPost(postId)
@@ -29,6 +32,30 @@ func (api *API) GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	}
 	post.LikeCount, post.Likes, err = api.LikesAndCount(postId)
 	return
+}
+
+//UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
+func (api *API) UserGetLive(userId gp.UserId, after string, count int) (posts []gp.PostSmall, err error) {
+	t, enotstringtime := time.Parse(after, time.RFC3339)
+	if enotstringtime != nil {
+		unix, enotunixtime := strconv.ParseInt(after, 10, 64)
+		if enotunixtime != nil {
+			err = EBADTIME
+			return
+		}
+		t = time.Unix(unix, 0)
+
+	}
+	networks, err := api.GetUserNetworks(userId)
+	if err != nil {
+		return
+	}
+	return api.getLive(networks[0].Id, t, count)
+}
+
+//getLive returns the first count events happening after after, within network netId.
+func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
+	return api.db.GetLive(netId, after, count)
 }
 
 func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
