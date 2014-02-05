@@ -604,7 +604,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, EUNSUPPORTED, 405)
 	case userIdPosts != nil:
 		_after := r.FormValue("after")
-		after , err := strconv.ParseInt(_after, 10, 64)
+		after, err := strconv.ParseInt(_after, 10, 64)
 		if err != nil {
 			after = 0
 		}
@@ -628,7 +628,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, posts, 200)
-		
+
 	case userIdString != nil:
 		u, _ := strconv.ParseUint(userIdString[1], 10, 64)
 		profileId := gp.UserId(u)

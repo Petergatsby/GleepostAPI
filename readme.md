@@ -658,8 +658,58 @@ required parameters:
 id=[user-id]
 token=[token]
 
+optional parameters:
+after=[post-id]
+
+This returns the most recent 20 posts by this user, after `after`.
+
 example responses:
 ```
+[
+	{
+		"id":2,
+		"by": {
+			"id":9,
+			"name":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"This is a cool post for cool people!",
+		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+		"attribs": {
+			"event-time":"2013-09-05T13:09:38Z"
+		},
+		"comment_count":4,
+		"like_count":5,
+		"likes":[{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"},
+			{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"}
+		],
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+	},
+	{
+		"id":1,
+		"by": {
+			"id":9,
+			"name":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"Sailor Moon FTW!"
+		"comment_count":9,
+		"like_count":0,
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
+	}
+]
 
 ```
 
