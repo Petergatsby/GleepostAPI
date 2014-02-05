@@ -55,7 +55,22 @@ func (api *API) UserGetLive(userId gp.UserId, after string, count int) (posts []
 
 //getLive returns the first count events happening after after, within network netId.
 func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
-	return api.db.GetLive(netId, after, count)
+	posts, err = api.db.GetLive(netId, after, count)
+	if err != nil {
+		return
+	}
+	for i, p := range posts {
+		p.Likes, err = api.GetLikes(p.Id)
+		if err != nil {
+			return
+		}
+		p.Attribs, err = api.GetPostAttribs(p.Id)
+		if err != nil {
+			return
+		}
+		posts[i] = p
+	}
+	return
 }
 
 func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
