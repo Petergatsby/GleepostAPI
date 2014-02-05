@@ -74,7 +74,7 @@ type Post struct {
 	Text       string            `json:"text"`
 	Images     []string          `json:"images"`
 	Categories []PostCategory    `json:"categories,omitempty"`
-	Attribs    map[string]string `json:"attribs,omitempty"`
+	Attribs    map[string]interface{} `json:"attribs,omitempty"`
 }
 
 type PostSmall struct {

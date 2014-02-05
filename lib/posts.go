@@ -295,6 +295,6 @@ func (api *API) SetPostAttribs(post gp.PostId, attribs map[string]string) (err e
 	return api.db.SetPostAttribs(post, attribs)
 }
 
-func (api *API) GetPostAttribs(post gp.PostId) (attribs map[string]string, err error) {
+func (api *API) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, err error) {
 	return api.db.GetPostAttribs(post)
 }
