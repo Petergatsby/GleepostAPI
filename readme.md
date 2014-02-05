@@ -60,6 +60,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
 
+/conversations/live [[GET]](#get-conversationslive)
+
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id) [[PUT]](#get-conversationsconversation-id)
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
@@ -422,13 +424,7 @@ example responses:
 required parameters:
 id=[user-id]
 token=[token]
-Returns up to three live conversations for the current user.
-
-Note: This does not seem to be the ideal URI for this resource.
-What are your thoughts on:
-
-/live_conversations (reflects the fact that live conversations are conceptually different)
-/conversations?live=true (reflects the fact that it is basically a filtered version of the vanilla conversations resource)
+Returns up to three live conversations (whose "ended" attribute is false) for the current user.
 
 ```
 [
