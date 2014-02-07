@@ -829,6 +829,7 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 	switch {
 	case sel == "start":
 		s = db.stmt["wallSelect"]
+		log.Println("wallSelect")
 	case sel == "before":
 		s = db.stmt["wallSelectBefore"]
 	case sel == "after":
@@ -837,6 +838,7 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 		return posts, gp.APIerror{"Invalid selector"}
 	}
 	rows, err := s.Query(netId, index, count)
+	log.Println(rows, err, netId, index, count)
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {
 		log.Println("Error yo! ", err)
