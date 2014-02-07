@@ -740,7 +740,6 @@ func (db *DB) GetUserPosts(userId gp.UserId, after int64, count int) (posts []gp
 	}
 	defer rows.Close()
 	for rows.Next() {
-		log.Println("Post!")
 		var post gp.PostSmall
 		var t string
 		var by gp.UserId
@@ -844,6 +843,7 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 		return
 	}
 	for rows.Next() {
+		log.Println("Post!")
 		var post gp.PostSmall
 		var t string
 		var by gp.UserId
