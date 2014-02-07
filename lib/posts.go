@@ -4,6 +4,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"strconv"
 	"time"
+	"log"
 )
 
 var EBADTIME = gp.APIerror{"Could not parse as a time"}
@@ -93,6 +94,7 @@ func (api *API) GetUserPosts (userId gp.UserId, after int64, count int) (posts [
 func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
 	ps, err := api.cache.GetPosts(netId, index, count, sel)
 	if err != nil {
+		log.Println("Cache miss, Getting posts from db")
 		posts, err = api.db.GetPosts(netId, index, count, sel)
 		for i, _:= range posts {
 			posts[i].Likes, err = api.GetLikes(posts[i].Id)

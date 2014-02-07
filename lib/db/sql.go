@@ -837,12 +837,12 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 		return posts, gp.APIerror{"Invalid selector"}
 	}
 	rows, err := s.Query(netId, index, count)
-	defer rows.Close()
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {
 		log.Println("Error yo! ", err)
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		log.Println("Post!")
 		var post gp.PostSmall
