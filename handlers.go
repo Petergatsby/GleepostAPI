@@ -212,10 +212,13 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			var posts []gp.PostSmall
 			switch {
 			case len(filter) > 0:
+				log.Println("By category")
 				posts, err = api.GetPostsByCategory(networks[0].Id, index, selector, api.Config.PostPageSize, filter)
 			default:
+				log.Println("By network")
 				posts, err = api.GetPosts(networks[0].Id, index, selector, api.Config.PostPageSize)
 			}
+			log.Println(posts, err)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
