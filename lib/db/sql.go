@@ -840,6 +840,7 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 	defer rows.Close()
 	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
 	if err != nil {
+		log.Println("Error yo! ", err)
 		return
 	}
 	for rows.Next() {
