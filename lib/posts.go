@@ -191,6 +191,7 @@ func (api *API) postCategories(post gp.PostId) (categories []gp.PostCategory, er
 }
 
 func (api *API) GetLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
+	log.Println("GetLikes", post)
 	l, err := api.db.GetLikes(post)
 	if err != nil {
 		return
@@ -198,11 +199,12 @@ func (api *API) GetLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
 	for _, like := range l {
 		lf := gp.LikeFull{}
 		lf.User, err = api.GetUser(like.UserID)
-		if err != nil {
-			return
+		if err == nil {
+			lf.Time = like.Time
+			likes = append(likes, lf)
+		} else {
+			log.Println("No such user:", like.UserID)
 		}
-		lf.Time = like.Time
-		likes = append(likes, lf)
 	}
 	return
 }
