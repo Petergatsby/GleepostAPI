@@ -729,16 +729,33 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 ********************************************************************/
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userId gp.UserId, after int64, count int) (posts []gp.PostSmall, err error) {
-	getPostsByUser := "SELECT wall_posts.id, `by`, time, text " +
+func (db *DB) GetUserPosts(userId gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
+	var q string
+	switch {
+	case sel == "start":
+		q = "SELECT wall_posts.id, `by`, time, text " +
+			"FROM wall_posts " +
+			"WHERE `by` = ? " +
+			"ORDER BY time DESC LIMIT ?, ?"
+	case sel == "before":
+		q = "SELECT wall_posts.id, `by`, time, text " +
+			"FROM wall_posts " +
+			"WHERE `by` = ? AND id < ? " +
+			"ORDER BY time DESC LIMIT 0, ?"
+	case sel == "after":
+		q = "SELECT wall_posts.id, `by`, time, text " +
 			"FROM wall_posts " +
 			"WHERE `by` = ? AND id > ? " +
 			"ORDER BY time DESC LIMIT 0, ?"
-	s, err := db.prepare(getPostsByUser)
+	default:
+		return posts, gp.APIerror{"Invalid selector"}
+	}
+
+	s, err := db.prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(userId, after, count)
+	rows, err := s.Query(userId, index, count)
 	if err != nil {
 		return
 	}
@@ -833,7 +850,6 @@ func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (
 	switch {
 	case sel == "start":
 		s = db.stmt["wallSelect"]
-		log.Println("wallSelect")
 	case sel == "before":
 		s = db.stmt["wallSelectBefore"]
 	case sel == "after":

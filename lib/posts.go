@@ -75,8 +75,8 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 }
 
 //GetUserPosts returns the count most recent posts by userId since post `after`.
-func (api *API) GetUserPosts (userId gp.UserId, after int64, count int) (posts []gp.PostSmall, err error) {
-	posts, err = api.db.GetUserPosts(userId, after, count)
+func (api *API) GetUserPosts (userId gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
+	posts, err = api.db.GetUserPosts(userId, index, count, sel)
 	for i, p := range posts {
 		p.Likes, err = api.GetLikes(p.Id)
 		if err != nil {

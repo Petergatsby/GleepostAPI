@@ -605,8 +605,31 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method != "GET":
 		jsonResponse(w, EUNSUPPORTED, 405)
 	case userIdPosts != nil:
-		_after := r.FormValue("after")
-		after, err := strconv.ParseInt(_after, 10, 64)
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		if err != nil {
+			start = 0
+		}
+		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+		if err != nil {
+			before = 0
+		}
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			after = 0
+		}
+		var selector string
+		var index int64
+		switch {
+		case after > 0:
+			selector = "after"
+			index = after
+		case before > 0:
+			selector = "before"
+			index = before
+		default:
+			selector = "start"
+			index = start
+		}
 		if err != nil {
 			after = 0
 		}
@@ -616,7 +639,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		uid := gp.UserId(_uid)
-		posts, err := api.GetUserPosts(uid, after, api.Config.PostPageSize)
+		posts, err := api.GetUserPosts(uid, index, api.Config.PostPageSize, selector)
 		if err != nil {
 			jsonResponse(w, &gp.APIerror{err.Error()}, 500)
 			return

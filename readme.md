@@ -659,9 +659,12 @@ id=[user-id]
 token=[token]
 
 optional parameters:
-after=[post-id]
+start=[count]
+returns a list of 20 posts ordered by time, starting at count
 
-This returns the most recent 20 posts by this user, after `after`.
+before=[id]
+after=[id]
+returns a list of 20 posts ordered by time, starting before/after [id]
 
 example responses:
 ```
