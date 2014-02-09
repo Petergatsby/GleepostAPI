@@ -245,20 +245,9 @@ func (api *API) FillMessageCache(convId gp.ConversationId) (err error) {
 	return
 }
 
+//GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.
 func (api *API) GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
-	conversations, err = api.cache.GetConversations(userId, start, count)
-	if err != nil {
-		conversations, err = api.db.GetConversations(userId, start, count)
-		go api.addAllConversations(userId)
-	} else {
-		//This is here because api.cache.GetConversations doesn't get the expiry itself...
-		for i, c := range conversations {
-			exp, err := api.Expiry(c.Id)
-			if err == nil {
-				conversations[i].Expiry = &exp
-			}
-		}
-	}
+	conversations, err = api.db.GetConversations(userId, start, count)
 	return
 }
 
