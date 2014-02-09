@@ -96,7 +96,11 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
+		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? AND ( " +
+			"conversation_expirations.ended IS NULL " +
+			"OR conversation_expirations.ended =0 " +
+		") " +
 		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
