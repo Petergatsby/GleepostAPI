@@ -571,6 +571,12 @@ func (c *Cache) TerminateConversation(convId gp.ConversationId) (err error) {
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:ended", convId)
 	conn.Send("SET", key, true)
+	participants, err := c.GetParticipants(convId)
+	if err != nil {
+		for _, p := range participants {
+			conn.Send("ZREM", fmt.Sprintf("users:%d:conversations", p.Id), convId)
+		}
+	}
 	conn.Flush()
 	return
 }
