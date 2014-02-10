@@ -782,7 +782,7 @@ func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
 	case r.Method == "DELETE":
-		regex, _ := regexp.Compile("devices/([:alnum:]+)/?$")
+		regex, _ := regexp.Compile("devices/([:alnum:]+)/?")
 		deviceIdString := regex.FindStringSubmatch(r.URL.Path)
 		if deviceIdString != nil {
 			err := api.DeleteDevice(userId, deviceIdString[1])
