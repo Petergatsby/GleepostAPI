@@ -966,32 +966,39 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		fbToken := r.FormValue("token")
+		_fbToken := r.FormValue("token")
 		email := r.FormValue("email")
-		_, err := api.FBValidateToken(fbToken)
+		//Is this a valid facebook token for this app?
+		fbToken, err := api.FBValidateToken(_fbToken)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{"Bad token"}, 400)
 			return
 		}
-		token, err := api.FacebookLogin(fbToken)
+		token, err := api.FacebookLogin(_fbToken)
+		//If we have an error here, that means that there is no associated gleepost user account.
 		if err != nil {
-			if len(email) < 3 {
-				jsonResponse(w, gp.APIerror{"Email required"}, 400)
-				return
-			}
-			validates, err := api.ValidateEmail(email)
-			if !validates {
-				jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
-				return
-			}
+			//Have we seen this facebook user before?
+			_, err := api.FBGetEmail(fbToken.FBUser)
 			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
-			}
-			err = api.FacebookRegister(fbToken, email)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
+				//No. That means we need their email to create and verify their account.
+				if len(email) < 3 {
+					jsonResponse(w, gp.APIerror{"Email required"}, 400)
+					return
+				}
+				validates, err := api.ValidateEmail(email)
+				if !validates {
+					jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
+					return
+				}
+				if err != nil {
+					jsonResponse(w, gp.APIerror{err.Error()}, 500)
+					return
+				}
+				err = api.FacebookRegister(_fbToken, email)
+				if err != nil {
+					jsonResponse(w, gp.APIerror{err.Error()}, 500)
+					return
+				}
 			}
 			log.Println("Should be unverified response")
 			jsonResponse(w, struct {
@@ -999,6 +1006,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			}{"unverified"}, 201)
 			return
 		}
+		//If there's an associated user, they're verified already so there's no need to check.
 		log.Println("Token: ", token)
 		jsonResponse(w, token, 201)
 	} else {
