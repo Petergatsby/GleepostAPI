@@ -38,6 +38,8 @@ These endpoints are accessible to the world.
 
 /profile/request_reset [[POST]](#post-profilerequest_reset)
 
+/profile/reset/[user-id]/[reset-token] [[POST]](#post-profileresetuser-idreset-token)
+
 /verify/[token] [[POST]](#post-verifytoken)
 
 /resend_verification [[POST]](#post-resend_verification)
@@ -95,8 +97,6 @@ You must send an <id, token> pair with a request, which you can generate with /l
 /profile/name [[POST]](#post-profilename)
 
 /profile/change_pass [[POST]](#post-profilechange_pass)
-
-/profile/reset/[user-id]/[reset-token] [[POST]](#post-profileresetuser-idreset-token)
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
