@@ -240,7 +240,7 @@ tags=for-sale,event,salsa
 If set, attribs must be a comma-delimited list of key,value attributes. These are currently completely unvalidated freeform text.
 
 The only purpose of this so far is to support a "event-time" attribute for posts with tag "event".
-If providing event-time, please provide it in RFC 3339 format!
+event-time may be either RFC3339 or a unix timestamp.
 
 example responses:
 (http 200)

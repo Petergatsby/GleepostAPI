@@ -1058,7 +1058,11 @@ func (db *DB) SetPostAttribs(post gp.PostId, attribs map[string]string) (err err
 		if attrib == "event-time" {
 			t, e := time.Parse(value, time.RFC3339)
 			if e != nil {
-				return e
+				unixt, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return e
+				}
+				t = time.Unix(unixt, 0)
 			}
 			unix := t.Unix()
 			value = strconv.FormatInt(unix, 10)
