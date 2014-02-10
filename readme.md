@@ -72,12 +72,6 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /user/[user-id]/posts [[GET]](#get-useruser-idposts)
 
-/newconversation [[POST]](#post-newconversation) DEPRECATED, use [[/conversations]](#post-conversations)
-
-
-/newgroupconversation [[POST]](#post-newgroupconversation) DEPRECATED, use [[/conversations]](#post-conversations)
-
-
 /longpoll [[GET]](#get-longpoll)
 
 /ws [[GET]](#get-ws)
