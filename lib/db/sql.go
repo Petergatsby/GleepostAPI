@@ -1488,3 +1488,27 @@ func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
 	err = db.stmt["likeCount"].QueryRow(post).Scan(&count)
 	return
 }
+
+//Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
+//The results are undefined for a post which isn't an event.
+//(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
+func (db *DB) Attend(event gp.PostId, user gp.UserId) (err error) {
+	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(event, user)
+	return
+}
+
+//UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
+func (db *DB) UnAttend(event gp.PostId, user gp.UserId) (err error) {
+	query := "DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(event, user)
+	return
+}

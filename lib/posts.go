@@ -333,3 +333,17 @@ func (api *API) SetPostAttribs(post gp.PostId, attribs map[string]string) (err e
 func (api *API) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, err error) {
 	return api.db.GetPostAttribs(post)
 }
+
+//Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
+//The results are undefined for a post which isn't an event.
+//(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
+func (api *API) Attend(event gp.PostId, user gp.UserId) (err error) {
+	//TODO: Can this user actually attend this event? Does this event even exist?
+	return api.db.Attend(event, user)
+}
+
+//UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
+func (api *API) UnAttend(event gp.PostId, user gp.UserId) (err error) {
+	//TODO: Merge into Attend
+	return api.db.UnAttend(event, user)
+}
