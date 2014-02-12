@@ -22,6 +22,13 @@ func (api *API) GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	if err != nil {
 		return
 	}
+	for _, c := range post.Categories {
+		if c.Tag == "event" {
+			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+			post.Popularity, _= api.db.GetEventPopularity(postId)
+			break
+		}
+	}
 	post.Attribs, err = api.GetPostAttribs(postId)
 	if err != nil {
 		return
@@ -69,6 +76,13 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 		if err != nil {
 			return
 		}
+		for _, c := range p.Categories {
+			if c.Tag == "event" {
+				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+				p.Popularity, _= api.db.GetEventPopularity(p.Id)
+				break
+			}
+		}
 		posts[i] = p
 	}
 	return
@@ -85,6 +99,13 @@ func (api *API) GetUserPosts (userId gp.UserId, index int64, count int, sel stri
 		p.Attribs, err = api.GetPostAttribs(p.Id)
 		if err != nil {
 			return
+		}
+		for _, c := range p.Categories {
+			if c.Tag == "event" {
+				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+				p.Popularity, _= api.db.GetEventPopularity(p.Id)
+				break
+			}
 		}
 		posts[i] = p
 	}
@@ -104,6 +125,13 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 			posts[i].Attribs, err = api.GetPostAttribs(posts[i].Id)
 			if err != nil {
 				return
+			}
+			for _, c := range posts[i].Categories {
+				if c.Tag == "event" {
+					//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+					posts[i].Popularity, _= api.db.GetEventPopularity(posts[i].Id)
+					break
+				}
 			}
 		}
 		go api.cache.AddPostsFromDB(netId, api.db)
@@ -160,6 +188,13 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.LikeCount, post.Likes, err = api.LikesAndCount(p.Id)
 	if err != nil {
 		return
+	}
+	for _, c := range post.Categories {
+		if c.Tag == "event" {
+			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+			post.Popularity, _= api.db.GetEventPopularity(post.Id)
+			break
+		}
 	}
 	return
 }

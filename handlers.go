@@ -228,7 +228,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func ignored(key string) bool {
-	keys := []string{"id", "token", "text", "url", "tags"}
+	keys := []string{"id", "token", "text", "url", "tags", "popularity"}
 	for _, v := range keys {
 		if key == v {
 			return true
@@ -1261,7 +1261,7 @@ func userAttending(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		events, err :=  api.UserAttends(userId)
+		events, err := api.UserAttends(userId)
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}

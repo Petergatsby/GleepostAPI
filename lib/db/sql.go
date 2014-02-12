@@ -1090,7 +1090,8 @@ func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, er
 		if err != nil {
 			return
 		}
-		if attrib == "event-time" {
+		switch {
+		case attrib == "event-time":
 			log.Println("event-time")
 			var unix int64
 			unix, err = strconv.ParseInt(val, 10, 64)
@@ -1098,9 +1099,34 @@ func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, er
 				log.Println("no error")
 				attribs[attrib] = time.Unix(unix, 0)
 			}
-		} else {
+		default:
 			attribs[attrib] = val
 		}
+	}
+	return
+}
+
+func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, err error) {
+	query := "SELECT COUNT(*) FROM event_attendees WHERE post_id = ?"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&popularity)
+	if err != nil {
+		return
+	}
+	switch {
+	case popularity > 20:
+		popularity = 4
+	case popularity > 10:
+		popularity = 3
+	case popularity > 5:
+		popularity = 2
+	case popularity > 0:
+		popularity = 1
+	default:
+		popularity = 0
 	}
 	return
 }
