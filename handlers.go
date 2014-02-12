@@ -1213,3 +1213,36 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func attendHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	vars := mux.Vars(r)
+	//We can safely ignore this error since vars["id"] matches a numeric regex
+	//... maybe. What if it's bigger than max(uint64) ??
+	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+	post := gp.PostId(_id)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		//Implement
+	case r.Method == "POST":
+		//For now, assume that err is because the user specified a bad post.
+		//Could also be a db error.
+		err := api.Attend(post, userId)
+		if err != nil {
+			jsonResponse(w, err, 400)
+		}
+		w.WriteHeader(204)
+	case r.Method == "DELETE":
+		//For now, assume that err is because the user specified a bad post.
+		//Could also be a db error.
+		err := api.UnAttend(post, userId)
+		if err != nil {
+			jsonResponse(w, err, 400)
+		}
+		w.WriteHeader(204)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}

@@ -58,6 +58,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
 
+/posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
+
 /live [[GET]](#get-live)
 
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
@@ -379,6 +381,19 @@ example responses:
 ```
 {"post":5, "liked":false}
 ```
+
+##POST /posts/[post-id]/attending
+required parameters: id, token
+
+Issuing a POST to this URI should mark you as attending this event, and acts idempotently.
+It will return a 204 if successful.
+
+##DELETE /posts/[post-id]/attending
+required parameters: id, token
+
+Issuing a DELETE to this URI should mark you as not attending this event.
+It should succeed even if you aren't already attending.
+It will return a 204 if successful.
 
 ##GET /live
 required parameters: id, token, after

@@ -90,6 +90,7 @@ func main() {
 	r.HandleFunc(conf.UrlBase+"/posts/{id:[0-9]+}", getPost).Methods("GET")
 	r.HandleFunc(conf.UrlBase+"/posts/{id:[0-9]+}/images", postImages).Methods("POST")
 	r.HandleFunc(conf.UrlBase+"/posts/{id:[0-9]+}/likes", postLikes).Methods("POST")
+	r.HandleFunc(conf.UrlBase+"/posts/{id:[0-9]+}/attending", attendHandler)
 	r.HandleFunc(conf.UrlBase+"/user/{id:[0-9]+}", getUser).Methods("GET")
 	r.HandleFunc(conf.UrlBase+"/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
 	r.HandleFunc(conf.UrlBase+"/longpoll", longPollHandler)
