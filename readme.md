@@ -6,10 +6,10 @@
             \/          \/     \/|__|              \/        
 
 
-#Gleepost API / V0.30
+#Gleepost API / V0.32
 
 
-URL: https://gleepost.com/api/v0.30/
+URL: https://gleepost.com/api/v0.32/
 
 ##Notes:
 
