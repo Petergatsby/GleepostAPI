@@ -7,10 +7,10 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -163,20 +163,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postHandler(w http.ResponseWriter, r *http.Request) {
-	/* GET /posts
-		   requires parameters: id, token
-
-	           POST /posts
-		   requires parameters: id, token
-
-	*/
-	w.Header().Set("Content-Type", "application/json")
+func getPosts(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -232,7 +224,15 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, posts, 200)
 			}
 		}
-	case r.Method == "POST":
+	}
+}
+
+func postPosts(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
 		text := r.FormValue("text")
 		url := r.FormValue("url")
 		tags := r.FormValue("tags")
@@ -260,8 +260,6 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, &gp.Created{uint64(postId)}, 201)
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -286,231 +284,257 @@ func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func conversationHandler(w http.ResponseWriter, r *http.Request) {
+func getConversations(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
-	switch {
-	case err != nil:
+	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		conversations, err := api.GetConversations(userId, start, api.Config.ConversationPageSize)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		return
+	}
+	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+	if err != nil {
+		start = 0
+	}
+	conversations, err := api.GetConversations(userId, start, api.Config.ConversationPageSize)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+	} else {
+		if len(conversations) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns "null" rather than
+			// empty array "[]" which it obviously should
+			jsonResponse(w, []string{}, 200)
 		} else {
-			if len(conversations) == 0 {
-				// this is an ugly hack. But I can't immediately
-				// think of a neater way to fix this
-				// (json.Marshal(empty slice) returns "null" rather than
-				// empty array "[]" which it obviously should
-				jsonResponse(w, []string{}, 200)
-			} else {
-				jsonResponse(w, conversations, 200)
-			}
+			jsonResponse(w, conversations, 200)
 		}
-	case r.Method == "POST":
-		random, err := strconv.ParseBool(r.FormValue("random"))
-		var conversation gp.Conversation
-		if err != nil {
-			random = true
-			err = nil
-		}
-		if random {
-			partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
-			switch {
-			case err != nil:
-				partners = 2
-			case partners > 4:
-				partners = 4
-			case partners < 2:
-				partners = 2
-			}
-			conversation, err = api.CreateRandomConversation(userId, int(partners), true)
-		} else {
-			idstring := r.FormValue("participants")
-			ids := strings.Split(idstring, ",")
-			user_ids := make([]gp.UserId, 0, 10)
-			for _, _id := range ids {
-				id, err := strconv.ParseUint(_id, 10, 64)
-				if err == nil {
-					user_ids = append(user_ids, gp.UserId(id))
-				}
-			}
-			switch {
-			case len(user_ids) < 1:
-				jsonResponse(w, &ETOOFEW, 400)
-				return
-			case len(user_ids) > 10:
-				jsonResponse(w, &ETOOMANY, 400)
-				return
-			default:
-				conversation, err = api.CreateConversationWith(userId, user_ids, false)
-			}
-
-		}
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == gp.ENOSUCHUSER {
-				jsonResponse(w, e, 400)
-			} else {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-			}
-		} else {
-			jsonResponse(w, conversation, 201)
-		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
-func anotherConversationHandler(w http.ResponseWriter, r *http.Request) { //lol
-	w.Header().Set("Content-Type", "application/json")
+func postConversations(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
-	regex, _ := regexp.Compile("conversations/(\\d+)/messages/?$")
-	convIdString := regex.FindStringSubmatch(r.URL.Path)
-	regex2, _ := regexp.Compile("conversations/(\\d+)/?$")
-	convIdString2 := regex2.FindStringSubmatch(r.URL.Path)
-	switch {
-	case err != nil:
+	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
-	case convIdString != nil && r.Method == "GET":
-		_convId, _ := strconv.ParseUint(convIdString[1], 10, 64)
-		convId := gp.ConversationId(_convId)
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		var messages []gp.Message
+		return
+	}
+	random, err := strconv.ParseBool(r.FormValue("random"))
+	var conversation gp.Conversation
+	if err != nil {
+		random = true
+		err = nil
+	}
+	if random {
+		partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
 		switch {
-		case after > 0:
-			messages, err = api.GetMessages(convId, after, "after", api.Config.MessagePageSize)
-		case before > 0:
-			messages, err = api.GetMessages(convId, before, "before", api.Config.MessagePageSize)
+		case err != nil:
+			partners = 2
+		case partners > 4:
+			partners = 4
+		case partners < 2:
+			partners = 2
+		}
+		conversation, err = api.CreateRandomConversation(userId, int(partners), true)
+	} else {
+		idstring := r.FormValue("participants")
+		ids := strings.Split(idstring, ",")
+		user_ids := make([]gp.UserId, 0, 10)
+		for _, _id := range ids {
+			id, err := strconv.ParseUint(_id, 10, 64)
+			if err == nil {
+				user_ids = append(user_ids, gp.UserId(id))
+			}
+		}
+		switch {
+		case len(user_ids) < 1:
+			jsonResponse(w, &ETOOFEW, 400)
+			return
+		case len(user_ids) > 10:
+			jsonResponse(w, &ETOOMANY, 400)
+			return
 		default:
-			messages, err = api.GetMessages(convId, start, "start", api.Config.MessagePageSize)
+			conversation, err = api.CreateConversationWith(userId, user_ids, false)
 		}
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+
+	}
+	if err != nil {
+		e, ok := err.(*gp.APIerror)
+		if ok && *e == gp.ENOSUCHUSER {
+			jsonResponse(w, e, 400)
 		} else {
-			if len(messages) == 0 {
-				// this is an ugly hack. But I can't immediately
-				// think of a neater way to fix this
-				// (json.Marshal(empty slice) returns "null" rather than
-				// empty array "[]" which it obviously should
-				jsonResponse(w, []string{}, 200)
-			} else {
-				jsonResponse(w, messages, 200)
-			}
-		}
-	case convIdString != nil && r.Method == "POST":
-		_convId, _ := strconv.ParseUint(convIdString[1], 10, 64)
-		convId := gp.ConversationId(_convId)
-		text := r.FormValue("text")
-		messageId, err := api.AddMessage(convId, userId, text)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		} else {
-			jsonResponse(w, &gp.Created{uint64(messageId)}, 201)
-		}
-	case convIdString != nil && r.Method == "PUT":
-		_convId, err := strconv.ParseUint(convIdString[1], 10, 64)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
-		}
-		convId := gp.ConversationId(_convId)
-		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
-		if err != nil {
-			_upTo = 0
-		}
-		upTo := gp.MessageId(_upTo)
-		err = api.MarkConversationSeen(userId, convId, upTo)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		} else {
-			conversation, err := api.GetConversation(userId, convId)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
-			}
-			jsonResponse(w, conversation, 200)
-		}
-	case convIdString != nil: //Unsuported method
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	case convIdString2 != nil && r.Method == "GET":
-		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
-		convId := gp.ConversationId(_convId)
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		conv, err := api.GetFullConversation(convId, start, api.Config.MessagePageSize)
-		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		}
-		jsonResponse(w, conv, 200)
-	case convIdString2 != nil && r.Method == "DELETE":
-		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
-		convId := gp.ConversationId(_convId)
-		err := api.TerminateConversation(convId)
+	} else {
+		jsonResponse(w, conversation, 201)
+	}
+}
+
+func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
+	//TODO: When GetFullConversation requires a userId, use it here!
+	_, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	vars := mux.Vars(r)
+	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
+	convId := gp.ConversationId(_convId)
+	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+	if err != nil {
+		start = 0
+	}
+	conv, err := api.GetFullConversation(convId, start, api.Config.MessagePageSize)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+	}
+	jsonResponse(w, conv, 200)
+}
+
+func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	vars := mux.Vars(r)
+	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
+	convId := gp.ConversationId(_convId)
+	expires, err := strconv.ParseBool(r.FormValue("expiry"))
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 400)
+		return
+	}
+	if expires == false {
+		err = api.DeleteExpiry(convId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
 		}
-		w.WriteHeader(204)
-	case convIdString2 != nil && r.Method == "PUT":
-		_convId, _ := strconv.ParseInt(convIdString2[1], 10, 64)
-		convId := gp.ConversationId(_convId)
-		expires, err := strconv.ParseBool(r.FormValue("expiry"))
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
-			return
+	}
+	conversation, err := api.GetConversation(userId, convId)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		return
+	}
+	jsonResponse(w, conversation, 200)
+}
+
+func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
+	_, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	vars := mux.Vars(r)
+	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
+	convId := gp.ConversationId(_convId)
+	err = api.TerminateConversation(convId)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		return
+	}
+	w.WriteHeader(204)
+}
+
+func getMessages(w http.ResponseWriter, r *http.Request) {
+	_, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	vars := mux.Vars(r)
+	_convId, _ := strconv.ParseUint(vars["id"], 10, 64)
+	convId := gp.ConversationId(_convId)
+	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+	if err != nil {
+		start = 0
+	}
+	after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+	if err != nil {
+		after = 0
+	}
+	before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+	if err != nil {
+		before = 0
+	}
+	var messages []gp.Message
+	switch {
+	case after > 0:
+		messages, err = api.GetMessages(convId, after, "after", api.Config.MessagePageSize)
+	case before > 0:
+		messages, err = api.GetMessages(convId, before, "before", api.Config.MessagePageSize)
+	default:
+		messages, err = api.GetMessages(convId, start, "start", api.Config.MessagePageSize)
+	}
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+	} else {
+		if len(messages) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns "null" rather than
+			// empty array "[]" which it obviously should
+			jsonResponse(w, []string{}, 200)
+		} else {
+			jsonResponse(w, messages, 200)
 		}
-		if expires == false {
-			err = api.DeleteExpiry(convId)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
-			}
-		}
+	}
+}
+
+func postMessages(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	vars := mux.Vars(r)
+	_convId, _ := strconv.ParseUint(vars["id"], 10, 64)
+	convId := gp.ConversationId(_convId)
+	text := r.FormValue("text")
+	messageId, err := api.AddMessage(convId, userId, text)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+	} else {
+		jsonResponse(w, &gp.Created{uint64(messageId)}, 201)
+	}
+}
+
+func putMessages(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	vars := mux.Vars(r)
+	_convId, _ := strconv.ParseUint(vars["id"], 10, 64)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 400)
+	}
+	convId := gp.ConversationId(_convId)
+	_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
+	if err != nil {
+		_upTo = 0
+	}
+	upTo := gp.MessageId(_upTo)
+	err = api.MarkConversationSeen(userId, convId, upTo)
+	if err != nil {
+		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+	} else {
 		conversation, err := api.GetConversation(userId, convId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
 		}
 		jsonResponse(w, conversation, 200)
-	case convIdString2 != nil:
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	default:
-		jsonResponse(w, ENOTFOUND, 404)
 	}
 }
 
-func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
-	regexComments, _ := regexp.Compile("posts/(\\d+)/comments/?$")
-	regexNoComments, _ := regexp.Compile("posts/(\\d+)/?$")
-	regexImages, _ := regexp.Compile("posts/(\\d+)/images/?$")
-	regexLikes, _ := regexp.Compile("posts/(\\d+)/likes/?$")
-	commIdStringA := regexComments.FindStringSubmatch(r.URL.Path)
-	commIdStringB := regexNoComments.FindStringSubmatch(r.URL.Path)
-	commIdStringC := regexImages.FindStringSubmatch(r.URL.Path)
-	commIdStringD := regexLikes.FindStringSubmatch(r.URL.Path)
+func getComments(w http.ResponseWriter, r *http.Request) {
+	_, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case commIdStringA != nil && r.Method == "GET":
-		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 64)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postId := gp.PostId(_id)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
@@ -530,8 +554,17 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, comments, 200)
 			}
 		}
-	case commIdStringA != nil && r.Method == "POST":
-		_id, _ := strconv.ParseUint(commIdStringA[1], 10, 64)
+	}
+}
+
+func postComments(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postId := gp.PostId(_id)
 		text := r.FormValue("text")
 		commentId, err := api.CreateComment(postId, userId, text)
@@ -540,8 +573,17 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, &gp.Created{uint64(commentId)}, 201)
 		}
-	case commIdStringB != nil && r.Method == "GET":
-		_id, _ := strconv.ParseUint(commIdStringB[1], 10, 64)
+	}
+}
+
+func getPost(w http.ResponseWriter, r *http.Request) {
+	_, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postId := gp.PostId(_id)
 		post, err := api.GetPostFull(postId)
 		if err != nil {
@@ -549,8 +591,17 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, post, 200)
 		}
-	case commIdStringC != nil && r.Method == "POST":
-		_id, _ := strconv.ParseUint(commIdStringC[1], 10, 64)
+	}
+}
+
+func postImages(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postId := gp.PostId(_id)
 		url := r.FormValue("url")
 		exists, err := api.UserUploadExists(userId, url)
@@ -565,8 +616,17 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, gp.APIerror{"That upload doesn't exist"}, 400)
 		}
-	case commIdStringD != nil && r.Method == "POST":
-		_id, _ := strconv.ParseUint(commIdStringD[1], 10, 64)
+	}
+}
+
+func postLikes(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postId := gp.PostId(_id)
 		liked, err := strconv.ParseBool(r.FormValue("liked"))
 		switch {
@@ -587,24 +647,40 @@ func anotherPostHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.Liked{Post: postId, Liked: false}, 200)
 			}
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
-func userHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func getUser(w http.ResponseWriter, r *http.Request) {
 	_, err := authenticate(r)
-	regexPosts, _ := regexp.Compile("user/(\\d+)/posts/?$")
-	userIdPosts := regexPosts.FindStringSubmatch(r.URL.Path)
-	regexUser, _ := regexp.Compile("user/(\\d+)/?$")
-	userIdString := regexUser.FindStringSubmatch(r.URL.Path)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "GET":
-		jsonResponse(w, EUNSUPPORTED, 405)
-	case userIdPosts != nil:
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+		profileId := gp.UserId(_id)
+		user, err := api.GetProfile(profileId)
+		if err != nil {
+			if err == gp.ENOSUCHUSER {
+				jsonResponse(w, gp.APIerror{err.Error()}, 404)
+				return
+			}
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		} else {
+			jsonResponse(w, user, 200)
+		}
+	}
+}
+
+func getUserPosts(w http.ResponseWriter, r *http.Request) {
+	_, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+		profileId := gp.UserId(_id)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -633,13 +709,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			after = 0
 		}
-		_uid, err := strconv.ParseInt(userIdPosts[1], 10, 64)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
-			return
-		}
-		uid := gp.UserId(_uid)
-		posts, err := api.GetUserPosts(uid, index, api.Config.PostPageSize, selector)
+		posts, err := api.GetUserPosts(profileId, index, api.Config.PostPageSize, selector)
 		if err != nil {
 			jsonResponse(w, &gp.APIerror{err.Error()}, 500)
 			return
@@ -653,22 +723,6 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, posts, 200)
-
-	case userIdString != nil:
-		u, _ := strconv.ParseUint(userIdString[1], 10, 64)
-		profileId := gp.UserId(u)
-		user, err := api.GetProfile(profileId)
-		if err != nil {
-			if err == gp.ENOSUCHUSER {
-				jsonResponse(w, gp.APIerror{err.Error()}, 404)
-				return
-			}
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		} else {
-			jsonResponse(w, user, 200)
-		}
-	default:
-		jsonResponse(w, gp.APIerror{"User not found"}, 404)
 	}
 }
 
@@ -718,20 +772,15 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func contactHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
-	rx, _ := regexp.Compile("contacts/(\\d+)/?$")
-	contactIdStrings := rx.FindStringSubmatch(r.URL.Path)
+	vars := mux.Vars(r)
+	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+	contactId := gp.UserId(_id)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "PUT" && contactIdStrings != nil:
-		_contact, err := strconv.ParseUint(contactIdStrings[1], 10, 64)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
-		}
-		contactId := gp.UserId(_contact)
+	case r.Method == "PUT":
 		accepted, err := strconv.ParseBool(r.FormValue("accepted"))
 		if err != nil {
 			accepted = false
@@ -746,15 +795,15 @@ func anotherContactsHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, gp.APIerror{"Missing parameter: accepted"}, 400)
 		}
-	case r.Method == "DELETE" && contactIdStrings != nil:
+	case r.Method == "DELETE":
 		//Implement refusing requests
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
-func deviceHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func postDevice(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -775,25 +824,21 @@ func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func deleteDeviceHandler(w http.ResponseWriter, r *http.Request) {
+func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
 	case r.Method == "DELETE":
-		regex, _ := regexp.Compile(`devices/(\w+)/?`)
-		deviceIdString := regex.FindStringSubmatch(r.URL.Path)
-		if deviceIdString != nil {
-			err := api.DeleteDevice(userId, deviceIdString[1])
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
-			}
-			w.WriteHeader(204)
+		vars := mux.Vars(r)
+		err := api.DeleteDevice(userId, vars["id"])
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
 		}
-		jsonResponse(w, gp.APIerror{"Provide a device id"}, 400)
+		w.WriteHeader(204)
+		return
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
@@ -1016,20 +1061,16 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		regex, _ := regexp.Compile("verify/([a-fA-F0-9]+)/?$")
-		tokenString := regex.FindStringSubmatch(r.URL.Path)
-		if tokenString != nil {
-			token := tokenString[1]
-			err := api.Verify(token)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 400)
-				return
-			}
-			jsonResponse(w, struct {
-				Verified bool `json:"verified"`
-			}{true}, 200)
+		vars := mux.Vars(r)
+		err := api.Verify(vars["token"])
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
 			return
 		}
+		jsonResponse(w, struct {
+			Verified bool `json:"verified"`
+		}{true}, 200)
+		return
 		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 	} else {
 		jsonResponse(w, &EUNSUPPORTED, 405)
@@ -1085,30 +1126,21 @@ func requestResetHandler(w http.ResponseWriter, r *http.Request) {
 func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "POST":
-		regex, _ := regexp.Compile("reset/(\\d+)/(\\w+)/?$")
-		submatches := regex.FindStringSubmatch(r.URL.Path)
-		if submatches != nil {
-			for k, v := range submatches {
-				log.Println(k, v)
-			}
-			_id := submatches[1]
-			token := submatches[2]
-			id, err := strconv.ParseUint(_id, 10, 64)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 400)
-				return
-			}
-			userId := gp.UserId(id)
-			pass := r.FormValue("pass")
-			err = api.ResetPass(userId, token, pass)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 400)
-				return
-			}
-			w.WriteHeader(204)
+		vars := mux.Vars(r)
+		id, err := strconv.ParseUint(vars["id"], 10, 64)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
 			return
 		}
-		jsonResponse(w, gp.APIerror{"Bad reset token"}, 400)
+		userId := gp.UserId(id)
+		pass := r.FormValue("pass")
+		err = api.ResetPass(userId, vars["token"], pass)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		w.WriteHeader(204)
+		return
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
