@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"github.com/gorilla/mux"
 )
 
 func loadConfig(fail bool) {
@@ -64,7 +64,7 @@ func ascii() {
 	fmt.Println(`/   \  ___|  | _/ __ \_/ __ \\____ \ /  _ \/  ___/\   __\`)
 	fmt.Println(`\    \_\  \  |_\  ___/\  ___/|  |_> >  <_> )___ \  |  |  `)
 	fmt.Println(` \______  /____/\___  >\___  >   __/ \____/____  > |__|  `)
-	fmt.Println(`        \/          \/     \/|__|              \/        `)
+	fmt.Printf(`        \/          \/     \/|__|              \/ %s`, api.Config.UrlBase)
 }
 
 func main() {
@@ -112,7 +112,7 @@ func main() {
 	r.HandleFunc(conf.UrlBase+"/live", liveHandler)
 	r.Handle(conf.UrlBase+"/ws", websocket.Handler(jsonServer))
 	server := &http.Server{
-		Addr: ":" + conf.Port,
+		Addr:    ":" + conf.Port,
 		Handler: r,
 	}
 	server.ListenAndServe()
