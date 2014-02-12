@@ -76,6 +76,10 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 		if err != nil {
 			return
 		}
+		p.Categories, err = api.postCategories(p.Id)
+		if err != nil {
+			return
+		}
 		for _, c := range p.Categories {
 			if c.Tag == "event" {
 				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...

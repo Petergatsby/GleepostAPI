@@ -198,6 +198,7 @@ example responses:
 		},
 		"comment_count":4,
 		"like_count":5,
+		"popularity":3,
 		"likes":[{"by": {
 				"id":545,
 				"name":"SomeoneElse"
@@ -273,6 +274,7 @@ example responses:
 	},
 	"comment_count":4,
 	"like_count":5,
+	"popularity":1,
 	"comments": [{
 		"id":51341,
 		"by": {
@@ -415,6 +417,7 @@ example responses:
 	"text":"Event 1",
 	"images":null,
 	"attribs":{"event-time":"2014-02-05T12:47:59Z"},
+	"popularity":1,
 	"comment_count":0,
 	"like_count":0
 	},
@@ -425,6 +428,7 @@ example responses:
 	"text":"New event after bug!",
 	"images":null,
 	"attribs":{"event-time":"2014-02-05T15:34:39Z"},
+	"popularity":4,
 	"comment_count":0,
 	"like_count":1,
 	"likes":[{"by":{"id":2395,"name":"TestingUser","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/260a8e71eb2dbfed25b0a0de5ae328cdfc931c5023668955ba660e61705c6800.jpg"},
