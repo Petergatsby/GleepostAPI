@@ -347,3 +347,8 @@ func (api *API) UnAttend(event gp.PostId, user gp.UserId) (err error) {
 	//TODO: Merge into Attend
 	return api.db.UnAttend(event, user)
 }
+
+//UserAttends returns all the event IDs that a user is attending.
+func (api *API) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
+	return api.db.UserAttends(user)
+}

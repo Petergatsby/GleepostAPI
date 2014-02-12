@@ -96,6 +96,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
+/profile/attending [[GET]](#get-profileattending)
+
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
 
 ##POST /register
@@ -932,6 +934,17 @@ example responses:
 HTTP 200
 ```
 { "busy":true }
+```
+
+##GET /profile/attending
+required parameters:
+id=[user-id]
+token=[token]
+
+This will return an array containing the id of every event this user is attending.
+Example response: (http 200)
+```
+[1,5,764,34,345]
 ```
 
 ##GET /notifications

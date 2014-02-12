@@ -104,6 +104,7 @@ func main() {
 	r.HandleFunc(conf.UrlBase+"/profile/name", changeNameHandler)
 	r.HandleFunc(conf.UrlBase+"/profile/change_pass", changePassHandler)
 	r.HandleFunc(conf.UrlBase+"/profile/busy", busyHandler)
+	r.HandleFunc(conf.UrlBase+"/profile/attending", userAttending)
 	r.HandleFunc(conf.UrlBase+"/notifications", notificationHandler)
 	r.HandleFunc(conf.UrlBase+"/fblogin", facebookHandler)
 	r.HandleFunc(conf.UrlBase+"/verify/{token:[a-fA-F0-9]+}", verificationHandler)

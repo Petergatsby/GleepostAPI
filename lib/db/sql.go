@@ -1512,3 +1512,22 @@ func (db *DB) UnAttend(event gp.PostId, user gp.UserId) (err error) {
 	_, err = s.Exec(event, user)
 	return
 }
+
+//UserAttends returns all the event IDs that a user is attending.
+func (db *DB) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
+	query := "SELECT FROM event_attendees WHERE user_id = ?"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(user)
+	for rows.Next() {
+		var post gp.PostId
+		err = rows.Scan(&post)
+		if err != nil {
+			return
+		}
+		events = append(events, post)
+	}
+	return
+}
