@@ -227,6 +227,16 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ignored(key string) (bool) {
+	keys := []string{"id", "token", "text", "url", "tags"}
+	for _, v := range keys {
+		if key == v {
+			return true
+		}
+	}
+	return false
+}
+
 func postPosts(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
@@ -236,18 +246,16 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("text")
 		url := r.FormValue("url")
 		tags := r.FormValue("tags")
-		attstr := r.FormValue("attribs")
 		attribs := make(map[string]string)
+		for k, v := range r.Form {
+			if !ignored(k) {
+				attribs[k] = strings.Join(v, "")
+			}
+		}
 		var postId gp.PostId
 		var ts []string
 		if len(tags) > 1 {
 			ts = strings.Split(tags, ",")
-		}
-		if len(attstr) > 1 {
-			atts := strings.Split(attstr, ",")
-			for i := 0; i+1 < len(atts); i += 2 {
-				attribs[atts[i]] = atts[i+1]
-			}
 		}
 		switch {
 		case len(url) > 5:
