@@ -65,6 +65,7 @@ func ascii() {
 	fmt.Println(`\    \_\  \  |_\  ___/\  ___/|  |_> >  <_> )___ \  |  |  `)
 	fmt.Println(` \______  /____/\___  >\___  >   __/ \____/____  > |__|  `)
 	fmt.Printf(`        \/          \/     \/|__|              \/ %s`, api.Config.UrlBase)
+	fmt.Printf("\n")
 }
 
 func main() {

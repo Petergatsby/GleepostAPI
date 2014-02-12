@@ -227,7 +227,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ignored(key string) (bool) {
+func ignored(key string) bool {
 	keys := []string{"id", "token", "text", "url", "tags"}
 	for _, v := range keys {
 		if key == v {
