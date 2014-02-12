@@ -159,6 +159,7 @@ type AWSConfig struct {
 type APNSConfig struct {
 	CertFile string
 	KeyFile  string
+	Production bool
 }
 
 type EmailConfig struct {

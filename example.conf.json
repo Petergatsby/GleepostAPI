@@ -29,7 +29,8 @@
 	},
 	"APNS": {
 		"CertFile":"",
-		"KeyFile":""
+		"KeyFile":"",
+		"Production":false
 	},
 	"Email": {
 		"User":"",

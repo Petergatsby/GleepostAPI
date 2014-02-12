@@ -12,7 +12,11 @@ type Pusher struct {
 }
 
 func (api *API) notify(user gp.UserId) {
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	payload.Alert = "Sup"
 	payload.Badge = 1337
@@ -35,7 +39,11 @@ func (api *API) notify(user gp.UserId) {
 }
 
 func (api *API) notificationPush(user gp.UserId) {
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 
 	notifications, err := api.GetUserNotifications(user)
@@ -63,7 +71,11 @@ func (api *API) notificationPush(user gp.UserId) {
 
 func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 	log.Println("Trying to send a push notification")
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "MSG"
@@ -100,7 +112,11 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 }
 
 func (api *API) CheckFeedbackService() {
-	client := apns.NewClient("gateway.sandbox.push.apple.com:2195", api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	log.Println("Connected to feedback service")
 	go client.ListenForFeedback()
 	for {
