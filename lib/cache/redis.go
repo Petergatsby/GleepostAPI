@@ -158,7 +158,7 @@ func (c *Cache) GetMessages(convId gp.ConversationId, index int64, sel string, c
 			return messages, ErrEmptyCache
 		}
 		start = rindex + 1
-		finish = int(index) + count
+		finish = int(rindex) + count
 	case sel == "after":
 		rindex := -1
 		rindex, err = redis.Int(conn.Do("ZREVRANK", key, index))
@@ -172,7 +172,7 @@ func (c *Cache) GetMessages(convId gp.ConversationId, index int64, sel string, c
 		if start < 0 {
 			start = 0
 		}
-		finish = int(index) - 1
+		finish = int(rindex) - 1
 	default:
 		start = int(index)
 		finish = int(index) + count - 1
