@@ -393,9 +393,7 @@ func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
 //TODO: send an actual link
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationUrl(token)
-	appUrl := api.appVerificationUrl(token)
-	html := "<html><body><a href=" + appUrl + ">On your smartphone? Click this to verify your account.</a><br/>" +
-		"Otherwise, <a href=" + url + ">verify your account online here.</a></body></html>"
+	html := "<html><body><a href=" + url + ">Verify your account online here.</a></body></html>"
 	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
