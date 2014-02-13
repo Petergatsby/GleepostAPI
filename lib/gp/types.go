@@ -177,7 +177,8 @@ type FacebookConfig struct {
 }
 
 type Config struct {
-	UrlBase              string
+	UrlBase string
+	Version	string
 	Port                 string
 	LoginOverride        bool
 	RegisterOverride     bool
