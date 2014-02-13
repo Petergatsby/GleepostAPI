@@ -9,7 +9,8 @@
 #Gleepost API / V0.32
 
 
-URL: https://gleepost.com/api/v0.32/
+Production URL: https://gleepost.com/api/v1/
+Development URL: https://dev.gleepost.com/api/v0.32/
 
 ##Notes:
 
