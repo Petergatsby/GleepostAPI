@@ -56,6 +56,7 @@ func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live b
 	log.Println("Getting partner(s)")
 	participants, err := api.generatePartners(id, nParticipants-1, networks[0].Id)
 	if err != nil {
+		log.Println("Errored getting partners...")
 		return
 	}
 	log.Println("Getting myself")
