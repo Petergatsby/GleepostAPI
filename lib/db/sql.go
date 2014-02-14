@@ -67,7 +67,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
-	sqlStmt["randomSelect"] = "SELECT id, name, first, avatar " +
+	sqlStmt["randomSelect"] = "SELECT id, name, firstname, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
 		"WHERE network_id = ? " +
