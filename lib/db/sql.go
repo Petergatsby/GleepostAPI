@@ -677,6 +677,35 @@ func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation
 	return
 }
 
+func (db *DB) ConversationsToTerminate(id gp.UserId) (conversations []gp.ConversationId, err error) {
+	q := "SELECT conversation_participants.conversation_id " +
+	"FROM conversation_participants " +
+	"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+	"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+	"WHERE participant_id = ? " +
+	"AND conversation_expirations.ended = 0 " +
+	"ORDER BY conversation_expirations.expiry DESC  " +
+	"LIMIT 2 , 20"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(id)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id gp.ConversationId
+		err = rows.Scan(&id)
+		if err != nil {
+			return
+		}
+		conversations = append(conversations, id)
+	}
+	return
+}
+
 //GetReadStatus returns all the positions the participants in this conversation have read to. It omits participants who haven't read.
 func (db *DB) GetReadStatus(convId gp.ConversationId) (read []gp.Read, err error) {
 	rows, err := db.stmt["readStatus"].Query(convId)

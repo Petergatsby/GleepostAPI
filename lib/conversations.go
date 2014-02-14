@@ -47,6 +47,16 @@ func (api *API) CreateConversation(initiator gp.UserId, participants []gp.User, 
 
 //CreateRandomConversation generates a new conversation for user id witn nParticipants participants.
 func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+	log.Println("Terminating old conversations")
+	conversations, err := api.db.ConversationsToTerminate(id)
+	if err == nil {
+		for _, c := range conversations {
+			e := api.TerminateConversation(c)
+			if e != nil {
+				log.Println(e)
+			}
+		}
+	}
 	log.Println("Creating a random conversation")
 	log.Println("Getting networks")
 	networks, err := api.GetUserNetworks(id)
