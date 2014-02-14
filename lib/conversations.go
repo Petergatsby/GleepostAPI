@@ -47,19 +47,24 @@ func (api *API) CreateConversation(initiator gp.UserId, participants []gp.User, 
 
 //CreateRandomConversation generates a new conversation for user id witn nParticipants participants.
 func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+	log.Println("Creating a random conversation")
+	log.Println("Getting networks")
 	networks, err := api.GetUserNetworks(id)
 	if err != nil {
 		return
 	}
+	log.Println("Getting partner(s)")
 	participants, err := api.generatePartners(id, nParticipants-1, networks[0].Id)
 	if err != nil {
 		return
 	}
+	log.Println("Getting myself")
 	user, err := api.GetUser(id)
 	if err != nil {
 		return
 	}
 	participants = append(participants, user)
+	log.Println("Creating a conversation")
 	return api.CreateConversation(id, participants, live)
 }
 
