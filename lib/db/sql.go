@@ -542,14 +542,14 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 		return
 	}
 	defer rows.Close()
-	for count > 0 {
-		rows.Next()
+	for rows.Next() && count > 0 {
 		log.Println("nexted")
 		var user gp.User
 		var av sql.NullString
 		var first sql.NullString
-		if err = rows.Scan(&user.Id, &user.Name, &first, &av); err != nil {
-			log.Println("Error scanning from user query")
+		err = rows.Scan(&user.Id, &user.Name, &first, &av)
+		if err != nil {
+			log.Println("Error scanning from user query", err)
 			return
 		} else {
 			log.Println("Got a partner")
