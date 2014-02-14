@@ -535,6 +535,13 @@ func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *g
 }
 
 func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
+q :="SELECT id, name, firstname, avatar " +
+                "FROM users " +
+                "LEFT JOIN user_network ON id = user_id " +
+                "WHERE network_id = ? " +
+                "ORDER BY RAND()"
+	log.Println(q, id, count, network)
+
 	s := db.stmt["randomSelect"]
 	rows, err := s.Query(network)
 	if err != nil {
