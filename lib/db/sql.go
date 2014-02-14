@@ -67,7 +67,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
-	sqlStmt["randomSelect"] = "SELECT id, name, avatar " +
+	sqlStmt["randomSelect"] = "SELECT id, name, first, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
 		"WHERE network_id = ? " +
@@ -538,6 +538,7 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 	s := db.stmt["randomSelect"]
 	rows, err := s.Query(network)
 	if err != nil {
+		log.Println("Error after initial query when generating partners")
 		return
 	}
 	defer rows.Close()
@@ -545,11 +546,16 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 		rows.Next()
 		var user gp.User
 		var av sql.NullString
-		if err = rows.Scan(&user.Id, &user.Name, &av); err != nil {
+		var first sql.NullString
+		if err = rows.Scan(&user.Id, &user.Name, &first, &av); err != nil {
+			log.Println("Error scanning from user query")
 			return
 		} else {
 			if av.Valid {
 				user.Avatar = av.String
+			}
+			if first.Valid {
+				user.Name = first.String
 			}
 			if user.Id != id {
 				partners = append(partners, user)
