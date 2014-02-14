@@ -544,6 +544,7 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 	defer rows.Close()
 	for count > 0 {
 		rows.Next()
+		log.Println("nexted")
 		var user gp.User
 		var av sql.NullString
 		var first sql.NullString
@@ -551,6 +552,7 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 			log.Println("Error scanning from user query")
 			return
 		} else {
+			log.Println("Got a partner")
 			if av.Valid {
 				user.Avatar = av.String
 			}
