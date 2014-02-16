@@ -125,6 +125,11 @@ func (api *API) EndConversationEvent(conversation gp.ConversationId) {
 	go api.cache.PublishEvent("ended-conversation", ConversationURI(conversation), conv, chans)
 }
 
+func (api *API) ConversationChangedEvent(conversation gp.Conversation) {
+	chans := ConversationChannelKeys(conversation.Participants)
+	go api.cache.PublishEvent("changed-conversation", ConversationURI(conversation.Id), conversation, chans)
+}
+
 func (api *API) AwaitOneMessage(userId gp.UserId) (resp []byte) {
 	c := api.GetMessageChan(userId)
 	select {
@@ -324,6 +329,8 @@ func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 			if err != nil {
 				return
 			}
+			c.Expiry = nil
+			go api.ConversationChangedEvent(c.Conversation)
 		}
 	}
 	return
