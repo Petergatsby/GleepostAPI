@@ -114,9 +114,9 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 }
 
 func (api *API) CheckFeedbackService() {
-	url := "gateway.sandbox.push.apple.com:2195"
+	url := "gateway.sandbox.push.apple.com:2196"
 	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
+		url = "gateway.push.apple.com:2196"
 	}
 	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	log.Println("Connected to feedback service", url)
