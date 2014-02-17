@@ -122,6 +122,7 @@ func (api *API) CheckFeedbackService() {
 	for {
 		select {
 		case resp := <-apns.FeedbackChannel:
+			log.Println("Bad device:", resp.DeviceToken, resp.Timestamp)
 			api.DeviceFeedback(resp.DeviceToken, resp.Timestamp)
 		case <-apns.ShutdownChannel:
 			log.Println("feedback service ended")
