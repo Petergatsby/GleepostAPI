@@ -819,6 +819,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
 		deviceId := r.FormValue("device_id")
+		log.Println("Device:", deviceType, deviceId)
 		device, err := api.AddDevice(userId, deviceType, deviceId)
 		log.Println(device, err)
 		if err != nil {
