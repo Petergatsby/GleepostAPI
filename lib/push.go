@@ -119,7 +119,7 @@ func (api *API) CheckFeedbackService() {
 		url = "gateway.push.apple.com:2195"
 	}
 	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
-	log.Println("Connected to feedback service")
+	log.Println("Connected to feedback service", url)
 	go client.ListenForFeedback()
 	for {
 		select {
