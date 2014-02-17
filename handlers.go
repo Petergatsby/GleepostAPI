@@ -820,6 +820,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 		deviceType := r.FormValue("type")
 		deviceId := r.FormValue("device_id")
 		device, err := api.AddDevice(userId, deviceType, deviceId)
+		log.Println(device, err)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
