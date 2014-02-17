@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"github.com/anachronistic/apns"
+	"github.com/draaglom/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"time"
