@@ -52,6 +52,7 @@ func (api *API) notificationPush(user gp.UserId) {
 		return
 	}
 	payload.Badge = len(notifications)
+	log.Printf("Badging %d with %d notifications", user, payload.Badge)
 
 	devices, err := api.GetDevices(user)
 	if err != nil {
@@ -102,6 +103,7 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 					pn.AddPayload(payload)
 					pn.Set("conv", convId)
 					resp := client.Send(pn)
+					log.Println("Sent a message notification, the response was:", resp)
 					if resp.Error != nil {
 						log.Println("Error:", resp.Error)
 					}
