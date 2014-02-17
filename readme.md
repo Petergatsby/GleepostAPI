@@ -67,6 +67,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /conversations/live [[GET]](#get-conversationslive)
 
+/conversations/read_all [[POST]](#post-conversationsread_all)
+
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id) [[PUT]](#get-conversationsconversation-id)
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
@@ -458,6 +460,14 @@ Returns up to three live conversations (whose "ended" attribute is false) for th
 	}
 ]
 ```
+
+##POST /conversations/read_all
+required parameters:
+id=[user-id]
+token=[token]
+
+Marks all conversations as "seen".
+On success, will return a 204 (no content).
 
 ##GET /conversations
 required parameters:

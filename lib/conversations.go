@@ -335,3 +335,20 @@ func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 	}
 	return
 }
+
+//MarkAllConversationsSeen sets "read" = LastMessage for all user's conversations.
+func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
+	conversations, err := api.db.GetConversations(user, 0, 10000)
+	if err != nil {
+		return
+	}
+	for _, c := range conversations {
+		if c.LastMessage != nil {
+			err = api.MarkConversationSeen(user, c.Id, c.LastMessage.Id)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}

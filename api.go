@@ -76,6 +76,7 @@ func main() {
 	r.HandleFunc("/api/{version}/login", loginHandler)
 	r.HandleFunc("/api/{version}/register", registerHandler)
 	r.HandleFunc("/api/{version}/conversations/live", liveConversationHandler)
+	r.HandleFunc("/api/{version}/conversations/read_all", readAll).Methods("POST")
 	r.HandleFunc("/api/{version}/conversations", getConversations).Methods("GET")
 	r.HandleFunc("/api/{version}/conversations", postConversations).Methods("POST")
 	r.HandleFunc("/api/{version}/conversations/{id:[0-9]+}", getSpecificConversation).Methods("GET")

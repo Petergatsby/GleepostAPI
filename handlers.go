@@ -1280,3 +1280,19 @@ func userAttending(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func readAll(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "POST":
+		err = api.MarkAllConversationsSeen(userId)
+		if err != nil {
+			jsonResponse(w, err, 500)
+		}
+		w.WriteHeader(204)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
