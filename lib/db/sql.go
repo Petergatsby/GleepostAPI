@@ -1414,7 +1414,9 @@ func (db *DB) DeleteDevice(user gp.UserId, device string) (err error) {
 
 func (db *DB) Feedback(deviceId string, timestamp time.Time) (err error) {
 	s := db.stmt["feedbackDelete"]
-	_, err = s.Exec(deviceId, timestamp)
+	r, err := s.Exec(deviceId, timestamp)
+	n, _ := r.RowsAffected()
+	log.Printf("Feedback: %d devices deleted\n", n)
 	return
 }
 

@@ -91,10 +91,12 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 	recipients := api.GetParticipants(convId)
 	for _, user := range recipients {
 		if user.Id != message.By.Id {
+			log.Println("Trying to send a push notification to", user.Name)
 			devices, err := api.GetDevices(user.Id)
 			if err != nil {
 				log.Println(err)
 			}
+			count := 0
 			for _, device := range devices {
 				if device.Type == "ios" {
 					log.Println("Sending push notification to device: ", device)
@@ -103,12 +105,13 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 					pn.AddPayload(payload)
 					pn.Set("conv", convId)
 					resp := client.Send(pn)
-					log.Println("Sent a message notification, the response was:", resp)
 					if resp.Error != nil {
 						log.Println("Error:", resp.Error)
 					}
+					count++
 				}
 			}
+			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
 		}
 	}
 }
