@@ -415,7 +415,7 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, gp.APIerror{err.Error()}, 400)
 		return
 	}
-	if expires {
+	if expires == false {
 		err = api.UserDeleteExpiry(userId, convId)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
