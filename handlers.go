@@ -439,7 +439,7 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, conversation, 200)
 	} else {
-		jsonResponse(w, gp.APIerror{Reason: "Missing parameter:expiry"}, 400)
+		jsonResponse(w, gp.APIerror{Reason:"Missing parameter:expiry"}, 400)
 	}
 }
 
