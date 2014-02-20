@@ -396,6 +396,7 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		}
+		return
 	}
 	jsonResponse(w, conv, 200)
 }
