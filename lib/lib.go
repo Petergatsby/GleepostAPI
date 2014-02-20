@@ -240,6 +240,21 @@ func (api *API) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	return api.db.GetContacts(user)
 }
 
+//AreContacts returns true if a and b are (confirmed) contacts.
+//TODO: Implement a proper db-level version
+func (api *API) AreContacts(a, b gp.UserId) (areContacts bool, err error) {
+	contacts, err := api.GetContacts(a)
+	if err != nil {
+		return
+	}
+	for _, c := range contacts {
+		if c.Id == b && c.YouConfirmed && c.TheyConfirmed {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (api *API) AddContact(adder gp.UserId, addee gp.UserId) (contact gp.Contact, err error) {
 	user, err := api.GetUser(addee)
 	if err != nil {

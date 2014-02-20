@@ -107,16 +107,24 @@ func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, li
 //CanContact returns true if the initiator is allowed to contact the recipient.
 //TODO: Limit to people who are contacts OR who have posted on the same wall
 func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactable bool, err error) {
-	shared, err := api.HaveSharedNetwork(initiator, recipient)
+	contacts, err := api.AreContacts(initiator, recipient)
 	if err != nil {
 		return
 	}
-	if !shared {
-		return false, nil
+	if !contacts {
+		shared, e := api.HaveSharedNetwork(initiator, recipient)
+		switch {
+		case e != nil:
+			return false, e
+		default:
+			return shared, nil
+		}
+	} else {
+		return true, nil
 	}
-	return true, nil
 }
 
+//HaveSharedNetwork returns true if both users a and b are in the same network.
 func (api *API) HaveSharedNetwork(a gp.UserId, b gp.UserId) (shared bool, err error) {
 	anets, err := api.GetUserNetworks(a)
 	if err != nil {
