@@ -230,8 +230,11 @@ func (api *API) updateConversation(id gp.ConversationId) (err error) {
 	return nil
 }
 
-//AddMessage creates a new message from userId in conversation convId.
+//AddMessage creates a new message from userId in conversation convId, or returns ENOTALLOWED if the user is not a participant.
 func (api *API) AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (messageId gp.MessageId, err error) {
+	if !api.UserCanViewConversation(userId, convId) {
+		return messageId, &ENOTALLOWED
+	}
 	messageId, err = api.db.AddMessage(convId, userId, text)
 	if err != nil {
 		return

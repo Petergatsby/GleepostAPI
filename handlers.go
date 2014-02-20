@@ -527,6 +527,11 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 	text := r.FormValue("text")
 	messageId, err := api.AddMessage(convId, userId, text)
 	if err != nil {
+		e, ok := err.(*gp.APIerror)
+		if ok && *e == lib.ENOTALLOWED {
+			jsonResponse(w, e, 403)
+			return
+		}
 		jsonResponse(w, gp.APIerror{err.Error()}, 500)
 	} else {
 		jsonResponse(w, &gp.Created{uint64(messageId)}, 201)
