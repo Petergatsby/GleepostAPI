@@ -9,13 +9,22 @@ import (
 
 var ENOTALLOWED = gp.APIerror{"You're not allowed to do that!"}
 
-func (api *API) TerminateConversation(convId gp.ConversationId) (err error) {
+func (api *API) terminateConversation(convId gp.ConversationId) (err error) {
 	err = api.db.TerminateConversation(convId)
 	if err == nil {
 		go api.cache.TerminateConversation(convId)
 		go api.EndConversationEvent(convId)
 	}
 	return
+}
+
+//UserEndConversation finishes a live conversation, or returns ENOTALLOWED if the user isn't allowed to.
+func (api *API) UserEndConversation(userId gp.UserId, convId gp.ConversationId) (err error) {
+	if api.UserCanViewConversation(userId, convId) {
+		return api.terminateConversation(convId)
+	} else {
+		return &ENOTALLOWED
+	}
 }
 
 func (api *API) generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
@@ -51,7 +60,7 @@ func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live b
 	conversations, err := api.db.ConversationsToTerminate(id)
 	if err == nil {
 		for _, c := range conversations {
-			e := api.TerminateConversation(c)
+			e := api.terminateConversation(c)
 			if e != nil {
 				log.Println(e)
 			}

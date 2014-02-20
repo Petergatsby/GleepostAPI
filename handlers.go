@@ -444,7 +444,7 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	_, err := authenticate(r)
+	userId, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
@@ -452,8 +452,13 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
 	convId := gp.ConversationId(_convId)
-	err = api.TerminateConversation(convId)
+	err = api.UserEndConversation(userId, convId)
 	if err != nil {
+		e, ok := err.(*gp.APIerror)
+		if ok && *e == lib.ENOTALLOWED {
+			jsonResponse(w, e, 403)
+			return
+		}
 		jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		return
 	}
