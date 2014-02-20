@@ -195,9 +195,11 @@ func (api *API) addAllConversations(userId gp.UserId) (err error) {
 
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
 //TODO: Restrict access to correct userId
-//TODO: defer actual operation to getConversation
 func (api *API) GetConversation(userId gp.UserId, convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
-	return api.getConversation(convId)
+	if api.UserCanViewConversation(userId, convId) {
+		return api.getConversation(convId)
+	}
+	return conversation, &ENOTALLOWED
 }
 
 func (api *API) getConversation(convId gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
@@ -353,7 +355,16 @@ func (api *API) Expiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
 	return
 }
 
-func (api *API) DeleteExpiry(convId gp.ConversationId) (err error) {
+//UserDeleteExpiry converts a conversation from live to regular.
+//If the user isn't allowed to do this, it returns ENOTALLOWED.
+func (api *API) UserDeleteExpiry(userId gp.UserId, convId gp.ConversationId) (err error) {
+	if api.UserCanViewConversation(userId, convId) {
+		return api.deleteExpiry(convId)
+	}
+	return &ENOTALLOWED
+}
+
+func (api *API) deleteExpiry(convId gp.ConversationId) (err error) {
 	err = api.db.DeleteConversationExpiry(convId)
 	if err == nil {
 		go api.cache.DelConversationExpiry(convId)
@@ -383,7 +394,7 @@ func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 			}
 		}
 		if n == len(users) {
-			err = api.DeleteExpiry(c.Id)
+			err = api.deleteExpiry(c.Id)
 			if err != nil {
 				return
 			}

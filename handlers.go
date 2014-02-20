@@ -414,19 +414,32 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, gp.APIerror{err.Error()}, 400)
 		return
 	}
-	if expires == false {
-		err = api.DeleteExpiry(convId)
+	if expires {
+		err = api.UserDeleteExpiry(userId, convId)
 		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+				return
+			}
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
 		}
+		conversation, err := api.GetConversation(userId, convId)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				//This should never happen but just in case the UserDeleteExpiry block above is changed...
+				jsonResponse(w, e, 403)
+				return
+			}
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		}
+		jsonResponse(w, conversation, 200)
+	} else {
+		jsonResponse(w, gp.APIerror{Reason:"Missing parameter:expiry"}, 400)
 	}
-	conversation, err := api.GetConversation(userId, convId)
-	if err != nil {
-		jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		return
-	}
-	jsonResponse(w, conversation, 200)
 }
 
 func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
