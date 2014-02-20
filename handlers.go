@@ -466,7 +466,7 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
-	_, err := authenticate(r)
+	userId, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
@@ -489,13 +489,18 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	var messages []gp.Message
 	switch {
 	case after > 0:
-		messages, err = api.GetMessages(convId, after, "after", api.Config.MessagePageSize)
+		messages, err = api.UserGetMessages(userId, convId, after, "after", api.Config.MessagePageSize)
 	case before > 0:
-		messages, err = api.GetMessages(convId, before, "before", api.Config.MessagePageSize)
+		messages, err = api.UserGetMessages(userId, convId, before, "before", api.Config.MessagePageSize)
 	default:
-		messages, err = api.GetMessages(convId, start, "start", api.Config.MessagePageSize)
+		messages, err = api.UserGetMessages(userId, convId, start, "start", api.Config.MessagePageSize)
 	}
 	if err != nil {
+		e, ok := err.(*gp.APIerror)
+		if ok && *e == lib.ENOTALLOWED {
+			jsonResponse(w, e, 403)
+			return
+		}
 		jsonResponse(w, gp.APIerror{err.Error()}, 500)
 	} else {
 		if len(messages) == 0 {

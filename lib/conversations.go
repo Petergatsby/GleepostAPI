@@ -291,7 +291,7 @@ func (api *API) GetFullConversation(convId gp.ConversationId, start int64, count
 	if err != nil {
 		return
 	}
-	conv.Messages, err = api.GetMessages(convId, start, "start", count)
+	conv.Messages, err = api.getMessages(convId, start, "start", count)
 	return
 }
 
@@ -314,8 +314,19 @@ func (api *API) GetParticipants(convId gp.ConversationId) []gp.User {
 	return participants
 }
 
-//todo: pass in message count
-func (api *API) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+//UserGetMessages returns count messages from the conversation convId, or ENOTALLOWED if the user is not allowed to view this conversation.
+//sel may be one of:
+//start (returns messages starting from the index'th)
+//before (returns messages historically earlier than the one with id index)
+//after (returns messages newer than index)
+func (api *API) UserGetMessages(userId gp.UserId, convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+	if api.UserCanViewConversation(userId, convId) {
+		return api.getMessages(convId, index, sel, count)
+	}
+	return messages, &ENOTALLOWED
+}
+
+func (api *API) getMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	messages, err = api.cache.GetMessages(convId, index, sel, count)
 	if err != nil {
 		messages, err = api.db.GetMessages(convId, index, sel, count)
