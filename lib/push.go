@@ -52,7 +52,11 @@ func (api *API) notificationPush(user gp.UserId) {
 		return
 	}
 	payload.Badge = len(notifications)
-	log.Printf("Badging %d with %d notifications", user, payload.Badge)
+	unread, err := api.UnreadMessageCount(user)
+	if err == nil {
+		payload.Badge += unread
+	}
+	log.Printf("Badging %d with %d notifications (%d from unread messages)", user, payload.Badge, unread)
 
 	devices, err := api.GetDevices(user)
 	if err != nil {
@@ -96,6 +100,18 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 			if err != nil {
 				log.Println(err)
 			}
+			p := payload
+			notifications, err := api.GetUserNotifications(user.Id)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			p.Badge = len(notifications)
+			unread, err := api.UnreadMessageCount(user.Id)
+			if err == nil {
+				payload.Badge += unread
+			}
+			log.Printf("Badging %d with %d notifications (%d from unread messages)", user.Id, p.Badge, unread)
 			count := 0
 			for _, device := range devices {
 				if device.Type == "ios" {

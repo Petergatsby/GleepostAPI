@@ -457,3 +457,7 @@ func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
 	}
 	return
 }
+
+func (api *API) UnreadMessageCount(user gp.UserId) (count int, err error) {
+	return api.db.UnreadMessageCount(user)
+}

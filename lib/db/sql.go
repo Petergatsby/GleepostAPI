@@ -1604,6 +1604,10 @@ func (db *DB) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 		return
 	}
 	rows, err := s.Query(user)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
 	for rows.Next() {
 		var post gp.PostId
 		err = rows.Scan(&post)
@@ -1613,4 +1617,36 @@ func (db *DB) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 		events = append(events, post)
 	}
 	return
+}
+
+func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
+	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ?"
+	sParticipate, err := db.prepare(qParticipate)
+	if err != nil {
+		return
+	}
+	rows, err := sParticipate.Query(user)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	qUnreadCount := "SELECT count() FROM chat_messages WHERE conv_id = ? AND chat_messages.id > ?"
+	sUnreadCount, err := db.prepare(qUnreadCount)
+	if err != nil {
+		return
+	}
+	var convId gp.ConversationId
+	var lastId gp.MessageId
+	for rows.Next() {
+		err = rows.Scan(&convId, &lastId)
+		if err != nil {
+			return
+		}
+		_count := 0
+		err = sUnreadCount.QueryRow(convId, lastId).Scan(&_count)
+		if err == nil {
+			count += _count
+		}
+	}
+	return count, nil
 }
