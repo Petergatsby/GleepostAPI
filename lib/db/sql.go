@@ -1630,7 +1630,7 @@ func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
 		return
 	}
 	defer rows.Close()
-	qUnreadCount := "SELECT count() FROM chat_messages WHERE conv_id = ? AND chat_messages.id > ?"
+	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ?"
 	sUnreadCount, err := db.prepare(qUnreadCount)
 	if err != nil {
 		return
