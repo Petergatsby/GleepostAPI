@@ -83,6 +83,19 @@ func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live b
 	if err != nil {
 		return
 	}
+	log.Println("Terminating participant's excess conversations")
+	for _, u := range participants {
+		conversations, err = api.db.ConversationsToTerminate(u.Id)
+		if err == nil {
+			for _, c := range conversations {
+				e := api.terminateConversation(c)
+				if e != nil {
+					log.Println(e)
+				}
+			}
+		}
+
+	}
 	participants = append(participants, user)
 	log.Println("Creating a conversation")
 	return api.CreateConversation(id, participants, live)

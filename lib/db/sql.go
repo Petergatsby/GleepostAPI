@@ -71,6 +71,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
 		"WHERE network_id = ? " +
+		"AND verified = 1 " +
 		"ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
@@ -550,7 +551,6 @@ q :="SELECT id, name, firstname, avatar " +
 	}
 	defer rows.Close()
 	for rows.Next() && count > 0 {
-		log.Println("nexted")
 		var user gp.User
 		var av sql.NullString
 		var first sql.NullString
@@ -560,18 +560,29 @@ q :="SELECT id, name, firstname, avatar " +
 			return
 		} else {
 			log.Println("Got a partner")
-			if av.Valid {
-				user.Avatar = av.String
-			}
-			if first.Valid {
-				user.Name = first.String
-			}
-			if user.Id != id {
+			liveCount, err := db.LiveCount(user.Id)
+			if err == nil && liveCount < 3 && user.Id != id {
+				if av.Valid {
+					user.Avatar = av.String
+				}
+				if first.Valid {
+					user.Name = first.String
+				}
 				partners = append(partners, user)
 				count--
 			}
 		}
 	}
+	return
+}
+
+func (db *DB) LiveCount(userId gp.UserId) (count int, err error) {
+	q := "SELECT COUNT( conversation_participants.conversation_id ) FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id WHERE participant_id = ? AND conversation_expirations.ended = 0 AND conversation_expirations.expiry > NOW( )"
+	stmt, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = stmt.QueryRow(userId).Scan(&count)
 	return
 }
 
