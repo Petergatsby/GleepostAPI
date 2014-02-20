@@ -54,7 +54,15 @@ func (api *API) StoreFile(id gp.UserId, file multipart.File, header *multipart.F
 	}
 	//store on s3
 	s := api.getS3()
-	bucket := s.Bucket("gpimg")
+	var bucket *s3.Bucket
+	networks, _ := api.GetUserNetworks(id)
+	//1911 == Stanford.
+	//TODO: Make the bucket a property of the university / group of universities
+	if len(networks) > 0 && networks[0].Id == 1911 {
+		bucket = s.Bucket("gpcali")
+	} else {
+		bucket = s.Bucket("gpimg")
+	}
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
