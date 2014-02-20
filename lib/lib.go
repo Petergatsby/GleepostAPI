@@ -255,6 +255,20 @@ func (api *API) AreContacts(a, b gp.UserId) (areContacts bool, err error) {
 	return false, nil
 }
 
+//UserHasPosted returns true if user has ever created a post.
+//TODO: Implement a direct version
+//TODO: When multiple networks are available, check if the user has posted _in a network_.
+func (api *API) UserHasPosted(user gp.UserId) (posted bool, err error) {
+	posts, err := api.GetUserPosts(user, 0, 1, "start")
+	if err != nil {
+		return
+	}
+	if len(posts) > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (api *API) AddContact(adder gp.UserId, addee gp.UserId) (contact gp.Contact, err error) {
 	user, err := api.GetUser(addee)
 	if err != nil {

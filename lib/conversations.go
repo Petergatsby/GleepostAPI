@@ -116,8 +116,14 @@ func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactabl
 		switch {
 		case e != nil:
 			return false, e
+		case !shared:
+			return false, nil
 		default:
-			return shared, nil
+			posted, err := api.UserHasPosted(recipient)
+			if err != nil {
+				return false, err
+			}
+			return posted, nil
 		}
 	} else {
 		return true, nil
