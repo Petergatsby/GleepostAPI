@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var ENOTALLOWED = gp.APIerror{"You're not allowed to message this user!"}
+var ENOTALLOWED = gp.APIerror{"You're not allowed to do that!"}
 
 func (api *API) TerminateConversation(convId gp.ConversationId) (err error) {
 	err = api.db.TerminateConversation(convId)
@@ -249,6 +249,24 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 		keys = append(keys, fmt.Sprintf("c:%d", u.Id))
 	}
 	return keys
+}
+
+func (api *API) UserCanViewConversation(userId gp.UserId, convId gp.ConversationId) (viewable bool) {
+	participants := api.GetParticipants(convId)
+	for _, u := range participants {
+		if userId == u.Id {
+			return true
+		}
+	}
+	return false
+}
+
+//UserGetConversation returns the conversation convId if userId is allowed to view it; otherwise returns ENOTALLOWED.
+func (api *API) UserGetConversation(userId gp.UserId, convId gp.ConversationId, start int64, count int) (conv gp.ConversationAndMessages, err error) {
+	if api.UserCanViewConversation(userId, convId) {
+		return api.GetFullConversation(convId, start, count)
+	}
+	return conv, &ENOTALLOWED
 }
 
 func (api *API) GetFullConversation(convId gp.ConversationId, start int64, count int) (conv gp.ConversationAndMessages, err error) {

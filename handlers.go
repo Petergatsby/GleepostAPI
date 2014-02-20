@@ -376,8 +376,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	//TODO: When GetFullConversation requires a userId, use it here!
-	_, err := authenticate(r)
+	userId, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
@@ -389,9 +388,14 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		start = 0
 	}
-	conv, err := api.GetFullConversation(convId, start, api.Config.MessagePageSize)
+	conv, err := api.UserGetConversation(userId, convId, start, api.Config.MessagePageSize)
 	if err != nil {
-		jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		e, ok := err.(*gp.APIerror)
+		if ok && *e == lib.ENOTALLOWED {
+			jsonResponse(w, e, 403)
+		} else {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+		}
 	}
 	jsonResponse(w, conv, 200)
 }
