@@ -1642,9 +1642,11 @@ func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
 		if err != nil {
 			return
 		}
+		log.Printf("Conversation %d, last read message was %d\n", convId, lastId)
 		_count := 0
 		err = sUnreadCount.QueryRow(convId, lastId).Scan(&_count)
 		if err == nil {
+			log.Printf("Conversation %d, unread message count was %d\n", convId, _count)
 			count += _count
 		}
 	}

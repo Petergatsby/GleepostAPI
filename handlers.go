@@ -1337,7 +1337,7 @@ func unread(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case userId != 2:
-		jsonResponse(w, gp.APIerror{Reason:"Not allowed"}, 403)
+		jsonResponse(w, gp.APIerror{Reason: "Not allowed"}, 403)
 	case r.Method == "GET":
 		vars := mux.Vars(r)
 		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
