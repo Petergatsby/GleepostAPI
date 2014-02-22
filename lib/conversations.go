@@ -448,7 +448,9 @@ func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
 		return
 	}
 	for _, c := range conversations {
+		log.Println("Got conversation", c.Id)
 		if c.LastMessage != nil {
+			log.Printf("Marking conversation %d seen up to %d for user %d\n", c.Id, c.LastMessage.Id, user)
 			err = api.MarkConversationSeen(user, c.Id, c.LastMessage.Id)
 			if err != nil {
 				return
