@@ -10,6 +10,7 @@ import (
 var ENOTALLOWED = gp.APIerror{"You're not allowed to do that!"}
 
 func (api *API) terminateConversation(convId gp.ConversationId) (err error) {
+	log.Println("Terminating conversation:", convId)
 	err = api.db.TerminateConversation(convId)
 	if err == nil {
 		go api.cache.TerminateConversation(convId)
@@ -466,4 +467,20 @@ func (api *API) UnreadMessageCount(user gp.UserId) (count int, err error) {
 
 func (api *API) TotalLiveConversations(user gp.UserId) (count int, err error) {
 	return api.db.TotalLiveConversations(user)
+}
+
+func (api *API) EndOldConversations() {
+	t := time.Tick(time.Duration(30) * time.Second)
+	for {
+		select {
+		case <-t:
+			convs, err := api.db.PrunableConversations()
+			if err == nil {
+				log.Println("Prune error:", err)
+			}
+			for _, c := range convs {
+				go api.terminateConversation(c)
+			}
+		}
+	}
 }

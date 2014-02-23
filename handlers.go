@@ -28,6 +28,7 @@ func init() {
 	config = GetConfig()
 	api = lib.New(*config)
 	go api.FeedbackDaemon(60)
+	go api.EndOldConversations()
 }
 
 //Note to self: validateToken should probably return an error at some point

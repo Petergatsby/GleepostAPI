@@ -1703,3 +1703,25 @@ func (db *DB) TotalLiveConversations(user gp.UserId) (count int, err error) {
 	}
 	return len(conversations), nil
 }
+
+func (db *DB) PrunableConversations() (conversations []gp.ConversationId, err error) {
+	q := "SELECT conversation_id FROM conversation_expirations WHERE expiry < NOW() AND ended = 0"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var c gp.ConversationId
+		err = rows.Scan(&c)
+		if err != nil {
+			return
+		}
+		conversations = append(conversations, c)
+	}
+	return conversations, nil
+}
