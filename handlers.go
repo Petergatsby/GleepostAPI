@@ -1351,3 +1351,24 @@ func unread(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case userId != 2:
+		jsonResponse(w, gp.APIerror{Reason: "Not allowed"}, 403)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
+		uid := gp.UserId(_uid)
+		count, err := api.TotalLiveConversations(uid)
+		if err != nil {
+			jsonResponse(w, err, 500)
+		}
+		jsonResponse(w, count, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}

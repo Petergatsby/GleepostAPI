@@ -1663,3 +1663,43 @@ func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
 	}
 	return count, nil
 }
+
+func (db *DB) TotalLiveConversations(user gp.UserId) (count int, err error) {
+	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? " +
+		"AND conversation_expirations.ended = 0 " +
+		"ORDER BY conversations.last_mod DESC"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(user)
+	if err != nil {
+		return count, err
+	}
+	defer rows.Close()
+	var conversations []gp.ConversationSmall
+	for rows.Next() {
+		var conv gp.ConversationSmall
+		var t string
+		err = rows.Scan(&conv.Id, &t)
+		if err != nil {
+			return 0, err
+		}
+		conv.LastActivity, _ = time.Parse(mysqlTime, t)
+		conv.Participants = db.GetParticipants(conv.Id)
+		LastMessage, err := db.GetLastMessage(conv.Id)
+		if err == nil {
+			conv.LastMessage = &LastMessage
+		}
+		Expiry, err := db.ConversationExpiry(conv.Id)
+		if err == nil {
+			conv.Expiry = &Expiry
+		}
+		conversations = append(conversations, conv)
+	}
+	return len(conversations), nil
+}

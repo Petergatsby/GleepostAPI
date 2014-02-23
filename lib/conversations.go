@@ -463,3 +463,7 @@ func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
 func (api *API) UnreadMessageCount(user gp.UserId) (count int, err error) {
 	return api.db.UnreadMessageCount(user)
 }
+
+func (api *API) TotalLiveConversations(user gp.UserId) (count int, err error) {
+	return api.db.TotalLiveConversations(user)
+}

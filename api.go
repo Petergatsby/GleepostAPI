@@ -100,6 +100,7 @@ func main() {
 	r.HandleFunc("/api/{version}/user/{id:[0-9]+}/", getUser).Methods("GET")
 	r.HandleFunc("/api/{version}/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
 	r.HandleFunc("/api/{version}/user/{id:[0-9]+}/unread", unread)
+	r.HandleFunc("/api/{version}/user/{id:[0-9]+}/total_live", totalLiveConversations)
 	r.HandleFunc("/api/{version}/longpoll", longPollHandler)
 	r.HandleFunc("/api/{version}/contacts", contactsHandler)
 	r.HandleFunc("/api/{version}/contacts/{id:[0-9]+}", contactHandler)
