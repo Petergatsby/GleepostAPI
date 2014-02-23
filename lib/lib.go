@@ -415,7 +415,7 @@ func (api *API) appVerificationUrl(token string) (url string) {
 }
 
 func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
-	url = fmt.Sprintf("https://gleepost.com/recovery/%d/%s", id, token)
+	url = fmt.Sprintf("https://gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
 	return
 }
 
