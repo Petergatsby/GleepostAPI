@@ -103,6 +103,12 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 			"OR conversation_expirations.ended =0 " +
 		") " +
 		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
+	sqlStmt["conversationsAll"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? " +
+		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
 	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
 	sqlStmt["conversationSetExpiry"] = "REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
@@ -596,8 +602,13 @@ func (db *DB) UpdateConversation(id gp.ConversationId) (err error) {
 	return err
 }
 
-func (db *DB) GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
-	s := db.stmt["conversationSelect"]
+func (db *DB) GetConversations(userId gp.UserId, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
+	var s *sql.Stmt
+	if all {
+		s = db.stmt["conversationsAll"]
+	} else {
+		s = db.stmt["conversationSelect"]
+	}
 	rows, err := s.Query(userId, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
 	if err != nil {

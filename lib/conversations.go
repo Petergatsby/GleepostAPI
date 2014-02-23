@@ -208,7 +208,7 @@ func (api *API) GetMessageChan(userId gp.UserId) (c chan []byte) {
 
 //TODO: use conf.ConversationPageSize
 func (api *API) addAllConversations(userId gp.UserId) (err error) {
-	conversations, err := api.db.GetConversations(userId, 0, 2000)
+	conversations, err := api.db.GetConversations(userId, 0, 2000, false)
 	for _, conv := range conversations {
 		go api.cache.AddConversation(conv.Conversation)
 	}
@@ -364,7 +364,7 @@ func (api *API) FillMessageCache(convId gp.ConversationId) (err error) {
 
 //GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.
 func (api *API) GetConversations(userId gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
-	conversations, err = api.db.GetConversations(userId, start, count)
+	conversations, err = api.db.GetConversations(userId, start, count, false)
 	return
 }
 
@@ -414,7 +414,7 @@ func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 	if len(users) < 2 {
 		return gp.APIerror{">1 user required?"}
 	}
-	conversations, err := api.db.GetConversations(users[0], 0, 99999)
+	conversations, err := api.db.GetConversations(users[0], 0, 99999, true)
 	if err != nil {
 		return
 	}
@@ -443,7 +443,7 @@ func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 
 //MarkAllConversationsSeen sets "read" = LastMessage for all user's conversations.
 func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
-	conversations, err := api.db.GetConversations(user, 0, 10000)
+	conversations, err := api.db.GetConversations(user, 0, 10000, true)
 	if err != nil {
 		return
 	}
