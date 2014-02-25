@@ -116,6 +116,34 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 
 func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 	log.Println("Trying to send a push notification")
+	recipients := api.GetParticipants(convId)
+	for _, user := range recipients {
+		if user.Id != message.By.Id {
+			log.Println("Trying to send a push notification to", user.Name)
+			devices, err := api.GetDevices(user.Id)
+			if err != nil {
+				log.Println(err)
+			}
+			count := 0
+			for _, device := range devices {
+				log.Println("Sending push notification to device: ", device)
+				switch {
+				case device.Type == "ios":
+					err = api.iosPushMessage(device.Id, message, convId, user.Id)
+					if err != nil {
+						log.Println(err)
+					} else {
+						count++
+					}
+				case device.Type == "android":
+				}
+			}
+			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
+		}
+	}
+}
+
+func (api *API) iosPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
 	url := "gateway.sandbox.push.apple.com:2195"
 	if api.Config.APNS.Production {
 		url = "gateway.push.apple.com:2195"
@@ -132,44 +160,26 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 	}
 	payload.Alert = d
 	payload.Sound = "default"
-	recipients := api.GetParticipants(convId)
-	for _, user := range recipients {
-		if user.Id != message.By.Id {
-			log.Println("Trying to send a push notification to", user.Name)
-			devices, err := api.GetDevices(user.Id)
-			if err != nil {
-				log.Println(err)
-			}
-			p := payload
-			notifications, err := api.GetUserNotifications(user.Id)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			p.Badge = len(notifications)
-			unread, err := api.UnreadMessageCount(user.Id)
-			if err == nil {
-				payload.Badge += unread
-			}
-			log.Printf("Badging %d with %d notifications (%d from unread messages)", user.Id, p.Badge, unread)
-			count := 0
-			for _, device := range devices {
-				if device.Type == "ios" {
-					log.Println("Sending push notification to device: ", device)
-					pn := apns.NewPushNotification()
-					pn.DeviceToken = device.Id
-					pn.AddPayload(payload)
-					pn.Set("conv", convId)
-					resp := client.Send(pn)
-					if resp.Error != nil {
-						log.Println("Error:", resp.Error)
-					}
-					count++
-				}
-			}
-			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
-		}
+	notifications, err := api.GetUserNotifications(user)
+	if err != nil {
+		log.Println(err)
+		return
 	}
+	payload.Badge = len(notifications)
+	unread, err := api.UnreadMessageCount(user)
+	if err == nil {
+		payload.Badge += unread
+	}
+	log.Printf("Badging %d with %d notifications (%d from unread messages)", user, payload.Badge, unread)
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device
+	pn.AddPayload(payload)
+	pn.Set("conv", convId)
+	resp := client.Send(pn)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
 }
 
 func (api *API) CheckFeedbackService() {
