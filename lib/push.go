@@ -108,7 +108,7 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 	msg := gcm.NewMessage(data, device)
 	msg.CollapseKey = "New Notification"
 
-	sender := gcm.Sender{ApiKey: api.Config.GCM.APIKey}
+	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
 	response, err := sender.Send(msg, 2)
 	log.Println(response)
 	return
@@ -136,6 +136,12 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 						count++
 					}
 				case device.Type == "android":
+					err = api.androidPushMessage(device.Id, message, convId, user.Id)
+					if err != nil {
+						log.Println(err)
+					} else {
+						count++
+					}
 				}
 			}
 			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
@@ -180,6 +186,21 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 		return resp.Error
 	}
 	return nil
+}
+
+func (api *API) androidPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
+	data := map[string]interface{}{"type":"MSG", "from":message.By.Name, "from-id":message.By.Id, "conv":convId, "for":user}
+	if len(message.Text) > 3200 {
+		data["text"] = message.Text[:3200] + "..."
+	} else {
+		data["text"] = message.Text
+	}
+	msg := gcm.NewMessage(data, device)
+	msg.TimeToLive = 0
+	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
+	response, err := sender.Send(msg, 2)
+	log.Println(response)
+	return
 }
 
 func (api *API) CheckFeedbackService() {
