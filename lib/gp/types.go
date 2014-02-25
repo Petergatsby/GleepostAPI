@@ -162,6 +162,10 @@ type APNSConfig struct {
 	Production bool
 }
 
+type GCMConfig struct {
+	APIKey	string
+}
+
 type EmailConfig struct {
 	User       string
 	Pass       string
@@ -192,6 +196,7 @@ type Config struct {
 	Redis                RedisConfig
 	AWS                  AWSConfig
 	APNS                 APNSConfig
+	GCM		     GCMConfig
 	Email                EmailConfig
 	Facebook             FacebookConfig
 }

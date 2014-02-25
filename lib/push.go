@@ -2,6 +2,7 @@ package lib
 
 import (
 	"github.com/draaglom/apns"
+	"github.com/alexjlockwood/gcm"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"time"
@@ -39,39 +40,78 @@ func (api *API) notify(user gp.UserId) {
 }
 
 func (api *API) notificationPush(user gp.UserId) {
+	notifications, err := api.GetUserNotifications(user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	badge := len(notifications)
+	unread, err := api.UnreadMessageCount(user)
+	if err == nil {
+		badge += unread
+	}
+	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, badge, unread)
+
+	devices, err := api.GetDevices(user)
+	if err != nil {
+		log.Println(err)
+	}
+	count := 0
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			err = api.iosBadge(device.Id, badge)
+			if err != nil {
+				log.Println("Error sending push notification:", err)
+			} else {
+				count += 1
+			}
+		case device.Type == "android":
+			err = api.androidNotification(device.Id, badge, user)
+			if err != nil {
+				log.Println("Error sending push notification:", err)
+			} else {
+				count += 1
+			}
+		}
+	}
+	log.Printf("Badged %d's %d devices\n", count)
+}
+
+//iosBadge sets this device's badge, or returns an error.
+func (api *API) iosBadge(device string, badge int) (err error) {
 	url := "gateway.sandbox.push.apple.com:2195"
 	if api.Config.APNS.Production {
 		url = "gateway.push.apple.com:2195"
 	}
 	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
+	payload.Badge = badge
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device
+	pn.AddPayload(payload)
+	resp := client.Send(pn)
+	if !resp.Success {
+		log.Println("Failed to send push notification to:", device)
+	}
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
 
-	notifications, err := api.GetUserNotifications(user)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(user)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("Badging %d with %d notifications (%d from unread messages)", user, payload.Badge, unread)
+//androidNotification sends a "You have new notifications" push to this device.
+//user is included because GCM doesn't really like deregistering, so we include the
+//recipient id in the notification so the app can filter itself.
+func (api *API) androidNotification(device string, count int, user gp.UserId) (err error) {
+	data := map[string]interface{}{"count": count, "for": user}
+	msg := gcm.NewMessage(data, device)
+	msg.CollapseKey = "New Notification"
 
-	devices, err := api.GetDevices(user)
-	if err != nil {
-		log.Println(err)
-	}
-	for _, device := range devices {
-		if device.Type == "ios" {
-			pn := apns.NewPushNotification()
-			pn.DeviceToken = device.Id
-			pn.AddPayload(payload)
-			resp := client.Send(pn)
-			log.Println("Success:", resp.Success)
-			log.Println("Error:", resp.Error)
-		}
-	}
+	sender := gcm.Sender{ApiKey: api.Config.GCM.APIKey}
+	response, err := sender.Send(msg, 2)
+	log.Println(response)
+	return
 }
 
 func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
