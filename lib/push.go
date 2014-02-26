@@ -75,7 +75,7 @@ func (api *API) notificationPush(user gp.UserId) {
 			}
 		}
 	}
-	log.Printf("Badged %d's %d devices\n", count)
+	log.Printf("Badged %d's %d devices\n", user, count)
 }
 
 //iosBadge sets this device's badge, or returns an error.
