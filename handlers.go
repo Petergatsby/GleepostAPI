@@ -870,12 +870,13 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 
 func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	log.Println("Delete device hit")
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
+		log.Println("Bad auth")
 	case r.Method == "DELETE":
-		log.Println("Delete device hit")
 		vars := mux.Vars(r)
 		err := api.DeleteDevice(userId, vars["id"])
 		if err != nil {
