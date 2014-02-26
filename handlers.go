@@ -875,6 +875,7 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
 	case r.Method == "DELETE":
+		log.Println("Delete device hit")
 		vars := mux.Vars(r)
 		err := api.DeleteDevice(userId, vars["id"])
 		if err != nil {

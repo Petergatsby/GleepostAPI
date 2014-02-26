@@ -1429,6 +1429,7 @@ func (db *DB) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 }
 
 func (db *DB) DeleteDevice(user gp.UserId, device string) (err error) {
+	log.Println("Deleting %d's device: %s\n", user, device)
 	s := db.stmt["deviceDelete"]
 	_, err = s.Exec(user, device)
 	return
