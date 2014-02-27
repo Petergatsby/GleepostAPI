@@ -109,7 +109,7 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 	msg.CollapseKey = "New Notification"
 
 	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.Send(msg, 2)
+	response, err := sender.SendNoRetry(msg)
 	log.Println(response)
 	return
 }
@@ -198,7 +198,7 @@ func (api *API) androidPushMessage(device string, message gp.Message, convId gp.
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.Send(msg, 2)
+	response, err := sender.SendNoRetry(msg)
 	log.Println(response)
 	return
 }
