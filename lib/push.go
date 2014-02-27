@@ -190,7 +190,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 }
 
 func (api *API) androidPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
-	data := map[string]interface{}{"type":"MSG", "from":message.By.Name, "from-id":message.By.Id, "conv":convId, "for":user}
+	data := map[string]interface{}{"type":"MSG", "sender":message.By.Name, "sender-id":message.By.Id, "conv":convId, "for":user}
 	if len(message.Text) > 3200 {
 		data["text"] = message.Text[:3200] + "..."
 	} else {
