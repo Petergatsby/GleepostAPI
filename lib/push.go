@@ -4,6 +4,7 @@ import (
 	"github.com/draaglom/apns"
 	"github.com/alexjlockwood/gcm"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"encoding/json"
 	"log"
 	"time"
 )
@@ -197,6 +198,8 @@ func (api *API) androidPushMessage(device string, message gp.Message, convId gp.
 	}
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
+	m, _ := json.Marshal(msg)
+	log.Printf("%s\n", m)
 	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
 	response, err := sender.SendNoRetry(msg)
 	log.Println(response)
