@@ -2,7 +2,7 @@ package lib
 
 import (
 	"github.com/draaglom/apns"
-	"github.com/alexjlockwood/gcm"
+	"github.com/draaglom/gcm"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"encoding/json"
 	"log"
