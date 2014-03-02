@@ -61,7 +61,7 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
 
-/networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts)
+/networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
 
 /live [[GET]](#get-live)
 
@@ -252,7 +252,7 @@ tags=for-sale,event,salsa
 ###In addition, any other parameters that are sent when creating the post will be available as an "attribs" object within a post.
 
 Event posts are strongly encouraged to set "event-time", which represents the time an event begins. This may be either RFC3339 or a unix timestamp.
-Event posts may also set an "event-title", to be used as a heading.
+Event posts may also set an "title", to be used as a heading.
 
 example responses:
 (http 200)
@@ -515,7 +515,30 @@ example responses:
 ]
 ```
 
+##POST /networks/[network-id]/posts
+Create a post in this network.
 
+required parameters: id, token, text
+optional parameters: url, tags 
+
+If set, url must be a url previously returned from [/upload](#post-upload).
+If the image url is invalid, the post will be created without an image. 
+
+If set, tags must be a comma-delimited list of category "tags". Any of those tags which exist will be added to the post - any which do not exist are silently ignored.
+
+eg:
+tags=for-sale,event,salsa
+
+###In addition, any other parameters that are sent when creating the post will be available as an "attribs" object within a post.
+
+Event posts are strongly encouraged to set "event-time", which represents the time an event begins. This may be either RFC3339 or a unix timestamp.
+Event posts may also set an "title", to be used as a heading.
+
+If you are not allowed, will respond with 403.
+If successful, will respond with HTTP 201
+```
+{"id":345}
+```
 ##GET /conversations/live
 required parameters:
 id=[user-id]
