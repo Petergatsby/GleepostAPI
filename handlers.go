@@ -188,7 +188,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		var network gp.NetworkId
 		switch {
 		case ok:
-			_network, err := strconv.ParseUint(id, 10,64)
+			_network, err := strconv.ParseUint(id, 10, 64)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
