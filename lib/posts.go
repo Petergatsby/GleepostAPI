@@ -116,7 +116,31 @@ func (api *API) GetUserPosts (userId gp.UserId, index int64, count int, sel stri
 	return
 }
 
-func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
+	in, err := api.UserInNetwork(userId, netId)
+	switch {
+	case err != nil:
+		return posts, err
+	case !in:
+		return posts, &ENOTALLOWED
+	default:
+		return api.getPosts(netId, index, sel, count)
+	}
+}
+
+func (api *API) UserGetNetworkPostsByCategory(userId gp.UserId, netId gp.NetworkId, index int64, sel string, count int, filter string) (posts []gp.PostSmall, err error) {
+	in, err := api.UserInNetwork(userId, netId)
+	switch {
+	case err != nil:
+		return posts, err
+	case !in:
+		return posts, &ENOTALLOWED
+	default:
+		return api.getPostsByCategory(netId, index, sel, count, filter)
+	}
+}
+
+func (api *API) getPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
 	ps, err := api.cache.GetPosts(netId, index, count, sel)
 	if err != nil {
 		log.Println("Cache miss, Getting posts from db")
@@ -154,8 +178,7 @@ func (api *API) GetPosts(netId gp.NetworkId, index int64, sel string, count int)
 
 //GetPostsByCategory acts the same as getPosts but only returns posts which are in the category with tag category.
 //It has no caching layer at the moment.
-//Should restrict access based on user.
-func (api *API) GetPostsByCategory(netId gp.NetworkId, index int64, sel string, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) getPostsByCategory(netId gp.NetworkId, index int64, sel string, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetPostsByCategory(netId, index, count, sel, category)
 	if err != nil {
 		return

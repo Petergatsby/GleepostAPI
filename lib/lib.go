@@ -154,6 +154,19 @@ func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 	return
 }
 
+func (api *API) UserInNetwork(id gp.UserId, network gp.NetworkId) (in bool, err error) {
+	networks, err := api.db.GetUserNetworks(id)
+	if err != nil {
+		return false, err
+	}
+	for _, n := range networks {
+		if n.Id == network {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (api *API) GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	user, err = api.db.GetProfile(id)
 	if err != nil {

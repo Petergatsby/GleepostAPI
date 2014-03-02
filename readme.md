@@ -61,6 +61,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
 
+/networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts)
+
 /live [[GET]](#get-live)
 
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
@@ -181,6 +183,8 @@ returns a list of 20 posts ordered by time, starting before/after [id]
 
 filter=[tag]
 Returns only posts belonging to this category tag. 
+
+This is effectively an alias for [/networks/[university-id]/posts](#get-networksnetwork-idposts) which returns the user's university network.
 
 example responses:
 (HTTP 200)
@@ -439,6 +443,76 @@ example responses:
 	}
 ]
 ```
+
+##GET /networks/[network-id]/posts
+required parameters:
+id=[user-id]
+token=[token]
+
+optional parameters:
+start=[count]
+returns a list of 20 posts ordered by time, starting at count
+
+before=[id]
+after=[id]
+returns a list of 20 posts ordered by time, starting before/after [id]
+
+filter=[tag]
+Returns only posts belonging to this category tag. 
+
+This returns all the posts in this network, or an error 403 if the user is not allowed to view the posts in this network.
+
+example responses:
+(HTTP 200)
+```
+[
+	{
+		"id":2,
+		"by": {
+			"id":9,
+			"name":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"This is a cool post for cool people!",
+		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+		"attribs": {
+			"event-time":"2013-09-05T13:09:38Z"
+		},
+		"comment_count":4,
+		"like_count":5,
+		"popularity":3,
+		"likes":[{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"},
+			{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"}
+		],
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+	},
+	{
+		"id":1,
+		"by": {
+			"id":23,
+			"name":"PeterGatsby"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"Sailor Moon FTW!"
+		"comment_count":9,
+		"like_count":0,
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
+	}
+]
+```
+
 
 ##GET /conversations/live
 required parameters:

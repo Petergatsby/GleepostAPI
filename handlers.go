@@ -183,47 +183,65 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			after = 0
 		}
 		filter := r.FormValue("filter")
-		networks, err := api.GetUserNetworks(userId)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-		} else {
-			//First: which paging scheme are we using
-			var selector string
-			var index int64
-			switch {
-			case after > 0:
-				selector = "after"
-				index = after
-			case before > 0:
-				selector = "before"
-				index = before
-			default:
-				selector = "start"
-				index = start
-			}
-			//Then: if we have a filter
-			var posts []gp.PostSmall
-			switch {
-			case len(filter) > 0:
-				posts, err = api.GetPostsByCategory(networks[0].Id, index, selector, api.Config.PostPageSize, filter)
-			default:
-				log.Println("By network")
-				posts, err = api.GetPosts(networks[0].Id, index, selector, api.Config.PostPageSize)
-			}
-			log.Println(posts, err)
+		vars := mux.Vars(r)
+		id, ok := vars["network"]
+		var network gp.NetworkId
+		switch {
+		case ok:
+			_network, err := strconv.ParseUint(id, 10,64)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
 			}
-			if len(posts) == 0 {
-				// this is an ugly hack. But I can't immediately
-				// think of a neater way to fix this
-				// (json.Marshal(empty slice) returns null rather than
-				// empty array ([]) which it obviously should
-				jsonResponse(w, []string{}, 200)
-			} else {
-				jsonResponse(w, posts, 200)
+			network = gp.NetworkId(_network)
+		default: //We haven't been given a network, which means this handler is being called by /posts and we just want the users' default network
+			networks, err := api.GetUserNetworks(userId)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
 			}
+			network = networks[0].Id
+		}
+		//First: which paging scheme are we using
+		var selector string
+		var index int64
+		switch {
+		case after > 0:
+			selector = "after"
+			index = after
+		case before > 0:
+			selector = "before"
+			index = before
+		default:
+			selector = "start"
+			index = start
+		}
+		//Then: if we have a filter
+		var posts []gp.PostSmall
+		switch {
+		case len(filter) > 0:
+			posts, err = api.UserGetNetworkPostsByCategory(userId, network, index, selector, api.Config.PostPageSize, filter)
+		default:
+			log.Println("By network")
+			posts, err = api.UserGetNetworkPosts(userId, network, index, selector, api.Config.PostPageSize)
+		}
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
+		}
+		if len(posts) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+		} else {
+			jsonResponse(w, posts, 200)
 		}
 	}
 }
