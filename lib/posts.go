@@ -332,37 +332,41 @@ func (api *API) AddPostImage(postId gp.PostId, url string) (err error) {
 	return api.db.AddPostImage(postId, url)
 }
 
-func (api *API) AddPost(userId gp.UserId, text string, attribs map[string]string, tags ...string) (postId gp.PostId, err error) {
-	networks, err := api.GetUserNetworks(userId)
-	if err != nil {
+func (api *API) AddPost(userId gp.UserId, netId gp.NetworkId, text string, attribs map[string]string, tags ...string) (postId gp.PostId, err error) {
+	in, err := api.UserInNetwork(userId, netId)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		return postId, &ENOTALLOWED
+	default:
+		postId, err = api.db.AddPost(userId, text, netId)
+		if err == nil {
+			if len(tags) > 0 {
+				err = api.TagPost(postId, tags...)
+				if err != nil {
+					return
+				}
+			}
+			if len(attribs) > 0 {
+				err = api.SetPostAttribs(postId, attribs)
+				if err != nil {
+					return
+				}
+			}
+			user, err := api.db.GetUser(userId)
+			if err == nil {
+				post := gp.Post{Id: postId, By: user, Text: text, Time: time.Now().UTC()}
+				go api.cache.AddPost(post)
+				go api.cache.AddPostToNetwork(post, netId)
+			}
+		}
 		return
 	}
-	postId, err = api.db.AddPost(userId, text, networks[0].Id)
-	if err == nil {
-		if len(tags) > 0 {
-			err = api.TagPost(postId, tags...)
-			if err != nil {
-				return
-			}
-		}
-		if len(attribs) > 0 {
-			err = api.SetPostAttribs(postId, attribs)
-			if err != nil {
-				return
-			}
-		}
-		user, err := api.db.GetUser(userId)
-		if err == nil {
-			post := gp.Post{Id: postId, By: user, Text: text, Time: time.Now().UTC()}
-			go api.cache.AddPost(post)
-			go api.cache.AddPostToNetwork(post, networks[0].Id)
-		}
-	}
-	return
 }
 
-func (api *API) AddPostWithImage(userId gp.UserId, text string, attribs map[string]string, image string, tags ...string) (postId gp.PostId, err error) {
-	postId, err = api.AddPost(userId, text, attribs, tags...)
+func (api *API) AddPostWithImage(userId gp.UserId, netId gp.NetworkId, text string, attribs map[string]string, image string, tags ...string) (postId gp.PostId, err error) {
+	postId, err = api.AddPost(userId, netId, text, attribs, tags...)
 	if err != nil {
 		return
 	}

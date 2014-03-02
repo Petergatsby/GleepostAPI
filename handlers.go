@@ -262,6 +262,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
+		vars := mux.Vars(r)
 		text := r.FormValue("text")
 		url := r.FormValue("url")
 		tags := r.FormValue("tags")
@@ -276,14 +277,36 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		if len(tags) > 1 {
 			ts = strings.Split(tags, ",")
 		}
+		n, ok := vars["network"]
+		var network gp.NetworkId
+		if !ok {
+			networks, err := api.GetUserNetworks(userId)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			network = networks[0].Id
+		} else {
+			_network, err := strconv.ParseUint(n, 10, 64)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			network = gp.NetworkId(_network)
+		}
 		switch {
 		case len(url) > 5:
-			postId, err = api.AddPostWithImage(userId, text, attribs, url, ts...)
+			postId, err = api.AddPostWithImage(userId, network, text, attribs, url, ts...)
 		default:
-			postId, err = api.AddPost(userId, text, attribs, ts...)
+			postId, err = api.AddPost(userId, network, text, attribs, ts...)
 		}
 		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
 		} else {
 			jsonResponse(w, &gp.Created{uint64(postId)}, 201)
 		}
