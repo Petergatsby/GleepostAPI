@@ -174,7 +174,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"WHERE post_id = ? " +
 		"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	sqlStmt["postSelect"] = "SELECT `by`, `time`, text FROM wall_posts WHERE id = ?"
+	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE id = ?"
 	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
 	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?"
 	sqlStmt["listCategories"] = "SELECT id, tag, name FROM categories WHERE 1"
@@ -1097,7 +1097,7 @@ func (db *DB) GetPost(postId gp.PostId) (post gp.Post, err error) {
 	post.Id = postId
 	var by gp.UserId
 	var t string
-	err = s.QueryRow(postId).Scan(&by, &t, &post.Text)
+	err = s.QueryRow(postId).Scan(&post.Network, &by, &t, &post.Text)
 	if err != nil {
 		return
 	}
