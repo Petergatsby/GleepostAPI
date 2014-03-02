@@ -263,6 +263,8 @@ example responses:
 ##GET /posts/[post-id]
 required parameters: id, token
 
+This returns the full representation of this post, or 403 if the user isn't allowed to view it (ie, it is in a network that you aren't).
+
 example responses:
 (http 200)
 ```
