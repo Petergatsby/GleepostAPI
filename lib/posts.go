@@ -19,7 +19,7 @@ func (api *API) UserGetPost(userId gp.UserId, postId gp.PostId) (post gp.PostFul
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(userId, post.Network)
+	in, err := api.UserInNetwork(userId, p.Network)
 	switch {
 	case err != nil:
 		return post, err
