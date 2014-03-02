@@ -24,6 +24,7 @@ func (api *API) UserGetPost(userId gp.UserId, postId gp.PostId) (post gp.PostFul
 	case err != nil:
 		return post, err
 	case !in:
+		log.Printf("User %d not in %d\n", userId, post.Network)
 		return post, &ENOTALLOWED
 	default:
 		return p, nil
