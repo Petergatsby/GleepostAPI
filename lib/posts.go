@@ -13,7 +13,24 @@ func (api *API) GetPost(postId gp.PostId) (post gp.Post, err error) {
 	return api.db.GetPost(postId)
 }
 
-func (api *API) GetPostFull(postId gp.PostId) (post gp.PostFull, err error) {
+//UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
+func (api *API) UserGetPost(userId gp.UserId, postId gp.PostId) (post gp.PostFull, err error) {
+	p, err := api.getPostFull(postId)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(userId, post.Network)
+	switch {
+	case err != nil:
+		return post, err
+	case !in:
+		return post, &ENOTALLOWED
+	default:
+		return p, nil
+	}
+}
+
+func (api *API) getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	post.Post, err = api.GetPost(postId)
 	if err != nil {
 		return
@@ -116,6 +133,7 @@ func (api *API) GetUserPosts (userId gp.UserId, index int64, count int, sel stri
 	return
 }
 
+//UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
 func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
 	in, err := api.UserInNetwork(userId, netId)
 	switch {
@@ -128,6 +146,7 @@ func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, index 
 	}
 }
 
+//UserGetNetworkPostsByCategory returns the posts in netId filtered by filter, if userId can access this network.
 func (api *API) UserGetNetworkPostsByCategory(userId gp.UserId, netId gp.NetworkId, index int64, sel string, count int, filter string) (posts []gp.PostSmall, err error) {
 	in, err := api.UserInNetwork(userId, netId)
 	switch {

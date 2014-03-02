@@ -68,6 +68,7 @@ type PostCore struct {
 }
 
 type Post struct {
+	Network    NetworkId	     `json:"-"`
 	Id         PostId            `json:"id"`
 	By         User              `json:"by"`
 	Time       time.Time         `json:"timestamp"`

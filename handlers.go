@@ -637,7 +637,7 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPost(w http.ResponseWriter, r *http.Request) {
-	_, err := authenticate(r)
+	userId, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -645,9 +645,15 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postId := gp.PostId(_id)
-		post, err := api.GetPostFull(postId)
+		post, err := api.UserGetPost(userId, postId)
 		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
 		} else {
 			jsonResponse(w, post, 200)
 		}
