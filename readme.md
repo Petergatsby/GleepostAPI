@@ -61,6 +61,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
 
+/networks/[network-id] [[GET]](#get-networksnetwork-id)
+
 /networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
 
 /live [[GET]](#get-live)
@@ -446,6 +448,18 @@ example responses:
 	"timestamp":"2014-02-05T07:00:54Z"}]
 	}
 ]
+```
+
+##GET /networks/[network-id]
+required parameters:
+id=[user-id]
+token=[token]
+
+A group resource, or 403 if you aren't a member of the group.
+example responses (http 200):
+
+```
+{"id":5345, "name":"Super Cool Group"}
 ```
 
 ##GET /networks/[network-id]/posts
