@@ -6,11 +6,11 @@
             \/          \/     \/|__|              \/        
 
 
-#Gleepost API / V0.33
+#Gleepost API / V0.34
 
 
 Production URL: https://gleepost.com/api/v1/
-Development URL: https://dev.gleepost.com/api/v0.33/
+Development URL: https://dev.gleepost.com/api/v0.34/
 
 ##Notes:
 
