@@ -103,6 +103,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /profile/attending [[GET]](#get-profileattending)
 
+/profile/networks [[GET]](#get-profilenetworks)
+
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
 
 ##POST /register
@@ -1059,6 +1061,18 @@ This will return an array containing the id of every event this user is attendin
 Example response: (http 200)
 ```
 [1,5,764,34,345]
+```
+
+##GET /profile/networks
+required parameters:
+id=[user-id]
+token=[token]
+
+This returns a list of all (non-university) groups this user belongs to.
+
+Example response: (http 200)
+```
+[{"id":5345, "name":"Stanford Catan Club"}]
 ```
 
 ##GET /notifications
