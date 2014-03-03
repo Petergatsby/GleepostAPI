@@ -309,8 +309,8 @@ func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 //TODO: add extra details.
 func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
 	networkSelect :=  "SELECT network.name " +
-		"FROM network" +
-		"WHERE id = ?"
+		"FROM network " +
+		"WHERE network.id = ?"
 	s, err := db.prepare(networkSelect)
 	if err != nil {
 		return
