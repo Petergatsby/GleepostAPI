@@ -305,6 +305,24 @@ func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 	return
 }
 
+//GetNetwork returns the network netId.
+//TODO: add extra details.
+func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
+	networkSelect :=  "SELECT network.name " +
+		"FROM network" +
+		"WHERE id = ?"
+	s, err := db.prepare(networkSelect)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netId).Scan(&network.Name)
+	if err != nil {
+		return
+	}
+	network.Id = netId
+	return
+}
+
 /********************************************************************
 		User
 ********************************************************************/

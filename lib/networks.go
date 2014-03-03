@@ -64,3 +64,18 @@ func (api *API) assignNetworks(user gp.UserId, email string) (networks int, err 
 	return
 }
 
+func (api *API) UserGetNetwork(userId gp.UserId, netId gp.NetworkId) (network gp.Network, err error) {
+	in, err := api.UserInNetwork(userId, netId)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		return network, &ENOTALLOWED
+	default:
+		return api.getNetwork(netId)
+	}
+}
+
+func (api *API) getNetwork(netId gp.NetworkId) (network gp.Network, err error) {
+	return api.db.GetNetwork(netId)
+}
