@@ -675,40 +675,6 @@ func (c *Cache) GetComment(commentId gp.CommentId) (comment gp.Comment, err erro
 }
 
 /********************************************************************
-		Networks
-********************************************************************/
-
-func (c *Cache) GetUserNetwork(userId gp.UserId) (networks []gp.Network, err error) {
-	/* Part 1 of the transition to one network per user (why did I ever allow more :| */
-	//this returns a slice of 1 network to keep compatible with dbGetNetworks
-	conn := c.pool.Get()
-	defer conn.Close()
-	baseKey := fmt.Sprintf("users:%d:network", userId)
-	reply, err := redis.Values(conn.Do("MGET", baseKey+":id", baseKey+":name"))
-	if err != nil {
-		return networks, err
-	}
-	net := gp.Network{}
-	if _, err = redis.Scan(reply, &net.Id, &net.Name); err != nil {
-		return networks, err
-	} else if net.Id == 0 {
-		//there must be a neater way?
-		err = redis.Error("Cache miss")
-		return networks, err
-	}
-	networks = append(networks, net)
-	return networks, nil
-}
-
-func (c *Cache) SetUserNetwork(userId gp.UserId, network gp.Network) {
-	conn := c.pool.Get()
-	defer conn.Close()
-	baseKey := fmt.Sprintf("users:%d:network", userId)
-	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name)
-	conn.Flush()
-}
-
-/********************************************************************
 		Users
 ********************************************************************/
 

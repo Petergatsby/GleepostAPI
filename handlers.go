@@ -1422,3 +1422,20 @@ func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func getGroups(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		networks, err := api.GetUserGroups(userId)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		}
+		jsonResponse(w, networks, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
