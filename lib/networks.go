@@ -131,4 +131,3 @@ func (api *API) HaveSharedNetwork(a gp.UserId, b gp.UserId) (shared bool, err er
 	}
 	return false, nil
 }
-
