@@ -91,6 +91,7 @@ func main() {
 	r.HandleFunc("/api/{version}/networks/{network:[0-9]+}/posts", postPosts).Methods("POST")
 	r.HandleFunc("/api/{version}/networks/{network:[0-9]+}", getNetwork).Methods("GET")
 	r.HandleFunc("/api/{version}/networks/{network:[0-9]+}/users", postNetworkUsers).Methods("POST")
+	r.HandleFunc("/api/{version}/networks/{network:[0-9]+}/users", getNetworkUsers).Methods("GET")
 	r.HandleFunc("/api/{version}/networks", postNetworks).Methods("POST")
 	r.HandleFunc("/api/{version}/posts", getPosts).Methods("GET")
 	r.HandleFunc("/api/{version}/posts", postPosts).Methods("POST")
