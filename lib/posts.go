@@ -321,7 +321,7 @@ func (api *API) CreateComment(postId gp.PostId, userId gp.UserId, text string) (
 		}
 		comment := gp.Comment{Id: commId, Post: postId, By: user, Time: time.Now().UTC(), Text: text}
 		if userId != post.By.Id {
-			go api.createNotification("commented", userId, post.By.Id, true, postId)
+			go api.createNotification("commented", userId, post.By.Id, uint64(postId))
 		}
 		go api.cache.AddComment(postId, comment)
 	}
@@ -400,7 +400,7 @@ func (api *API) AddLike(user gp.UserId, postId gp.PostId) (err error) {
 			return
 		} else {
 			if user != post.By.Id {
-				api.createNotification("liked", user, post.By.Id, true, postId)
+				api.createNotification("liked", user, post.By.Id, uint64(postId))
 			}
 		}
 	}

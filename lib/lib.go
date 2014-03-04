@@ -268,7 +268,7 @@ func (api *API) AddContact(adder gp.UserId, addee gp.UserId) (contact gp.Contact
 	}
 	err = api.db.AddContact(adder, addee)
 	if err == nil {
-		go api.createNotification("added_you", adder, addee, false, 0)
+		go api.createNotification("added_you", adder, addee, 0)
 	}
 	contact.User = user
 	contact.YouConfirmed = true
@@ -291,7 +291,7 @@ func (api *API) AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Co
 	}
 	contact.YouConfirmed = true
 	contact.TheyConfirmed = true
-	go api.createNotification("accepted_you", user, toAccept, false, 0)
+	go api.createNotification("accepted_you", user, toAccept, 0)
 	go api.UnExpireBetween([]gp.UserId{user, toAccept})
 	return
 }
@@ -352,8 +352,9 @@ func (api *API) MarkNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err
 	return api.db.MarkNotificationsSeen(id, upTo)
 }
 
-func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (err error) {
-	notification, err := api.db.CreateNotification(ntype, by, recipient, isPN, post)
+//createNotification creates a new gleepost notification. location is the id of the object where the notification happened - a post id if the notification is "liked" or "commented", or a network id if the notification type is "added_group". Otherwise, the location will be ignored.
+func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.UserId, location uint64) (err error) {
+	notification, err := api.db.CreateNotification(ntype, by, recipient, location)
 	if err == nil {
 		go api.notificationPush(recipient)
 		go api.cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})

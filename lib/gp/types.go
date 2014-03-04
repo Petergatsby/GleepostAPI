@@ -221,6 +221,10 @@ type PostNotification struct {
 	Post PostId `json:"post"`
 }
 
+type GroupNotification struct {
+	Notification
+	Group NetworkId `json:"network"`
+}
 func (c *MysqlConfig) ConnectionString() string {
 	return c.User + ":" + c.Pass + "@tcp(" + c.Host + ":" + c.Port + ")/gleepost?charset=utf8"
 }

@@ -217,8 +217,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	//Notification
 	sqlStmt["notificationSelect"] = "SELECT id, type, time, `by`, post_id, seen FROM notifications WHERE recipient = ? AND seen = 0"
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
-	sqlStmt["notificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient) VALUES (?, NOW(), ?, ?)"
-	sqlStmt["postNotificationInsert"] = "INSERT INTO notifications (type, time, `by`, recipient, post_id) VALUES (?, NOW(), ?, ?, ?)"
 	//Like
 	sqlStmt["addLike"] = "INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)"
 	sqlStmt["delLike"] = "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?"
@@ -1438,38 +1436,58 @@ func (db *DB) MarkNotificationsSeen(user gp.UserId, upTo gp.NotificationId) (err
 	return
 }
 
-func (db *DB) CreateNotification(ntype string, by gp.UserId, recipient gp.UserId, isPN bool, post gp.PostId) (notification interface{}, err error) {
+//TODO: All this stuff should not be in the db layer.
+func (db *DB) CreateNotification(ntype string, by gp.UserId, recipient gp.UserId, location uint64) (notification interface{}, err error) {
 	var res sql.Result
-	if isPN {
-		s := db.stmt["postNotificationInsert"]
-		res, err = s.Exec(ntype, by, recipient, post)
-	} else {
-		s := db.stmt["notificationInsert"]
+	notificationInsert := "INSERT INTO notifications (type, time, `by`, recipient) VALUES (?, NOW(), ?, ?)"
+	notificationInsertLocation := "INSERT INTO notifications (type, time, `by`, recipient, location_id) VALUES (?, NOW(), ?, ?, ?)"
+	var s *sql.Stmt
+	n := gp.Notification{
+		Type: ntype,
+		Time: time.Now().UTC(),
+		Seen: false,
+	}
+	n.By, err = db.GetUser(by)
+	if err != nil {
+		return
+	}
+	switch {
+	case ntype == "liked":
+		fallthrough
+	case ntype == "commented":
+		fallthrough
+	case ntype == "added_group":
+		s, err = db.prepare(notificationInsertLocation)
+		if err != nil {
+			return
+		}
+		res, err = s.Exec(ntype, by, recipient, location)
+	default:
+		s, err = db.prepare(notificationInsert)
+		if err != nil {
+			return
+		}
 		res, err = s.Exec(ntype, by, recipient)
 	}
 	if err != nil {
 		return
-	} else {
-		n := gp.Notification{
-			Type: ntype,
-			Time: time.Now().UTC(),
-			Seen: false,
-		}
-		id, iderr := res.LastInsertId()
-		if iderr != nil {
-			return n, iderr
-		}
-		n.Id = gp.NotificationId(id)
-		n.By, err = db.GetUser(by)
-		if err != nil {
-			return
-		}
-		if isPN {
-			np := gp.PostNotification{n, post}
-			return np, nil
-		} else {
-			return n, nil
-		}
+	}
+	id, iderr := res.LastInsertId()
+	if iderr != nil {
+		return n, iderr
+	}
+	n.Id = gp.NotificationId(id)
+	switch {
+	case ntype == "liked":
+		fallthrough
+	case ntype == "commented":
+		np := gp.PostNotification{n, gp.PostId(location)}
+		return np, nil
+	case ntype == "added_group":
+		ng := gp.GroupNotification{n, gp.NetworkId(location)}
+		return ng, nil
+	default:
+		return n, nil
 	}
 }
 
