@@ -61,6 +61,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
 
+/networks [[POST]](#post-networks)
+
 /networks/[network-id] [[GET]](#get-networksnetwork-id)
 
 /networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
@@ -460,6 +462,19 @@ example responses (http 200):
 
 ```
 {"id":5345, "name":"Super Cool Group"}
+```
+
+##POST /networks
+required parameters:
+id=[user-id]
+token=[token]
+name="Name of the group"
+
+This creates a new group named `name` and adds you as a member.
+A successful response is 201:
+
+```
+{"id":5345, "name":"Even Cooler Group"}
 ```
 
 ##GET /networks/[network-id]/posts
