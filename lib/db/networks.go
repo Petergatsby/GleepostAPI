@@ -97,7 +97,7 @@ func (db *DB) CreateNetwork(name string, usergroup bool) (network gp.Network, er
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(name)
+	res, err := s.Exec(name, usergroup)
 	if err != nil {
 		return
 	}
