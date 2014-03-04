@@ -79,3 +79,13 @@ func (api *API) UserGetNetwork(userId gp.UserId, netId gp.NetworkId) (network gp
 func (api *API) getNetwork(netId gp.NetworkId) (network gp.Network, err error) {
 	return api.db.GetNetwork(netId)
 }
+
+//UserCreateNetwork creates a network and adds the creator as a member.
+func (api *API) UserCreateNetwork(userId gp.UserId, name string) (network gp.Network, err error) {
+	network, err = api.db.CreateNetwork(name, true)
+	if err != nil {
+		return
+	}
+	err = api.db.SetNetwork(userId, network.Id)
+	return
+}
