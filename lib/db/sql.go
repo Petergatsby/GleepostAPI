@@ -323,6 +323,23 @@ func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
 	return
 }
 
+//CreateNetwork creates a new network. usergroup indicates that the group is user-defined (created by a user rather than system-defined networks such as universities)
+func (db *DB) CreateNetwork(name string, usergroup bool) (network gp.Network, err error) {
+	networkInsert := "INSERT INTO network (name, user_group) VALUES (?, ?)"
+	s, err := db.prepare(networkInsert)
+	if err != nil {
+		return
+	}
+	res, err := s.Exec(name)
+	if err != nil {
+		return
+	}
+	id, _ := res.LastInsertId()
+	network.Id = gp.NetworkId(id)
+	network.Name = name
+	return
+}
+
 /********************************************************************
 		User
 ********************************************************************/
