@@ -39,6 +39,28 @@ func (api *API) UserInNetwork(id gp.UserId, network gp.NetworkId) (in bool, err 
 	return false, nil
 }
 
+//isGroup returns false if this network isn't a group (ie isn't user-created) and error if the group doesn't exist.
+func (api *API) isGroup(netId gp.NetworkId) (group bool, err error) {
+	return api.db.IsGroup(netId)
+}
+
+//UserAddUserToGroup adds addee to group iff adder is in group and group is not a university network (we don't want people to be able to get into universities they're not part of)
+//TODO: Check addee exists
+func (api *API) UserAddUserToGroup(adder, addee gp.UserId, group gp.NetworkId) (err error) {
+	in, neterr := api.UserInNetwork(adder, group)
+	isgroup, grouperr := api.isGroup(group)
+	switch {
+	case neterr != nil:
+		return neterr
+	case grouperr != nil:
+		return grouperr
+	case !in || !isgroup:
+		return &ENOTALLOWED
+	default:
+		return api.setNetwork(addee, group)
+	}
+}
+
 func (api *API) setNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
 	return api.db.SetNetwork(userId, netId)
 }

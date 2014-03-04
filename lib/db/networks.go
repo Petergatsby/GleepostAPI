@@ -63,7 +63,7 @@ func (db *DB) GetUserNetworks(id gp.UserId, userGroupsOnly bool) (networks []gp.
 }
 
 func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
-	networkInsert := "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
+	networkInsert := "REPLACE INTO user_network (user_id, network_id) VALUES (?, ?)"
 	s, err := db.prepare(networkInsert)
 	if err != nil {
 		return
@@ -107,3 +107,13 @@ func (db *DB) CreateNetwork(name string, usergroup bool) (network gp.Network, er
 	return
 }
 
+//IsGroup returns false if netId isn't a user group, and ErrNoRows if netId doesn't exist.
+func (db *DB) IsGroup(netId gp.NetworkId) (group bool, err error) {
+	isgroup := "SELECT user_group FROM network WHERE id = ?"
+	s, err := db.prepare(isgroup)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netId).Scan(&group)
+	return
+}
