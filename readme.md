@@ -67,7 +67,7 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
 
-/networks/[network-id]/users [[POST]](#post-networksnetwork-idusers)
+/networks/[network-id]/users [[GET]](#get-networksnetwork-idusers) [[POST]](#post-networksnetwork-idusers)
 
 /live [[GET]](#get-live)
 
@@ -571,6 +571,17 @@ If you are not allowed, will respond with 403.
 If successful, will respond with HTTP 201
 ```
 {"id":345}
+```
+
+##GET /networks/[network-id]/users
+required parameters:
+id=[user-id]
+token=[token]
+
+A collection of all the users in this network, or 403 if you aren't a member of the network (or if it is a university network)
+Example response:
+```
+[{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
 ```
 
 ##POST /networks/[network-id/users
