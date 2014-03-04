@@ -215,7 +215,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
 	//Notification
-	sqlStmt["notificationSelect"] = "SELECT id, type, time, `by`, post_id, seen FROM notifications WHERE recipient = ? AND seen = 0"
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
 	//Like
 	sqlStmt["addLike"] = "INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)"
@@ -1397,7 +1396,11 @@ func (db *DB) UploadExists(user gp.UserId, url string) (exists bool, err error) 
 ********************************************************************/
 
 func (db *DB) GetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
-	s := db.stmt["notificationSelect"]
+	notificationSelect := "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? AND seen = 0"
+	s, err := db.prepare(notificationSelect)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(id)
 	if err != nil {
 		return
@@ -1406,9 +1409,9 @@ func (db *DB) GetUserNotifications(id gp.UserId) (notifications []interface{}, e
 	for rows.Next() {
 		var notification gp.Notification
 		var t string
-		var post sql.NullInt64
+		var location sql.NullInt64
 		var by gp.UserId
-		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &post, &notification.Seen); err != nil {
+		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &location, &notification.Seen); err != nil {
 			return
 		}
 		notification.Time, err = time.Parse(mysqlTime, t)
@@ -1419,11 +1422,19 @@ func (db *DB) GetUserNotifications(id gp.UserId) (notifications []interface{}, e
 		if err != nil {
 			return
 		}
-		if post.Valid {
-			var np gp.PostNotification
-			np.Notification = notification
-			np.Post = gp.PostId(post.Int64)
-			notifications = append(notifications, np)
+		if location.Valid {
+			switch {
+			case notification.Type == "liked":
+				fallthrough
+			case notification.Type == "commented":
+				np := gp.PostNotification{notification, gp.PostId(location.Int64)}
+				notifications = append(notifications, np)
+			case notification.Type == "added_group":
+				ng := gp.GroupNotification{notification, gp.NetworkId(location.Int64)}
+				notifications = append(notifications, ng)
+			default:
+				notifications = append(notifications, notification)
+			}
 		} else {
 			notifications = append(notifications, notification)
 		}
