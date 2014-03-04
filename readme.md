@@ -67,6 +67,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
 
+/networks/[network-id]/users [[POST]](#post-networksnetwork-idusers)
+
 /live [[GET]](#get-live)
 
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
@@ -570,6 +572,15 @@ If successful, will respond with HTTP 201
 ```
 {"id":345}
 ```
+
+##POST /networks/[network-id/users
+required parameters:
+id=[user-id]
+token=[token]
+
+user=[other-user-id]
+Adds another user as a member of this network. On success will return 204.
+
 ##GET /conversations/live
 required parameters:
 id=[user-id]
