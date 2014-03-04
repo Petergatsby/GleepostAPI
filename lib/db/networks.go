@@ -121,7 +121,7 @@ func (db *DB) IsGroup(netId gp.NetworkId) (group bool, err error) {
 
 //GetNetworkUsers returns all the members of the group netId
 func (db *DB) GetNetworkUsers(netId gp.NetworkId) (users []gp.User, err error) {
-	memberQuery := "SELECT user_id, users.name, users.avatar FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
+	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
 	s, err := db.prepare(memberQuery)
 	if err != nil {
 		return
@@ -134,12 +134,16 @@ func (db *DB) GetNetworkUsers(netId gp.NetworkId) (users []gp.User, err error) {
 	for rows.Next() {
 		var user gp.User
 		var av sql.NullString
-		err = rows.Scan(&user.Id, &user.Name, &av)
+		var name sql.NullString
+		err = rows.Scan(&user.Id, &user.Name, &av, &name)
 		if err != nil {
 			return
 		}
 		if av.Valid {
 			user.Avatar = av.String
+		}
+		if name.Valid {
+			user.Name = name.String
 		}
 		users = append(users, user)
 	}
