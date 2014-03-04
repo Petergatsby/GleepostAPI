@@ -111,3 +111,24 @@ func (api *API) CreateGroup(userId gp.UserId, name string) (network gp.Network, 
 	err = api.db.SetNetwork(userId, network.Id)
 	return
 }
+
+//HaveSharedNetwork returns true if both users a and b are in the same network.
+func (api *API) HaveSharedNetwork(a gp.UserId, b gp.UserId) (shared bool, err error) {
+	anets, err := api.GetUserNetworks(a)
+	if err != nil {
+		return
+	}
+	bnets, err := api.GetUserNetworks(b)
+	if err != nil {
+		return
+	}
+	for _, an := range anets {
+		for _, bn := range bnets {
+			if an.Id == bn.Id {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+

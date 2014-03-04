@@ -153,26 +153,6 @@ func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactabl
 	}
 }
 
-//HaveSharedNetwork returns true if both users a and b are in the same network.
-func (api *API) HaveSharedNetwork(a gp.UserId, b gp.UserId) (shared bool, err error) {
-	anets, err := api.GetUserNetworks(a)
-	if err != nil {
-		return
-	}
-	bnets, err := api.GetUserNetworks(b)
-	if err != nil {
-		return
-	}
-	for _, an := range anets {
-		for _, bn := range bnets {
-			if an.Id == bn.Id {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
 func (api *API) NewConversationEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
 	go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.Id), conversation, chans)
