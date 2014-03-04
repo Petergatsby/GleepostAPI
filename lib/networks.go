@@ -139,3 +139,19 @@ func (api *API) HaveSharedNetwork(a gp.UserId, b gp.UserId) (shared bool, err er
 	}
 	return false, nil
 }
+
+//UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
+func (api *API) UserGetGroupMembers(userId gp.UserId, netId gp.NetworkId) (users []gp.User, err error) {
+	in, errin := api.UserInNetwork(userId, netId)
+	group, errgroup := api.isGroup(netId)
+	switch {
+	case errin != nil:
+		return users, errin
+	case errgroup != nil:
+		return users, errgroup
+	case !in || !group:
+		return users, &ENOTALLOWED
+	default:
+		return api.db.GetNetworkUsers(netId)
+	}
+}

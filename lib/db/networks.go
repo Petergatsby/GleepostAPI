@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 )
@@ -115,5 +116,32 @@ func (db *DB) IsGroup(netId gp.NetworkId) (group bool, err error) {
 		return
 	}
 	err = s.QueryRow(netId).Scan(&group)
+	return
+}
+
+//GetNetworkUsers returns all the members of the group netId
+func (db *DB) GetNetworkUsers(netId gp.NetworkId) (users []gp.User, err error) {
+	memberQuery := "SELECT user_id, users.name, users.avatar FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
+	s, err := db.prepare(memberQuery)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(netId)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var user gp.User
+		var av sql.NullString
+		err = rows.Scan(&user.Id, &user.Name, &av)
+		if err != nil {
+			return
+		}
+		if av.Valid {
+			user.Avatar = av.String
+		}
+		users = append(users, user)
+	}
 	return
 }
