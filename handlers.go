@@ -1486,7 +1486,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		network, err := api.CreateGroup(userId, name)
 		if err != nil {
-			jsonResponse(w, err, 500)
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			return
 		}
 		jsonResponse(w, network, 201)
