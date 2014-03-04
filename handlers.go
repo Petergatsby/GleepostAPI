@@ -1476,3 +1476,21 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func postNetworks(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "POST":
+		name := r.FormValue("name")
+		network, err := api.CreateGroup(userId, name)
+		if err != nil {
+			jsonResponse(w, err, 500)
+			return
+		}
+		jsonResponse(w, network, 201)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
