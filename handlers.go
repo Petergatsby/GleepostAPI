@@ -1529,3 +1529,39 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		_netId, err := strconv.ParseUint(vars["network"], 10, 64)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		netId := gp.NetworkId(_netId)
+		users, err := api.UserGetGroupMembers(userId, netId)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+		}
+		if len(users) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+			return
+		}
+		jsonResponse(w, users, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
