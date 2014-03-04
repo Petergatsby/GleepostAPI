@@ -264,14 +264,14 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 	return
 }
 
-//GetUserNetworks returns all the networks id is a member of, optionally excluding universities
-func (db *DB) GetUserNetworks(id gp.UserId, excludeUni bool) (networks []gp.Network, err error) {
+//GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
+func (db *DB) GetUserNetworks(id gp.UserId, userGroupsOnly bool) (networks []gp.Network, err error) {
 	networkSelect :=  "SELECT user_network.network_id, network.name " +
 		"FROM user_network " +
 		"INNER JOIN network ON user_network.network_id = network.id " +
 		"WHERE user_id = ?"
-	if excludeUni {
-		networkSelect += " AND network.is_university = 0"
+	if userGroupsOnly {
+		networkSelect += " AND network.user_group = 1"
 	}
 	s, err := db.prepare(networkSelect)
 	if err != nil {
