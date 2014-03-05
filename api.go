@@ -130,6 +130,7 @@ func main() {
 	r.HandleFunc("/api/{version}/resend_verification", resendVerificationHandler)
 	r.HandleFunc("/api/{version}/invite_message", inviteMessageHandler)
 	r.HandleFunc("/api/{version}/live", liveHandler)
+	r.HandleFunc("/api/{version}/search/users/{query}", searchUsers).Methods("GET")
 	r.Handle("/api/{version}/ws", websocket.Handler(jsonServer))
 	server := &http.Server{
 		Addr:    ":" + conf.Port,

@@ -1593,3 +1593,37 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func searchUsers(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		query := strings.Split(vars["query"], " ")
+		networks, err := api.GetUserNetworks(userId)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			return
+		}
+		users, err := api.UserSearchUsersInNetwork(userId, query[0], strings.Join(query[1:], " "), networks[0].Id)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			switch {
+			case !ok:
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			case *e == lib.ENOTALLOWED:
+				jsonResponse(w, e, 403)
+			case *e == lib.ETOOSHORT:
+				jsonResponse(w, e, 400)
+			default:
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+		}
+		jsonResponse(w, users, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+
+}
