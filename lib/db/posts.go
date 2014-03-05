@@ -419,7 +419,6 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, err error) {
 //TODO: Verify shit doesn't break when a user has no user-groups
 func (db *DB) UserGetGroupsPosts(user gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
 	postsQuery := "SELECT id, `by`, time, text, network_id FROM wall_posts " +
-			"FROM wall_posts " +
 			"WHERE network_id IN ( " +
 				"SELECT network_id " +
 				"FROM user_network " +
