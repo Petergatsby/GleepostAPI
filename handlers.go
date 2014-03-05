@@ -1588,7 +1588,7 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			}
 		}
-		w.WriteHeader(201)
+		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}

@@ -111,6 +111,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /profile/networks [[GET]](#get-profilenetworks)
 
+/profile/networks/[network-id] [[DELETE]](#delete-profilenetworksnetwork-id)
+
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
 
 ##POST /register
@@ -1125,6 +1127,15 @@ Example response: (http 200)
 ```
 [{"id":5345, "name":"Stanford Catan Club"}]
 ```
+
+##DELETE /profile/networks/[network-id]
+required parameters:
+id=[user-id]
+token=[token]
+
+This revokes your membership of the group network-id, if you are a member.
+If you attempt this on an official network (a university) you will get an error 403.
+Otherwise, you will get 204 No Content.
 
 ##GET /notifications
 required parameters: id, token
