@@ -415,3 +415,72 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, err error) {
 	return
 }
 
+//UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
+func (db *DB) UserGetGroupsPosts(user gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
+	postsQuery := "SELECT id, `by`, time, text, network_id FROM wall_posts " +
+			"FROM wall_posts " +
+			"WHERE network_id IN ( " +
+				"SELECT network_id " +
+				"FROM user_network " +
+				"JOIN network ON user_network.network_id = network.id " +
+				"WHERE user_id = ? " +
+				"AND network.user_group = 1 " +
+			" ) "
+	switch {
+	case sel == "start":
+		postsQuery += " ORDER BY time DESC LIMIT ?, ?"
+	case sel == "before":
+		postsQuery += "AND wall_posts.id < ? "
+		postsQuery += "ORDER BY time DESC LIMIT 0, ?"
+	case sel == "after":
+		postsQuery += "AND wall_posts.id > ? "
+		postsQuery += "ORDER BY time DESC LIMIT 0, ?"
+	default:
+		return posts, gp.APIerror{"Invalid selector"}
+	}
+	s, err := db.prepare(postsQuery)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(user, index, count)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	//lol copy paste
+	for rows.Next() {
+		var post gp.PostSmall
+		var t string
+		var by gp.UserId
+		err = rows.Scan(&post.Id, &by, &t, &post.Text, &post.Network)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			post.CommentCount = db.GetCommentCount(post.Id)
+			post.Images, err = db.GetPostImages(post.Id)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.Id)
+			if err != nil {
+				return
+			}
+			posts = append(posts, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+		net, err := db.GetNetwork(post.Network)
+		if err == nil {
+			post.Group = &net
+		} else {
+			log.Println("Error getting network:", err)
+		}
+	}
+	return
+}

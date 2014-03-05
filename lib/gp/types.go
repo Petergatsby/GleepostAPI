@@ -77,6 +77,7 @@ type Post struct {
 	Categories []PostCategory         `json:"categories,omitempty"`
 	Attribs    map[string]interface{} `json:"attribs,omitempty"`
 	Popularity int                    `json:"popularity,omitempty"`
+	Group      *Network               `json:"network,omitempty"`
 }
 
 type PostSmall struct {
