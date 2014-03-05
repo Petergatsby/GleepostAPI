@@ -1620,6 +1620,7 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 			default:
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			}
+			return
 		}
 		if len(users) == 0 {
 			// this is an ugly hack. But I can't immediately
