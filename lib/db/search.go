@@ -9,7 +9,7 @@ import (
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
 func (db *DB) SearchUsersInNetwork(first, last string, netId gp.NetworkId) (users []gp.User, err error) {
 	search := "SELECT id, name, avatar, firstname " +
-		"FROM users JOIN user_network ON users.id = user_network.network_id " +
+		"FROM users JOIN user_network ON users.id = user_network.user_id" +
 		"WHERE network_id = ? " +
 		"AND firstname LIKE ? " +
 		"AND lastname LIKE ?"
