@@ -471,15 +471,15 @@ func (db *DB) UserGetGroupsPosts(user gp.UserId, index int64, count int, sel str
 			if err != nil {
 				return
 			}
+			net, err := db.GetNetwork(post.Network)
+			if err == nil {
+				post.Group = &net
+			} else {
+				log.Println("Error getting network:", err)
+			}
 			posts = append(posts, post)
 		} else {
 			log.Println("Bad post: ", post)
-		}
-		net, err := db.GetNetwork(post.Network)
-		if err == nil {
-			post.Group = &net
-		} else {
-			log.Println("Error getting network:", err)
 		}
 	}
 	return
