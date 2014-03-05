@@ -3,6 +3,7 @@ package lib
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"strings"
+	"log"
 )
 
 var ETOOSHORT = gp.APIerror{Reason:"Your query must be at least 2 characters long"}
@@ -22,6 +23,7 @@ func (api *API) UserSearchUsersInNetwork(user gp.UserId, first, last string, net
 	case len(first) < 2 :
 		return users, &ETOOSHORT
 	default:
+		log.Printf("Searching network %d for user %s %s\n", netId, first, last)
 		return api.db.SearchUsersInNetwork(first, last, netId)
 	}
 }
