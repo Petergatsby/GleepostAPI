@@ -155,3 +155,16 @@ func (api *API) UserGetGroupMembers(userId gp.UserId, netId gp.NetworkId) (users
 		return api.db.GetNetworkUsers(netId)
 	}
 }
+
+//UserLeaveGroup removes userId from group netId. If attempted on an official group it will give ENOTALLOWED (you can't leave your university...) but otherwise should always succeed.
+func (api *API) UserLeaveGroup(userId gp.UserId, netId gp.NetworkId) (err error) {
+	group, err := api.isGroup(netId)
+	switch {
+	case err != nil:
+		return
+	case !group:
+		return &ENOTALLOWED
+	default:
+		return api.db.LeaveNetwork(userId, netId)
+	}
+}

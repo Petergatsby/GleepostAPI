@@ -1565,3 +1565,31 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "DELETE":
+		vars := mux.Vars(r)
+		_netId, err := strconv.ParseUint(vars["network"], 10, 64)
+		if err != nil {
+			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			return
+		}
+		netId := gp.NetworkId(_netId)
+		err = api.UserLeaveGroup(userId, netId)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+		}
+		w.WriteHeader(201)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}

@@ -121,6 +121,7 @@ func main() {
 	r.HandleFunc("/api/{version}/profile/busy", busyHandler)
 	r.HandleFunc("/api/{version}/profile/attending", userAttending)
 	r.HandleFunc("/api/{version}/profile/networks", getGroups)
+	r.HandleFunc("/api/{version}/profile/networks/{network:[0-9]+}", deleteUserNetwork).Methods("DELETE")
 	r.HandleFunc("/api/{version}/notifications", notificationHandler)
 	r.HandleFunc("/api/{version}/fblogin", facebookHandler)
 	r.HandleFunc("/api/{version}/verify/{token:[a-fA-F0-9]+}", verificationHandler)
