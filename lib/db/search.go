@@ -15,11 +15,11 @@ func (db *DB) SearchUsersInNetwork(first, last string, netId gp.NetworkId) (user
 		"AND lastname LIKE ?"
 	first += "%"
 	last += "%"
+	log.Println(search, first, last)
 	s, err := db.prepare(search)
 	if err != nil {
 		return
 	}
-	log.Println(search, first, last)
 	rows, err := s.Query(netId, first, last)
 	if err != nil {
 		return
