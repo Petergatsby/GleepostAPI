@@ -438,3 +438,8 @@ func (api *API) UnAttend(event gp.PostId, user gp.UserId) (err error) {
 func (api *API) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 	return api.db.UserAttends(user)
 }
+
+//UserGetGroupsPosts returns a user's group post feed.
+func (api *API) UserGetGroupsPosts(user gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
+	return api.db.UserGetGroupsPosts(user, index, count, sel)
+}

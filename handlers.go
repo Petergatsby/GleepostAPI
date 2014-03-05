@@ -1634,5 +1634,61 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
+}
 
+//getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
+func getGroupPosts(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		if err != nil {
+			start = 0
+		}
+		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+		if err != nil {
+			before = 0
+		}
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			after = 0
+		}
+		//First: which paging scheme are we using
+		var selector string
+		var index int64
+		switch {
+		case after > 0:
+			selector = "after"
+			index = after
+		case before > 0:
+			selector = "before"
+			index = before
+		default:
+			selector = "start"
+			index = start
+		}
+		posts, err := api.UserGetGroupsPosts(userId, index, api.Config.PostPageSize, selector)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
+		}
+		if len(posts) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+		} else {
+			jsonResponse(w, posts, 200)
+		}
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
 }

@@ -416,6 +416,7 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, err error) {
 }
 
 //UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
+//TODO: Verify shit doesn't break when a user has no user-groups
 func (db *DB) UserGetGroupsPosts(user gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
 	postsQuery := "SELECT id, `by`, time, text, network_id FROM wall_posts " +
 			"FROM wall_posts " +
