@@ -1621,6 +1621,14 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			}
 		}
+		if len(users) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+			return
+		}
 		jsonResponse(w, users, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
