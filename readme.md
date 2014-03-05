@@ -111,6 +111,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /profile/networks [[GET]](#get-profilenetworks)
 
+/profile/networks/posts [[GET]](#get-profilenetworksposts)
+
 /profile/networks/[network-id] [[DELETE]](#delete-profilenetworksnetwork-id)
 
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
@@ -1128,6 +1130,20 @@ This returns a list of all (non-university) groups this user belongs to.
 Example response: (http 200)
 ```
 [{"id":5345, "name":"Stanford Catan Club"}]
+```
+
+##GET /profile/networks/posts
+required parameters:
+id=[user-id]
+token=[token]
+
+This resource is a combined feed of posts in groups you are a member of.
+It functions identically to [/posts](#get-posts) but with two exceptions:
+- Filtering is not yet supported
+- Posts also embed information about the group they were posted in.
+
+```
+
 ```
 
 ##DELETE /profile/networks/[network-id]
