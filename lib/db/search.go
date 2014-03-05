@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"log"
 )
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
@@ -18,6 +19,7 @@ func (db *DB) SearchUsersInNetwork(first, last string, netId gp.NetworkId) (user
 	if err != nil {
 		return
 	}
+	log.Println(search, first, last)
 	rows, err := s.Query(netId, first, last)
 	if err != nil {
 		return
