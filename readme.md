@@ -115,6 +115,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /notifications [[GET]](#get-notifications) [[PUT]](#put-notifications)
 
+/search/users/[name] [[GET]](#get-searchusersname)
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1245,3 +1247,17 @@ required parameters: email
 Resend a verification email.
 
 If successful, will respond with HTTP 204.
+
+##GET /search/users/[name]
+required parameters: id, token, name
+
+Returns a list of all the users within your primary (ie university) network, who match a search for name.
+
+You can supply partial names (with a minimum length of two characters for the first) and the second name is optional.
+
+If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "Jon S" "Jonathan Smi" will match him.
+
+Example response: (HTTP 200)
+```
+[{"id":9, "name":"Steph", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"Steve", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
+```
