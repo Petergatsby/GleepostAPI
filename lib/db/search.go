@@ -1,8 +1,8 @@
 package db
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"database/sql"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
@@ -12,8 +12,8 @@ func (db *DB) SearchUsersInNetwork(first, last string, netId gp.NetworkId) (user
 		"WHERE network_id = ? " +
 		"AND firstname LIKE ? " +
 		"AND lastname LIKE ?"
-	first+= "%"
-	last+= "%"
+	first += "%"
+	last += "%"
 	s, err := db.prepare(search)
 	if err != nil {
 		return

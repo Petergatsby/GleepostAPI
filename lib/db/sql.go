@@ -99,8 +99,8 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
 		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
 		"WHERE participant_id = ? AND ( " +
-			"conversation_expirations.ended IS NULL " +
-			"OR conversation_expirations.ended =0 " +
+		"conversation_expirations.ended IS NULL " +
+		"OR conversation_expirations.ended =0 " +
 		") " +
 		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	sqlStmt["conversationsAll"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
@@ -476,11 +476,11 @@ func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *g
 }
 
 func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
-q :="SELECT id, name, firstname, avatar " +
-                "FROM users " +
-                "LEFT JOIN user_network ON id = user_id " +
-                "WHERE network_id = ? " +
-                "ORDER BY RAND()"
+	q := "SELECT id, name, firstname, avatar " +
+		"FROM users " +
+		"LEFT JOIN user_network ON id = user_id " +
+		"WHERE network_id = ? " +
+		"ORDER BY RAND()"
 	log.Println(q, id, count, network)
 
 	s := db.stmt["randomSelect"]
@@ -635,13 +635,13 @@ func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation
 
 func (db *DB) ConversationsToTerminate(id gp.UserId) (conversations []gp.ConversationId, err error) {
 	q := "SELECT conversation_participants.conversation_id " +
-	"FROM conversation_participants " +
-	"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-	"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-	"WHERE participant_id = ? " +
-	"AND conversation_expirations.ended = 0 " +
-	"ORDER BY conversation_expirations.expiry DESC  " +
-	"LIMIT 2 , 20"
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? " +
+		"AND conversation_expirations.ended = 0 " +
+		"ORDER BY conversation_expirations.expiry DESC  " +
+		"LIMIT 2 , 20"
 	s, err := db.prepare(q)
 	if err != nil {
 		return

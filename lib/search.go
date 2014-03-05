@@ -2,11 +2,11 @@ package lib
 
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"strings"
 	"log"
+	"strings"
 )
 
-var ETOOSHORT = gp.APIerror{Reason:"Your query must be at least 2 characters long"}
+var ETOOSHORT = gp.APIerror{Reason: "Your query must be at least 2 characters long"}
 
 //UserSearchUsersInNetwork returns all the users with names beginning with first, last in netId, or ENOTALLOWED if user isn't part of this network.
 //last may be omitted but first must be at least 2 characters.
@@ -20,7 +20,7 @@ func (api *API) UserSearchUsersInNetwork(user gp.UserId, first, last string, net
 		return
 	case !in:
 		return users, &ENOTALLOWED
-	case len(first) < 2 :
+	case len(first) < 2:
 		return users, &ETOOSHORT
 	default:
 		log.Printf("Searching network %d for user %s %s\n", netId, first, last)

@@ -34,7 +34,7 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
 func (db *DB) GetUserNetworks(id gp.UserId, userGroupsOnly bool) (networks []gp.Network, err error) {
-	networkSelect :=  "SELECT user_network.network_id, network.name " +
+	networkSelect := "SELECT user_network.network_id, network.name " +
 		"FROM user_network " +
 		"INNER JOIN network ON user_network.network_id = network.id " +
 		"WHERE user_id = ?"
@@ -76,7 +76,7 @@ func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 //GetNetwork returns the network netId.
 //TODO: add extra details.
 func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
-	networkSelect :=  "SELECT network.name " +
+	networkSelect := "SELECT network.name " +
 		"FROM network " +
 		"WHERE network.id = ?"
 	s, err := db.prepare(networkSelect)

@@ -2,8 +2,8 @@ package lib
 
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"strings"
 	"log"
+	"strings"
 )
 
 func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {

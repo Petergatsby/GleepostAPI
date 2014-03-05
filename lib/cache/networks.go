@@ -1,9 +1,9 @@
 package cache
 
 import (
+	"fmt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/garyburd/redigo/redis"
-	"fmt"
 )
 
 /********************************************************************
@@ -38,7 +38,7 @@ func (c *Cache) GetUserNetworks(userId gp.UserId) (networks []gp.Network, err er
 	return networks, nil
 }
 
-//SetUserNetworks 
+//SetUserNetworks
 func (c *Cache) SetUserNetworks(userId gp.UserId, networks ...gp.Network) {
 	conn := c.pool.Get()
 	defer conn.Close()

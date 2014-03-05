@@ -1,10 +1,10 @@
 package lib
 
 import (
+	"encoding/json"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"encoding/json"
 	"log"
 	"time"
 )
@@ -190,7 +190,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 }
 
 func (api *API) androidPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
-	data := map[string]interface{}{"type":"MSG", "sender":message.By.Name, "sender-id":message.By.Id, "conv":convId, "for":user}
+	data := map[string]interface{}{"type": "MSG", "sender": message.By.Name, "sender-id": message.By.Id, "conv": convId, "for": user}
 	if len(message.Text) > 3200 {
 		data["text"] = message.Text[:3200] + "..."
 	} else {

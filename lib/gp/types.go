@@ -68,15 +68,15 @@ type PostCore struct {
 }
 
 type Post struct {
-	Network    NetworkId	     `json:"-"`
-	Id         PostId            `json:"id"`
-	By         User              `json:"by"`
-	Time       time.Time         `json:"timestamp"`
-	Text       string            `json:"text"`
-	Images     []string          `json:"images"`
-	Categories []PostCategory    `json:"categories,omitempty"`
+	Network    NetworkId              `json:"-"`
+	Id         PostId                 `json:"id"`
+	By         User                   `json:"by"`
+	Time       time.Time              `json:"timestamp"`
+	Text       string                 `json:"text"`
+	Images     []string               `json:"images"`
+	Categories []PostCategory         `json:"categories,omitempty"`
 	Attribs    map[string]interface{} `json:"attribs,omitempty"`
-	Popularity int		      `json:"popularity,omitempty"`
+	Popularity int                    `json:"popularity,omitempty"`
 }
 
 type PostSmall struct {
@@ -122,7 +122,7 @@ type Conversation struct {
 	Id           ConversationId `json:"id"`
 	LastActivity time.Time      `json:"lastActivity"`
 	Participants []User         `json:"participants"`
-	Read	     []Read	    `json:"read,omitempty"`
+	Read         []Read         `json:"read,omitempty"`
 	Expiry       *Expiry        `json:"expiry,omitempty"`
 }
 
@@ -158,13 +158,13 @@ type AWSConfig struct {
 }
 
 type APNSConfig struct {
-	CertFile string
-	KeyFile  string
+	CertFile   string
+	KeyFile    string
 	Production bool
 }
 
 type GCMConfig struct {
-	APIKey	string
+	APIKey string
 }
 
 type EmailConfig struct {
@@ -182,8 +182,8 @@ type FacebookConfig struct {
 }
 
 type Config struct {
-	UrlBase string
-	Version	string
+	UrlBase              string
+	Version              string
 	Port                 string
 	LoginOverride        bool
 	RegisterOverride     bool
@@ -197,7 +197,7 @@ type Config struct {
 	Redis                RedisConfig
 	AWS                  AWSConfig
 	APNS                 APNSConfig
-	GCM		     GCMConfig
+	GCM                  GCMConfig
 	Email                EmailConfig
 	Facebook             FacebookConfig
 }
@@ -225,6 +225,7 @@ type GroupNotification struct {
 	Notification
 	Group NetworkId `json:"network"`
 }
+
 func (c *MysqlConfig) ConnectionString() string {
 	return c.User + ":" + c.Pass + "@tcp(" + c.Host + ":" + c.Port + ")/gleepost?charset=utf8"
 }

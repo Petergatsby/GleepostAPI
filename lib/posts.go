@@ -2,9 +2,9 @@ package lib
 
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"log"
 	"strconv"
 	"time"
-	"log"
 )
 
 var EBADTIME = gp.APIerror{"Could not parse as a time"}
@@ -43,7 +43,7 @@ func (api *API) getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
 			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, _= api.db.GetEventPopularity(postId)
+			post.Popularity, _ = api.db.GetEventPopularity(postId)
 			break
 		}
 	}
@@ -101,7 +101,7 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 		for _, c := range p.Categories {
 			if c.Tag == "event" {
 				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-				p.Popularity, _= api.db.GetEventPopularity(p.Id)
+				p.Popularity, _ = api.db.GetEventPopularity(p.Id)
 				break
 			}
 		}
@@ -111,7 +111,7 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 }
 
 //GetUserPosts returns the count most recent posts by userId since post `after`.
-func (api *API) GetUserPosts (userId gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
+func (api *API) GetUserPosts(userId gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetUserPosts(userId, index, count, sel)
 	for i, p := range posts {
 		p.Likes, err = api.GetLikes(p.Id)
@@ -125,7 +125,7 @@ func (api *API) GetUserPosts (userId gp.UserId, index int64, count int, sel stri
 		for _, c := range p.Categories {
 			if c.Tag == "event" {
 				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-				p.Popularity, _= api.db.GetEventPopularity(p.Id)
+				p.Popularity, _ = api.db.GetEventPopularity(p.Id)
 				break
 			}
 		}
@@ -165,7 +165,7 @@ func (api *API) getPosts(netId gp.NetworkId, index int64, sel string, count int)
 	if err != nil {
 		log.Println("Cache miss, Getting posts from db")
 		posts, err = api.db.GetPosts(netId, index, count, sel)
-		for i, _:= range posts {
+		for i, _ := range posts {
 			posts[i].Likes, err = api.GetLikes(posts[i].Id)
 			if err != nil {
 				return
@@ -177,7 +177,7 @@ func (api *API) getPosts(netId gp.NetworkId, index int64, sel string, count int)
 			for _, c := range posts[i].Categories {
 				if c.Tag == "event" {
 					//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-					posts[i].Popularity, _= api.db.GetEventPopularity(posts[i].Id)
+					posts[i].Popularity, _ = api.db.GetEventPopularity(posts[i].Id)
 					break
 				}
 			}
@@ -239,7 +239,7 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
 			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, _= api.db.GetEventPopularity(post.Id)
+			post.Popularity, _ = api.db.GetEventPopularity(post.Id)
 			break
 		}
 	}

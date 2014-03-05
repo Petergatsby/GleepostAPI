@@ -127,7 +127,7 @@ func (c *Cache) SetMessage(message gp.Message) {
 }
 
 //MarkConversationSeen registers the id:upTo (last read) pair in redis for convId
-func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) () {
+func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:read", convId)
@@ -136,7 +136,7 @@ func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upT
 	return
 }
 
-func (c *Cache) SetReadStatus(convId gp.ConversationId, read []gp.Read) () {
+func (c *Cache) SetReadStatus(convId gp.ConversationId, read []gp.Read) {
 	for _, r := range read {
 		c.MarkConversationSeen(r.UserId, convId, r.LastRead)
 	}
