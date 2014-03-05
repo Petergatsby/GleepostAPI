@@ -149,3 +149,13 @@ func (db *DB) GetNetworkUsers(netId gp.NetworkId) (users []gp.User, err error) {
 	}
 	return
 }
+
+func (db *DB) LeaveNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
+	leaveQuery := "DELETE FROM user_network WHERE user_id = ? AND network_id = ?"
+	s, err := db.prepare(leaveQuery)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userId, netId)
+	return
+}
