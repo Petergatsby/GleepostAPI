@@ -76,7 +76,7 @@ func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 //GetNetwork returns the network netId.
 //TODO: add extra details.
 func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Group, err error) {
-	networkSelect := "SELECT name, cover_img, desc, creator, user_group " +
+	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group " +
 		"FROM network " +
 		"WHERE network.id = ?"
 	s, err := db.prepare(networkSelect)
