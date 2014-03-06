@@ -7,17 +7,14 @@ import (
 )
 
 func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Group, err error) {
-	nets, err = api.cache.GetUserNetworks(id)
+	nets, err = api.db.GetUserNetworks(id, false)
 	if err != nil {
-		nets, err = api.db.GetUserNetworks(id, false)
-		if err != nil {
-			return
-		}
-		if len(nets) == 0 {
-			return nets, gp.APIerror{"User has no networks!"}
-		}
-		api.cache.SetUserNetworks(id, nets...)
+		return
 	}
+	if len(nets) == 0 {
+		return nets, gp.APIerror{"User has no networks!"}
+	}
+	api.cache.SetUserNetworks(id, nets...)
 	return
 }
 
