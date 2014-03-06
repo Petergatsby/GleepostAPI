@@ -75,19 +75,34 @@ func (db *DB) SetNetwork(userId gp.UserId, networkId gp.NetworkId) (err error) {
 
 //GetNetwork returns the network netId.
 //TODO: add extra details.
-func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
-	networkSelect := "SELECT network.name " +
+func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Group, err error) {
+	networkSelect := "SELECT name, cover_img, desc, creator, user_group " +
 		"FROM network " +
 		"WHERE network.id = ?"
 	s, err := db.prepare(networkSelect)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(netId).Scan(&network.Name)
+	var cover_img, desc sql.NullString
+	var creator sql.NullInt64
+	var user_group bool
+	err = s.QueryRow(netId).Scan(&network.Name, &cover_img, &desc, &creator, &user_group)
 	if err != nil {
 		return
 	}
 	network.Id = netId
+	if cover_img.Valid {
+		network.Image = cover_img.String
+	}
+	if desc.Valid {
+		network.Desc = cover_img.String
+	}
+	if creator.Valid {
+		u, err := db.GetUser(gp.UserId(creator.Int64))
+		if err == nil {
+			network.Creator = &u
+		}
+	}
 	return
 }
 

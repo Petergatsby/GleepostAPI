@@ -94,7 +94,7 @@ func (api *API) assignNetworks(user gp.UserId, email string) (networks int, err 
 	return
 }
 
-func (api *API) UserGetNetwork(userId gp.UserId, netId gp.NetworkId) (network gp.Network, err error) {
+func (api *API) UserGetNetwork(userId gp.UserId, netId gp.NetworkId) (network gp.Group, err error) {
 	in, err := api.UserInNetwork(userId, netId)
 	switch {
 	case err != nil:
@@ -106,7 +106,7 @@ func (api *API) UserGetNetwork(userId gp.UserId, netId gp.NetworkId) (network gp
 	}
 }
 
-func (api *API) getNetwork(netId gp.NetworkId) (network gp.Network, err error) {
+func (api *API) getNetwork(netId gp.NetworkId) (network gp.Group, err error) {
 	return api.db.GetNetwork(netId)
 }
 
