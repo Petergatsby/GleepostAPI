@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
+func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Group, err error) {
 	nets, err = api.cache.GetUserNetworks(id)
 	if err != nil {
 		nets, err = api.db.GetUserNetworks(id, false)
@@ -22,7 +22,7 @@ func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Network, err error) {
 }
 
 //GetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
-func (api *API) GetUserGroups(id gp.UserId) (groups []gp.Network, err error) {
+func (api *API) GetUserGroups(id gp.UserId) (groups []gp.Group, err error) {
 	groups, err = api.db.GetUserNetworks(id, true)
 	return
 }

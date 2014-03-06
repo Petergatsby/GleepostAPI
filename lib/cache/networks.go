@@ -10,7 +10,7 @@ import (
 		Networks
 ********************************************************************/
 
-func (c *Cache) GetUserNetworks(userId gp.UserId) (networks []gp.Network, err error) {
+func (c *Cache) GetUserNetworks(userId gp.UserId) (networks []gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:networks", userId)
@@ -39,7 +39,7 @@ func (c *Cache) GetUserNetworks(userId gp.UserId) (networks []gp.Network, err er
 }
 
 //SetUserNetworks
-func (c *Cache) SetUserNetworks(userId gp.UserId, networks ...gp.Network) {
+func (c *Cache) SetUserNetworks(userId gp.UserId, networks ...gp.Group) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d:networks", userId)
@@ -51,28 +51,38 @@ func (c *Cache) SetUserNetworks(userId gp.UserId, networks ...gp.Network) {
 }
 
 //SetNetwork adds network to the cache.
-func (c *Cache) SetNetwork(network gp.Network) {
+func (c *Cache) SetNetwork(network gp.Group) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("networks:%d", network.Id)
-	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name)
+	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name, baseKey+":image", network.Image, baseKey+":desc", network.Desc)
+	if network.Creator != nil {
+		conn.Send("SET", baseKey+":creator", network.Creator.Id)
+	}
 	conn.Flush()
 }
 
 //GetNetwork returns the network with id netId from the cache, or err if it isn't there.
-func (c *Cache) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
+func (c *Cache) GetNetwork(netId gp.NetworkId) (network gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d", netId)
-	reply, err := redis.Values(conn.Do("MGET", key+":id", key+":name"))
+	reply, err := redis.Values(conn.Do("MGET", key+":id", key+":name", key+":image", key+":desc", key+":creator"))
 	if err != nil {
 		return
 	}
-	if _, err = redis.Scan(reply, &network.Id, &network.Name); err != nil {
+	var u gp.UserId
+	if _, err = redis.Scan(reply, &network.Id, &network.Name, &network.Image, &network.Desc, &u); err != nil {
 		return
 	}
 	if network.Id == 0 {
 		err = redis.Error("Cache miss")
+	}
+	if u != 0 {
+		user, err := c.GetUser(u)
+		if err == nil {
+			network.Creator = &user
+		}
 	}
 	return
 }
