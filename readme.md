@@ -1146,7 +1146,8 @@ It functions identically to [/posts](#get-posts) but with two exceptions:
 - Posts also embed information about the group they were posted in.
 
 ```
-[{"id":886,"by":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"},"timestamp":"2014-03-04T20:57:39Z","text":"","images":null,"network":{"id":1914,"name":"Even cooler group"},"comment_count":0,"like_count":1}]
+[{"id":886,"by":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"},"timestamp":"2014-03-04T20:57:39Z","text":"","images":null,"network":{"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}},
+"comment_count":0,"like_count":1}]
 ```
 
 ##DELETE /profile/networks/[network-id]
