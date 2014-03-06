@@ -34,7 +34,8 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
 func (db *DB) GetUserNetworks(id gp.UserId, userGroupsOnly bool) (networks []gp.Group, err error) {
-	networkSelect := "SELECT user_network.network_id, network.name " +
+	networkSelect := "SELECT user_network.network_id, network.name, " +
+		"network.cover_img, network.`desc`, network.creator " +
 		"FROM user_network " +
 		"INNER JOIN network ON user_network.network_id = network.id " +
 		"WHERE user_id = ?"
@@ -47,16 +48,30 @@ func (db *DB) GetUserNetworks(id gp.UserId, userGroupsOnly bool) (networks []gp.
 	}
 	rows, err := s.Query(id)
 	defer rows.Close()
-	log.Println("DB hit: getUserNetworks userid (network.id, network.name)")
+	log.Println("DB hit: getUserNetworks userid (network.id, network.name, cover_img, desc, creator)")
 	if err != nil {
 		return
 	}
 	for rows.Next() {
 		var network gp.Group
-		err = rows.Scan(&network.Id, &network.Name)
+		var img, desc sql.NullString
+		var creator sql.NullInt64
+		err = rows.Scan(&network.Id, &network.Name, &img, &desc, &creator)
 		if err != nil {
 			return
 		} else {
+			if img.Valid {
+				network.Image = img.String
+			}
+			if desc.Valid {
+				network.Desc = desc.String
+			}
+			if creator.Valid {
+				u, err := db.GetUser(gp.UserId(creator.Int64))
+				if err == nil {
+					network.Creator = &u
+				}
+			}
 			networks = append(networks, network)
 		}
 	}
