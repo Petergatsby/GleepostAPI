@@ -1520,7 +1520,6 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		_uID, err := strconv.ParseUint(r.FormValue("user"), 10, 64)
 		if err != nil {
 			_uID = 0
-			return
 		}
 		uID := gp.UserId(_uID)
 		switch {
