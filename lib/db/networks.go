@@ -92,19 +92,27 @@ func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Network, err error) {
 }
 
 //CreateNetwork creates a new network. usergroup indicates that the group is user-defined (created by a user rather than system-defined networks such as universities)
-func (db *DB) CreateNetwork(name string, usergroup bool) (network gp.Network, err error) {
-	networkInsert := "INSERT INTO network (name, user_group) VALUES (?, ?)"
+func (db *DB) CreateNetwork(name, url, desc string, creator gp.UserId, usergroup bool) (group gp.Group, err error) {
+	networkInsert := "INSERT INTO network (name, cover_img, desc, creator, user_group) VALUES (?, ?, ?, ?, ?)"
 	s, err := db.prepare(networkInsert)
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(name, usergroup)
+	res, err := s.Exec(name, url, desc, creator, usergroup)
 	if err != nil {
 		return
 	}
 	id, _ := res.LastInsertId()
-	network.Id = gp.NetworkId(id)
-	network.Name = name
+	group.Id = gp.NetworkId(id)
+	group.Name = name
+	group.Image = url
+	group.Desc = desc
+	u, err := db.GetUser(creator)
+	if err == nil {
+		group.Creator = &u
+	} else {
+		log.Println("Error getting user:", err)
+	}
 	return
 }
 

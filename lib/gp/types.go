@@ -37,6 +37,13 @@ type Network struct {
 	Name string    `json:"name"`
 }
 
+type Group struct {
+	Network
+	Image string `json:"image,omitempty"`
+	Desc string `json:"description,omitempty"`
+	Creator *User `json:"creator,omitempty"`
+}
+
 type Message struct {
 	Id   MessageId `json:"id"`
 	By   User      `json:"by"`

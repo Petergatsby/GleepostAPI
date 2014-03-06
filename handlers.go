@@ -1484,12 +1484,21 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		name := r.FormValue("name")
-		network, err := api.CreateGroup(userId, name)
-		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 500)
-			return
+		url := r.FormValue("url")
+		desc := r.FormValue("desc")
+		switch {
+		case len(name) == 0:
+			jsonResponse(w, gp.APIerror{"Missing parameter: name"}, 400)
+		case len(url) == 0:
+			jsonResponse(w, gp.APIerror{"Missing parameter: url"}, 400)
+		default:
+			network, err := api.CreateGroup(userId, name, url, desc)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			jsonResponse(w, network, 201)
 		}
-		jsonResponse(w, network, 201)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}

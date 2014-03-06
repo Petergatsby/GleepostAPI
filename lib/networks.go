@@ -111,8 +111,8 @@ func (api *API) getNetwork(netId gp.NetworkId) (network gp.Network, err error) {
 }
 
 //CreateGroup creates a group and adds the creator as a member.
-func (api *API) CreateGroup(userId gp.UserId, name string) (network gp.Network, err error) {
-	network, err = api.db.CreateNetwork(name, true)
+func (api *API) CreateGroup(userId gp.UserId, name, url, desc string) (network gp.Group, err error) {
+	network, err = api.db.CreateNetwork(name, url, desc, userId, true)
 	if err != nil {
 		return
 	}
