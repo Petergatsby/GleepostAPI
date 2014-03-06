@@ -1519,11 +1519,19 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		netId := gp.NetworkId(_netId)
 		_uID, err := strconv.ParseUint(r.FormValue("user"), 10, 64)
 		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			_uID = 0
 			return
 		}
 		uID := gp.UserId(_uID)
-		err = api.UserAddUserToGroup(userId, uID, netId)
+		switch {
+		case uID > 0:
+			err = api.UserAddUserToGroup(userId, uID, netId)
+		case len(r.FormValue("email")) > 5:
+			err = api.UserInviteEmail(userId, netId, r.FormValue("email"))
+		default:
+			jsonResponse(w, gp.APIerror{"Must add either a user or an email"}, 400)
+			return
+		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {

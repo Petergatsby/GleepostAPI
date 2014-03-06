@@ -182,3 +182,13 @@ func (db *DB) LeaveNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
 	_, err = s.Exec(userId, netId)
 	return
 }
+
+func (db *DB) CreateInvite(userId gp.UserId, netId gp.NetworkId, email string, token string) (err error) {
+	inviteQuery := "INSERT INTO group_invites (group_id, inviter, email, key) VALUES (?, ?, ?, ?)"
+	s, err := db.prepare(inviteQuery)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(netId, userId, email, token)
+	return
+}

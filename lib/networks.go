@@ -165,3 +165,25 @@ func (api *API) UserLeaveGroup(userId gp.UserId, netId gp.NetworkId) (err error)
 		return api.db.LeaveNetwork(userId, netId)
 	}
 }
+
+func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email string) (err error) {
+	in, neterr := api.UserInNetwork(userId, netId)
+	isgroup, grouperr := api.isGroup(netId)
+	switch {
+	case neterr != nil:
+		return neterr
+	case grouperr != nil:
+		return grouperr
+	case !in || !isgroup:
+		return &ENOTALLOWED
+	default:
+		//TODO: Check if this user already exists
+		token, e := RandomString()
+		if e != nil {
+			return e
+		}
+		err = api.db.CreateInvite(userId, netId, email, token)
+		return
+	}
+
+}
