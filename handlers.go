@@ -1618,6 +1618,9 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET":
 		vars := mux.Vars(r)
 		query := strings.Split(vars["query"], " ")
+		for i := range query {
+			query[i] = strings.TrimSpace(query[i])
+		}
 		networks, err := api.GetUserNetworks(userId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
