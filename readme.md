@@ -477,10 +477,10 @@ required parameters:
 id=[user-id]
 token=[token]
 name="Name of the group"
-url = uploaded image URL
 
 optional:
 desc="Description of the group"
+url = uploaded image URL
 This creates a new group named `name` and adds you as a member.
 A successful response is 201:
 
