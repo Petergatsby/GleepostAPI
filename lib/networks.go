@@ -42,6 +42,19 @@ func (api *API) isGroup(netId gp.NetworkId) (group bool, err error) {
 	return api.db.IsGroup(netId)
 }
 
+//UserAddUsersToGroup adds all addees to the group until the first error.
+func (api *API) UserAddUsersToGroup(adder gp.UserId, addees []gp.UserId, group gp.NetworkId) (count int, err error) {
+	for _, addee := range addees {
+		err = api.UserAddUserToGroup(adder, addee, group)
+		if err == nil {
+			count++
+		} else {
+			return
+		}
+	}
+	return
+}
+
 //UserAddUserToGroup adds addee to group iff adder is in group and group is not a university network (we don't want people to be able to get into universities they're not part of)
 //TODO: Check addee exists
 func (api *API) UserAddUserToGroup(adder, addee gp.UserId, group gp.NetworkId) (err error) {

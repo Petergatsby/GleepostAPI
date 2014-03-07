@@ -599,9 +599,9 @@ id=[user-id]
 token=[token]
 
 One of:
-user=[other-user-id]
+users=[other-user-id],[other-user-id],[other-user-id]
 email=[other-user-email]
-Adds another user as a member of this network, or emails them an invite if they aren't on Gleepost. On success will return 204.
+Adds other users to this network, or emails them an invite if they aren't on Gleepost. On success will return 204.
 
 ##GET /conversations/live
 required parameters:

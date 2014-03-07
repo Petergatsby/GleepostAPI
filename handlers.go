@@ -1517,14 +1517,17 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		netId := gp.NetworkId(_netId)
-		_uID, err := strconv.ParseUint(r.FormValue("user"), 10, 64)
-		if err != nil {
-			_uID = 0
+		_users := strings.Split(r.FormValue("users"), ",")
+		var users []gp.UserId
+		for _, u := range _users {
+			user, err := strconv.ParseUint(u, 10, 64)
+			if err == nil {
+				users = append(users, gp.UserId(user))
+			}
 		}
-		uID := gp.UserId(_uID)
 		switch {
-		case uID > 0:
-			err = api.UserAddUserToGroup(userId, uID, netId)
+		case len(users) > 0:
+			_, err = api.UserAddUsersToGroup(userId, users, netId)
 		case len(r.FormValue("email")) > 5:
 			err = api.UserInviteEmail(userId, netId, r.FormValue("email"))
 		default:
