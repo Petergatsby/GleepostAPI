@@ -1713,7 +1713,7 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func putNetworks(w http.ResponseWriter, r *http.Request) {
+func putNetwork(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
 	case err != nil:
