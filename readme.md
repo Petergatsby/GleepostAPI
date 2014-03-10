@@ -63,7 +63,7 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /networks [[POST]](#post-networks)
 
-/networks/[network-id] [[GET]](#get-networksnetwork-id)
+/networks/[network-id] [[GET]](#get-networksnetwork-id) [[PUT]](#put-networksnetwork-id)
 
 /networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
 
