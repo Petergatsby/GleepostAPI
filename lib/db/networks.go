@@ -207,3 +207,23 @@ func (db *DB) CreateInvite(userId gp.UserId, netId gp.NetworkId, email string, t
 	_, err = s.Exec(netId, userId, email, token)
 	return
 }
+
+func (db *DB) SetNetworkImage(netId gp.NetworkId, url string) (err error) {
+	networkUpdate := "UPDATE network SET cover_img = ? WHERE id = ?"
+	s, err := db.prepare(networkUpdate)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(url, netId)
+	return
+}
+
+func (db *DB) NetworkCreator(netId gp.NetworkId) (creator gp.UserId, err error) {
+	qCreator := "SELECT creator FROM network WHERE id = ?"
+	s, err := db.prepare(qCreator)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netId).Scan(&creator)
+	return
+}

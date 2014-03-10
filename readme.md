@@ -472,6 +472,19 @@ example responses (http 200):
 {"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}}
 ```
 
+##PUT /networks/[network-id]
+required parameters:
+id=[user-id]
+token=[token]
+
+url="URL returned from /upload"
+
+If you created this group, you can change the group's image. If you didn't create the group -- or you didn't choose a valid image URL - it will return 403. Otherwise, returns the updated resource.
+
+```
+{"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}}
+```
+
 ##POST /networks
 required parameters:
 id=[user-id]

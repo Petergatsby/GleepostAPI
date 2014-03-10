@@ -200,3 +200,27 @@ func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email stri
 	}
 
 }
+
+func (api *API) UserIsNetworkOwner(userId gp.UserId, netId gp.NetworkId) (owner bool, err error) {
+	creator, err := api.db.NetworkCreator(netId)
+	return (creator == userId), err
+}
+
+//UserSetNetworkImage sets the network's cover image to url, if userId is allowed to do so (currently, if they are the group's creator) or returns ENOTALLOWED otherwise.
+func (api *API) UserSetNetworkImage(userId gp.UserId, netId gp.NetworkId, url string) (err error) {
+	exists, eupload := api.UserUploadExists(userId, url)
+	owner, eowner := api.UserIsNetworkOwner(userId, netId)
+	switch {
+	case eowner != nil:
+		return eowner
+	case eupload != nil:
+		return eupload
+	case !owner:
+		return &ENOTALLOWED
+	case !exists:
+		//TODO: Return a different error
+		return &ENOTALLOWED
+	default:
+		return api.db.SetNetworkImage(netId, url)
+	}
+}
