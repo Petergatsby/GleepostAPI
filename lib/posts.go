@@ -169,6 +169,11 @@ func (api *API) getPosts(netId gp.NetworkId, mode int, index int64, count int, c
 	return
 }
 
+//UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
+func (api *API) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	return api.db.UserGetGroupsPosts(user, mode, index, count, category)
+}
+
 func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.Id = p.Id
 	post.By = p.By
@@ -391,7 +396,3 @@ func (api *API) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 	return api.db.UserAttends(user)
 }
 
-//UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
-func (api *API) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	return api.db.UserGetGroupsPosts(user, mode, index, count, category)
-}
