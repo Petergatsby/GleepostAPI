@@ -147,72 +147,24 @@ func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, mode i
 	}
 }
 
-//UserGetNetworkPostsByCategory returns the posts in netId filtered by filter, if userId can access this network.
-func (api *API) UserGetNetworkPostsByCategory(userId gp.UserId, netId gp.NetworkId, index int64, sel string, count int, filter string) (posts []gp.PostSmall, err error) {
-	in, err := api.UserInNetwork(userId, netId)
-	switch {
-	case err != nil:
-		return posts, err
-	case !in:
-		return posts, &ENOTALLOWED
-	default:
-		return api.getPostsByCategory(netId, index, sel, count, filter)
-	}
-}
-
 func (api *API) getPosts(netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	ps, err := api.cache.GetPosts(netId, mode, index, count)
-	if err != nil {
-		log.Println("Cache miss, Getting posts from db")
-		posts, err = api.db.GetPosts(netId, mode, index, count, category)
-		for i, _ := range posts {
-			posts[i].Likes, err = api.GetLikes(posts[i].Id)
-			if err != nil {
-				return
-			}
-			posts[i].Attribs, err = api.GetPostAttribs(posts[i].Id)
-			if err != nil {
-				return
-			}
-			for _, c := range posts[i].Categories {
-				if c.Tag == "event" {
-					//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-					posts[i].Popularity, _ = api.db.GetEventPopularity(posts[i].Id)
-					break
-				}
-			}
-		}
-		go api.cache.AddPostsFromDB(netId, api.db)
-	} else {
-		var post gp.PostSmall
-		for _, p := range ps {
-			post, err = api.PostSmall(p)
-			if err != nil {
-				return
-			}
-			posts = append(posts, post)
-		}
-	}
-	return
-}
-
-//GetPostsByCategory acts the same as getPosts but only returns posts which are in the category with tag category.
-//It has no caching layer at the moment.
-func (api *API) getPostsByCategory(netId gp.NetworkId, index int64, sel string, count int, category string) (posts []gp.PostSmall, err error) {
-	posts, err = api.db.GetPostsByCategory(netId, index, count, sel, category)
-	if err != nil {
-		return
-	}
-	for i, p := range posts {
-		p.Likes, err = api.GetLikes(p.Id)
+	posts, err = api.db.GetPosts(netId, mode, index, count, category)
+	for i, _ := range posts {
+		posts[i].Likes, err = api.GetLikes(posts[i].Id)
 		if err != nil {
 			return
 		}
-		p.Attribs, err = api.GetPostAttribs(p.Id)
+		posts[i].Attribs, err = api.GetPostAttribs(posts[i].Id)
 		if err != nil {
 			return
 		}
-		posts[i] = p
+		for _, c := range posts[i].Categories {
+			if c.Tag == "event" {
+				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+				posts[i].Popularity, _ = api.db.GetEventPopularity(posts[i].Id)
+				break
+			}
+		}
 	}
 	return
 }

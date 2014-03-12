@@ -247,62 +247,6 @@ func (db *DB) GetPosts(netId gp.NetworkId, mode int, index int64, count int, cat
 	return
 }
 
-//GetPosts finds posts in the network netId.
-func (db *DB) GetPostsByCategory(netId gp.NetworkId, index int64, count int, sel string, categoryTag string) (posts []gp.PostSmall, err error) {
-	var s *sql.Stmt
-	switch {
-	case sel == "start":
-		s = db.stmt["wallSelectCategory"]
-	case sel == "before":
-		s = db.stmt["wallSelectCategoryBefore"]
-	case sel == "after":
-		s = db.stmt["wallSelectCategoryAfter"]
-	default:
-		return posts, gp.APIerror{"Invalid selector"}
-	}
-	rows, err := s.Query(netId, categoryTag, index, count)
-	defer rows.Close()
-	log.Printf("DB hit: getPostsByCategory network: %s category: %s index: %d count: %d", netId, categoryTag, index, count)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	for rows.Next() {
-		log.Println("Got a post")
-		var post gp.PostSmall
-		var t string
-		var by gp.UserId
-		err = rows.Scan(&post.Id, &by, &t, &post.Text)
-		log.Println("Scanned a post")
-		if err != nil {
-			log.Println("Error scanning post: ", err)
-			return posts, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			log.Println("Error parsing time: ", err)
-			return posts, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.Id)
-			post.Images, err = db.GetPostImages(post.Id)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.Id)
-			if err != nil {
-				return
-			}
-			posts = append(posts, post)
-			log.Println("Added a post")
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
-	return
-}
-
 func (db *DB) GetPostImages(postId gp.PostId) (images []string, err error) {
 	s := db.stmt["imageSelect"]
 	rows, err := s.Query(postId)
