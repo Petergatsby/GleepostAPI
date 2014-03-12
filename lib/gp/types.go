@@ -12,6 +12,12 @@ type CommentId uint64
 type ConversationId uint64
 type NotificationId uint64
 
+const (
+	OSTART = iota
+	OBEFORE
+	OAFTER
+)
+
 type User struct {
 	Id     UserId `json:"id"`
 	Name   string `json:"name"`

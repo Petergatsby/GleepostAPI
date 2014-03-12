@@ -11,44 +11,140 @@ import (
 /********************************************************************
 		Post
 ********************************************************************/
+const (
+	WNETWORK = iota
+	WUSER
+	WGROUPS
+)
 
-//GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userId gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
-	var q string
+var EBADORDER = gp.APIerror{Reason:"Invalid order clause!"}
+var EBADWHERE = gp.APIerror{Reason:"Bad WhereClause!"}
+
+type WhereClause struct {
+	Mode int
+	Network gp.NetworkId
+	User	gp.UserId
+	Perspective gp.UserId
+	Category string
+}
+
+func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
+	//Oh shit. I accidentally an ORM?
+	baseQuery := "SELECT wall_posts.id, `by`, time, text, network_id FROM wall_posts "
+	var orderClause string
+	var categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+			"JOIN categories ON post_categories.category_id = categories.id "
+	var stmt *sql.Stmt
 	switch {
-	case sel == "start":
-		q = "SELECT wall_posts.id, `by`, time, text " +
-			"FROM wall_posts " +
-			"WHERE `by` = ? " +
-			"ORDER BY time DESC LIMIT ?, ?"
-	case sel == "before":
-		q = "SELECT wall_posts.id, `by`, time, text " +
-			"FROM wall_posts " +
-			"WHERE `by` = ? AND id < ? " +
-			"ORDER BY time DESC LIMIT 0, ?"
-	case sel == "after":
-		q = "SELECT wall_posts.id, `by`, time, text " +
-			"FROM wall_posts " +
-			"WHERE `by` = ? AND id > ? " +
-			"ORDER BY time DESC LIMIT 0, ?"
+	case w.Mode == WNETWORK:
+		whereClause := "WHERE network_id = ? "
+		switch {
+		case orderMode == gp.OSTART:
+			orderClause = "ORDER BY time DESC LIMIT ?, ?"
+		case orderMode == gp.OBEFORE:
+			whereClause += "AND id < ? "
+			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+		case orderMode == gp.OAFTER:
+			whereClause += "AND id > ? "
+			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+		default:
+			err = &EBADORDER
+			return
+		}
+		if len(w.Category) > 0 {
+			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
+		}
+		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		if err != nil {
+			return
+		}
+		if len(w.Category) > 0 {
+			rows, err = stmt.Query(w.Network, w.Category, index, count)
+		} else {
+			rows, err = stmt.Query(w.Network, index, count)
+		}
+	case w.Mode == WUSER:
+		whereClause := "WHERE `by` = ? " +
+		"AND network_id IN ( " +
+			"SELECT network_id FROM user_network WHERE user_id = ? " +
+		") "
+		switch {
+		case orderMode == gp.OSTART:
+			orderClause = "ORDER BY time DESC LIMIT ?, ?"
+		case orderMode == gp.OBEFORE:
+			whereClause += "AND id < ? "
+			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+		case orderMode == gp.OAFTER:
+			whereClause += "AND id > ? "
+			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+		default:
+			err = &EBADORDER
+			return
+		}
+		if len(w.Category) > 0 {
+			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
+		}
+		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		if err != nil {
+			return
+		}
+		if len(w.Category) > 0 {
+			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
+		} else {
+			rows, err = stmt.Query(w.User, w.Perspective, index, count)
+		}
+	case w.Mode == WGROUPS:
+		whereClause :=	"WHERE network_id IN ( " +
+				"SELECT network_id " +
+				"FROM user_network " +
+				"JOIN network ON user_network.network_id = network.id " +
+				"WHERE user_id = ? " +
+				"AND network.user_group = 1 " +
+			" ) "
+		switch {
+		case orderMode == gp.OSTART:
+			orderClause = " ORDER BY time DESC LIMIT ?, ?"
+		case orderMode == gp.OBEFORE:
+			whereClause += "AND wall_posts.id < ? "
+			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+		case orderMode == gp.OAFTER:
+			whereClause += "AND wall_posts.id > ? "
+			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+		default:
+			err = &EBADORDER
+			return
+		}
+		if len(w.Category) > 0 {
+			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
+		}
+		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		if err != nil {
+			return
+		}
+		if len(w.Category) > 0 {
+			rows, err = stmt.Query(w.User, w.Category, index, count)
+		} else {
+			rows, err = stmt.Query(w.User, index, count)
+		}
 	default:
-		return posts, gp.APIerror{"Invalid selector"}
-	}
-
-	s, err := db.prepare(q)
-	if err != nil {
+		err = &EBADWHERE
 		return
 	}
-	rows, err := s.Query(userId, index, count)
+	return rows, err
+}
+
+func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
+	rows, err := db.WhereRows(where, orderMode, index, count)
 	if err != nil {
 		return
 	}
 	defer rows.Close()
 	for rows.Next() {
+		log.Println("Post!")
 		var post gp.PostSmall
 		var t string
 		var by gp.UserId
-		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		err = rows.Scan(&post.Id, &by, &t, &post.Text, &post.Network)
 		if err != nil {
 			return posts, err
 		}
@@ -67,11 +163,27 @@ func (db *DB) GetUserPosts(userId gp.UserId, index int64, count int, sel string)
 			if err != nil {
 				return
 			}
+			if where.Mode == WGROUPS || where.Mode == WUSER {
+				net, err := db.GetNetwork(post.Network)
+				if err == nil {
+					post.Group = &net
+				} else {
+					log.Println("Error getting network:", err)
+				}
+			}
 			posts = append(posts, post)
 		} else {
 			log.Println("Bad post: ", post)
 		}
 	}
+	return
+}
+
+
+//GetUserPosts returns the most recent count posts by userId after the post with id after.
+func (db *DB) GetUserPosts(userId gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	where := WhereClause{Mode:WUSER, User:userId, Perspective:perspective, Category:category}
+	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
 
@@ -129,55 +241,9 @@ func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []g
 }
 
 //GetPosts finds posts in the network netId.
-func (db *DB) GetPosts(netId gp.NetworkId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
-	var s *sql.Stmt
-	switch {
-	case sel == "start":
-		s = db.stmt["wallSelect"]
-	case sel == "before":
-		s = db.stmt["wallSelectBefore"]
-	case sel == "after":
-		s = db.stmt["wallSelectAfter"]
-	default:
-		return posts, gp.APIerror{"Invalid selector"}
-	}
-	rows, err := s.Query(netId, index, count)
-	log.Println(rows, err, netId, index, count)
-	log.Println("DB hit: getPosts netId(post.id, post.by, post.time, post.texts)")
-	if err != nil {
-		log.Println("Error yo! ", err)
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		log.Println("Post!")
-		var post gp.PostSmall
-		var t string
-		var by gp.UserId
-		err = rows.Scan(&post.Id, &by, &t, &post.Text)
-		if err != nil {
-			return posts, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return posts, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.Id)
-			post.Images, err = db.GetPostImages(post.Id)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.Id)
-			if err != nil {
-				return
-			}
-			posts = append(posts, post)
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
+func (db *DB) GetPosts(netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	where := WhereClause{Mode:WNETWORK, Network:netId, Category:category}
+	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
 

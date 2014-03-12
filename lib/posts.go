@@ -111,8 +111,8 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 }
 
 //GetUserPosts returns the count most recent posts by userId since post `after`.
-func (api *API) GetUserPosts(userId gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
-	posts, err = api.db.GetUserPosts(userId, index, count, sel)
+func (api *API) GetUserPosts(userId gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts, err = api.db.GetUserPosts(userId, perspective, mode, index, count, category)
 	for i, p := range posts {
 		p.Likes, err = api.GetLikes(p.Id)
 		if err != nil {
@@ -135,7 +135,7 @@ func (api *API) GetUserPosts(userId gp.UserId, index int64, count int, sel strin
 }
 
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
-func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	in, err := api.UserInNetwork(userId, netId)
 	switch {
 	case err != nil:
@@ -143,7 +143,7 @@ func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, index 
 	case !in:
 		return posts, &ENOTALLOWED
 	default:
-		return api.getPosts(netId, index, sel, count)
+		return api.getPosts(netId, mode, index, count, category)
 	}
 }
 
@@ -160,11 +160,11 @@ func (api *API) UserGetNetworkPostsByCategory(userId gp.UserId, netId gp.Network
 	}
 }
 
-func (api *API) getPosts(netId gp.NetworkId, index int64, sel string, count int) (posts []gp.PostSmall, err error) {
-	ps, err := api.cache.GetPosts(netId, index, count, sel)
+func (api *API) getPosts(netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	ps, err := api.cache.GetPosts(netId, mode, index, count)
 	if err != nil {
 		log.Println("Cache miss, Getting posts from db")
-		posts, err = api.db.GetPosts(netId, index, count, sel)
+		posts, err = api.db.GetPosts(netId, mode, index, count, category)
 		for i, _ := range posts {
 			posts[i].Likes, err = api.GetLikes(posts[i].Id)
 			if err != nil {

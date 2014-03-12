@@ -244,7 +244,7 @@ func (api *API) AreContacts(a, b gp.UserId) (areContacts bool, err error) {
 //TODO: Implement a direct version
 //TODO: When multiple networks are available, check if the user has posted _in a network_.
 func (api *API) UserHasPosted(user gp.UserId) (posted bool, err error) {
-	posts, err := api.GetUserPosts(user, 0, 1, "start")
+	posts, err := api.GetUserPosts(user, user, db.WUSER, 0, 1, "")
 	if err != nil {
 		return
 	}

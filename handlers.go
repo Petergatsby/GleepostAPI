@@ -203,28 +203,21 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			network = networks[0].Id
 		}
 		//First: which paging scheme are we using
-		var selector string
+		var mode int
 		var index int64
 		switch {
 		case after > 0:
-			selector = "after"
+			mode = gp.OAFTER
 			index = after
 		case before > 0:
-			selector = "before"
+			mode = gp.OBEFORE
 			index = before
 		default:
-			selector = "start"
+			mode = gp.OSTART
 			index = start
 		}
-		//Then: if we have a filter
 		var posts []gp.PostSmall
-		switch {
-		case len(filter) > 0:
-			posts, err = api.UserGetNetworkPostsByCategory(userId, network, index, selector, api.Config.PostPageSize, filter)
-		default:
-			log.Println("By network")
-			posts, err = api.UserGetNetworkPosts(userId, network, index, selector, api.Config.PostPageSize)
-		}
+		posts, err = api.UserGetNetworkPosts(userId, network, mode, index, api.Config.PostPageSize, filter)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -762,7 +755,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserPosts(w http.ResponseWriter, r *http.Request) {
-	_, err := authenticate(r)
+	userId, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -782,23 +775,23 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			after = 0
 		}
-		var selector string
 		var index int64
+		var mode int
 		switch {
 		case after > 0:
-			selector = "after"
+			mode = 3
 			index = after
 		case before > 0:
-			selector = "before"
+			mode = 2
 			index = before
 		default:
-			selector = "start"
+			mode = 1
 			index = start
 		}
 		if err != nil {
 			after = 0
 		}
-		posts, err := api.GetUserPosts(profileId, index, api.Config.PostPageSize, selector)
+		posts, err := api.GetUserPosts(profileId, userId, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			jsonResponse(w, &gp.APIerror{err.Error()}, 500)
 			return

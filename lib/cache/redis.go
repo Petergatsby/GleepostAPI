@@ -311,14 +311,14 @@ func (c *Cache) GetPost(postId gp.PostId) (post gp.PostCore, err error) {
 }
 
 //TODO: Return posts which don't embed a user
-func (c *Cache) GetPosts(id gp.NetworkId, index int64, count int, sel string) (posts []gp.PostCore, err error) {
+func (c *Cache) GetPosts(id gp.NetworkId, mode int, index int64, count int) (posts []gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 
 	key := fmt.Sprintf("networks:%d:posts", id)
 	var start, finish int
 	switch {
-	case sel == "before":
+	case mode == gp.OBEFORE:
 		rindex := -1
 		rindex, err = redis.Int(conn.Do("ZREVRANK", key, index))
 		if err != nil {
@@ -329,7 +329,7 @@ func (c *Cache) GetPosts(id gp.NetworkId, index int64, count int, sel string) (p
 		}
 		start = rindex + 1
 		finish = rindex + count
-	case sel == "after":
+	case mode == gp.OAFTER:
 		rindex := -1
 		rindex, err = redis.Int(conn.Do("ZREVRANK", key, index))
 		if err != nil {
@@ -374,7 +374,7 @@ func (c *Cache) GetPosts(id gp.NetworkId, index int64, count int, sel string) (p
 }
 
 func (c *Cache) AddPostsFromDB(netId gp.NetworkId, db *db.DB) {
-	posts, err := db.GetPosts(netId, 0, c.config.PostCache, "start")
+	posts, err := db.GetPosts(netId, 1, 0, c.config.PostCache, "")
 	if err != nil {
 		log.Println(err)
 	}
