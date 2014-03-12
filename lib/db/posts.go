@@ -42,10 +42,10 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		case orderMode == gp.OSTART:
 			orderClause = "ORDER BY time DESC LIMIT ?, ?"
 		case orderMode == gp.OBEFORE:
-			whereClause += "AND id < ? "
+			whereClause += "AND wall_posts.id < ? "
 			orderClause = "ORDER BY time DESC LIMIT 0, ?"
 		case orderMode == gp.OAFTER:
-			whereClause += "AND id > ? "
+			whereClause += "AND wall_posts.id > ? "
 			orderClause = "ORDER BY time DESC LIMIT 0, ?"
 		default:
 			err = &EBADORDER
@@ -72,10 +72,10 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		case orderMode == gp.OSTART:
 			orderClause = "ORDER BY time DESC LIMIT ?, ?"
 		case orderMode == gp.OBEFORE:
-			whereClause += "AND id < ? "
+			whereClause += "AND wall_posts.id < ? "
 			orderClause = "ORDER BY time DESC LIMIT 0, ?"
 		case orderMode == gp.OAFTER:
-			whereClause += "AND id > ? "
+			whereClause += "AND wall_posts.id > ? "
 			orderClause = "ORDER BY time DESC LIMIT 0, ?"
 		default:
 			err = &EBADORDER
