@@ -85,27 +85,11 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 	if err != nil {
 		return
 	}
-	for i, p := range posts {
-		p.Likes, err = api.GetLikes(p.Id)
-		if err != nil {
-			return
+	for i, _ := range posts {
+		processed, err := api.PostProcess(posts[i])
+		if err == nil {
+			posts[i] = processed
 		}
-		p.Attribs, err = api.GetPostAttribs(p.Id)
-		if err != nil {
-			return
-		}
-		p.Categories, err = api.postCategories(p.Id)
-		if err != nil {
-			return
-		}
-		for _, c := range p.Categories {
-			if c.Tag == "event" {
-				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-				p.Popularity, _ = api.db.GetEventPopularity(p.Id)
-				break
-			}
-		}
-		posts[i] = p
 	}
 	return
 }
@@ -113,23 +97,14 @@ func (api *API) getLive(netId gp.NetworkId, after time.Time, count int) (posts [
 //GetUserPosts returns the count most recent posts by userId since post `after`.
 func (api *API) GetUserPosts(userId gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetUserPosts(userId, perspective, mode, index, count, category)
-	for i, p := range posts {
-		p.Likes, err = api.GetLikes(p.Id)
-		if err != nil {
-			return
+	if err != nil {
+		return
+	}
+	for i, _ := range posts {
+		processed, err := api.PostProcess(posts[i])
+		if err == nil {
+			posts[i] = processed
 		}
-		p.Attribs, err = api.GetPostAttribs(p.Id)
-		if err != nil {
-			return
-		}
-		for _, c := range p.Categories {
-			if c.Tag == "event" {
-				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-				p.Popularity, _ = api.db.GetEventPopularity(p.Id)
-				break
-			}
-		}
-		posts[i] = p
 	}
 	return
 }
@@ -149,21 +124,13 @@ func (api *API) UserGetNetworkPosts(userId gp.UserId, netId gp.NetworkId, mode i
 
 func (api *API) getPosts(netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetPosts(netId, mode, index, count, category)
+	if err != nil {
+		return
+	}
 	for i, _ := range posts {
-		posts[i].Likes, err = api.GetLikes(posts[i].Id)
-		if err != nil {
-			return
-		}
-		posts[i].Attribs, err = api.GetPostAttribs(posts[i].Id)
-		if err != nil {
-			return
-		}
-		for _, c := range posts[i].Categories {
-			if c.Tag == "event" {
-				//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-				posts[i].Popularity, _ = api.db.GetEventPopularity(posts[i].Id)
-				break
-			}
+		processed, err := api.PostProcess(posts[i])
+		if err == nil {
+			posts[i] = processed
 		}
 	}
 	return
@@ -171,7 +138,45 @@ func (api *API) getPosts(netId gp.NetworkId, mode int, index int64, count int, c
 
 //UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
 func (api *API) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	return api.db.UserGetGroupsPosts(user, mode, index, count, category)
+	posts, err = api.db.UserGetGroupsPosts(user, mode, index, count, category)
+	if err != nil {
+		return
+	}
+	for i, _ := range posts {
+		processed, err := api.PostProcess(posts[i])
+		if err == nil {
+			posts[i] = processed
+		} else {
+			log.Println(err)
+			err = nil
+		}
+	}
+	return
+}
+
+func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err error) {
+//Ha! I am so funny...
+	processed = post
+	processed.Likes, err = api.GetLikes(processed.Id)
+	if err != nil {
+		return
+	}
+	processed.Attribs, err = api.GetPostAttribs(processed.Id)
+	if err != nil {
+		return
+	}
+	processed.Categories, err = api.postCategories(processed.Id)
+	if err != nil {
+		return
+	}
+	for _, c := range processed.Categories {
+		if c.Tag == "event" {
+			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
+			processed.Popularity, _ = api.db.GetEventPopularity(processed.Id)
+			break
+		}
+	}
+	return processed, nil
 }
 
 func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
