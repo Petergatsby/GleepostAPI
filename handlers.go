@@ -1150,14 +1150,13 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		err := api.Verify(vars["token"])
 		if err != nil {
-			jsonResponse(w, gp.APIerror{err.Error()}, 400)
+			jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 			return
 		}
 		jsonResponse(w, struct {
 			Verified bool `json:"verified"`
 		}{true}, 200)
 		return
-		jsonResponse(w, gp.APIerror{"Bad verification token"}, 400)
 	} else {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
