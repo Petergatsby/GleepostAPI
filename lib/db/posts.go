@@ -84,14 +84,17 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		if len(w.Category) > 0 {
 			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
 		}
+		log.Println("User networks query:", baseQuery + whereClause + orderClause)
 		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
 		if err != nil {
 			return
 		}
 		if len(w.Category) > 0 {
 			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
+			log.Println("User networks query arguments:", w.User, w.Perspective, w.Category, index, count)
 		} else {
 			rows, err = stmt.Query(w.User, w.Perspective, index, count)
+			log.Println("User networks query arguments:", w.User, w.Perspective, index, count)
 		}
 	case w.Mode == WGROUPS:
 		whereClause :=	"WHERE network_id IN ( " +
