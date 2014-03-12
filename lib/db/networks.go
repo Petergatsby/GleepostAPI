@@ -110,7 +110,7 @@ func (db *DB) GetNetwork(netId gp.NetworkId) (network gp.Group, err error) {
 		network.Image = cover_img.String
 	}
 	if desc.Valid {
-		network.Desc = cover_img.String
+		network.Desc = desc.String
 	}
 	if creator.Valid {
 		u, err := db.GetUser(gp.UserId(creator.Int64))
