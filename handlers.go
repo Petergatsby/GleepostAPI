@@ -1669,20 +1669,20 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 			after = 0
 		}
 		//First: which paging scheme are we using
-		var selector string
+		var mode int
 		var index int64
 		switch {
 		case after > 0:
-			selector = "after"
+			mode = gp.OAFTER
 			index = after
 		case before > 0:
-			selector = "before"
+			mode = gp.OBEFORE
 			index = before
 		default:
-			selector = "start"
+			mode = gp.OSTART
 			index = start
 		}
-		posts, err := api.UserGetGroupsPosts(userId, index, api.Config.PostPageSize, selector)
+		posts, err := api.UserGetGroupsPosts(userId, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {

@@ -391,7 +391,7 @@ func (api *API) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 	return api.db.UserAttends(user)
 }
 
-//UserGetGroupsPosts returns a user's group post feed.
-func (api *API) UserGetGroupsPosts(user gp.UserId, index int64, count int, sel string) (posts []gp.PostSmall, err error) {
-	return api.db.UserGetGroupsPosts(user, index, count, sel)
+//UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
+func (api *API) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	return api.db.UserGetGroupsPosts(user, mode, index, count, category)
 }
