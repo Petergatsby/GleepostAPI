@@ -779,13 +779,13 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 		var mode int
 		switch {
 		case after > 0:
-			mode = 3
+			mode = gp.OAFTER
 			index = after
 		case before > 0:
-			mode = 2
+			mode = gp.OBEFORE
 			index = before
 		default:
-			mode = 1
+			mode = gp.OSTART
 			index = start
 		}
 		if err != nil {
