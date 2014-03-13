@@ -133,6 +133,7 @@ func main() {
 	r.HandleFunc("/api/{version}/invite_message", inviteMessageHandler)
 	r.HandleFunc("/api/{version}/live", liveHandler)
 	r.HandleFunc("/api/{version}/search/users/{query}", searchUsers).Methods("GET")
+	r.HandleFunc("/api/{version}/mass_mail/secret/url", mm).Methods("POST")
 	r.Handle("/api/{version}/ws", websocket.Handler(jsonServer))
 	server := &http.Server{
 		Addr:    ":" + conf.Port,

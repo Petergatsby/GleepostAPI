@@ -1744,3 +1744,7 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
+
+func mm(w http.ResponseWriter, r *http.Request) {
+	api.Massmail()
+}
