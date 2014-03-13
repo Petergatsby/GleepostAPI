@@ -37,7 +37,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 	var stmt *sql.Stmt
 	switch {
 	case w.Mode == WNETWORK:
-		whereClause := "WHERE network_id = ? "
+		whereClause := "WHERE deleted = 0 AND network_id = ? "
 		switch {
 		case orderMode == gp.OSTART:
 			orderClause = "ORDER BY time DESC LIMIT ?, ?"
@@ -64,7 +64,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			rows, err = stmt.Query(w.Network, index, count)
 		}
 	case w.Mode == WUSER:
-		whereClause := "WHERE `by` = ? " +
+		whereClause := "WHERE deleted = 0 AND `by` = ? " +
 		"AND network_id IN ( " +
 			"SELECT network_id FROM user_network WHERE user_id = ? " +
 		") "
@@ -97,7 +97,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			log.Println("User networks query arguments:", w.User, w.Perspective, index, count)
 		}
 	case w.Mode == WGROUPS:
-		whereClause :=	"WHERE network_id IN ( " +
+		whereClause :=	"WHERE deleted = 0 AND network_id IN ( " +
 				"SELECT network_id " +
 				"FROM user_network " +
 				"JOIN network ON user_network.network_id = network.id " +
@@ -432,5 +432,16 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, err error) {
 func (db *DB) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	where := WhereClause{Mode:WGROUPS, User:user, Category:category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
+	return
+}
+
+//DeletePost marks a post as deleted in the database.
+func (db *DB) DeletePost(post gp.PostId) (err error) {
+	q := "UPDATE wall_posts SET deleted = 1 WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post)
 	return
 }

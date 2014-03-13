@@ -154,7 +154,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["liveSelect"] = "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
-		"WHERE network_id = ? AND attrib = 'event-time' AND value > ? " +
+		"WHERE deleted = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
 		"ORDER BY value ASC LIMIT 0, ?"
 	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
 	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
@@ -164,7 +164,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"WHERE post_id = ? " +
 		"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE id = ?"
+	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?"
 	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
 	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?"
 	sqlStmt["listCategories"] = "SELECT id, tag, name FROM categories WHERE 1"

@@ -401,3 +401,20 @@ func (api *API) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 	return api.db.UserAttends(user)
 }
 
+//UserDeletePost marks a post as deleted (it remains in the db but doesn't show up in feeds). You can only delete your own posts.
+func (api *API) UserDeletePost(user gp.UserId, post gp.PostId) (err error) {
+	p, err := api.getPostFull(post)
+	switch {
+	case err != nil:
+		return
+	case p.By.Id != user:
+		return &ENOTALLOWED
+	default:
+		err = api.deletePost(post)
+	}
+	return
+}
+
+func (api *API) deletePost(post gp.PostId) (err error) {
+	return api.db.DeletePost(post)
+}
