@@ -868,6 +868,8 @@ before=[id]
 after=[id]
 returns a list of 20 posts ordered by time, starting before/after [id]
 
+filter = "category"
+returns only posts matching that category
 example responses:
 ```
 [
@@ -1156,8 +1158,7 @@ id=[user-id]
 token=[token]
 
 This resource is a combined feed of posts in groups you are a member of.
-It functions identically to [/posts](#get-posts) but with two exceptions:
-- Filtering is not yet supported
+It functions identically to [/posts](#get-posts) but with one exception:
 - Posts also embed information about the group they were posted in.
 
 ```
