@@ -4,7 +4,7 @@ import (
 	"log"
 )
 
-func (api *API)Massmail() {
+func (api *API)Massmail() (err error) {
 	subject := "FREE REDBULL STUDYGRAMS AT TRESIDDER AND GREEN LIBRARY!"
 	body := `<html><body>Hey guys!<br><br>
 
@@ -15,6 +15,7 @@ See you there and Good luck with exams!<br><br> 
 Curing FOMO one day at a time, The Gleepost Team.</body></html>`
 	emails, err := api.db.AllEmails()
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	count := 0
@@ -27,4 +28,5 @@ Curing FOMO one day at a time, The Gleepost Team.</body></html>`
 			log.Println("Sent mails:", count)
 		}
 	}
+	return
 }
