@@ -49,11 +49,11 @@ These endpoints are accessible to the world.
 These endpoints require authentication to access.
 You must send an <id, token> pair with a request, which you can generate with /login or /fblogin
 
-/posts [[GET]](#get-posts) [[POST]](#post-posts)
+/posts [[GET]](#get-posts) [[POST]](#post-posts) 
 
 /posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
 
-/posts/[post-id] [[GET]](#get-postspost-d)
+/posts/[post-id] [[GET]](#get-postspost-id) [[DELETE]](#delete-postspost-id)
 
 /posts/[post-id]/images [[POST]](#post-postspost-idimages)
 
@@ -273,7 +273,6 @@ example responses:
 ```
 {"id":3}
 ```
-
 ##GET /posts/[post-id]
 required parameters: id, token
 
@@ -335,6 +334,14 @@ example responses:
 }
 
 ```
+
+##DELETE /posts/[post-id]
+required parameters: 
+
+id=[user-id]
+token=[token]
+
+On success, returns 204; if you aren't the creator of the post, will return 403.
 
 ##GET /posts/[post-id]/comments
 
