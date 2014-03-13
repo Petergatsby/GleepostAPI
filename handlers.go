@@ -1747,6 +1747,5 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 
 func mm(w http.ResponseWriter, r *http.Request) {
 	err := api.Massmail()
-	log.Println(err)
-	w.WriteHeader(204)
+	jsonResponse(w, err, 200)
 }
