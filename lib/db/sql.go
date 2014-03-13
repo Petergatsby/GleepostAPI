@@ -133,24 +133,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["readStatus"] = "SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?"
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
-	sqlStmt["wallSelectCategory"] = "SELECT wall_posts.id, `by`, time, text " +
-		"FROM wall_posts " +
-		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-		"JOIN categories ON post_categories.category_id = categories.id " +
-		"WHERE network_id = ? AND categories.tag = ? " +
-		"ORDER BY time DESC LIMIT ?, ?"
-	sqlStmt["wallSelectCategoryAfter"] = "SELECT wall_posts.id, `by`, time, text " +
-		"FROM wall_posts " +
-		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-		"JOIN categories ON post_categories.category_id = categories.id " +
-		"WHERE network_id = ? AND categories.tag = ? AND wall_posts.id > ? " +
-		"ORDER BY time DESC LIMIT 0, ?"
-	sqlStmt["wallSelectCategoryBefore"] = "SELECT wall_posts.id, `by`, time, text " +
-		"FROM wall_posts " +
-		"JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-		"JOIN categories ON post_categories.category_id = categories.id " +
-		"WHERE network_id = ? AND categories.tag = ? AND wall_posts.id < ? " +
-		"ORDER BY time DESC LIMIT 0, ?"
 	sqlStmt["liveSelect"] = "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
