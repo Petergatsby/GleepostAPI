@@ -1749,3 +1749,27 @@ func mm(w http.ResponseWriter, r *http.Request) {
 	err := api.Massmail()
 	jsonResponse(w, err, 200)
 }
+
+func deletePost(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postId := gp.PostId(_id)
+		err := api.UserDeletePost(userId, postId)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
+		} else {
+			w.WriteHeader(204)
+		}
+	}
+}
