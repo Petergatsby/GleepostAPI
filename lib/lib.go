@@ -419,10 +419,23 @@ func (api *API) GetEmail(id gp.UserId) (email string, err error) {
 //Verify will verify an account associated with a given verification token, or return an error if no such token exists.
 //Additionally, if the token has been issued as part of the facebook login process, Verify will first attempt to match the verified email with an existing gleepost account, and verify that, linking the gleepost account to the facebook id.
 //If no such account exists, Verify will create a new gleepost account for that facebook user and verify it.
+//In addition, Verify adds the user to any networks they've been invited to.
 func (api *API) Verify(token string) (err error) {
 	id, err := api.db.VerificationTokenExists(token)
 	if err == nil {
 		err = api.db.Verify(id)
+		if err == nil {
+			var email string
+			email, err = api.GetEmail(id)
+			if err != nil {
+				return
+			}
+			err = api.AssignNetworksFromInvites(id, email)
+			if err != nil {
+				return
+			}
+			err = api.AcceptAllInvites(email)
+		}
 		return
 	}
 	fbid, err := api.FBVerify(token)
@@ -453,11 +466,25 @@ func (api *API) Verify(token string) (err error) {
 			return e
 		}
 		err = api.db.Verify(id)
+		if err == nil {
+			err = api.AssignNetworksFromInvites(userId, email)
+			if err != nil {
+				return
+			}
+			err = api.AcceptAllInvites(email)
+		}
 		return
 	}
 	err = api.UserSetFB(userId, fbid)
 	if err == nil {
 		err = api.db.Verify(userId)
+		if err == nil {
+			err = api.AssignNetworksFromInvites(userId, email)
+			if err != nil {
+				return
+			}
+			err = api.AcceptAllInvites(email)
+		}
 	}
 	return
 }
