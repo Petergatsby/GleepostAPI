@@ -122,12 +122,22 @@ You must send an <id, token> pair with a request, which you can generate with /l
 ##POST /register
 required parameters: first, last, pass, email
 
+optional parameters: invite
+
 Password must be at least 5 characters long.
 
+If 'invite' is specified and valid, the user will be added to any groups (s)he has been invited to and will not require verification.
+
 example responses:
-(HTTP 200)
+If invite is valid:
+(HTTP 201)
 ```
-{"id":143423424}
+{"id":143423424, "status":"verified"}
+```
+If invite is invalid:
+(HTTP 201)
+```
+{"id":143423424, "status":"unverified"}
 ```
 (HTTP 400)
 ```
