@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"log"
 )
 
 type API struct {
@@ -185,6 +186,7 @@ func (api *API) RegisterUser(user, pass, email, first, last, invite string) (new
 		return
 	}
 	exists, err := api.InviteExists(email, invite)
+	log.Println(exists, err)
 	newUser.Id = userId
 	newUser.Status = "unverified"
 	if err == nil && exists {
