@@ -224,3 +224,15 @@ func (api *API) UserSetNetworkImage(userId gp.UserId, netId gp.NetworkId, url st
 		return api.db.SetNetworkImage(netId, url)
 	}
 }
+
+func (api *API) InviteExists(email, invite string) (exists bool, err error) {
+	return api.db.InviteExists(email, invite)
+}
+
+func (api *API) AssignNetworksFromInvites(user gp.UserId, email string) (err error) {
+	return api.db.AssignNetworksFromInvites(user, email)
+}
+
+func (api *API) AcceptAllInvites(email string) (err error) {
+	return api.db.AcceptAllInvites(email)
+}

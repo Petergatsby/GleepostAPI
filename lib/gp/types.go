@@ -252,6 +252,11 @@ type Created struct {
 	Id uint64 `json:"id"`
 }
 
+type NewUser struct {
+	Id UserId `json:"id"`
+	Status string	`json:"status"`
+}
+
 type URLCreated struct {
 	URL string `json:"url"`
 }

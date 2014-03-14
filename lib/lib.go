@@ -174,8 +174,9 @@ func (api *API) testEmail(email string, rules []gp.Rule) bool {
 }
 
 //RegisterUser accepts a username, password, email address, firstname and lastname. It will return an error if user or email aren't unique, or if pass is too short.
-func (api *API) RegisterUser(user, pass, email, first, last string) (userId gp.UserId, err error) {
-	userId, err = api.createUser(user, pass, email)
+//If the optional "invite" is set and corresponds to email, it will skip the verification step.
+func (api *API) RegisterUser(user, pass, email, first, last, invite string) (newUser gp.NewUser, err error) {
+	userId, err := api.createUser(user, pass, email)
 	if err != nil {
 		return
 	}
@@ -183,7 +184,23 @@ func (api *API) RegisterUser(user, pass, email, first, last string) (userId gp.U
 	if err != nil {
 		return
 	}
-	err = api.GenerateAndSendVerification(userId, first, email)
+	exists, err := api.InviteExists(email, invite)
+	newUser.Id = userId
+	newUser.Status = "unverified"
+	if err == nil && exists {
+		err = api.db.Verify(userId)
+		if err != nil {
+			return
+		}
+		newUser.Status = "verified"
+		err = api.AssignNetworksFromInvites(userId, email)
+		if err != nil {
+			return
+		}
+		err = api.AcceptAllInvites(email)
+	} else {
+		err = api.GenerateAndSendVerification(userId, first, email)
+	}
 	return
 }
 

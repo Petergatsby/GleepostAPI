@@ -227,3 +227,33 @@ func (db *DB) NetworkCreator(netId gp.NetworkId) (creator gp.UserId, err error) 
 	err = s.QueryRow(netId).Scan(&creator)
 	return
 }
+
+func (db *DB) InviteExists(email, invite string) (exists bool, err error) {
+	q := "SELECT COUNT(*) FROM group_invites WHERE email = ? AND key = ? AND accepted = 0"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(email, invite).Scan(&exists)
+	return
+}
+
+func (db *DB) AcceptAllInvites(email string) (err error) {
+	q := "UPDATE group_invites SET accepted = 1 WHERE email = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(email)
+	return
+}
+
+func (db *DB) AssignNetworksFromInvites(user gp.UserId, email string) (err error) {
+	q := "INSERT INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, email)
+	return
+}

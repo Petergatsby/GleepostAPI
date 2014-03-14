@@ -83,6 +83,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	first := r.FormValue("first")
 	last := r.FormValue("last")
+	invite := r.FormValue("invite")
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
@@ -108,7 +109,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		rand, _ := lib.RandomString()
 		user := first + "." + last + rand
-		id, err := api.RegisterUser(user, pass, email, first, last)
+		created, err := api.RegisterUser(user, pass, email, first, last, invite)
 		if err != nil {
 			_, ok := err.(gp.APIerror)
 			if ok { //Duplicate user/email or password too short
@@ -117,7 +118,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			}
 		} else {
-			jsonResponse(w, &gp.Created{uint64(id)}, 201)
+			jsonResponse(w, created, 201)
 		}
 	}
 }
