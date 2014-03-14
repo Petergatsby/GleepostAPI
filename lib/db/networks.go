@@ -229,7 +229,7 @@ func (db *DB) NetworkCreator(netId gp.NetworkId) (creator gp.UserId, err error) 
 }
 
 func (db *DB) InviteExists(email, invite string) (exists bool, err error) {
-	q := "SELECT COUNT(*) FROM group_invites WHERE email = ? AND key = ? AND accepted = 0"
+	q := "SELECT COUNT(*) FROM group_invites WHERE `email` = ? AND `key` = ? AND `accepted` = 0"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
