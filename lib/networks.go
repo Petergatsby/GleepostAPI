@@ -190,7 +190,11 @@ func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email stri
 	case !in || !isgroup:
 		return &ENOTALLOWED
 	default:
-		//TODO: Check if this user already exists
+		//If the user already exists, add them straight into the group and don't email them.
+		invitee, e := api.UserWithEmail(email)
+		if e == nil {
+			return api.setNetwork(invitee, netId)
+		}
 		token, e := RandomString()
 		if e != nil {
 			return e
