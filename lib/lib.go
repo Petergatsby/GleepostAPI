@@ -417,12 +417,12 @@ func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (er
 	return
 }
 
-func (api *API) inviteUrl(token string) string {
-	return fmt.Sprintf("https://gleepost.com/?invite=%s", token)
+func (api *API) inviteUrl(token, email string) string {
+	return fmt.Sprintf("https://gleepost.com/?invite=%s&email=%s", token, email)
 }
 
 func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, token string) (err error) {
-	url := api.inviteUrl(token)
+	url := api.inviteUrl(token, email)
 	subject := fmt.Sprintf("%s has invited you to the private group \"%s\" on Gleepost.", from.Name, group.Name)
 	html := "<html><body>" +
 	"Don't miss out on their events - <a href=" + url + ">Click here to accept the invitation.</a><br>" +
