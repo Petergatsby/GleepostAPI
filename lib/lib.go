@@ -38,6 +38,9 @@ func New(conf gp.Config) (api *API) {
 var ETOOWEAK = gp.APIerror{"Password too weak!"}
 var EBADREC = gp.APIerror{"Bad password recovery token."}
 
+const INVITE_CAMPAIGN_IOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
+const INVITE_CAMPAIGN_ANDROID = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
+
 /********************************************************************
 Top-level functions
 ********************************************************************/
@@ -402,15 +405,31 @@ func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
 //TODO: send an actual link
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationUrl(token)
-	html := "<html><body><a href=" + url + ">Verify your account online here.</a></body></html>"
+	html := "<html><body><a href=\"" + url + "\">Verify your account online here.</a></body></html>"
 	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
 
 func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (err error) {
 	url := api.recoveryUrl(user.Id, token)
-	html := "<html><body><a href=" + url + ">Click here to recover your password.</a></body></html>"
+	html := "<html><body><a href=\"" + url + "\">Click here to recover your password.</a></body></html>"
 	err = api.mail.SendHTML(email, user.Name+", recover your Gleepost password!", html)
+	return
+}
+
+func (api *API) inviteUrl(token string) string {
+	return fmt.Sprintf("https://gleepost.com/?invite=%s", token)
+}
+
+func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, token string) (err error) {
+	url := api.inviteUrl(token)
+	subject := fmt.Sprintf("%s has invited you to the private group \"%s\" on Gleepost.", from.Name, group.Name)
+	html := "<html><body>" +
+	"Don't miss out on their events - <a href=" + url + ">Click here to accept the invitation.</a><br>" +
+	"On your phone? <a href=\"" + INVITE_CAMPAIGN_IOS + "\">install the app on your iPhone here</a>" +
+	" or <a href=\"" + INVITE_CAMPAIGN_ANDROID + "\">click here to get the Android app.</a>" +
+	"</body></html>"
+	err = api.mail.SendHTML(email, subject, html)
 	return
 }
 

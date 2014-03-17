@@ -196,9 +196,21 @@ func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email stri
 			return e
 		}
 		err = api.db.CreateInvite(userId, netId, email, token)
+		if err == nil {
+			var from gp.User
+			from, err = api.GetUser(userId)
+			if err != nil {
+				return
+			}
+			var group gp.Group
+			group, err = api.getNetwork(netId)
+			if err != nil {
+				return
+			}
+			go api.issueInviteEmail(email, from, group, token)
+		}
 		return
 	}
-
 }
 
 func (api *API) UserIsNetworkOwner(userId gp.UserId, netId gp.NetworkId) (owner bool, err error) {
