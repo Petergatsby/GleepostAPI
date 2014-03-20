@@ -378,7 +378,15 @@ func (api *API) MarkNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err
 func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.UserId, location uint64) (err error) {
 	notification, err := api.db.CreateNotification(ntype, by, recipient, location)
 	if err == nil {
-		go api.notificationPush(recipient)
+		switch notification := notification.(type) {
+		case gp.GroupNotification:
+			group, err := api.getNetwork(notification.Group)
+			if err != nil {
+				go api.groupPush(notification.By, []gp.UserId{recipient}, group.Network)
+			}
+		default:
+			go api.notificationPush(recipient)
+		}
 		go api.cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
 	}
 	return
