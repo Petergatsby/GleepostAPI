@@ -363,7 +363,11 @@ func (db *DB) CreateFBVerification(fbid uint64, token string) (err error) {
 }
 
 func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
-	err = db.stmt["fbVerificationExists"].QueryRow(token).Scan(&fbid)
+	s, err := db.prepare("SELECT fb_id FROM facebook_verification WHERE token = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(token).Scan(&fbid)
 	return
 }
 
