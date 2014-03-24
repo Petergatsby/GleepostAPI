@@ -249,7 +249,7 @@ func (db *DB) AcceptAllInvites(email string) (err error) {
 }
 
 func (db *DB) AssignNetworksFromInvites(user gp.UserId, email string) (err error) {
-	q := "INSERT INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"
+	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
