@@ -452,8 +452,10 @@ func (api *API) GetEmail(id gp.UserId) (email string, err error) {
 func (api *API) Verify(token string) (err error) {
 	id, err := api.db.VerificationTokenExists(token)
 	if err == nil {
+		log.Println("Verification token exists (normal-mode)")
 		err = api.db.Verify(id)
 		if err == nil {
+			log.Println("User has verified successfully")
 			var email string
 			email, err = api.GetEmail(id)
 			if err != nil {
@@ -461,6 +463,7 @@ func (api *API) Verify(token string) (err error) {
 			}
 			err = api.AssignNetworksFromInvites(id, email)
 			if err != nil {
+				log.Println("Something went wrong with assigning to invited networks:", err)
 				return
 			}
 			err = api.AcceptAllInvites(email)
@@ -469,16 +472,20 @@ func (api *API) Verify(token string) (err error) {
 	}
 	fbid, err := api.FBVerify(token)
 	if err != nil {
+		log.Println("Error verifying (facebook)", err)
 		return
 	}
 	email, err := api.FBGetEmail(fbid)
 	if err != nil {
+		log.Println("Couldn't get this facebook account's email:", err)
 		return
 	}
 	userId, err := api.UserWithEmail(email)
 	if err != nil {
+		log.Println("There isn't a user with this facebook email")
 		firstName, lastName, username, e := FBName(fbid)
 		if e != nil {
+			log.Println("Couldn't get name info from facebook:", e)
 			return e
 		}
 		random, e := RandomString()
@@ -487,17 +494,21 @@ func (api *API) Verify(token string) (err error) {
 		}
 		//TODO: Do something different with names, two john smiths are
 		id, e := api.createUser(username, random, email)
-		if err != nil {
+		if e != nil {
+			log.Println("Something went wrong while creating the user from facebook:", e)
 			return e
 		}
 		e = api.SetUserName(id, firstName, lastName)
 		if e != nil {
+			log.Println("Problem setting name:", e)
 			return e
 		}
 		err = api.db.Verify(id)
 		if err == nil {
+			log.Println("Verifying worked. Now setting networks from invites...")
 			err = api.AssignNetworksFromInvites(userId, email)
 			if err != nil {
+				log.Println("Something went wrong while setting networks from invites:", err)
 				return
 			}
 			err = api.AcceptAllInvites(email)
@@ -508,8 +519,10 @@ func (api *API) Verify(token string) (err error) {
 	if err == nil {
 		err = api.db.Verify(userId)
 		if err == nil {
+			log.Println("Verifying worked. Now setting networks from invites...")
 			err = api.AssignNetworksFromInvites(userId, email)
 			if err != nil {
+				log.Println("Something went wrong while setting networks from invites:", err)
 				return
 			}
 			err = api.AcceptAllInvites(email)
