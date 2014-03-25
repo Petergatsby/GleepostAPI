@@ -508,7 +508,6 @@ func (api *API) Verify(token string) (err error) {
 			log.Println("Verifying failed in the db:", err)
 			return
 		}
-		log.Println(fbid)
 		err = api.UserSetFB(id, fbid)
 		if err != nil {
 			log.Println("associating facebook account with user account failed:", err)
