@@ -504,15 +504,21 @@ func (api *API) Verify(token string) (err error) {
 			return e
 		}
 		err = api.db.Verify(id)
-		if err == nil {
-			log.Println("Verifying worked. Now setting networks from invites...")
-			err = api.AssignNetworksFromInvites(userId, email)
-			if err != nil {
-				log.Println("Something went wrong while setting networks from invites:", err)
-				return
-			}
-			err = api.AcceptAllInvites(email)
+		if err != nil {
+			log.Println("Verifying failed in the db:", err)
+			return
 		}
+		err = api.UserSetFB(id, fbid)
+		if err != nil {
+			log.Println("associating facebook account with user account failed:", err)
+			return
+		}
+		err = api.AssignNetworksFromInvites(userId, email)
+		if err != nil {
+			log.Println("Something went wrong while setting networks from invites:", err)
+			return
+		}
+		err = api.AcceptAllInvites(email)
 		return
 	}
 	err = api.UserSetFB(userId, fbid)
