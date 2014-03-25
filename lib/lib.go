@@ -385,7 +385,6 @@ func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.User
 				go api.groupPush(notification.By, []gp.UserId{recipient}, group.Network)
 			}
 		default:
-			log.Printf("%T\n", notification)
 			go api.notificationPush(recipient)
 		}
 		go api.cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
