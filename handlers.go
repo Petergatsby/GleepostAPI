@@ -1107,6 +1107,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		token, err := api.FacebookLogin(_fbToken)
+		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 		//If we have an error here, that means that there is no associated gleepost user account.
 		if err != nil {
 			//Have we seen this facebook user before?
