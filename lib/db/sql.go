@@ -456,6 +456,7 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 	q := "SELECT id, name, firstname, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
+		"JOIN devices ON users.id = devices.user_id " +
 		"WHERE network_id = ? " +
 		"ORDER BY RAND()"
 	log.Println(q, id, count, network)
