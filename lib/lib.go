@@ -381,7 +381,7 @@ func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.User
 		switch notification := notification.(type) {
 		case gp.GroupNotification:
 			group, err := api.getNetwork(notification.Group)
-			if err != nil {
+			if err == nil {
 				go api.groupPush(notification.By, []gp.UserId{recipient}, group.Network)
 			}
 		default:
