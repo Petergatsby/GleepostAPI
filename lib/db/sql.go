@@ -372,7 +372,8 @@ func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 }
 
 func (db *DB) FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
-	_, err = db.stmt["fbSetGPUser"].Exec(fbid, userId)
+	res, err := db.stmt["fbSetGPUser"].Exec(fbid, userId)
+	log.Println(res.RowsAffected())
 	return
 }
 
