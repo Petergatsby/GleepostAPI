@@ -718,7 +718,12 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 		case liked:
 			err = api.AddLike(userId, postId)
 			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				e, ok := err.(*gp.APIerror)
+				if ok && *e == lib.ENOTALLOWED {
+					jsonResponse(w, e, 403)
+				} else {
+					jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				}
 			} else {
 				jsonResponse(w, gp.Liked{Post: postId, Liked: true}, 200)
 			}

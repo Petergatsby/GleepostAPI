@@ -356,7 +356,14 @@ func (api *API) AddLike(user gp.UserId, postId gp.PostId) (err error) {
 	post, err := api.GetPost(postId)
 	if err != nil {
 		return
-	} else {
+	}
+	in, err := api.UserInNetwork(user, post.Network)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		return &ENOTALLOWED
+	default:
 		err = api.db.CreateLike(user, postId)
 		if err != nil {
 			return
@@ -365,8 +372,8 @@ func (api *API) AddLike(user gp.UserId, postId gp.PostId) (err error) {
 				api.createNotification("liked", user, post.By.Id, uint64(postId))
 			}
 		}
+		return
 	}
-	return
 }
 
 func (api *API) DelLike(user gp.UserId, post gp.PostId) (err error) {
