@@ -122,12 +122,20 @@ func (api *API) getNetwork(netId gp.NetworkId) (network gp.Group, err error) {
 
 //CreateGroup creates a group and adds the creator as a member.
 func (api *API) CreateGroup(userId gp.UserId, name, url, desc string) (network gp.Group, err error) {
-	network, err = api.db.CreateNetwork(name, url, desc, userId, true)
-	if err != nil {
+	exists, eupload := api.UserUploadExists(userId, url)
+	switch {
+	case eupload != nil:
+		return network, eupload
+	case !exists:
+		return network, &ENOTALLOWED
+	default:
+		network, err = api.db.CreateNetwork(name, url, desc, userId, true)
+		if err != nil {
+			return
+		}
+		err = api.db.SetNetwork(userId, network.Id)
 		return
 	}
-	err = api.db.SetNetwork(userId, network.Id)
-	return
 }
 
 //HaveSharedNetwork returns true if both users a and b are in the same network.
