@@ -66,12 +66,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
 	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
 	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
-	sqlStmt["randomSelect"] = "SELECT id, name, firstname, avatar " +
-		"FROM users " +
-		"LEFT JOIN user_network ON id = user_id " +
-		"WHERE network_id = ? " +
-		"AND verified = 1 " +
-		"ORDER BY RAND()"
 	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
 	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
 	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
@@ -458,10 +452,14 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 		"LEFT JOIN user_network ON id = user_id " +
 		"JOIN devices ON users.id = devices.user_id " +
 		"WHERE network_id = ? " +
+		"AND verified = 1 " +
 		"ORDER BY RAND()"
 	log.Println(q, id, count, network)
 
-	s := db.stmt["randomSelect"]
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(network)
 	if err != nil {
 		log.Println("Error after initial query when generating partners")
