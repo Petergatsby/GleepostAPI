@@ -1,6 +1,7 @@
 {
 	"UrlBase":"/api/v1",
 	"Version":"v0.30",
+	"DevelopmentMode":true,
 	"Port":"8080",
 	"LoginOverride":false,
 	"RegisterOverride":true,

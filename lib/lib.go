@@ -397,7 +397,11 @@ func NotificationChannelKey(id gp.UserId) (channel string) {
 }
 
 func (api *API) verificationUrl(token string) (url string) {
-	url = "https://gleepost.com/verification.html?token=" + token
+	if api.Config.DevelopmentMode {
+		url = "https://dev.gleepost.com/verification.html?token=" + token
+	} else {
+		url = "https://gleepost.com/verification.html?token=" + token
+	}
 	return
 }
 
@@ -406,7 +410,11 @@ func (api *API) appVerificationUrl(token string) (url string) {
 }
 
 func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
-	url = fmt.Sprintf("https://gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
+	if api.Config.DevelopmentMode {
+		url = fmt.Sprintf("https://dev.gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
+	} else {
+		url = fmt.Sprintf("https://gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
+	}
 	return
 }
 
@@ -426,7 +434,11 @@ func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (er
 }
 
 func (api *API) inviteUrl(token, email string) string {
-	return fmt.Sprintf("https://gleepost.com/?invite=%s&email=%s", token, email)
+	if api.Config.DevelopmentMode {
+		return fmt.Sprintf("https://dev.gleepost.com/?invite=%s&email=%s", token, email)
+	} else {
+		return fmt.Sprintf("https://gleepost.com/?invite=%s&email=%s", token, email)
+	}
 }
 
 func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, token string) (err error) {
