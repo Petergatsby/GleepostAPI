@@ -6,6 +6,7 @@ import (
 	"github.com/huandu/facebook"
 	"strconv"
 	"time"
+	"log"
 )
 
 type FacebookToken struct {
@@ -80,8 +81,17 @@ func (api *API) FacebookLogin(fbToken string) (token gp.Token, err error) {
 	if err != nil {
 		return
 	}
+	err = api.UpdateFBData(fbToken)
+	if err != nil {
+		log.Println("Error pulling in profile changes from facebook:", err)
+	}
 	token, err = api.CreateAndStoreToken(userId)
 	return
+}
+
+//UpdateFBData is a placeholder for the time being. In the future, place anything which needs to be regularly checked from facebook here.
+func (api *API) UpdateFBData(fbToken string) (err error) {
+	return nil
 }
 
 func (api *API) FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
@@ -128,6 +138,10 @@ func FBName(fbid uint64) (firstName, lastName, username string, err error) {
 	lastName = res["last_name"].(string)
 	username = res["username"].(string)
 	return firstName, lastName, username, err
+}
+
+func FBAvatar(username string) (avatar string) {
+	return fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", username)
 }
 
 func (api *API) FBVerify(token string) (fbid uint64, err error) {

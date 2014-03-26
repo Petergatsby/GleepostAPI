@@ -515,6 +515,10 @@ func (api *API) Verify(token string) (err error) {
 			log.Println("Problem setting name:", e)
 			return e
 		}
+		e = api.SetProfileImage(id, FBAvatar(username))
+		if e != nil {
+			log.Println("Problem setting avatar:", e)
+		}
 		err = api.db.Verify(id)
 		if err != nil {
 			log.Println("Verifying failed in the db:", err)
