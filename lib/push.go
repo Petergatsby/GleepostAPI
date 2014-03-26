@@ -193,9 +193,9 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 	d.LocKey = "MSG"
 	d.LocArgs = []string{message.By.Name}
 	if len(message.Text) > 64 {
-		d.Body = message.Text[:64] + "..."
+		d.LocArgs = append(d.LocArgs, message.Text[:64] + "...")
 	} else {
-		d.Body = message.Text
+		d.LocArgs = append(d.LocArgs, message.Text)
 	}
 	payload.Alert = d
 	payload.Sound = "default"
