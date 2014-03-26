@@ -417,6 +417,8 @@ required parameters: id, token, liked
 If true, adds a like for this post for this user.
 If false, removes a like for this post for this user.
 
+If this post is in another network, will respond with 403.
+
 example responses:
 (http 200)
 ```
@@ -512,6 +514,9 @@ optional:
 desc="Description of the group"
 url = uploaded image URL
 This creates a new group named `name` and adds you as a member.
+
+If url is not valid, it will respond with a 403.
+
 A successful response is 201:
 
 ```

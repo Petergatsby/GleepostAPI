@@ -1492,7 +1492,12 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		default:
 			network, err := api.CreateGroup(userId, name, url, desc)
 			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				e, ok := err.(*gp.APIerror)
+				if ok && *e == lib.ENOTALLOWED {
+					jsonResponse(w, e, 403)
+				} else {
+					jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				}
 				return
 			}
 			jsonResponse(w, network, 201)
