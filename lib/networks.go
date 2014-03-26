@@ -126,7 +126,7 @@ func (api *API) CreateGroup(userId gp.UserId, name, url, desc string) (network g
 	switch {
 	case eupload != nil:
 		return network, eupload
-	case !exists:
+	case !exists && len(url) > 0:
 		return network, &ENOTALLOWED
 	default:
 		network, err = api.db.CreateNetwork(name, url, desc, userId, true)
