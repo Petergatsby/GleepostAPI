@@ -447,7 +447,7 @@ func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *g
 }
 
 func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
-	q := "SELECT id, name, firstname, avatar " +
+	q := "SELECT DISTINCT id, name, firstname, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
 		"JOIN devices ON users.id = devices.user_id " +
