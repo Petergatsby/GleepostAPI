@@ -13,9 +13,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/exec"
 	"os/signal"
 	"runtime"
 	"syscall"
+	"bytes"
 )
 
 func loadConfig(fail bool) {
@@ -59,12 +61,19 @@ func configInit() {
 }
 
 func ascii() {
+	c := exec.Command("git", "describe", "--tags")
+	var out bytes.Buffer
+	c.Stdout = &out
+	err := c.Run()
+	if err != nil {
+		log.Println(err)
+	}
 	fmt.Println(`  ________.__                                       __   `)
 	fmt.Println(` /  _____/|  |   ____   ____ ______   ____  _______/  |_ `)
 	fmt.Println(`/   \  ___|  | _/ __ \_/ __ \\____ \ /  _ \/  ___/\   __\`)
 	fmt.Println(`\    \_\  \  |_\  ___/\  ___/|  |_> >  <_> )___ \  |  |  `)
 	fmt.Println(` \______  /____/\___  >\___  >   __/ \____/____  > |__|  `)
-	fmt.Printf(`        \/          \/     \/|__|              \/ %s`, api.Config.Version)
+	fmt.Printf(`        \/          \/     \/|__|              \/ %s`, out)
 	fmt.Printf("\n")
 }
 
