@@ -125,14 +125,14 @@ func (api *API) addedPush(adder gp.User, addee gp.UserId) (err error) {
 		case device.Type == "ios":
 			err = api.iOSAddedNotification(device.Id, adder, addee)
 			if err != nil {
-				log.Println("Error sending group push notification:", err)
+				log.Println("Error sending added push notification:", err)
 			} else {
 				count += 1
 			}
 		case device.Type == "android":
 			err = api.androidAddedNotification(device.Id, adder, addee)
 			if err != nil {
-				log.Println("Error sending group push notification:", err)
+				log.Println("Error sending added push notification:", err)
 			} else {
 				count += 1
 			}
@@ -393,3 +393,81 @@ func (api *API) iOSGroupNotification(device string, group gp.Network, adder stri
 	}
 	return nil
 }
+
+func (api *API) acceptedPush(accepter gp.User, acceptee gp.UserId) (err error) {
+	log.Printf("Notifiying user %d that they've been accepted by %s (%d)\n", acceptee, accepter.Name, accepter.Id)
+	devices, e := api.GetDevices(acceptee)
+	if e != nil {
+		log.Println(e)
+		return
+	}
+	count := 0
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			err = api.iOSAcceptedNotification(device.Id, accepter, acceptee)
+			if err != nil {
+				log.Println("Error sending accepted push notification:", err)
+			} else {
+				count += 1
+			}
+		case device.Type == "android":
+			err = api.androidAcceptedNotification(device.Id, accepter, acceptee)
+			if err != nil {
+				log.Println("Error sending accepted push notification:", err)
+			} else {
+				count += 1
+			}
+		}
+	}
+	log.Printf("Notified %d's %d devices\n", acceptee, count)
+	return
+}
+
+func (api *API) iOSAcceptedNotification(device string, accepter gp.User, acceptee gp.UserId) (err error) {
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	payload := apns.NewPayload()
+	d := apns.NewAlertDictionary()
+	d.LocKey = "accepted_you"
+	d.LocArgs = []string{accepter.Name}
+	payload.Alert = d
+	payload.Sound = "default"
+	notifications, err := api.GetUserNotifications(acceptee)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	payload.Badge = len(notifications)
+	unread, err := api.UnreadMessageCount(acceptee)
+	if err == nil {
+		payload.Badge += unread
+	}
+	log.Printf("Accepted contact notification: badging %d with %d notifications (%d from unread messages)", acceptee, payload.Badge, unread)
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device
+	pn.AddPayload(payload)
+	pn.Set("accepter-id", accepter.Id)
+	resp := client.Send(pn)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
+
+func (api *API) androidAcceptedNotification(device string, accepter gp.User, acceptee gp.UserId) (err error) {
+	data := map[string]interface{}{"type": "accepted_you", "accepter": accepter.Name, "accepter-id": accepter.Id, "for": acceptee}
+	msg := gcm.NewMessage(data, device)
+	msg.TimeToLive = 0
+	msg.CollapseKey = "Someone accepted your contact request."
+	m, _ := json.Marshal(msg)
+	log.Printf("%s\n", m)
+	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
+	response, err := sender.SendNoRetry(msg)
+	log.Println(response)
+	return
+}
+

@@ -389,7 +389,7 @@ func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.User
 			case notification.Type == "added_you":
 				go api.addedPush(notification.By, recipient)
 			case notification.Type == "accepted_you":
-
+				go api.acceptedPush(notification.By, recipient)
 			default:
 				go api.notificationPush(recipient)
 			}
