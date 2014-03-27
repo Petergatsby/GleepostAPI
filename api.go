@@ -17,7 +17,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"bytes"
 )
 
 func loadConfig(fail bool) {
@@ -61,10 +60,7 @@ func configInit() {
 }
 
 func ascii() {
-	c := exec.Command("git", "describe", "--tags")
-	var out bytes.Buffer
-	c.Stdout = &out
-	err := c.Run()
+	out, err := exec.Command("git", "describe", "--tags").Output()
 	if err != nil {
 		log.Println(err)
 	}
