@@ -111,6 +111,84 @@ func (api *API) groupPush(adder gp.User, addees []gp.UserId, group gp.Network) (
 	return
 }
 
+//addedPush sends a push notification to addee to notify them they've been added by adder.
+func (api *API) addedPush(adder gp.User, addee gp.UserId) (err error) {
+	log.Printf("Notifiying user %d that they've been added by %s (%d)\n", addee, adder.Name, adder.Id)
+	devices, e := api.GetDevices(addee)
+	if e != nil {
+		log.Println(e)
+		return
+	}
+	count := 0
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			err = api.iOSAddedNotification(device.Id, adder, addee)
+			if err != nil {
+				log.Println("Error sending group push notification:", err)
+			} else {
+				count += 1
+			}
+		case device.Type == "android":
+			err = api.androidAddedNotification(device.Id, adder, addee)
+			if err != nil {
+				log.Println("Error sending group push notification:", err)
+			} else {
+				count += 1
+			}
+		}
+	}
+	log.Printf("Notified %d's %d devices\n", addee, count)
+	return
+}
+
+func (api *API) iOSAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	payload := apns.NewPayload()
+	d := apns.NewAlertDictionary()
+	d.LocKey = "added_you"
+	d.LocArgs = []string{adder.Name}
+	payload.Alert = d
+	payload.Sound = "default"
+	notifications, err := api.GetUserNotifications(addee)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	payload.Badge = len(notifications)
+	unread, err := api.UnreadMessageCount(addee)
+	if err == nil {
+		payload.Badge += unread
+	}
+	log.Printf("Added contact notification: badging %d with %d notifications (%d from unread messages)", addee, payload.Badge, unread)
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device
+	pn.AddPayload(payload)
+	pn.Set("adder-id", adder.Id)
+	resp := client.Send(pn)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
+
+func (api *API) androidAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
+	data := map[string]interface{}{"type": "added_you", "adder": adder.Name, "adder-id": adder.Id, "for": addee}
+	msg := gcm.NewMessage(data, device)
+	msg.TimeToLive = 0
+	msg.CollapseKey = "Someone added you to their contacts."
+	m, _ := json.Marshal(msg)
+	log.Printf("%s\n", m)
+	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
+	response, err := sender.SendNoRetry(msg)
+	log.Println(response)
+	return
+}
+
 //iosBadge sets this device's badge, or returns an error.
 func (api *API) iosBadge(device string, badge int) (err error) {
 	url := "gateway.sandbox.push.apple.com:2195"
