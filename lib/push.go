@@ -517,3 +517,34 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	log.Println(response)
 	return
 }
+
+func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.ConversationId) (err error) {
+	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.Id)
+	devices, e := api.GetDevices(other)
+	if e != nil {
+		log.Println(e)
+		return
+	}
+	count := 0
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			err = api.iOSNewConversationNotification(device.Id, conv, other, initiator)
+			if err != nil {
+				log.Println("Error sending new conversation push notification:", err)
+			} else {
+				count += 1
+			}
+		case device.Type == "android":
+			err = api.androidNewConversationNotification(device.Id, conv, other, initiator)
+			if err != nil {
+				log.Println("Error sending new conversation push notification:", err)
+			} else {
+				count += 1
+			}
+		}
+	}
+	log.Printf("Notified %d's %d devices\n", other, count)
+	return
+
+}

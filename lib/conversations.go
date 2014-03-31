@@ -51,6 +51,14 @@ func (api *API) CreateConversation(initiator gp.UserId, participants []gp.User, 
 	if err == nil {
 		go api.cache.AddConversation(conversation)
 		go api.NewConversationEvent(conversation)
+		initiator, err := api.GetUser(initiator)
+		if err == nil {
+			for _, u := range participants {
+				go api.newConversationPush(initiator, u.Id, conversation.Id)
+			}
+		} else {
+			log.Println("Problem getting user:", err)
+		}
 	}
 	return
 }
