@@ -10,6 +10,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
+	"github.com/draaglom/GleepostAPI/lib/push"
 	"io"
 	"regexp"
 	"strings"
@@ -23,6 +24,7 @@ type API struct {
 	fb     *FB
 	mail   *mail.Mailer
 	Config gp.Config
+	push   *push.Pusher
 }
 
 func New(conf gp.Config) (api *API) {
@@ -32,6 +34,7 @@ func New(conf gp.Config) (api *API) {
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.mail = mail.New(conf.Email)
+	api.push = push.New(conf)
 	return
 }
 

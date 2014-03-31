@@ -1,17 +1,12 @@
 package lib
 
 import (
-	"encoding/json"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
+	"github.com/draaglom/apns"
 	"log"
 	"time"
 )
-
-type Pusher struct {
-	config gp.APNSConfig
-}
 
 func (api *API) notify(user gp.UserId) {
 	url := "gateway.sandbox.push.apple.com:2195"
@@ -181,12 +176,7 @@ func (api *API) androidAddedNotification(device string, adder gp.User, addee gp.
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	msg.CollapseKey = "Someone added you to their contacts."
-	m, _ := json.Marshal(msg)
-	log.Printf("%s\n", m)
-	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
-	return
+	return api.push.AndroidPush(msg)
 }
 
 //iosBadge sets this device's badge, or returns an error.
@@ -308,12 +298,7 @@ func (api *API) androidPushMessage(device string, message gp.Message, convId gp.
 	}
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
-	m, _ := json.Marshal(msg)
-	log.Printf("%s\n", m)
-	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
-	return
+	return api.push.AndroidPush(msg)
 }
 
 func (api *API) androidPushGroup(device string, group gp.Network, adder string, user gp.UserId) (err error) {
@@ -321,12 +306,7 @@ func (api *API) androidPushGroup(device string, group gp.Network, adder string, 
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	msg.CollapseKey = "You've been added to a group"
-	m, _ := json.Marshal(msg)
-	log.Printf("%s\n", m)
-	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
-	return
+	return api.push.AndroidPush(msg)
 }
 
 
@@ -463,12 +443,7 @@ func (api *API) androidAcceptedNotification(device string, accepter gp.User, acc
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	msg.CollapseKey = "Someone accepted your contact request."
-	m, _ := json.Marshal(msg)
-	log.Printf("%s\n", m)
-	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
-	return
+	return api.push.AndroidPush(msg)
 }
 
 func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
@@ -510,12 +485,7 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	msg.CollapseKey = "You have a new conversation!"
-	m, _ := json.Marshal(msg)
-	log.Printf("%s\n", m)
-	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
-	return
+	return api.push.AndroidPush(msg)
 }
 
 func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.ConversationId) (err error) {
