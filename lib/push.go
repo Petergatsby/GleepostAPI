@@ -504,3 +504,15 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	}
 	return nil
 }
+
+func (api *API) androidNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
+	data := map[string]interface{}{"type": "NEW_CONV", "with": with.Name, "with-id": with.Id, "conv": conv, "for": user}
+	msg := gcm.NewMessage(data, device)
+	msg.TimeToLive = 0
+	m, _ := json.Marshal(msg)
+	log.Printf("%s\n", m)
+	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
+	response, err := sender.SendNoRetry(msg)
+	log.Println(response)
+	return
+}
