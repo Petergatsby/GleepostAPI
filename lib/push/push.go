@@ -44,3 +44,8 @@ func (pusher *Pusher) IOSPush(pn *apns.PushNotification) (err error) {
 	}
 	return nil
 }
+
+type Pushable interface {
+	IOSNotification() *apns.PushNotification
+	AndroidNotification() *gcm.Message
+}
