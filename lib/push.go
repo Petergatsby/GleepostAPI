@@ -471,3 +471,36 @@ func (api *API) androidAcceptedNotification(device string, accepter gp.User, acc
 	return
 }
 
+func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
+	url := "gateway.sandbox.push.apple.com:2195"
+	if api.Config.APNS.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
+	payload := apns.NewPayload()
+	d := apns.NewAlertDictionary()
+	d.LocKey = "NEW_CONV"
+	d.LocArgs = []string{with.Name}
+	payload.Alert = d
+	payload.Sound = "default"
+	notifications, err := api.GetUserNotifications(user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	payload.Badge = len(notifications)
+	unread, err := api.UnreadMessageCount(user)
+	if err == nil {
+		payload.Badge += unread
+	}
+	log.Printf("Badging %d with %d notifications (%d from unread messages)", user, payload.Badge, unread)
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device
+	pn.AddPayload(payload)
+	pn.Set("conv", conv)
+	resp := client.Send(pn)
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
