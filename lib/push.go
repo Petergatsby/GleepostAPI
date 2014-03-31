@@ -9,11 +9,6 @@ import (
 )
 
 func (api *API) notify(user gp.UserId) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	payload.Alert = "Sup"
 	payload.Badge = 1337
@@ -28,9 +23,10 @@ func (api *API) notify(user gp.UserId) {
 			pn := apns.NewPushNotification()
 			pn.DeviceToken = device.Id
 			pn.AddPayload(payload)
-			resp := client.Send(pn)
-			log.Println("Success:", resp.Success)
-			log.Println("Error:", resp.Error)
+			err := api.push.IOSPush(pn)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
@@ -138,11 +134,6 @@ func (api *API) addedPush(adder gp.User, addee gp.UserId) (err error) {
 }
 
 func (api *API) iOSAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "added_you"
@@ -164,11 +155,8 @@ func (api *API) iOSAddedNotification(device string, adder gp.User, addee gp.User
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("adder-id", adder.Id)
-	resp := client.Send(pn)
-	if resp.Error != nil {
-		return resp.Error
-	}
-	return nil
+	err = api.push.IOSPush(pn)
+	return
 }
 
 func (api *API) androidAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
@@ -181,24 +169,13 @@ func (api *API) androidAddedNotification(device string, adder gp.User, addee gp.
 
 //iosBadge sets this device's badge, or returns an error.
 func (api *API) iosBadge(device string, badge int) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	payload.Badge = badge
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
-	resp := client.Send(pn)
-	if !resp.Success {
-		log.Println("Failed to send push notification to:", device)
-	}
-	if resp.Error != nil {
-		return resp.Error
-	}
-	return nil
+	err = api.push.IOSPush(pn)
+	return
 }
 
 //androidNotification sends a "You have new notifications" push to this device.
@@ -209,9 +186,7 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 	msg := gcm.NewMessage(data, device)
 	msg.CollapseKey = "New Notification"
 
-	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
+	err = api.push.AndroidPush(msg)
 	return
 }
 
@@ -251,11 +226,6 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 }
 
 func (api *API) iosPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "MSG"
@@ -282,11 +252,8 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("conv", convId)
-	resp := client.Send(pn)
-	if resp.Error != nil {
-		return resp.Error
-	}
-	return nil
+	err = api.push.IOSPush(pn)
+	return
 }
 
 func (api *API) androidPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
@@ -341,11 +308,6 @@ func (api *API) FeedbackDaemon(frequency int) {
 }
 
 func (api *API) iOSGroupNotification(device string, group gp.Network, adder string, addee gp.UserId) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "GROUP"
@@ -367,11 +329,8 @@ func (api *API) iOSGroupNotification(device string, group gp.Network, adder stri
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("group-id", group.Id)
-	resp := client.Send(pn)
-	if resp.Error != nil {
-		return resp.Error
-	}
-	return nil
+	err = api.push.IOSPush(pn)
+	return
 }
 
 func (api *API) acceptedPush(accepter gp.User, acceptee gp.UserId) (err error) {
@@ -405,11 +364,6 @@ func (api *API) acceptedPush(accepter gp.User, acceptee gp.UserId) (err error) {
 }
 
 func (api *API) iOSAcceptedNotification(device string, accepter gp.User, acceptee gp.UserId) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "accepted_you"
@@ -431,11 +385,8 @@ func (api *API) iOSAcceptedNotification(device string, accepter gp.User, accepte
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("accepter-id", accepter.Id)
-	resp := client.Send(pn)
-	if resp.Error != nil {
-		return resp.Error
-	}
-	return nil
+	err = api.push.IOSPush(pn)
+	return
 }
 
 func (api *API) androidAcceptedNotification(device string, accepter gp.User, acceptee gp.UserId) (err error) {
@@ -447,11 +398,6 @@ func (api *API) androidAcceptedNotification(device string, accepter gp.User, acc
 }
 
 func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if api.Config.APNS.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "NEW_CONV"
@@ -473,11 +419,8 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("conv", conv)
-	resp := client.Send(pn)
-	if resp.Error != nil {
-		return resp.Error
-	}
-	return nil
+	err = api.push.IOSPush(pn)
+	return
 }
 
 func (api *API) androidNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {

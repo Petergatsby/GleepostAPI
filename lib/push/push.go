@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/gcm"
+	"github.com/draaglom/apns"
 	"log"
 )
 
@@ -28,3 +29,18 @@ func (pusher *Pusher) AndroidPush(msg *gcm.Message) (err error) {
 	return
 }
 
+func (pusher *Pusher) IOSPush(pn *apns.PushNotification) (err error) {
+	url := "gateway.sandbox.push.apple.com:2195"
+	if pusher.APNSconfig.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
+	resp := client.Send(pn)
+	if !resp.Success {
+		log.Println("Failed to send push notification to:", pn.DeviceToken)
+	}
+	if resp.Error != nil {
+		return resp.Error
+	}
+	return nil
+}
