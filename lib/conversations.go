@@ -139,7 +139,8 @@ func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, li
 }
 
 //CanContact returns true if the initiator is allowed to contact the recipient.
-//TODO: Limit to people who are contacts OR who have posted on the same wall
+//This means that a) they are contacts already or b) recipient has posted somewhere a) can see.
+//TODO: Include comments / attends too.
 func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactable bool, err error) {
 	contacts, err := api.AreContacts(initiator, recipient)
 	if err != nil {
@@ -153,7 +154,7 @@ func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactabl
 		case !shared:
 			return false, nil
 		default:
-			posted, err := api.UserHasPosted(recipient)
+			posted, err := api.UserHasPosted(recipient, initiator)
 			if err != nil {
 				return false, err
 			}

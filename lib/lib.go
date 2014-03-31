@@ -265,11 +265,10 @@ func (api *API) AreContacts(a, b gp.UserId) (areContacts bool, err error) {
 	return false, nil
 }
 
-//UserHasPosted returns true if user has ever created a post.
+//UserHasPosted returns true if user has ever created a post from the perspective of perspective.
 //TODO: Implement a direct version
-//TODO: When multiple networks are available, check if the user has posted _in a network_.
-func (api *API) UserHasPosted(user gp.UserId) (posted bool, err error) {
-	posts, err := api.GetUserPosts(user, user, db.WUSER, 0, 1, "")
+func (api *API) UserHasPosted(user gp.UserId, perspective gp.UserId) (posted bool, err error) {
+	posts, err := api.GetUserPosts(user, perspective, db.WUSER, 0, 1, "")
 	if err != nil {
 		return
 	}
