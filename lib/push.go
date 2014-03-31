@@ -509,6 +509,7 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	data := map[string]interface{}{"type": "NEW_CONV", "with": with.Name, "with-id": with.Id, "conv": conv, "for": user}
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
+	msg.CollapseKey = "You have a new conversation!"
 	m, _ := json.Marshal(msg)
 	log.Printf("%s\n", m)
 	sender := &gcm.Sender{ApiKey: api.Config.GCM.APIKey}
