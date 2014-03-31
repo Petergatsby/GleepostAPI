@@ -133,6 +133,72 @@ func (api *API) addedPush(adder gp.User, addee gp.UserId) (err error) {
 	return
 }
 
+func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.ConversationId) (err error) {
+	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.Id)
+	devices, e := api.GetDevices(other)
+	if e != nil {
+		log.Println(e)
+		return
+	}
+	count := 0
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			err = api.iOSNewConversationNotification(device.Id, conv, other, initiator)
+			if err != nil {
+				log.Println("Error sending new conversation push notification:", err)
+			} else {
+				count += 1
+			}
+		case device.Type == "android":
+			err = api.androidNewConversationNotification(device.Id, conv, other, initiator)
+			if err != nil {
+				log.Println("Error sending new conversation push notification:", err)
+			} else {
+				count += 1
+			}
+		}
+	}
+	log.Printf("Notified %d's %d devices\n", other, count)
+	return
+
+}
+
+func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
+	log.Println("Trying to send a push notification")
+	recipients := api.GetParticipants(convId)
+	for _, user := range recipients {
+		if user.Id != message.By.Id {
+			log.Println("Trying to send a push notification to", user.Name)
+			devices, err := api.GetDevices(user.Id)
+			if err != nil {
+				log.Println(err)
+			}
+			count := 0
+			for _, device := range devices {
+				log.Println("Sending push notification to device: ", device)
+				switch {
+				case device.Type == "ios":
+					err = api.iosPushMessage(device.Id, message, convId, user.Id)
+					if err != nil {
+						log.Println(err)
+					} else {
+						count++
+					}
+				case device.Type == "android":
+					err = api.androidPushMessage(device.Id, message, convId, user.Id)
+					if err != nil {
+						log.Println(err)
+					} else {
+						count++
+					}
+				}
+			}
+			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
+		}
+	}
+}
+
 func (api *API) iOSAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -188,41 +254,6 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 
 	err = api.push.AndroidPush(msg)
 	return
-}
-
-func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
-	log.Println("Trying to send a push notification")
-	recipients := api.GetParticipants(convId)
-	for _, user := range recipients {
-		if user.Id != message.By.Id {
-			log.Println("Trying to send a push notification to", user.Name)
-			devices, err := api.GetDevices(user.Id)
-			if err != nil {
-				log.Println(err)
-			}
-			count := 0
-			for _, device := range devices {
-				log.Println("Sending push notification to device: ", device)
-				switch {
-				case device.Type == "ios":
-					err = api.iosPushMessage(device.Id, message, convId, user.Id)
-					if err != nil {
-						log.Println(err)
-					} else {
-						count++
-					}
-				case device.Type == "android":
-					err = api.androidPushMessage(device.Id, message, convId, user.Id)
-					if err != nil {
-						log.Println(err)
-					} else {
-						count++
-					}
-				}
-			}
-			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
-		}
-	}
 }
 
 func (api *API) iosPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
@@ -429,35 +460,4 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	msg.TimeToLive = 0
 	msg.CollapseKey = "You have a new conversation!"
 	return api.push.AndroidPush(msg)
-}
-
-func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.ConversationId) (err error) {
-	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.Id)
-	devices, e := api.GetDevices(other)
-	if e != nil {
-		log.Println(e)
-		return
-	}
-	count := 0
-	for _, device := range devices {
-		switch {
-		case device.Type == "ios":
-			err = api.iOSNewConversationNotification(device.Id, conv, other, initiator)
-			if err != nil {
-				log.Println("Error sending new conversation push notification:", err)
-			} else {
-				count += 1
-			}
-		case device.Type == "android":
-			err = api.androidNewConversationNotification(device.Id, conv, other, initiator)
-			if err != nil {
-				log.Println("Error sending new conversation push notification:", err)
-			} else {
-				count += 1
-			}
-		}
-	}
-	log.Printf("Notified %d's %d devices\n", other, count)
-	return
-
 }
