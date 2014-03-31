@@ -875,20 +875,23 @@ func (db *DB) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 		switch {
 		case adder == user:
 			contact.User, err = db.GetUser(addee)
-			if err != nil {
-				return
+			if err == nil {
+				contact.YouConfirmed = true
+				contact.TheyConfirmed = confirmed
+				contacts = append(contacts, contact)
+			} else {
+				log.Println(err)
 			}
-			contact.YouConfirmed = true
-			contact.TheyConfirmed = confirmed
 		case addee == user:
 			contact.User, err = db.GetUser(adder)
-			if err != nil {
-				return
+			if err == nil {
+				contact.YouConfirmed = confirmed
+				contact.TheyConfirmed = true
+				contacts = append(contacts, contact)
+			} else {
+				log.Println(err)
 			}
-			contact.YouConfirmed = confirmed
-			contact.TheyConfirmed = true
 		}
-		contacts = append(contacts, contact)
 	}
 	return
 }
