@@ -119,8 +119,11 @@ func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, li
 	}
 	participants = append(participants, user)
 	for _, id := range with {
-		//TODO: Handle error
-		canContact, _ := api.CanContact(initiator, id)
+		canContact, e := api.CanContact(initiator, id)
+		if e != nil {
+			log.Println("Error determining contactability:", initiator, id, e)
+			return conversation, e
+		}
 		if canContact {
 			user, err = api.GetUser(id)
 			if err != nil {

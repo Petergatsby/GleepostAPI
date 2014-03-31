@@ -403,6 +403,8 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == gp.ENOSUCHUSER {
 			jsonResponse(w, e, 400)
+		} else if *e == lib.ENOTALLOWED {
+			jsonResponse(w, e, 403)
 		} else {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		}
