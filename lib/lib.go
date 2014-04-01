@@ -642,3 +642,12 @@ func (api *API) DeviceFeedback(deviceId string, timestamp uint32) (err error) {
 	t := time.Unix(int64(timestamp), 0)
 	return api.db.Feedback(deviceId, t)
 }
+
+func (api *API) IsAdmin(user gp.UserId) (admin bool) {
+	for _, u := range api.Config.Admins {
+		if u == user {
+			return true
+		}
+	}
+	return false
+}
