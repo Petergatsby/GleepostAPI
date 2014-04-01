@@ -467,7 +467,7 @@ func (api *API) EndOldConversations() {
 		select {
 		case <-t:
 			convs, err := api.db.PrunableConversations()
-			if err == nil {
+			if err != nil {
 				log.Println("Prune error:", err)
 			}
 			for _, c := range convs {
