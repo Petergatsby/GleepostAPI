@@ -475,7 +475,7 @@ func (api *API) MassNotification(message string, version string, platform string
 		switch {
 		case device.Type == "ios":
 			err = api.iOSUpdateNotification(device,  message, version)
-			if err != nil {
+			if err == nil {
 				count++
 			} else {
 				log.Println(err)
