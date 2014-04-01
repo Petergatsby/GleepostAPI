@@ -1760,11 +1760,6 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func mm(w http.ResponseWriter, r *http.Request) {
-	err := api.Massmail()
-	jsonResponse(w, err, 200)
-}
-
 func deletePost(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
