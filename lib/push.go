@@ -6,6 +6,7 @@ import (
 	"github.com/draaglom/apns"
 	"log"
 	"time"
+	"errors"
 )
 
 func (api *API) notify(user gp.UserId) {
@@ -462,7 +463,48 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	return api.push.AndroidPush(msg)
 }
 
-func (api *API) MassNotification(message string, version string, platform string) {
+func (api *API) MassNotification(message string, version string, platform string) (count int, err error) {
+	devices, err := api.db.GetAllDevices(platform)
+	if err != nil {
+		return
+	}
+	if len(devices) == 0 {
+		return 0, errors.New("No devices on that platform.")
+	}
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			err = api.iOSUpdateNotification(device,  message, version)
+			if err != nil {
+				count++
+			} else {
+				log.Println(err)
+			}
+		default:
+		}
+	}
+	return
+}
 
+func (api *API) iOSUpdateNotification(device gp.Device, message string, version string) (err error) {
+	payload := apns.NewPayload()
+	payload.Alert = message
+	payload.Sound = "default"
+	notifications, err := api.GetUserNotifications(device.User)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	payload.Badge = len(notifications)
+	unread, err := api.UnreadMessageCount(device.User)
+	if err == nil {
+		payload.Badge += unread
+	}
+	log.Printf("mass notification: badging %d with %d notifications (%d from unread messages)", device.User, payload.Badge, unread)
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device.Id
+	pn.AddPayload(payload)
+	pn.Set("version", version)
+	err = api.push.IOSPush(pn)
 	return
 }

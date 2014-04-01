@@ -58,3 +58,22 @@ func (db *DB) Feedback(deviceId string, timestamp time.Time) (err error) {
 	return
 }
 
+func (db *DB) GetAllDevices(platform string) (devices []gp.Device, err error) {
+	s, err := db.prepare("SELECT user_id, device_type, device_id FROM devices WHERE device_type = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(platform)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		device := gp.Device{}
+		if err = rows.Scan(&device.User, &device.Type, &device.Id); err != nil {
+			return
+		}
+		devices = append(devices, device)
+	}
+	return
+}
