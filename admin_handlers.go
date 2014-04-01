@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/draaglom/GleepostAPI/lib"
 	"net/http"
+	"log"
 )
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
