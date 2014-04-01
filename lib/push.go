@@ -461,3 +461,8 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	msg.CollapseKey = "You have a new conversation!"
 	return api.push.AndroidPush(msg)
 }
+
+func (api *API) MassNotification(message string, version string, platform string) {
+
+	return
+}
