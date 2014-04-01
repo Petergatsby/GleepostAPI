@@ -16,6 +16,7 @@ func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 		if api.IsAdmin(userId) {
 			count, err := api.MassNotification(r.FormValue("message"), r.FormValue("version"), r.FormValue("type"))
 			if err != nil {
+				log.Println(err)
 				jsonResponse(w, err, 500)
 			} else {
 				jsonResponse(w, count, 200)
