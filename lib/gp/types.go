@@ -208,6 +208,7 @@ type Config struct {
 	ConversationPageSize int
 	OnlineTimeout        int
 	Expiry               int
+	NewPushEnabled	     bool
 	Admins		     []UserId
 	Mysql                MysqlConfig
 	Redis                RedisConfig
