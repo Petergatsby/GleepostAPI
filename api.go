@@ -142,6 +142,8 @@ func main() {
 	r.HandleFunc("/api/{version}/search/users/{query}", searchUsers).Methods("GET")
 	r.HandleFunc("/api/{version}/admin/massmail", mm).Methods("POST")
 	r.HandleFunc("/api/{version}/admin/masspush", newVersionNotificationHandler).Methods("POST")
+	r.HandleFunc("/api/{version}/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", postsStatsHandler).Methods("GET")
+	r.HandleFunc("/api/{version}/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
 	r.Handle("/api/{version}/ws", websocket.Handler(jsonServer))
 	server := &http.Server{
 		Addr:    ":" + conf.Port,
