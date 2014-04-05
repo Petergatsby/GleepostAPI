@@ -10,6 +10,6 @@ func (db *DB) LikesForUserBetween(user gp.UserId, start time.Time, finish time.T
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(user, start, finish).Scan(&count)
+	err = s.QueryRow(user, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
 }
