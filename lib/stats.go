@@ -23,6 +23,7 @@ const RSVPS Stat = "rsvps"
 var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 
 func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
+	stats = new(Aggregate)
 	stats.Type = stat
 	stats.Start = start
 	stats.Finish = finish
