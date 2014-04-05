@@ -10,8 +10,13 @@ type Aggregate struct {
 	Type Stat
 	Start time.Time
 	Finish time.Time
-	Bucket time.Duration
-	Counts map[time.Time]int
+	BucketLength time.Duration
+	Counts []Bucket
+}
+
+type Bucket struct {
+	Start time.Time
+	Count int
 }
 
 type Stat string
@@ -27,8 +32,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	stats.Type = stat
 	stats.Start = start
 	stats.Finish = finish
-	stats.Bucket = bucket
-	stats.Counts = make(map[time.Time]int)
+	stats.BucketLength = bucket
 	for start.Before(finish) {
 		end := start.Add(bucket)
 		var count int
@@ -44,7 +48,8 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 			return
 		}
 		if err == nil {
-			stats.Counts[start] = count
+			result := Bucket{Start:start, Count: count}
+			stats.Counts = append(stats.Counts, result)
 		} else {
 			log.Println(err)
 		}
