@@ -3,7 +3,7 @@ package lib
 import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/gcm"
-	"github.com/draaglom/apns"
+	"github.com/anachronistic/apns"
 	"log"
 	"time"
 	"errors"
