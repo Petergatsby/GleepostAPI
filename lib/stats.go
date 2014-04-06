@@ -7,11 +7,11 @@ import (
 )
 
 type Aggregate struct {
-	Type Stat
-	Start time.Time
-	Finish time.Time
-	BucketLength time.Duration
-	Counts []Bucket
+	Type Stat `json:"type"`
+	Start time.Time `json:"start"`
+	Finish time.Time `json:"finish"`
+	BucketLength time.Duration `json:"period"`
+	Counts []Bucket `json:"data"`
 }
 
 type Bucket struct {
