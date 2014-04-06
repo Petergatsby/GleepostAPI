@@ -30,9 +30,9 @@ var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
 	stats = new(Aggregate)
 	stats.Type = stat
-	stats.Start = start
-	stats.Finish = finish
-	stats.BucketLength = bucket
+	stats.Start = start.Round(time.Duration(time.Second))
+	stats.Finish = finish.Round(time.Duration(time.Second))
+	stats.BucketLength = bucket / time.Second
 	for start.Before(finish) {
 		end := start.Add(bucket)
 		var count int
@@ -49,7 +49,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 		}
 		if err == nil {
 			if count > 0 {
-				result := Bucket{Start:start, Count: count}
+				result := Bucket{Start:start.Round(time.Duration(time.Second)), Count: count}
 				stats.Counts = append(stats.Counts, result)
 			}
 		} else {
