@@ -48,7 +48,8 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, err, 404)
 		}
 		otherId := gp.UserId(_other)
-		stats, err := api.AggregateStatForUser(lib.LIKES, otherId, start, finish, bucket)
+		stat := lib.Stat(vars["type"])
+		stats, err := api.AggregateStatForUser(stat, otherId, start, finish, bucket)
 		if err != nil {
 			jsonResponse(w, err, 500)
 			return

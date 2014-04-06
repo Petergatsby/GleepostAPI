@@ -38,9 +38,12 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	case stat == LIKES:
 		statF = api.db.LikesForUserBetween
 	case stat == COMMENTS:
+		statF = api.db.CommentsForUserBetween
 	case stat == POSTS:
+		statF = api.db.PostsForUserBetween
 	case stat == VIEWS:
 	case stat == RSVPS:
+		statF = api.db.RsvpsForUserBetween
 	default:
 		err = gp.APIerror{Reason:"I don't know what that stat is."}
 		return
