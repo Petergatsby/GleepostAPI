@@ -38,7 +38,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 		var count int
 		switch {
 		case stat == LIKES:
-			count, err = api.db.LikesForUserBetween(user, start, finish)
+			count, err = api.db.LikesForUserBetween(user, start, end)
 		case stat == COMMENTS:
 		case stat == POSTS:
 		case stat == VIEWS:
