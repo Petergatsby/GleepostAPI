@@ -48,8 +48,10 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 			return
 		}
 		if err == nil {
-			result := Bucket{Start:start, Count: count}
-			stats.Counts = append(stats.Counts, result)
+			if count > 0 {
+				result := Bucket{Start:start, Count: count}
+				stats.Counts = append(stats.Counts, result)
+			}
 		} else {
 			log.Println(err)
 		}
