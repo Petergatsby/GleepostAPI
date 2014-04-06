@@ -2,14 +2,16 @@ package main
 
 import (
 	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"time"
+	"strconv"
 )
 
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	_, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -41,7 +43,12 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		if finish.Before(start) {
 			finish = time.Now().UTC()
 		}
-		stats, err := api.AggregateStatForUser(lib.LIKES, userId, start, finish, bucket)
+		_other, err := strconv.ParseUint(vars["id"], 10, 64)
+		if err != nil {
+			jsonResponse(w, err, 404)
+		}
+		otherId := gp.UserId(_other)
+		stats, err := api.AggregateStatForUser(lib.LIKES, otherId, start, finish, bucket)
 		if err != nil {
 			jsonResponse(w, err, 500)
 			return
