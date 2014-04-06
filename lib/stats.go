@@ -15,8 +15,8 @@ type Aggregate struct {
 }
 
 type Bucket struct {
-	Start time.Time
-	Count int
+	Start time.Time `json:"start"`
+	Count int `json:"count"`
 }
 
 type Stat string
