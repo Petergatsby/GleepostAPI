@@ -6,8 +6,8 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"time"
 	"strconv"
+	"time"
 )
 
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {

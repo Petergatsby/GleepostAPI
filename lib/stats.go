@@ -33,20 +33,22 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	stats.Start = start.Round(time.Duration(time.Second))
 	stats.Finish = finish.Round(time.Duration(time.Second))
 	stats.BucketLength = bucket / time.Second
+	var statF func(gp.UserId, time.Time, time.Time) (int, error)
+	switch {
+	case stat == LIKES:
+		statF = api.db.LikesForUserBetween
+	case stat == COMMENTS:
+	case stat == POSTS:
+	case stat == VIEWS:
+	case stat == RSVPS:
+	default:
+		err = gp.APIerror{Reason:"I don't know what that stat is."}
+		return
+	}
 	for start.Before(finish) {
 		end := start.Add(bucket)
 		var count int
-		switch {
-		case stat == LIKES:
-			count, err = api.db.LikesForUserBetween(user, start, end)
-		case stat == COMMENTS:
-		case stat == POSTS:
-		case stat == VIEWS:
-		case stat == RSVPS:
-		default:
-			err = gp.APIerror{Reason:"I don't know what that stat is."}
-			return
-		}
+		count, err = statF(user, start, end)
 		if err == nil {
 			if count > 0 {
 				result := Bucket{Start:start.Round(time.Duration(time.Second)), Count: count}
