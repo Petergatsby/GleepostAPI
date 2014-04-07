@@ -25,6 +25,7 @@ const COMMENTS Stat = "comments"
 const POSTS Stat = "posts"
 const VIEWS Stat = "views"
 const RSVPS Stat = "rsvps"
+const INTERACTIONS Stat = "interactions"
 var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 
 func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
@@ -44,6 +45,8 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	case stat == VIEWS:
 	case stat == RSVPS:
 		statF = api.db.RsvpsForUserBetween
+	case stat == INTERACTIONS:
+		statF = api.InteractionsForUserBetween
 	default:
 		err = gp.APIerror{Reason:"I don't know what that stat is."}
 		return
@@ -67,4 +70,23 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 
 func aggregateStatForPost(stat Stat, post gp.PostId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
 	return
+}
+
+func (api *API) InteractionsForUserBetween(user gp.UserId, start time.Time, finish time.Time) (count int, err error) {
+	likes, err := api.db.LikesForUserBetween(user, start, finish)
+	if err != nil {
+		return
+	}
+	comments, err := api.db.CommentsForUserBetween(user, start, finish)
+	if err != nil {
+		return
+	}
+	rsvps, err := api.db.RsvpsForUserBetween(user, start, finish)
+	if err != nil {
+		return
+	}
+	count = likes + comments + rsvps
+	return
+}
+
 }

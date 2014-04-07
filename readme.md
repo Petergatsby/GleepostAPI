@@ -1330,7 +1330,7 @@ Example response: (HTTP 200)
 required parameters: id, token
 
 - user-id is any user ID you want to see the stats for. At the moment there is no limitation on who can see whose stats.
-- stat-type is one of "posts", "likes", "comments", "rsvps"
+- stat-type is one of "posts", "likes", "comments", "rsvps", "interactions"
 - period is either "day" or "week" and indicates how the counts are bucketed
 - start and finish are RFC3339 formatted strings which indicate the beginning and end of the period you are viewing stats for.
 
