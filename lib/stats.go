@@ -88,5 +88,3 @@ func (api *API) InteractionsForUserBetween(user gp.UserId, start time.Time, fini
 	count = likes + comments + rsvps
 	return
 }
-
-}
