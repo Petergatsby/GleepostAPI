@@ -1239,7 +1239,7 @@ HTTP 200
 		"time":"2013-09-16T16:58:30.771905595Z",
 		"user": {
 			"id":2395,
-			"name":"testing_user,
+			"name":"testing_user",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 	},
@@ -1250,7 +1250,7 @@ HTTP 200
 		"time":"2013-09-16T16:58:30.771905595Z",
 		"user": {
 			"id":2395,
-			"name":"testing_user,
+			"name":"testing_user",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 	},
@@ -1261,7 +1261,7 @@ HTTP 200
 		"time":"2013-09-16T16:58:30.771905595Z",
 		"user": {
 			"id":2395,
-			"name":"testing_user,
+			"name":"testing_user",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
 	}
