@@ -137,16 +137,16 @@ If 'invite' is specified and valid, the user will be added to any groups (s)he h
 example responses:
 If invite is valid:
 (HTTP 201)
-```
+```json
 {"id":143423424, "status":"verified"}
 ```
 If invite is invalid:
 (HTTP 201)
-```
+```json
 {"id":143423424, "status":"unverified"}
 ```
 (HTTP 400)
-```
+```json
 {"error":"Invalid email"}
 ```
 
@@ -158,15 +158,15 @@ Logging in with good credentials but an unverified account gives HTTP 403.
 
 example responses:
 (HTTP 200) 
-```
+```json
 {"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
 ```
 (HTTP 400)
-```
+```json
 {"error":"Bad email/password"}
 ```
 (HTTP 403)
-```
+```json
 {"status":"unverified"}
 ```
 
@@ -179,21 +179,21 @@ Please note: This is in a state of development. Expect it to change frequently.
 If this facebook user has an associated, verified gleepost account, this will issue an access token in the same manner as /login:
 
 (HTTP 200) 
-```
+```json
 {"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
 ```
 
 If this facebook user does not have a gleepost account associated, the facebook login will fail and prompt you with:
 
 (HTTP 400)
-```
+```json
 {"error":"Email required"}
 ```
 
 In which case you must resubmit the request including the email parameter. This will issue a verification email and respond with:
 
 (HTTP 201)
-```
+```json
 {"status":"unverified"}
 ```
 
@@ -218,7 +218,7 @@ This is effectively an alias for [/networks/[university-id]/posts](#get-networks
 
 example responses:
 (HTTP 200)
-```
+```json
 [
 	{
 		"id":2,
@@ -286,7 +286,7 @@ Event posts may also set an "title", to be used as a heading.
 
 example responses:
 (http 200)
-```
+```json
 {"id":3}
 ```
 ##GET /posts/[post-id]
@@ -296,7 +296,7 @@ This returns the full representation of this post, or 403 if the user isn't allo
 
 example responses:
 (http 200)
-```
+```json
 {
 	"id":2,
 	"by": {
@@ -371,7 +371,7 @@ start=[count]
 
 example responses:
 (http 200)
-```
+```json
 [
 	{
 		"id":51341,
@@ -401,7 +401,7 @@ required parameters: id, token, text
 
 example responses:
 (http 200)
-```
+```json
 {"id":234}
 ```
 
@@ -412,7 +412,7 @@ This adds an image previously uploaded with [/upload](#post-upload) to this post
 
 example responses:
 (http 201)
-```
+```json
 ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
 ```
 
@@ -427,10 +427,10 @@ If this post is in another network, will respond with 403.
 
 example responses:
 (http 200)
-```
+```json
 {"post":5, "liked":true}
 ```
-```
+```json
 {"post":5, "liked":false}
 ```
 
@@ -456,7 +456,7 @@ Live returns the 20 events whose event-time is soonest after "after".
 
 example responses:
 (http 200)
-```
+```json
 [
 	{
 	"id":763,
@@ -493,7 +493,7 @@ token=[token]
 A group resource, or 403 if you aren't a member of the group.
 example responses (http 200):
 
-```
+```json
 {"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}}
 ```
 
@@ -506,7 +506,7 @@ url="URL returned from /upload"
 
 If you created this group, you can change the group's image. If you didn't create the group -- or you didn't choose a valid image URL - it will return 403. Otherwise, returns the updated resource.
 
-```
+```json
 {"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}}
 ```
 
@@ -525,7 +525,7 @@ If url is not valid, it will respond with a 403.
 
 A successful response is 201:
 
-```
+```json
 {"id":5345, "name":"Even Cooler Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}}
 ```
 
@@ -549,7 +549,7 @@ This returns all the posts in this network, or an error 403 if the user is not a
 
 example responses:
 (HTTP 200)
-```
+```json
 [
 	{
 		"id":2,
@@ -619,7 +619,7 @@ Event posts may also set an "title", to be used as a heading.
 
 If you are not allowed, will respond with 403.
 If successful, will respond with HTTP 201
-```
+```json
 {"id":345}
 ```
 
@@ -630,7 +630,7 @@ token=[token]
 
 A collection of all the users in this network, or 403 if you aren't a member of the network (or if it is a university network)
 Example response:
-```
+```json
 [{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
 ```
 
@@ -650,7 +650,7 @@ id=[user-id]
 token=[token]
 Returns up to three live conversations (whose "ended" attribute is false) for the current user.
 
-```
+```json
 [
 	{"id":1,
 	"participants": [
@@ -682,7 +682,7 @@ optional parameters:
 start=[count]
 
 returns a list of 20 of your conversations ordered by most recent message, starting at count
-```
+```json
 [
 	{"id":1,
 	"participants": [
@@ -722,7 +722,7 @@ participants=[user_id],[user_id],[user_id],...
 
 example responses:
 (HTTP 200)
-```
+```json
 {
 	"id":1,
 	"participants": [
@@ -746,7 +746,7 @@ token=[token]
 
 example responses:
 (HTTP 200)
-```
+```json
 {
 	"id":1,
 	"participants": [
@@ -784,7 +784,7 @@ Given [after], it returns at most 20 of the messages received since [after]
 Given [before], it returns at most 20 of the messages received immediately before [before]
 
 example responses:
-```
+```json
 [
 		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
@@ -807,7 +807,7 @@ NB: This probably isn't the right place to put this. Will change in a future rel
 required parameters: id, token, text
 
 example responses:
-```
+```json
 {"id":1356}
 ```
 
@@ -821,7 +821,7 @@ example responses:
 
 seen=51
 (HTTP 200)
-```
+```json
 {
 	"id": 5,
 	"participants": [
@@ -871,7 +871,7 @@ id=[user-id]
 token=[token]
 
 example responses:
-```
+```json
 {
 	"id":9,
 	"name":"Patrick",
@@ -899,7 +899,7 @@ returns a list of 20 posts ordered by time, starting before/after [id]
 filter = "category"
 returns only posts matching that category
 example responses:
-```
+```json
 [
 	{
 		"id":2,
@@ -965,7 +965,7 @@ Longpoll will block until a message arrives for the current user (in any convers
 If no message arrives within 60s the response will be empty-object "{}".
 
 example responses:
-```
+```json
 {
 	"id":53,
 	"by": {"id":9,"name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
@@ -994,7 +994,7 @@ If you've added someone, they_confirmed will be false until they accept you and 
 example responses:
 
 HTTP 200
-```
+```json
 [
 	{
 		"id":1234,
@@ -1020,7 +1020,7 @@ If this user has already added you, it will accept them.
 example responses:
 
 HTTP 201
-```
+```json
 {
 	"id":1234,
 	"name":"calgould",
@@ -1036,7 +1036,7 @@ if accepted = true, it will set that contact to "confirmed"
 
 example responses:
 HTTP 200
-```
+```json
 {
 	"id":21,
 	"name":"petergatsby",
@@ -1054,7 +1054,7 @@ This registers the push notification id "device_id" for the current user
 
 example responses: 
 HTTP 201
-```
+```json
 {
 	"user":2395,
 	"type":"android",
@@ -1078,7 +1078,7 @@ required parameters: id, token, image
 
 example responses:
 HTTP 201
-```
+```json
 {"url":"https://s3-eu-west-1.amazonaws.com/gpimg/3acd82c15dd0e698fc59c79e445a464553e57d338a6440601551c7fb28e45bf9.jpg"}
 ```
 
@@ -1092,7 +1092,7 @@ but they will diverge in the future.
 
 example responses:
 HTTP 200
-```
+```json
 {
 	"id":9,
 	"name":"Patrick",
@@ -1126,7 +1126,7 @@ status can be true or false
 
 example responses:
 HTTP 200
-```
+```json
 { "busy":true }
 ```
 
@@ -1153,7 +1153,7 @@ The current busy/free status for this user.
 
 example responses:
 HTTP 200
-```
+```json
 { "busy":true }
 ```
 
@@ -1164,7 +1164,7 @@ token=[token]
 
 This will return an array containing the id of every event this user is attending.
 Example response: (http 200)
-```
+```json
 [1,5,764,34,345]
 ```
 
@@ -1176,7 +1176,7 @@ token=[token]
 This returns a list of all (non-university) groups this user belongs to.
 
 Example response: (http 200)
-```
+```json
 [{"id":5345, "name":"Stanford Catan Club"}]
 ```
 
@@ -1189,7 +1189,7 @@ This resource is a combined feed of posts in groups you are a member of.
 It functions identically to [/posts](#get-posts) but with one exception:
 - Posts also embed information about the group they were posted in.
 
-```
+```json
 [{"id":886,"by":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"},"timestamp":"2014-03-04T20:57:39Z","text":"","images":null,"network":{"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}},
 "comment_count":0,"like_count":1}]
 ```
@@ -1210,7 +1210,7 @@ Returns all unread notifications for user [id]
 
 example responses:
 HTTP 200
-```
+```json
 [
 	{
 		"id":99999,
@@ -1277,7 +1277,7 @@ Responds with an array containing any unseen notifications.
 
 example responses:
 HTTP 200
-```
+```json
 [
 	{
 		"id":99999,
@@ -1301,7 +1301,7 @@ If it fails it will return HTTP 400 and the error.
 
 Example responses:
 HTTP 200
-```
+```json
 {"verified":true}
 ```
 
@@ -1322,7 +1322,7 @@ You can supply partial names (with a minimum length of two characters for the fi
 If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "Jon S" "Jonathan Smi" will match him.
 
 Example response: (HTTP 200)
-```
+```json
 [{"id":9, "name":"Steph", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"Steve", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
 ```
 
