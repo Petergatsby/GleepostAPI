@@ -119,6 +119,12 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /search/users/[name] [[GET]](#get-searchusersname)
 
+###Statistics endpoints
+
+####Stat endpoints are currently in development. This means they may change in any way at any time for any reason.
+
+/stats/users/[user-id]/posts/[stat-type]/[period]/[start]/[finish] [[GET]](#get-statsusersuser-idpostsstat-typeperiodstartfinish)
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1318,4 +1324,29 @@ If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "J
 Example response: (HTTP 200)
 ```
 [{"id":9, "name":"Steph", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"Steve", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
+```
+
+##GET /stats/users/[user-id]/posts/[stat-type]/[period]/[start]/[finish]
+required parameters: id, token
+
+- user-id is any user ID you want to see the stats for. At the moment there is no limitation on who can see whose stats.
+- stat-type is one of "posts", "likes", "comments", "rsvps"
+- period is either "day" or "week" and indicates how the counts are bucketed
+- start and finish are RFC3339 formatted strings which indicate the beginning and end of the period you are viewing stats for.
+
+Example:
+GET https://dev.gleepost.com/api/v0.34/stats/user/2395/posts/rsvps/week/2013-01-01T00:00:00Z/2015-01-01T00:00:00Z
+```json
+{
+"type":"rsvps",
+"start":"2013-01-01T00:00:00Z",
+"finish":"2015-01-01T00:00:00Z",
+"period":604800,
+"data":
+    [
+        {"start":"2014-02-11T00:00:00Z","count":1},
+        {"start":"2014-02-18T00:00:00Z","count":4},
+        {"start":"2014-02-25T00:00:00Z","count":5}
+    ]
+}
 ```
