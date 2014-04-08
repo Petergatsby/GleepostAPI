@@ -146,8 +146,7 @@ func main() {
 	r.HandleFunc("/api/{version}/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", postsStatsHandler).Methods("GET")
 	r.HandleFunc("/api/{version}/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
 	r.Handle("/api/{version}/ws", websocket.Handler(jsonServer))
-	stats := api.SummarizePeriod(time.Now().AddDate(-1, 0, -1), time.Now())
-	fmt.Println(stats)
+	fmt.Println(api.SummaryEmail(time.Now().AddDate(-1, 0, -1), time.Now()))
 	server := &http.Server{
 		Addr:    ":" + conf.Port,
 		Handler: r,
