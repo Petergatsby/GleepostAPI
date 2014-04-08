@@ -89,18 +89,17 @@ func (api *API) InteractionsForUserBetween(user gp.UserId, start time.Time, fini
 	return
 }
 
-func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (users []gp.UserId, err error) {
-	var ActiveUsers [][]gp.UserId
+func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserId, err error) {
+	ActiveUsers = make(map[string][]gp.UserId)
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
 		users, err := api.db.UsersActivityInCohort(activity, start, finish)
 		if err != nil {
 			log.Println("Error getting active cohort:", err)
 		} else {
-			ActiveUsers = append(ActiveUsers, users)
+			ActiveUsers[activity] = users
 		}
 	}
-	users = deduplicate(ActiveUsers...)
 	return
 }
 
@@ -117,12 +116,11 @@ func deduplicate(userLists ...[]gp.UserId) (deduplicated []gp.UserId) {
 	return
 }
 
-func (api *API) summarizePeriod(start time.Time, finish time.Time) (stats map[string]int) {
+func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[string]int) {
 	statFs := make(map[string]func (time.Time, time.Time) ([]gp.UserId, error))
 	stats = make(map[string]int)
 	statFs["signups"] = api.db.CohortSignedUpBetween
 	statFs["verified"] = api.db.UsersVerifiedInCohort
-	statFs["activated"] = api.ActivatedUsersInCohort
 	for k, f := range statFs {
 		users, err := f(start, finish)
 		if err != nil {
@@ -131,6 +129,16 @@ func (api *API) summarizePeriod(start time.Time, finish time.Time) (stats map[st
 			stats[k] = len(users)
 		}
 	}
+	UsersByActivity, err := api.ActivatedUsersInCohort(start, finish)
+	if err != nil {
+		return
+	}
+	usersLists := make([][]gp.UserId, len(UsersByActivity))
+	for k, v := range UsersByActivity {
+		stats[k] = len(v)
+		usersLists = append(usersLists, v)
+	}
+	stats["activated"] = len(deduplicate(usersLists...))
 	log.Println(stats)
 	return(stats)
 }
