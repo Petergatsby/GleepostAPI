@@ -155,3 +155,26 @@ func (api *API) SummaryEmail(start time.Time, finish time.Time) (title, text str
 	}
 	return title, text
 }
+
+func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
+	begin := time.Now()
+	f := func() {
+		log.Println(api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now()))
+		tick := time.Tick(interval)
+		for {
+			select {
+			case <- tick:
+				log.Println(api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now()))
+			}
+		}
+	}
+
+	for {
+		begin = begin.Add(interval)
+		if begin.After(time.Now()) {
+			wait := begin.Sub(time.Now())
+			time.AfterFunc(wait, f)
+			return
+		}
+	}
+}

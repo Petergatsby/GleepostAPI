@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -29,6 +30,7 @@ func init() {
 	api = lib.New(*config)
 	go api.FeedbackDaemon(60)
 	go api.EndOldConversations()
+	api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(1 * time.Hour))
 }
 
 //Note to self: validateToken should probably return an error at some point
