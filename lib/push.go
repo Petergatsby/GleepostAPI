@@ -71,69 +71,6 @@ func (api *API) notificationPush(user gp.UserId) {
 	log.Printf("Badged %d's %d devices\n", user, count)
 }
 
-func (api *API) groupPush(adder gp.User, addees []gp.UserId, group gp.Network) (err error) {
-	log.Println("Notifying ", len(addees), " users that they've been added to a group")
-	for _, u := range addees {
-		devices, e := api.GetDevices(u)
-		if e != nil {
-			log.Println(e)
-			return
-		}
-		count := 0
-		for _, device := range devices {
-			switch {
-			case device.Type == "ios":
-				err = api.iOSGroupNotification(device.Id, group, adder.Name, u)
-				if err != nil {
-					log.Println("Error sending group push notification:", err)
-				} else {
-					count += 1
-				}
-			case device.Type == "android":
-				err = api.androidPushGroup(device.Id, group, adder.Name, u)
-				if err != nil {
-					log.Println("Error sending group push notification:", err)
-				} else {
-					count += 1
-				}
-			}
-		}
-		log.Printf("Group notified %d's %d devices\n", u, count)
-	}
-	return
-}
-
-//addedPush sends a push notification to addee to notify them they've been added by adder.
-func (api *API) addedPush(adder gp.User, addee gp.UserId) (err error) {
-	log.Printf("Notifiying user %d that they've been added by %s (%d)\n", addee, adder.Name, adder.Id)
-	devices, e := api.GetDevices(addee)
-	if e != nil {
-		log.Println(e)
-		return
-	}
-	count := 0
-	for _, device := range devices {
-		switch {
-		case device.Type == "ios":
-			err = api.iOSAddedNotification(device.Id, adder, addee)
-			if err != nil {
-				log.Println("Error sending added push notification:", err)
-			} else {
-				count += 1
-			}
-		case device.Type == "android":
-			err = api.androidAddedNotification(device.Id, adder, addee)
-			if err != nil {
-				log.Println("Error sending added push notification:", err)
-			} else {
-				count += 1
-			}
-		}
-	}
-	log.Printf("Notified %d's %d devices\n", addee, count)
-	return
-}
-
 func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.ConversationId) (err error) {
 	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.Id)
 	devices, e := api.GetDevices(other)
@@ -198,40 +135,6 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
 		}
 	}
-}
-
-func (api *API) iOSAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
-	payload := apns.NewPayload()
-	d := apns.NewAlertDictionary()
-	d.LocKey = "added_you"
-	d.LocArgs = []string{adder.Name}
-	payload.Alert = d
-	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(addee)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(addee)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("Added contact notification: badging %d with %d notifications (%d from unread messages)", addee, payload.Badge, unread)
-	pn := apns.NewPushNotification()
-	pn.DeviceToken = device
-	pn.AddPayload(payload)
-	pn.Set("adder-id", adder.Id)
-	err = api.push.IOSPush(pn)
-	return
-}
-
-func (api *API) androidAddedNotification(device string, adder gp.User, addee gp.UserId) (err error) {
-	data := map[string]interface{}{"type": "added_you", "adder": adder.Name, "adder-id": adder.Id, "for": addee}
-	msg := gcm.NewMessage(data, device)
-	msg.TimeToLive = 0
-	msg.CollapseKey = "Someone added you to their contacts."
-	return api.push.AndroidPush(msg)
 }
 
 //iosBadge sets this device's badge, or returns an error.
@@ -300,15 +203,6 @@ func (api *API) androidPushMessage(device string, message gp.Message, convId gp.
 	return api.push.AndroidPush(msg)
 }
 
-func (api *API) androidPushGroup(device string, group gp.Network, adder string, user gp.UserId) (err error) {
-	data := map[string]interface{}{"type": "GROUP", "adder": adder, "group-id": group.Id, "group-name": group.Name, "for": user}
-	msg := gcm.NewMessage(data, device)
-	msg.TimeToLive = 0
-	msg.CollapseKey = "You've been added to a group"
-	return api.push.AndroidPush(msg)
-}
-
-
 func (api *API) CheckFeedbackService() {
 	url := "feedback.sandbox.push.apple.com:2196"
 	if api.Config.APNS.Production {
@@ -337,96 +231,6 @@ func (api *API) FeedbackDaemon(frequency int) {
 		<-c
 		go api.CheckFeedbackService()
 	}
-}
-
-func (api *API) iOSGroupNotification(device string, group gp.Network, adder string, addee gp.UserId) (err error) {
-	payload := apns.NewPayload()
-	d := apns.NewAlertDictionary()
-	d.LocKey = "GROUP"
-	d.LocArgs = []string{adder, group.Name}
-	payload.Alert = d
-	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(addee)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(addee)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("Group notification: badging %d with %d notifications (%d from unread messages)", addee, payload.Badge, unread)
-	pn := apns.NewPushNotification()
-	pn.DeviceToken = device
-	pn.AddPayload(payload)
-	pn.Set("group-id", group.Id)
-	err = api.push.IOSPush(pn)
-	return
-}
-
-func (api *API) acceptedPush(accepter gp.User, acceptee gp.UserId) (err error) {
-	log.Printf("Notifiying user %d that they've been accepted by %s (%d)\n", acceptee, accepter.Name, accepter.Id)
-	devices, e := api.GetDevices(acceptee)
-	if e != nil {
-		log.Println(e)
-		return
-	}
-	count := 0
-	for _, device := range devices {
-		switch {
-		case device.Type == "ios":
-			err = api.iOSAcceptedNotification(device.Id, accepter, acceptee)
-			if err != nil {
-				log.Println("Error sending accepted push notification:", err)
-			} else {
-				count += 1
-			}
-		case device.Type == "android":
-			err = api.androidAcceptedNotification(device.Id, accepter, acceptee)
-			if err != nil {
-				log.Println("Error sending accepted push notification:", err)
-			} else {
-				count += 1
-			}
-		}
-	}
-	log.Printf("Notified %d's %d devices\n", acceptee, count)
-	return
-}
-
-func (api *API) iOSAcceptedNotification(device string, accepter gp.User, acceptee gp.UserId) (err error) {
-	payload := apns.NewPayload()
-	d := apns.NewAlertDictionary()
-	d.LocKey = "accepted_you"
-	d.LocArgs = []string{accepter.Name}
-	payload.Alert = d
-	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(acceptee)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(acceptee)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("Accepted contact notification: badging %d with %d notifications (%d from unread messages)", acceptee, payload.Badge, unread)
-	pn := apns.NewPushNotification()
-	pn.DeviceToken = device
-	pn.AddPayload(payload)
-	pn.Set("accepter-id", accepter.Id)
-	err = api.push.IOSPush(pn)
-	return
-}
-
-func (api *API) androidAcceptedNotification(device string, accepter gp.User, acceptee gp.UserId) (err error) {
-	data := map[string]interface{}{"type": "accepted_you", "accepter": accepter.Name, "accepter-id": accepter.Id, "for": acceptee}
-	msg := gcm.NewMessage(data, device)
-	msg.TimeToLive = 0
-	msg.CollapseKey = "Someone accepted your contact request."
-	return api.push.AndroidPush(msg)
 }
 
 func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
