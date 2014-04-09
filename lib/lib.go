@@ -648,10 +648,9 @@ func (api *API) DeviceFeedback(deviceId string, timestamp uint32) (err error) {
 }
 
 func (api *API) IsAdmin(user gp.UserId) (admin bool) {
-	for _, u := range api.Config.Admins {
-		if u == user {
-			return true
-		}
+	in, err := api.UserInNetwork(user, gp.NetworkId(api.Config.Admins))
+	if err == nil && in {
+		return true
 	}
 	return false
 }
