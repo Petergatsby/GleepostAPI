@@ -525,7 +525,7 @@ func (api *API) badgeCount(user gp.UserId) (count int, err error) {
 	return
 }
 
-func (api *API) toIOS(notification interface{}, recipient gp.UserId, device string) (pn *apns.PushNotification, err error) {
+func (api *API) toIOS(notification interface{}, recipient gp.UserId, device string, newPush bool) (pn *apns.PushNotification, err error) {
 	alert := true
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -564,12 +564,12 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 		}
 	case gp.PostNotification:
 		switch {
-		case n.Type == "liked":
+		case n.Type == "liked" && newPush:
 			d.LocKey = "liked"
 			d.LocArgs = []string{n.By.Name}
 			pn.Set("liker-id", n.By.Id)
 			pn.Set("post-id", n.Post)
-		case n.Type == "commented":
+		case n.Type == "commented" && newPush:
 			d.LocKey = "commented"
 			d.LocArgs = []string{n.By.Name}
 			pn.Set("commenter-id", n.By.Id)
@@ -586,7 +586,7 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 	return
 }
 
-func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device string) (pn *gcm.Message, err error) {
+func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device string, newPush bool) (pn *gcm.Message, err error) {
 	unknown := false
 	var CollapseKey string
 	var data map[string]interface{}
@@ -613,10 +613,10 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device 
 		}
 	case gp.PostNotification:
 		switch {
-		case n.Type == "liked":
+		case n.Type == "liked" && newPush:
 			data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.Id, "for": recipient}
 			CollapseKey = "Someone liked your post."
-		case n.Type == "commented":
+		case n.Type == "commented" && newPush:
 			data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.Id, "for": recipient}
 			CollapseKey = "Someone commented on your post."
 		default:
