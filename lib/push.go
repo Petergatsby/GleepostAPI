@@ -585,3 +585,56 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 	pn.AddPayload(payload)
 	return
 }
+
+func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device string) (pn *gcm.Message, err error) {
+	unknown := false
+	var CollapseKey string
+	var data map[string]interface{}
+	switch n := notification.(type) {
+	case gp.GroupNotification:
+		var group gp.Group
+		group, err = api.getNetwork(n.Group)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		data = map[string]interface{}{"type": "GROUP", "adder": n.By.Id, "group-id": n.Group, "group-name": group.Name, "for": recipient}
+		CollapseKey = "You've been added to a group"
+	case gp.Notification:
+		switch {
+		case n.Type == "added_you":
+			data = map[string]interface{}{"type": "added_you", "adder": n.By.Name, "adder-id": n.By.Id, "for": recipient}
+			CollapseKey = "Someone added you to their contacts."
+		case n.Type == "accepted_you":
+			data = map[string]interface{}{"type": "accepted_you", "accepter": n.By.Name, "accepter-id": n.By.Id, "for": recipient}
+			CollapseKey = "Someone accepted your contact request."
+		default:
+			unknown = true
+		}
+	case gp.PostNotification:
+		switch {
+		case n.Type == "liked":
+			data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.Id, "for": recipient}
+			CollapseKey = "Someone liked your post."
+		case n.Type == "commented":
+			data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.Id, "for": recipient}
+			CollapseKey = "Someone commented on your post."
+		default:
+			unknown = true
+		}
+	}
+	if unknown {
+		var count int
+		count, err = api.badgeCount(recipient)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		data = map[string]interface{}{"count": count, "for": recipient}
+		CollapseKey = "New Notification"
+	}
+	msg := gcm.NewMessage(data, device)
+	msg.CollapseKey = CollapseKey
+	msg.TimeToLive = 0
+	return
+}
