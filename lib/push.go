@@ -508,3 +508,80 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 	err = api.push.IOSPush(pn)
 	return
 }
+
+func (api *API) badgeCount(user gp.UserId) (count int, err error) {
+	notifications, err := api.GetUserNotifications(user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	count = len(notifications)
+	unread, e := api.UnreadMessageCount(user)
+	if e == nil {
+		count += unread
+	} else {
+		log.Println(err)
+	}
+	return
+}
+
+func (api *API) toIOS(notification interface{}, recipient gp.UserId, device string) (pn *apns.PushNotification, err error) {
+	alert := true
+	payload := apns.NewPayload()
+	d := apns.NewAlertDictionary()
+	pn = apns.NewPushNotification()
+	pn.DeviceToken = device
+	badge, err := api.badgeCount(recipient)
+	if err != nil {
+		log.Println("Error getting badge:", err)
+	} else {
+		payload.Badge = badge
+	}
+	switch n := notification.(type) {
+	case gp.GroupNotification:
+		d.LocKey = "GROUP"
+		var group gp.Group
+		group, err = api.getNetwork(n.Group)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		d.LocArgs = []string{n.By.Name, group.Name}
+		pn.Set("group-id", group.Id)
+		return
+	case gp.Notification:
+		switch {
+		case n.Type == "accepted_you":
+			d.LocKey = "accepted_you"
+			d.LocArgs = []string{n.By.Name}
+			pn.Set("accepter-id", n.By.Id)
+		case n.Type == "added_you":
+			d.LocKey = "added_you"
+			d.LocArgs = []string{n.By.Name}
+			pn.Set("adder-id", n.By.Id)
+		default:
+			alert = false
+		}
+	case gp.PostNotification:
+		switch {
+		case n.Type == "liked":
+			d.LocKey = "liked"
+			d.LocArgs = []string{n.By.Name}
+			pn.Set("liker-id", n.By.Id)
+			pn.Set("post-id", n.Post)
+		case n.Type == "commented":
+			d.LocKey = "commented"
+			d.LocArgs = []string{n.By.Name}
+			pn.Set("commenter-id", n.By.Id)
+			pn.Set("post-id", n.Post)
+		default:
+			alert = false
+		}
+	}
+	if alert {
+		payload.Alert = d
+		payload.Sound = "default"
+	}
+	pn.AddPayload(payload)
+	return
+}

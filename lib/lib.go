@@ -396,6 +396,8 @@ func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.User
 				go api.addedPush(notification.By, recipient)
 			case notification.Type == "accepted_you" && api.Config.NewPushEnabled:
 				go api.acceptedPush(notification.By, recipient)
+			case notification.Type == "liked" && api.Config.NewPushEnabled:
+			case notification.Type == "commented" && api.Config.NewPushEnabled:
 			default:
 				go api.notificationPush(recipient)
 			}
