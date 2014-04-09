@@ -147,11 +147,11 @@ func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
 	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
 	text := fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
-	text += fmt.Sprintf("Of these, %d (%f%%) verified their account\n", stats["verified"], 100 * float64(stats["verified"])/ float64(stats["signups"]))
-	text += fmt.Sprintf("Of these, %d (%f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"]) / float64(stats["verified"]))
+	text += fmt.Sprintf("Of these, %d (%2.1f%%) verified their account\n", stats["verified"], 100 * float64(stats["verified"])/ float64(stats["signups"]))
+	text += fmt.Sprintf("Of these, %d (%2.1f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"]) / float64(stats["verified"]))
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
-		text += fmt.Sprintf("%s: %d (%f%%)\n", activity, stats[activity], 100 * float64(stats[activity]) / float64(stats["verified"]))
+		text += fmt.Sprintf("%s: %d (%2.1f%%)\n", activity, stats[activity], 100 * float64(stats[activity]) / float64(stats["verified"]))
 	}
 	users, err := api.db.GetNetworkUsers(gp.NetworkId(api.Config.Admins))
 	if err != nil {
