@@ -143,27 +143,42 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 	return(stats)
 }
 
-func (api *API) SummaryEmail(start time.Time, finish time.Time) (title, text string) {
+func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
-	title = fmt.Sprintf("Report card for %s - %s\n", start, finish)
-	text = fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
+	title := fmt.Sprintf("Report card for %s - %s\n", start, finish)
+	text := fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
 	text += fmt.Sprintf("Of these, %d (%f%%) verified their account\n", stats["verified"], 100 * float64(stats["verified"])/ float64(stats["signups"]))
 	text += fmt.Sprintf("Of these, %d (%f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"]) / float64(stats["verified"]))
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
 		text += fmt.Sprintf("%s: %d (%f%%)\n", activity, stats[activity], 100 * float64(stats[activity]) / float64(stats["verified"]))
 	}
-	return title, text
+	users, err := api.db.GetNetworkUsers(gp.NetworkId(api.Config.Admins))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, u := range users {
+		email, err := api.GetEmail(u.Id)
+		if err != nil {
+			log.Println(err)
+		} else {
+			err = api.mail.Send(email, title, text)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
 }
 
 func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 	f := func() {
-		log.Println(api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now()))
+		api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
 		tick := time.Tick(interval)
 		for {
 			select {
 			case <- tick:
-				log.Println(api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now()))
+				api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
 			}
 		}
 	}
