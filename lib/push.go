@@ -638,3 +638,43 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device 
 	msg.TimeToLive = 0
 	return
 }
+
+func (api *API) Push(notification interface{}, recipient gp.UserId) {
+	devices, err := api.GetDevices(recipient)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	count := 0
+	for _, device := range devices {
+		switch {
+		case device.Type == "ios":
+			pn, err := api.toIOS(notification, recipient, device.Id, api.Config.NewPushEnabled)
+			if err != nil {
+				log.Println("Error generating push notification:", err)
+			}
+			err = api.push.IOSPush(pn)
+			if err != nil {
+				log.Println("Error sending push notification:", err)
+			} else {
+				count += 1
+			}
+		case device.Type == "android":
+			pn, err := api.toAndroid(notification, recipient, device.Id, api.Config.NewPushEnabled)
+			if err != nil {
+				log.Println("Error generating push notification:", err)
+			}
+			err = api.push.AndroidPush(pn)
+			if err != nil {
+				log.Println("Error sending push notification:", err)
+			} else {
+				count += 1
+			}
+		}
+	}
+	if count == len(devices) {
+		log.Println("Successfully sent %d notifications to %d", count, recipient)
+	} else {
+		log.Println("Failed to send some notifications (%d of %d were successes) to %d", count, len(devices), recipient)
+	}
+}
