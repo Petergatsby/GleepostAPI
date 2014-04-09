@@ -145,7 +145,7 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 
 func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
-	title := fmt.Sprintf("Report card for %s - %s\n", start, finish)
+	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
 	text := fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
 	text += fmt.Sprintf("Of these, %d (%f%%) verified their account\n", stats["verified"], 100 * float64(stats["verified"])/ float64(stats["signups"]))
 	text += fmt.Sprintf("Of these, %d (%f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"]) / float64(stats["verified"]))
