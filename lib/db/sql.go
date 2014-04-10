@@ -112,10 +112,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"FROM conversation_participants " +
 		"JOIN users ON conversation_participants.participant_id = users.id " +
 		"WHERE conversation_id=?"
-	sqlStmt["lastMessageSelect"] = "SELECT id, `from`, text, `timestamp`" +
-		"FROM chat_messages " +
-		"WHERE conversation_id = ? " +
-		"ORDER BY `timestamp` DESC LIMIT 1"
 	sqlStmt["liveConversations"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
@@ -679,7 +675,17 @@ func (db *DB) GetParticipants(conv gp.ConversationId) []gp.User {
 func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	var timeString string
 	var by gp.UserId
-	s := db.stmt["lastMessageSelect"]
+	//Ordered by id rather than timestamp because timestamps are limited to 1-second resolution
+	//ie, the last message by timestamp may be _several
+	//note: this won't work if we move away from incremental message ids.
+	q := "SELECT id, `from`, text, `timestamp`" +
+		"FROM chat_messages " +
+		"WHERE conversation_id = ? " +
+		"ORDER BY `id` DESC LIMIT 1"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
 	err = s.QueryRow(id).Scan(&message.Id, &by, &message.Text, &timeString)
 	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time)")
 	if err != nil {
