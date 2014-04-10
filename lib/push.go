@@ -477,8 +477,8 @@ func (api *API) Push(notification interface{}, recipient gp.UserId) {
 		}
 	}
 	if count == len(devices) {
-		log.Println("Successfully sent %d notifications to %d", count, recipient)
+		log.Printf("Successfully sent %d notifications to %d\n", count, recipient)
 	} else {
-		log.Println("Failed to send some notifications (%d of %d were successes) to %d", count, len(devices), recipient)
+		log.Printf("Failed to send some notifications (%d of %d were successes) to %d\n", count, len(devices), recipient)
 	}
 }
