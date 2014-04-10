@@ -386,6 +386,7 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 		payload.Sound = "default"
 	}
 	pn.AddPayload(payload)
+	log.Println(pn)
 	return
 }
 
@@ -439,6 +440,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device 
 	msg := gcm.NewMessage(data, device)
 	msg.CollapseKey = CollapseKey
 	msg.TimeToLive = 0
+	log.Println(msg)
 	return
 }
 
