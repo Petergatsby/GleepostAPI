@@ -43,7 +43,7 @@ func (api *API) getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
 			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, _ = api.db.GetEventPopularity(postId)
+			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(postId)
 			break
 		}
 	}
@@ -172,7 +172,7 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 	for _, c := range processed.Categories {
 		if c.Tag == "event" {
 			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			processed.Popularity, _ = api.db.GetEventPopularity(processed.Id)
+			processed.Popularity, post.Attendees, _ = api.db.GetEventPopularity(processed.Id)
 			break
 		}
 	}
@@ -201,7 +201,7 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
 			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, _ = api.db.GetEventPopularity(post.Id)
+			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(post.Id)
 			break
 		}
 	}

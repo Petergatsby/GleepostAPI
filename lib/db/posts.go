@@ -403,25 +403,26 @@ func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, er
 	return
 }
 
-func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, err error) {
+//GetEventPopularity returns the popularity score (0 - 99) and the actual attendees count
+func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, attendees int, err error) {
 	query := "SELECT COUNT(*) FROM event_attendees WHERE post_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(post).Scan(&popularity)
+	err = s.QueryRow(post).Scan(&attendees)
 	if err != nil {
 		return
 	}
 	switch {
-	case popularity > 20:
-		popularity = 4
-	case popularity > 10:
-		popularity = 3
-	case popularity > 5:
-		popularity = 2
-	case popularity > 0:
-		popularity = 1
+	case attendees > 4:
+		popularity = 100
+	case attendees > 3:
+		popularity = 75
+	case popularity > 2:
+		popularity = 50
+	case popularity > 1:
+		popularity = 25
 	default:
 		popularity = 0
 	}

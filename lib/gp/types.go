@@ -90,6 +90,7 @@ type Post struct {
 	Categories []PostCategory         `json:"categories,omitempty"`
 	Attribs    map[string]interface{} `json:"attribs,omitempty"`
 	Popularity int                    `json:"popularity,omitempty"`
+	Attendees  int                    `json:"attendee_count,omitempty"`
 	Group      *Group               `json:"network,omitempty"`
 }
 
