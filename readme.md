@@ -646,8 +646,11 @@ token=[token]
 
 One of:
 users=[other-user-id],[other-user-id],[other-user-id]
+
 fbusers=[facebook-id],[facebook-id],[facebook-id]
+
 email=[other-user-email]
+
 Adds other users to this network, or records that they have been invited via facebook, or emails them an invite if they aren't on Gleepost. On success will return 204.
 
 ##GET /conversations/live
