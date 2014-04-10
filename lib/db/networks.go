@@ -257,3 +257,13 @@ func (db *DB) AssignNetworksFromInvites(user gp.UserId, email string) (err error
 	_, err = s.Exec(user, email)
 	return
 }
+
+func (db *DB) UserAddFBUserToGroup(user gp.UserId, fbuser uint64, netId gp.NetworkId) (err error) {
+	q := "INSERT INTO fb_group_invites (inviter_user_id, facebook_id, network_id) VALUES (?, ?, ?)"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, fbuser, netId)
+	return
+}

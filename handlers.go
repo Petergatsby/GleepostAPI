@@ -1525,6 +1525,8 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		netId := gp.NetworkId(_netId)
 		_users := strings.Split(r.FormValue("users"), ",")
+		_fbUsers := strings.Split(r.FormValue("fbusers"), ",")
+		var fbusers []uint64
 		var users []gp.UserId
 		for _, u := range _users {
 			user, err := strconv.ParseUint(u, 10, 64)
@@ -1532,13 +1534,21 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 				users = append(users, gp.UserId(user))
 			}
 		}
+		for _, f := range _fbUsers {
+			fbuser, err := strconv.ParseUint(f, 10, 64)
+			if err == nil {
+				fbusers = append(fbusers, fbuser)
+			}
+		}
 		switch {
 		case len(users) > 0:
 			_, err = api.UserAddUsersToGroup(userId, users, netId)
+		case len(fbusers) > 0:
+			_, err = api.UserAddFBUsersToGroup(userId, fbusers, netId)
 		case len(r.FormValue("email")) > 5:
 			err = api.UserInviteEmail(userId, netId, r.FormValue("email"))
 		default:
-			jsonResponse(w, gp.APIerror{"Must add either a user or an email"}, 400)
+			jsonResponse(w, gp.APIerror{"Must add either user(s), facebook user(s) or an email"}, 400)
 			return
 		}
 		if err != nil {

@@ -159,3 +159,15 @@ func (api *API) UserSetFB(userId gp.UserId, fbid uint64) (err error) {
 func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
 	return api.db.FBUserWithEmail(email)
 }
+
+func (api *API) UserAddFBUsersToGroup(user gp.UserId, fbusers []uint64, netId gp.NetworkId) (count int, err error) {
+	for _, u := range fbusers {
+		err = api.db.UserAddFBUserToGroup(user, u, netId)
+		if err == nil {
+			count++
+		} else {
+			return
+		}
+	}
+	return
+}
