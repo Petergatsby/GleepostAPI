@@ -352,7 +352,6 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 		}
 		d.LocArgs = []string{n.By.Name, group.Name}
 		pn.Set("group-id", group.Id)
-		return
 	case gp.Notification:
 		switch {
 		case n.Type == "accepted_you":
