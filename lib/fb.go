@@ -136,6 +136,7 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 //FBName retrieves the first-, last-, and username of facebook id fbid.
 func FBName(fbid uint64) (firstName, lastName, username string, err error) {
 	res, err := facebook.Get(fmt.Sprintf("/%d", fbid), nil)
+	log.Println(res)
 	var ok bool
 	firstName, ok = res["first_name"].(string)
 	if !ok {
