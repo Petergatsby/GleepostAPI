@@ -1116,11 +1116,11 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		token, err := api.FacebookLogin(_fbToken)
-		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 		//If we have an error here, that means that there is no associated gleepost user account.
 		if err != nil {
+			log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 			//Have we seen this facebook user before?
-			_, err := api.FBGetEmail(fbToken.FBUser)
+			_, err = api.FBGetEmail(fbToken.FBUser)
 			if err != nil {
 				//No. That means we need their email to create and verify their account.
 				if len(email) < 3 {

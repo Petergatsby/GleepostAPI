@@ -31,6 +31,8 @@ type FB struct {
 	config gp.FacebookConfig
 }
 
+var FBAPIError = gp.APIerror{"Something went wrong with a facebook API call."}
+
 func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error) {
 	app := facebook.New(api.fb.config.AppID, api.fb.config.AppSecret)
 	appToken := app.AppAccessToken()
@@ -131,12 +133,22 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	return
 }
 
-//TODO: get name from fb api
+//FBName retrieves the first-, last-, and username of facebook id fbid.
 func FBName(fbid uint64) (firstName, lastName, username string, err error) {
 	res, err := facebook.Get(fmt.Sprintf("/%d", fbid), nil)
-	firstName = res["first_name"].(string)
-	lastName = res["last_name"].(string)
-	username = res["username"].(string)
+	var ok bool
+	firstName, ok = res["first_name"].(string)
+	if !ok {
+		err = &FBAPIError
+	}
+	lastName, ok = res["last_name"].(string)
+	if !ok {
+		err = &FBAPIError
+	}
+	username, ok = res["username"].(string)
+	if !ok {
+		err = &FBAPIError
+	}
 	return firstName, lastName, username, err
 }
 
