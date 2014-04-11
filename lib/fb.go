@@ -148,7 +148,7 @@ func FBName(fbid uint64) (firstName, lastName, username string, err error) {
 	}
 	username, ok = res["username"].(string)
 	if !ok {
-		err = &FBAPIError
+		username = ""
 	}
 	return firstName, lastName, username, err
 }
