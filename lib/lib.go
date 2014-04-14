@@ -187,6 +187,10 @@ func (api *API) RegisterUser(user, pass, email, first, last, invite string) (new
 	if err != nil {
 		return
 	}
+	_, err = api.assignNetworks(userId, email)
+	if err != nil {
+		return
+	}
 	err = api.SetUserName(userId, first, last)
 	if err != nil {
 		return
@@ -222,10 +226,6 @@ func (api *API) createUser(user string, pass string, email string) (userId gp.Us
 		return 0, err
 	}
 	userId, err = api.db.RegisterUser(user, hash, email)
-	if err != nil {
-		return 0, err
-	}
-	_, err = api.assignNetworks(userId, email)
 	if err != nil {
 		return 0, err
 	}
@@ -504,6 +504,10 @@ func (api *API) Verify(token string) (err error) {
 			log.Println("Something went wrong while creating the user from facebook:", e)
 			return e
 		}
+		_, err = api.assignNetworks(userId, email)
+		if err != nil {
+			return err
+		}
 		e = api.SetUserName(id, firstName, lastName)
 		if e != nil {
 			log.Println("Problem setting name:", e)
@@ -632,4 +636,28 @@ func (api *API) IsAdmin(user gp.UserId) (admin bool) {
 		return true
 	}
 	return false
+}
+
+//CreateUserSpecial manually creates a user with these details, bypassing validation etc
+func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool, primaryNetwork gp.NetworkId) (err error) {
+	user, err := RandomString()
+	if err != nil {
+		return
+	}
+	userId, err := api.createUser(user, pass, email)
+	if err != nil {
+		return
+	}
+	err = api.SetUserName(userId, first, last)
+	if err != nil {
+		return
+	}
+	if verified {
+		err = api.db.Verify(userId)
+		if err != nil {
+			return
+		}
+	}
+	err = api.setNetwork(userId, primaryNetwork)
+	return
 }

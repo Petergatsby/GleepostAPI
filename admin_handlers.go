@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"strconv"
 	"log"
 	"net/http"
 )
@@ -49,4 +51,32 @@ func mm(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	jsonResponse(w, err, 200)
+}
+
+func postUsers(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method != "POST":
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	default:
+		if api.IsAdmin(userId) {
+			_netId, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{"Missing parameter: network"}, 400)
+				return
+			}
+			netId := gp.NetworkId(_netId)
+			verified, _ := strconv.ParseBool(r.FormValue("verified"))
+			err = api.CreateUserSpecial(r.FormValue("first"), r.FormValue("last"), r.FormValue("email"), r.FormValue("pass"), verified, netId)
+			if err != nil {
+				jsonResponse(w, err, 500)
+				return
+			}
+			w.WriteHeader(204)
+		} else {
+			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		}
+	}
 }
