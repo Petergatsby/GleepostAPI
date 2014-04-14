@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"strconv"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {

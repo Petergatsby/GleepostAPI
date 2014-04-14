@@ -1795,4 +1795,3 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
-

@@ -81,6 +81,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
+/user [[POST]](#post-user)
+
 /user/[user-id] [[GET]](#get-useruser-id)
 
 /user/[user-id]/posts [[GET]](#get-useruser-idposts)
@@ -873,6 +875,18 @@ seen=51
 
 
 ```
+
+##POST /user
+Use this to generate a new user in a particular network.
+
+
+Required parameters:
+first, last, email, pass, verified, network-id
+
+
+where verified is a boolean and network-id is the network that this user will be created in.
+
+Success is a 204.
 
 ##GET /user/[user-id]
 required parameters:
