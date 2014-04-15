@@ -894,7 +894,7 @@ func (db *DB) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 			}
 		}
 	}
-	return
+	return contacts, nil
 }
 
 func (db *DB) UpdateContact(user gp.UserId, contact gp.UserId) (err error) {
