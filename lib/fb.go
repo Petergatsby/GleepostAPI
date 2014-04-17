@@ -100,14 +100,37 @@ func (api *API) FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
 	return api.db.UserIdFromFB(fbid)
 }
 
-func (api *API) FacebookRegister(fbToken string, email string) (err error) {
+func (api *API) FacebookRegister(fbToken string, email string, invite string) (id gp.UserId, err error) {
 	t, err := api.FBValidateToken(fbToken)
 	if err != nil {
 		return
 	}
 	err = api.db.CreateFBUser(t.FBUser, email)
-	if err == nil {
-		err = api.FBissueVerification(t.FBUser)
+	exists, _ := api.InviteExists(email, invite)
+	if exists {
+		id, err = api.UserWithEmail(email)
+		if err != nil {
+			log.Println("There isn't a user with this facebook email")
+			id, err = api.CreateUserFromFB(t.FBUser, email)
+		} else {
+			err = api.UserSetFB(id, t.FBUser)
+			if err == nil {
+				err = api.db.Verify(id)
+				if err == nil {
+					log.Println("Verifying worked. Now setting networks from invites...")
+					err = api.AssignNetworksFromInvites(id, email)
+					if err != nil {
+						log.Println("Something went wrong while setting networks from invites:", err)
+						return
+					}
+					err = api.AcceptAllInvites(email)
+				}
+			}
+		}
+	} else {
+		if err == nil {
+			err = api.FBissueVerification(t.FBUser)
+		}
 	}
 	return
 }
@@ -183,4 +206,64 @@ func (api *API) UserAddFBUsersToGroup(user gp.UserId, fbusers []uint64, netId gp
 		}
 	}
 	return
+}
+
+func (api *API) CreateUserFromFB(fbid uint64, email string) (id gp.UserId, err error) {
+	//TODO: Deduplicate with lib/Verify
+	firstName, lastName, username, err := FBName(fbid)
+	if err != nil {
+		log.Println("Couldn't get name info from facebook:", err)
+		return
+	}
+	random, err := RandomString()
+	if err != nil {
+		return
+	}
+	//TODO: Do something different with names, two john smiths are
+	id, err = api.createUser(username, random, email)
+	if err != nil {
+		log.Println("Something went wrong while creating the user from facebook:", err)
+		return
+	}
+	_, err = api.assignNetworks(id, email)
+	if err != nil {
+		return
+	}
+	err = api.SetUserName(id, firstName, lastName)
+	if err != nil {
+		log.Println("Problem setting name:", err)
+		return
+	}
+	err = api.SetProfileImage(id, FBAvatar(username))
+	if err != nil {
+		log.Println("Problem setting avatar:", err)
+	}
+	err = api.db.Verify(id)
+	if err != nil {
+		log.Println("Verifying failed in the db:", err)
+		return
+	}
+	err = api.UserSetFB(id, fbid)
+	if err != nil {
+		log.Println("associating facebook account with user account failed:", err)
+		return
+	}
+	err = api.AssignNetworksFromInvites(id, email)
+	if err != nil {
+		log.Println("Something went wrong while setting networks from invites:", err)
+		return
+	}
+	err = api.AcceptAllInvites(email)
+	if err != nil {
+		log.Println("Something went wrong while accepting invites:", err)
+		return
+	}
+	err = api.AssignNetworksFromFBInvites(id, fbid)
+	if err !=  nil {
+		log.Println("Something went wrong while setting networks from fb invites:", err)
+		return
+	}
+	err = api.AcceptAllFBInvites(fbid)
+	return
+
 }

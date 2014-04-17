@@ -1109,6 +1109,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		_fbToken := r.FormValue("token")
 		email := r.FormValue("email")
+		invite := r.FormValue("invite")
 		//Is this a valid facebook token for this app?
 		fbToken, err := api.FBValidateToken(_fbToken)
 		if err != nil {
@@ -1121,6 +1122,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 			//Have we seen this facebook user before?
 			_, err = api.FBGetEmail(fbToken.FBUser)
+			var id gp.UserId
 			if err != nil {
 				//No. That means we need their email to create and verify their account.
 				if len(email) < 3 {
@@ -1136,17 +1138,28 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 					jsonResponse(w, gp.APIerror{err.Error()}, 500)
 					return
 				}
-				err = api.FacebookRegister(_fbToken, email)
+				id, err = api.FacebookRegister(_fbToken, email, invite)
 				if err != nil {
 					jsonResponse(w, gp.APIerror{err.Error()}, 500)
 					return
 				}
 			}
-			log.Println("Should be unverified response")
-			jsonResponse(w, struct {
-				Status string `json:"status"`
-			}{"unverified"}, 201)
-			return
+			if id > 0 {
+				token, err := api.FacebookLogin(_fbToken)
+				if err != nil {
+					jsonResponse(w, err, 500)
+					return
+				} else {
+					jsonResponse(w, token, 200)
+					return
+				}
+			} else {
+				log.Println("Should be unverified response")
+				jsonResponse(w, struct {
+					Status string `json:"status"`
+				}{"unverified"}, 201)
+				return
+			}
 		}
 		//If there's an associated user, they're verified already so there's no need to check.
 		log.Println("Token: ", token)
