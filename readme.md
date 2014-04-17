@@ -109,6 +109,8 @@ You must send an <id, token> pair with a request, which you can generate with /l
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
 
+/profile/facebook [[POST]](#post-profilefacebook)
+
 /profile/attending [[GET]](#get-profileattending)
 
 /profile/networks [[GET]](#get-profilenetworks)
@@ -1152,6 +1154,14 @@ HTTP 200
 ```json
 { "busy":true }
 ```
+
+##POST /profile/facebook
+required parameters: email, pass, fbtoken
+where fbtoken is a facebook session token
+
+This associates the facebook account logged in with fbtoken with the user signed in with email, pass.
+
+On success, will return 204.
 
 ##POST /profile/request_reset
 required parameters: email

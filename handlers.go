@@ -1800,7 +1800,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
 	id, err := api.ValidatePass(email, pass)
-	_fbToken := r.FormValue("token")
+	_fbToken := r.FormValue("fbtoken")
 	//Is this a valid facebook token for this app?
 	fbToken, errtoken := api.FBValidateToken(_fbToken)
 	switch {
@@ -1821,10 +1821,9 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 				//The facebook account is already associated with this gleepost account
 				w.WriteHeader(204)
 			} else {
-				jsonResponse(w, gp.APIerror{Reason:"Facebook account already associated with another gleepost account..."}, 400)
+				jsonResponse(w, gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}, 400)
 			}
 
 		}
 	}
 }
-
