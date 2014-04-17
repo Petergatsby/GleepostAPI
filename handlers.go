@@ -1795,3 +1795,36 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func facebookAssociate(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	pass := r.FormValue("pass")
+	id, err := api.ValidatePass(email, pass)
+	_fbToken := r.FormValue("token")
+	//Is this a valid facebook token for this app?
+	fbToken, errtoken := api.FBValidateToken(_fbToken)
+	switch {
+	case r.Method != "POST":
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	case err != nil:
+		jsonResponse(w, gp.APIerror{"Bad email/password"}, 400)
+	case errtoken != nil:
+		jsonResponse(w, gp.APIerror{"Bad token"}, 400)
+	default:
+		token, err := api.FacebookLogin(_fbToken)
+		if err != nil {
+			//This isn't associated with a gleepost account
+			err = api.UserSetFB(id, fbToken.FBUser)
+			w.WriteHeader(204)
+		} else {
+			if token.UserId == id {
+				//The facebook account is already associated with this gleepost account
+				w.WriteHeader(204)
+			} else {
+				jsonResponse(w, gp.APIerror{Reason:"Facebook account already associated with another gleepost account..."}, 400)
+			}
+
+		}
+	}
+}
+

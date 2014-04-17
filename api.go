@@ -129,6 +129,7 @@ func main() {
 	r.HandleFunc("/api/{version}/profile/name", changeNameHandler)
 	r.HandleFunc("/api/{version}/profile/change_pass", changePassHandler)
 	r.HandleFunc("/api/{version}/profile/busy", busyHandler)
+	r.HandleFunc("/api/{version}/profile/facebook", facebookAssociate)
 	r.HandleFunc("/api/{version}/profile/attending", userAttending)
 	r.HandleFunc("/api/{version}/profile/networks", getGroups)
 	r.HandleFunc("/api/{version}/profile/networks/posts", getGroupPosts).Methods("GET")
