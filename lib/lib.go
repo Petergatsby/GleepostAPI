@@ -533,6 +533,16 @@ func (api *API) Verify(token string) (err error) {
 			return
 		}
 		err = api.AcceptAllInvites(email)
+		if err != nil {
+			log.Println("Something went wrong while accepting invites:", err)
+			return
+		}
+		err = api.AssignNetworksFromFBInvites(userId, fbid)
+		if err !=  nil {
+			log.Println("Something went wrong while setting networks from fb invites:", err)
+			return
+		}
+		err = api.AcceptAllFBInvites(fbid)
 		return
 	}
 	err = api.UserSetFB(userId, fbid)

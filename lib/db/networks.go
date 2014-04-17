@@ -258,6 +258,26 @@ func (db *DB) AssignNetworksFromInvites(user gp.UserId, email string) (err error
 	return
 }
 
+func (db *DB) AssignNetworksFromFBInvites(user gp.UserId, facebook uint64) (err error) {
+	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, network_id FROM fb_group_invites WHERE facebook_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, facebook)
+	return
+}
+
+func (db *DB) AcceptAllFBInvites(facebook uint64) (err error) {
+	q := "UPDATE fb_group_invites SET accepted = 1 WHERE facebook_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(facebook)
+	return
+}
+
 func (db *DB) UserAddFBUserToGroup(user gp.UserId, fbuser uint64, netId gp.NetworkId) (err error) {
 	q := "INSERT INTO fb_group_invites (inviter_user_id, facebook_id, network_id) VALUES (?, ?, ?)"
 	s, err := db.prepare(q)

@@ -257,6 +257,14 @@ func (api *API) AssignNetworksFromInvites(user gp.UserId, email string) (err err
 	return api.db.AssignNetworksFromInvites(user, email)
 }
 
+func (api *API) AssignNetworksFromFBInvites(user gp.UserId, facebook uint64) (err error) {
+	return api.db.AssignNetworksFromFBInvites(user, facebook)
+}
+
 func (api *API) AcceptAllInvites(email string) (err error) {
 	return api.db.AcceptAllInvites(email)
+}
+
+func (api *API) AcceptAllFBInvites(facebook uint64) (err error) {
+	return api.db.AcceptAllFBInvites(facebook)
 }
