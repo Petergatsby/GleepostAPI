@@ -9,6 +9,7 @@ import (
 	"log"
 )
 
+//FacebookToken contains the parsed expiry, user and permission scopes of a facebook authentication token.
 type FacebookToken struct {
 	Expiry time.Time `facebook:"expires_at"`
 	FBUser uint64    `facebook:"user_id"`
