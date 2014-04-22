@@ -489,61 +489,10 @@ func (api *API) Verify(token string) (err error) {
 	userId, err := api.UserWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
-		firstName, lastName, username, e := FBName(fbid)
-		if e != nil {
-			log.Println("Couldn't get name info from facebook:", e)
-			return e
-		}
-		random, e := RandomString()
-		if e != nil {
-			return e
-		}
-		//TODO: Do something different with names, two john smiths are
-		id, e := api.createUser(username, random, email)
-		if e != nil {
-			log.Println("Something went wrong while creating the user from facebook:", e)
-			return e
-		}
-		_, err = api.assignNetworks(userId, email)
+		userId, err = api.CreateUserFromFB(fbid, email)
 		if err != nil {
-			return err
-		}
-		e = api.SetUserName(id, firstName, lastName)
-		if e != nil {
-			log.Println("Problem setting name:", e)
-			return e
-		}
-		e = api.SetProfileImage(id, FBAvatar(username))
-		if e != nil {
-			log.Println("Problem setting avatar:", e)
-		}
-		err = api.db.Verify(id)
-		if err != nil {
-			log.Println("Verifying failed in the db:", err)
 			return
 		}
-		err = api.UserSetFB(id, fbid)
-		if err != nil {
-			log.Println("associating facebook account with user account failed:", err)
-			return
-		}
-		err = api.AssignNetworksFromInvites(userId, email)
-		if err != nil {
-			log.Println("Something went wrong while setting networks from invites:", err)
-			return
-		}
-		err = api.AcceptAllInvites(email)
-		if err != nil {
-			log.Println("Something went wrong while accepting invites:", err)
-			return
-		}
-		err = api.AssignNetworksFromFBInvites(userId, fbid)
-		if err !=  nil {
-			log.Println("Something went wrong while setting networks from fb invites:", err)
-			return
-		}
-		err = api.AcceptAllFBInvites(fbid)
-		return
 	}
 	err = api.UserSetFB(userId, fbid)
 	if err == nil {
