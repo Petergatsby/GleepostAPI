@@ -16,7 +16,8 @@ type FacebookToken struct {
 	Scopes []string  `facebook:"scopes"`
 }
 
-func DebugToken(token string) {
+//debugToken logs the response from facebook's /debug_token.
+func debugToken(token string) {
 	res, err := facebook.Get("/debug_token", facebook.Params{
 		"access_token": token,
 	})
