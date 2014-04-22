@@ -233,7 +233,6 @@ func (api *API) UserAddFBUsersToGroup(userID gp.UserId, fbusers []uint64, netID 
 
 //CreateUserFromFB takes a facebook id and an email address and creates a gleepost user, returning their newly created id.
 func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserId, err error) {
-	//TODO: Deduplicate with lib/Verify
 	firstName, lastName, username, err := FBName(fbid)
 	if err != nil {
 		log.Println("Couldn't get name info from facebook:", err)
