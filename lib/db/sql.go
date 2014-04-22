@@ -297,6 +297,7 @@ func (db *DB) UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
 	err = db.stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
 	return
 }
+//TODO: return ENOSUCHUSER instead.
 
 func (db *DB) SetVerificationToken(id gp.UserId, token string) (err error) {
 	_, err = db.stmt["insertVerification"].Exec(id, token)
