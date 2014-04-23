@@ -176,12 +176,13 @@ example responses:
 
 ##POST /fblogin
 required parameters: token
-optional parameters: email
+optional parameters: email, invite
 
 Please note: This is in a state of development. Expect it to change frequently.
 
-If this facebook user has an associated, verified gleepost account, this will issue an access token in the same manner as /login:
+If this facebook user has an associated, verified gleepost account, this will issue an access token in the same manner as /login.
 
+Alternatively, if invite is supplied and valid the response will also be:
 (HTTP 200) 
 ```json
 {"id":9, "value":"f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b", "expiry":"2013-09-05T14:53:34.226231725Z"}
