@@ -177,7 +177,7 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 	for _, c := range processed.Categories {
 		if c.Tag == "event" {
 			//Don't squelch the error, that shit's useful yo
-			processed.Popularity, post.Attendees, err = api.db.GetEventPopularity(processed.Id)
+			processed.Popularity, processed.Attendees, err = api.db.GetEventPopularity(processed.Id)
 			if err != nil {
 				log.Println(err)
 			}
