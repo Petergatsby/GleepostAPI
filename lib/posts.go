@@ -42,8 +42,11 @@ func (api *API) getPostFull(postId gp.PostId) (post gp.PostFull, err error) {
 	}
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
-			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(postId)
+			//Don't squelch the error. Those things are useful as it turns out.
+			post.Popularity, post.Attendees, err = api.db.GetEventPopularity(postId)
+			if err != nil {
+				log.Println("Error getting popularity:", err)
+			}
 			break
 		}
 	}
