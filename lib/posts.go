@@ -134,6 +134,8 @@ func (api *API) getPosts(netId gp.NetworkId, mode int, index int64, count int, c
 		processed, err := api.PostProcess(posts[i])
 		if err == nil {
 			posts[i] = processed
+		} else {
+			log.Println("Error getting extra details for post:", err)
 		}
 	}
 	return
@@ -174,8 +176,11 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 	}
 	for _, c := range processed.Categories {
 		if c.Tag == "event" {
-			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			processed.Popularity, post.Attendees, _ = api.db.GetEventPopularity(processed.Id)
+			//Don't squelch the error, that shit's useful yo
+			processed.Popularity, post.Attendees, err = api.db.GetEventPopularity(processed.Id)
+			if err != nil {
+				log.Println(err)
+			}
 			break
 		}
 	}
