@@ -415,13 +415,13 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, attendees int,
 		return
 	}
 	switch {
-	case attendees > 4:
-		popularity = 100
 	case attendees > 3:
+		popularity = 100
+	case attendees > 2:
 		popularity = 75
-	case popularity > 2:
+	case attendees > 1:
 		popularity = 50
-	case popularity > 1:
+	case attendees > 0:
 		popularity = 25
 	default:
 		popularity = 0
