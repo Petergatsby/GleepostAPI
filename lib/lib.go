@@ -69,7 +69,7 @@ func createToken(userId gp.UserId) gp.Token {
 	if err != nil {
 		return (gp.Token{userId, "foo", time.Now().UTC()})
 	} else {
-		expiry := time.Now().Add(time.Duration(168) * time.Hour).UTC().Round(time.Second)
+		expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
 		token := gp.Token{userId, random, expiry}
 		return (token)
 	}
