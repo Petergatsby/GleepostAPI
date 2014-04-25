@@ -49,6 +49,8 @@ These endpoints are accessible to the world.
 These endpoints require authentication to access.
 You must send an <id, token> pair with a request, which you can generate with /login or /fblogin
 
+This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "foobar" are id and token respectively), as parameters in the request body, or in the header "X-GP-Auth" with the format "1234-foobar"
+
 /posts [[GET]](#get-posts) [[POST]](#post-posts) 
 
 /posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
