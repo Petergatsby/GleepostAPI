@@ -22,9 +22,8 @@ func randomFilename(extension string) (string, error) {
 		hash.Write(random)
 		digest := hex.EncodeToString(hash.Sum(nil))
 		return digest + extension, nil
-	} else {
-		return "", err
 	}
+	return "", err
 }
 
 func (api *API) getS3(network gp.NetworkId) (s *s3.S3) {
@@ -40,6 +39,7 @@ func (api *API) getS3(network gp.NetworkId) (s *s3.S3) {
 	return
 }
 
+//StoreFile takes an uploaded file, checks if it is allowed (ie, is jpg / png) and uploads it to s3 (selecting a bucket based on the user who uploaded it).
 func (api *API) StoreFile(id gp.UserId, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
@@ -92,6 +92,7 @@ func (api *API) userAddUpload(id gp.UserId, url string) (err error) {
 	return api.db.AddUpload(id, url)
 }
 
+//UserUploadExists returns true if the user has uploaded the file at url
 func (api *API) UserUploadExists(id gp.UserId, url string) (exists bool, err error) {
 	return api.db.UploadExists(id, url)
 }
