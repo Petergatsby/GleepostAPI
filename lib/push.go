@@ -2,11 +2,12 @@ package lib
 
 import (
 	"errors"
+	"log"
+	"time"
+
 	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/gcm"
-	"log"
-	"time"
 )
 
 func (api *API) notify(user gp.UserId) {

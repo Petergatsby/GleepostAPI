@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/gorilla/mux"
 )
 
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {

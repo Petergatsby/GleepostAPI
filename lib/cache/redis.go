@@ -3,11 +3,12 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/garyburd/redigo/redis"
-	"log"
-	"time"
 )
 
 /********************************************************************

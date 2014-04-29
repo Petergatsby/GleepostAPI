@@ -1,21 +1,22 @@
 package lib
 
 import (
-	"code.google.com/p/go.crypto/bcrypt"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/draaglom/GleepostAPI/lib/cache"
-	"github.com/draaglom/GleepostAPI/lib/db"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/mail"
-	"github.com/draaglom/GleepostAPI/lib/push"
 	"io"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"code.google.com/p/go.crypto/bcrypt"
+	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/db"
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
+	"github.com/draaglom/GleepostAPI/lib/push"
 )
 
 type API struct {

@@ -1,9 +1,10 @@
 package lib
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"strings"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 var ETOOSHORT = gp.APIerror{Reason: "Your query must be at least 2 characters long"}

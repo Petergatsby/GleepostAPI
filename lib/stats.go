@@ -2,9 +2,10 @@ package lib
 
 import (
 	"fmt"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 type Aggregate struct {

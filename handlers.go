@@ -1,17 +1,18 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"encoding/json"
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"code.google.com/p/go.net/websocket"
+	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/gorilla/mux"
 )
 
 var (

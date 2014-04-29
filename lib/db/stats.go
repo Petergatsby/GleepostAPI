@@ -3,8 +3,9 @@ package db
 import (
 	"database/sql"
 	"errors"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func (db *DB) LikesForUserBetween(user gp.UserId, start time.Time, finish time.Time) (count int, err error) {

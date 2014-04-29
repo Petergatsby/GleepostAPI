@@ -2,9 +2,10 @@ package mail
 
 import (
 	"fmt"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/smtp"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 type Mailer struct {

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {

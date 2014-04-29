@@ -1,10 +1,11 @@
 package lib
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 var EBADTIME = gp.APIerror{"Could not parse as a time"}

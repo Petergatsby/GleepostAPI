@@ -2,11 +2,12 @@ package lib
 
 import (
 	"fmt"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/huandu/facebook"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/huandu/facebook"
 )
 
 //FacebookToken contains the parsed expiry, user and permission scopes of a facebook authentication token.

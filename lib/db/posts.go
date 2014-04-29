@@ -2,10 +2,11 @@ package db
 
 import (
 	"database/sql"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 /********************************************************************

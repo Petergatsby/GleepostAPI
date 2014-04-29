@@ -3,11 +3,12 @@ package db
 
 import (
 	"database/sql"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/garyburd/redigo/redis"
 )

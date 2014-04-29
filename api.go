@@ -2,12 +2,8 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"fmt"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,6 +13,11 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+
+	"code.google.com/p/go.net/websocket"
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
 )
 
 func loadConfig(fail bool) {

@@ -2,8 +2,9 @@ package db
 
 import (
 	"database/sql"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.

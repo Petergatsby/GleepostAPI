@@ -1,10 +1,11 @@
 package db
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 /********************************************************************

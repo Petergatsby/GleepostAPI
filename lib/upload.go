@@ -4,13 +4,14 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"io"
 	"io/ioutil"
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
 	"mime/multipart"
 	"strings"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"launchpad.net/goamz/aws"
+	"launchpad.net/goamz/s3"
 )
 
 func randomFilename(extension string) (string, error) {

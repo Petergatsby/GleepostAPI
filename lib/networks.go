@@ -1,9 +1,10 @@
 package lib
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
 	"strings"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Group, err error) {

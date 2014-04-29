@@ -2,10 +2,11 @@ package push
 
 import (
 	"encoding/json"
+	"log"
+
 	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/gcm"
-	"log"
 )
 
 type Pusher struct {
