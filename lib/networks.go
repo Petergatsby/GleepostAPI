@@ -13,7 +13,7 @@ func (api *API) GetUserNetworks(id gp.UserId) (nets []gp.Group, err error) {
 		return
 	}
 	if len(nets) == 0 {
-		return nets, gp.APIerror{"User has no networks!"}
+		return nets, gp.APIerror{Reason: "User has no networks!"}
 	}
 	api.cache.SetUserNetworks(id, nets...)
 	return

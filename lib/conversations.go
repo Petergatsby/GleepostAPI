@@ -8,7 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-var ENOTALLOWED = gp.APIerror{"You're not allowed to do that!"}
+var ENOTALLOWED = gp.APIerror{Reason: "You're not allowed to do that!"}
 
 func (api *API) terminateConversation(convId gp.ConversationId) (err error) {
 	log.Println("Terminating conversation:", convId)
@@ -250,7 +250,11 @@ func (api *API) AddMessage(convId gp.ConversationId, userId gp.UserId, text stri
 	if err != nil {
 		return
 	}
-	msg := gp.Message{gp.MessageId(messageId), user, text, time.Now().UTC()}
+	msg := gp.Message{
+		Id:   gp.MessageId(messageId),
+		By:   user,
+		Text: text,
+		Time: time.Now().UTC()}
 	participants := api.db.GetParticipants(convId)
 	go api.cache.Publish(msg, participants, convId)
 	chans := ConversationChannelKeys(participants)
@@ -406,7 +410,7 @@ func (api *API) deleteExpiry(convId gp.ConversationId) (err error) {
 //exactly the same participants as users and delete its expiry(if it exists).
 func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 	if len(users) < 2 {
-		return gp.APIerror{">1 user required?"}
+		return gp.APIerror{Reason: ">1 user required?"}
 	}
 	conversations, err := api.db.GetConversations(users[0], 0, 99999, true)
 	if err != nil {

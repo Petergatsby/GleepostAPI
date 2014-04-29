@@ -54,10 +54,10 @@ func (api *API) StoreFile(id gp.UserId, file multipart.File, header *multipart.F
 		filename, err = randomFilename(".png")
 		contenttype = "image/png"
 	default:
-		return "", gp.APIerror{"Unsupported file type"}
+		return "", gp.APIerror{Reason: "Unsupported file type"}
 	}
 	if err != nil {
-		return "", gp.APIerror{err.Error()}
+		return "", gp.APIerror{Reason: err.Error()}
 	}
 	//store on s3
 	networks, _ := api.GetUserNetworks(id)

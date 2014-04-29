@@ -8,7 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-var EBADTIME = gp.APIerror{"Could not parse as a time"}
+var EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
 
 func (api *API) GetPost(postId gp.PostId) (post gp.Post, err error) {
 	return api.db.GetPost(postId)
