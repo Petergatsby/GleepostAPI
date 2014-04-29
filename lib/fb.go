@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/huandu/facebook"
+	"log"
 	"strconv"
 	"time"
-	"log"
 )
 
 //FacebookToken contains the parsed expiry, user and permission scopes of a facebook authentication token.
@@ -35,7 +35,7 @@ type FB struct {
 }
 
 //FBAPIError is a catchall error for anything that went wrong with a facebook reqest.
-var FBAPIError = gp.APIerror{Reason:"Something went wrong with a facebook API call."}
+var FBAPIError = gp.APIerror{Reason: "Something went wrong with a facebook API call."}
 
 //FBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
 //ie, expired or for another app.
@@ -58,18 +58,18 @@ func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error)
 	}
 	if appid != tokenappid {
 		fmt.Println("App id doesn't match")
-		return token, gp.APIerror{Reason:"Bad facebook token"}
+		return token, gp.APIerror{Reason: "Bad facebook token"}
 	}
 	expiry := time.Unix(int64(data["expires_at"].(float64)), 0)
 	if !expiry.After(time.Now()) {
 		fmt.Println("Token expired already")
-		return token, gp.APIerror{Reason:"Bad facebook token"}
+		return token, gp.APIerror{Reason: "Bad facebook token"}
 	}
 	var valid bool
 	valid = data["is_valid"].(bool)
 	if !valid {
 		fmt.Println("Token isn't valid")
-		return token, gp.APIerror{Reason:"Bad facebook token"}
+		return token, gp.APIerror{Reason: "Bad facebook token"}
 	}
 	token.Expiry = expiry
 	token.FBUser = uint64(data["user_id"].(float64))
@@ -282,7 +282,7 @@ func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserId, e
 		return
 	}
 	err = api.AssignNetworksFromFBInvites(userID, fbid)
-	if err !=  nil {
+	if err != nil {
 		log.Println("Something went wrong while setting networks from fb invites:", err)
 		return
 	}

@@ -12,10 +12,10 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/mail"
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"io"
+	"log"
 	"regexp"
 	"strings"
 	"time"
-	"log"
 )
 
 type API struct {
@@ -439,10 +439,10 @@ func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, tok
 	url := api.inviteUrl(token, email)
 	subject := fmt.Sprintf("%s has invited you to the private group \"%s\" on Gleepost.", from.Name, group.Name)
 	html := "<html><body>" +
-	"Don't miss out on their events - <a href=" + url + ">Click here to accept the invitation.</a><br>" +
-	"On your phone? <a href=\"" + INVITE_CAMPAIGN_IOS + "\">install the app on your iPhone here</a>" +
-	" or <a href=\"" + INVITE_CAMPAIGN_ANDROID + "\">click here to get the Android app.</a>" +
-	"</body></html>"
+		"Don't miss out on their events - <a href=" + url + ">Click here to accept the invitation.</a><br>" +
+		"On your phone? <a href=\"" + INVITE_CAMPAIGN_IOS + "\">install the app on your iPhone here</a>" +
+		" or <a href=\"" + INVITE_CAMPAIGN_ANDROID + "\">click here to get the Android app.</a>" +
+		"</body></html>"
 	err = api.mail.SendHTML(email, subject, html)
 	return
 }

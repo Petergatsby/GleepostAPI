@@ -1,32 +1,34 @@
 package lib
 
 import (
-	"time"
+	"fmt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
-	"fmt"
+	"time"
 )
 
 type Aggregate struct {
-	Type Stat `json:"type"`
-	Start time.Time `json:"start"`
-	Finish time.Time `json:"finish"`
+	Type         Stat          `json:"type"`
+	Start        time.Time     `json:"start"`
+	Finish       time.Time     `json:"finish"`
 	BucketLength time.Duration `json:"period"`
-	Counts []Bucket `json:"data"`
+	Counts       []Bucket      `json:"data"`
 }
 
 type Bucket struct {
 	Start time.Time `json:"start"`
-	Count int `json:"count"`
+	Count int       `json:"count"`
 }
 
 type Stat string
+
 const LIKES Stat = "likes"
 const COMMENTS Stat = "comments"
 const POSTS Stat = "posts"
 const VIEWS Stat = "views"
 const RSVPS Stat = "rsvps"
 const INTERACTIONS Stat = "interactions"
+
 var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 
 func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
@@ -49,7 +51,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	case stat == INTERACTIONS:
 		statF = api.InteractionsForUserBetween
 	default:
-		err = gp.APIerror{Reason:"I don't know what that stat is."}
+		err = gp.APIerror{Reason: "I don't know what that stat is."}
 		return
 	}
 	for start.Before(finish) {
@@ -58,7 +60,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 		count, err = statF(user, start, end)
 		if err == nil {
 			if count > 0 {
-				result := Bucket{Start:start.Round(time.Duration(time.Second)), Count: count}
+				result := Bucket{Start: start.Round(time.Duration(time.Second)), Count: count}
 				stats.Counts = append(stats.Counts, result)
 			}
 		} else {
@@ -118,7 +120,7 @@ func deduplicate(userLists ...[]gp.UserId) (deduplicated []gp.UserId) {
 }
 
 func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[string]int) {
-	statFs := make(map[string]func (time.Time, time.Time) ([]gp.UserId, error))
+	statFs := make(map[string]func(time.Time, time.Time) ([]gp.UserId, error))
 	stats = make(map[string]int)
 	statFs["signups"] = api.db.CohortSignedUpBetween
 	statFs["verified"] = api.db.UsersVerifiedInCohort
@@ -140,18 +142,18 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 		usersLists = append(usersLists, v)
 	}
 	stats["activated"] = len(deduplicate(usersLists...))
-	return(stats)
+	return (stats)
 }
 
 func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
 	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
 	text := fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
-	text += fmt.Sprintf("Of these, %d (%2.1f%%) verified their account\n", stats["verified"], 100 * float64(stats["verified"])/ float64(stats["signups"]))
-	text += fmt.Sprintf("Of these, %d (%2.1f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"]) / float64(stats["verified"]))
+	text += fmt.Sprintf("Of these, %d (%2.1f%%) verified their account\n", stats["verified"], 100*float64(stats["verified"])/float64(stats["signups"]))
+	text += fmt.Sprintf("Of these, %d (%2.1f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"])/float64(stats["verified"]))
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
-		text += fmt.Sprintf("%s: %d (%2.1f%%)\n", activity, stats[activity], 100 * float64(stats[activity]) / float64(stats["verified"]))
+		text += fmt.Sprintf("%s: %d (%2.1f%%)\n", activity, stats[activity], 100*float64(stats[activity])/float64(stats["verified"]))
 	}
 	users, err := api.db.GetNetworkUsers(gp.NetworkId(api.Config.Admins))
 	if err != nil {
@@ -177,7 +179,7 @@ func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 		tick := time.Tick(interval)
 		for {
 			select {
-			case <- tick:
+			case <-tick:
 				api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
 			}
 		}

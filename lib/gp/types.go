@@ -26,10 +26,10 @@ type User struct {
 
 type Profile struct {
 	User
-	Desc     string  `json:"tagline"`
-	Network  Group `json:"network"`
-	Course   string  `json:"course"`
-	FullName string  `json:"full_name"`
+	Desc     string `json:"tagline"`
+	Network  Group  `json:"network"`
+	Course   string `json:"course"`
+	FullName string `json:"full_name"`
 }
 
 type Contact struct {
@@ -45,9 +45,9 @@ type Network struct {
 
 type Group struct {
 	Network
-	Image string `json:"image,omitempty"`
-	Desc string `json:"description,omitempty"`
-	Creator *User `json:"creator,omitempty"`
+	Image   string `json:"image,omitempty"`
+	Desc    string `json:"description,omitempty"`
+	Creator *User  `json:"creator,omitempty"`
 }
 
 type Message struct {
@@ -91,7 +91,7 @@ type Post struct {
 	Attribs    map[string]interface{} `json:"attribs,omitempty"`
 	Popularity int                    `json:"popularity,omitempty"`
 	Attendees  int                    `json:"attendee_count,omitempty"`
-	Group      *Group               `json:"network,omitempty"`
+	Group      *Group                 `json:"network,omitempty"`
 }
 
 type PostSmall struct {
@@ -197,7 +197,7 @@ type FacebookConfig struct {
 }
 
 type Config struct {
-	DevelopmentMode	     bool
+	DevelopmentMode      bool
 	Port                 string
 	LoginOverride        bool
 	RegisterOverride     bool
@@ -207,8 +207,8 @@ type Config struct {
 	ConversationPageSize int
 	OnlineTimeout        int
 	Expiry               int
-	NewPushEnabled	     bool
-	Admins		     int
+	NewPushEnabled       bool
+	Admins               int
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig
@@ -255,8 +255,8 @@ type Created struct {
 }
 
 type NewUser struct {
-	Id UserId `json:"id"`
-	Status string	`json:"status"`
+	Id     UserId `json:"id"`
+	Status string `json:"status"`
 }
 
 type URLCreated struct {

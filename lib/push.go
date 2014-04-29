@@ -1,12 +1,12 @@
 package lib
 
 import (
+	"errors"
+	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/gcm"
-	"github.com/anachronistic/apns"
 	"log"
 	"time"
-	"errors"
 )
 
 func (api *API) notify(user gp.UserId) {
@@ -166,7 +166,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 	d.LocKey = "MSG"
 	d.LocArgs = []string{message.By.Name}
 	if len(message.Text) > 64 {
-		d.LocArgs = append(d.LocArgs, message.Text[:64] + "...")
+		d.LocArgs = append(d.LocArgs, message.Text[:64]+"...")
 	} else {
 		d.LocArgs = append(d.LocArgs, message.Text)
 	}
@@ -278,7 +278,7 @@ func (api *API) MassNotification(message string, version string, platform string
 	for _, device := range devices {
 		switch {
 		case device.Type == "ios":
-			err = api.iOSUpdateNotification(device,  message, version)
+			err = api.iOSUpdateNotification(device, message, version)
 			if err == nil {
 				count++
 			} else {

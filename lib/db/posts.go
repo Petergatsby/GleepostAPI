@@ -1,11 +1,11 @@
 package db
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"strconv"
 	"database/sql"
-	"time"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"log"
+	"strconv"
+	"time"
 )
 
 /********************************************************************
@@ -17,15 +17,15 @@ const (
 	WGROUPS
 )
 
-var EBADORDER = gp.APIerror{Reason:"Invalid order clause!"}
-var EBADWHERE = gp.APIerror{Reason:"Bad WhereClause!"}
+var EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
+var EBADWHERE = gp.APIerror{Reason: "Bad WhereClause!"}
 
 type WhereClause struct {
-	Mode int
-	Network gp.NetworkId
-	User	gp.UserId
+	Mode        int
+	Network     gp.NetworkId
+	User        gp.UserId
 	Perspective gp.UserId
-	Category string
+	Category    string
 }
 
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
@@ -33,7 +33,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 	baseQuery := "SELECT wall_posts.id, `by`, time, text, network_id FROM wall_posts "
 	var orderClause string
 	var categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-			"JOIN categories ON post_categories.category_id = categories.id "
+		"JOIN categories ON post_categories.category_id = categories.id "
 	var stmt *sql.Stmt
 	switch {
 	case w.Mode == WNETWORK:
@@ -52,7 +52,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			return
 		}
 		if len(w.Category) > 0 {
-			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
+			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
 		}
 		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
 		if err != nil {
@@ -65,9 +65,9 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		}
 	case w.Mode == WUSER:
 		whereClause := "WHERE deleted = 0 AND `by` = ? " +
-		"AND network_id IN ( " +
+			"AND network_id IN ( " +
 			"SELECT network_id FROM user_network WHERE user_id = ? " +
-		") "
+			") "
 		switch {
 		case orderMode == gp.OSTART:
 			orderClause = "ORDER BY time DESC LIMIT ?, ?"
@@ -82,9 +82,9 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			return
 		}
 		if len(w.Category) > 0 {
-			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
+			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
 		}
-		log.Println("User networks query:", baseQuery + whereClause + orderClause)
+		log.Println("User networks query:", baseQuery+whereClause+orderClause)
 		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
 		if err != nil {
 			return
@@ -97,12 +97,12 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			log.Println("User networks query arguments:", w.User, w.Perspective, index, count)
 		}
 	case w.Mode == WGROUPS:
-		whereClause :=	"WHERE deleted = 0 AND network_id IN ( " +
-				"SELECT network_id " +
-				"FROM user_network " +
-				"JOIN network ON user_network.network_id = network.id " +
-				"WHERE user_id = ? " +
-				"AND network.user_group = 1 " +
+		whereClause := "WHERE deleted = 0 AND network_id IN ( " +
+			"SELECT network_id " +
+			"FROM user_network " +
+			"JOIN network ON user_network.network_id = network.id " +
+			"WHERE user_id = ? " +
+			"AND network.user_group = 1 " +
 			" ) "
 		switch {
 		case orderMode == gp.OSTART:
@@ -118,7 +118,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			return
 		}
 		if len(w.Category) > 0 {
-			whereClause =  categoryClause +	whereClause + "AND categories.tag = ? "
+			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
 		}
 		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
 		if err != nil {
@@ -182,10 +182,9 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 	return
 }
 
-
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
 func (db *DB) GetUserPosts(userId gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	where := WhereClause{Mode:WUSER, User:userId, Perspective:perspective, Category:category}
+	where := WhereClause{Mode: WUSER, User: userId, Perspective: perspective, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
@@ -245,7 +244,7 @@ func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []g
 
 //GetPosts finds posts in the network netId.
 func (db *DB) GetPosts(netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	where := WhereClause{Mode:WNETWORK, Network:netId, Category:category}
+	where := WhereClause{Mode: WNETWORK, Network: netId, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
@@ -431,7 +430,7 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, attendees int,
 
 //TODO: Verify shit doesn't break when a user has no user-groups
 func (db *DB) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	where := WhereClause{Mode:WGROUPS, User:user, Category:category}
+	where := WhereClause{Mode: WGROUPS, User: user, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }

@@ -4,7 +4,7 @@ import (
 	"log"
 )
 
-func (api *API)Massmail() (err error) {
+func (api *API) Massmail() (err error) {
 	subject := "FREE REDBULL STUDYGRAMS AT TRESIDDER AND GREEN LIBRARY!"
 	body := `<html><body>Hey guys!<br><br>
 

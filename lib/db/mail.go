@@ -19,4 +19,3 @@ func (db *DB) AllEmails() (emails []string, err error) {
 	}
 	return
 }
-

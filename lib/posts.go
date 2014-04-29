@@ -160,7 +160,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count 
 }
 
 func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err error) {
-//Ha! I am so funny...
+	//Ha! I am so funny...
 	processed = post
 	processed.Likes, err = api.GetLikes(processed.Id)
 	if err != nil {

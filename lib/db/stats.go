@@ -1,9 +1,9 @@
 package db
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
 	"database/sql"
 	"errors"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"time"
 )
 

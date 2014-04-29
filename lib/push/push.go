@@ -2,15 +2,15 @@ package push
 
 import (
 	"encoding/json"
+	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/gcm"
-	"github.com/anachronistic/apns"
 	"log"
 )
 
 type Pusher struct {
 	APNSconfig gp.APNSConfig
-	GCMconfig gp.GCMConfig
+	GCMconfig  gp.GCMConfig
 }
 
 func New(conf gp.Config) (pusher *Pusher) {
