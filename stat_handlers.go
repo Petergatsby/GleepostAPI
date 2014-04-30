@@ -22,6 +22,8 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		var bucket time.Duration
 		switch {
+		case vars["period"] == "hour":
+			bucket = time.Duration(time.Hour)
 		case vars["period"] == "day":
 			bucket = time.Duration(24 * time.Hour)
 		case vars["period"] == "week":

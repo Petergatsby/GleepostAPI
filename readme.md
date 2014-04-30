@@ -1367,7 +1367,7 @@ required parameters: id, token
 
 - user-id is any user ID you want to see the stats for. At the moment there is no limitation on who can see whose stats.
 - stat-type is one of "posts", "likes", "comments", "rsvps", "interactions"
-- period is either "day" or "week" and indicates how the counts are bucketed
+- period is either "hour", "day" or "week" and indicates how the counts are bucketed (the interval within which counts are summed)
 - start and finish are RFC3339 formatted strings which indicate the beginning and end of the period you are viewing stats for.
 
 Example:
