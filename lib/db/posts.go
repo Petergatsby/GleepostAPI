@@ -180,7 +180,7 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 			log.Println("Bad post: ", post)
 		}
 	}
-	return
+	return posts, nil
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
