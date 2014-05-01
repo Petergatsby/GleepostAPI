@@ -1125,52 +1125,54 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		token, err := api.FacebookLogin(_fbToken)
 		//If we have an error here, that means that there is no associated gleepost user account.
+		if err == nil {
+			//If there's an associated user, they're verified already so there's no need to check.
+			log.Println("Token: ", token)
+			jsonResponse(w, token, 201)
+			return
+
+		}
+		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
+		//Have we seen this facebook user before?
+		_, err = api.FBGetEmail(fbToken.FBUser)
+		var id gp.UserId
 		if err != nil {
-			log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
-			//Have we seen this facebook user before?
-			_, err = api.FBGetEmail(fbToken.FBUser)
-			var id gp.UserId
-			if err != nil {
-				//No. That means we need their email to create and verify their account.
-				if len(email) < 3 {
-					jsonResponse(w, gp.APIerror{"Email required"}, 400)
-					return
-				}
-				validates, err := api.ValidateEmail(email)
-				if !validates {
-					jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
-					return
-				}
-				if err != nil {
-					jsonResponse(w, gp.APIerror{err.Error()}, 500)
-					return
-				}
-				id, err = api.FacebookRegister(_fbToken, email, invite)
-				if err != nil {
-					jsonResponse(w, gp.APIerror{err.Error()}, 500)
-					return
-				}
+			//No. That means we need their email to create and verify their account.
+			if len(email) < 3 {
+				jsonResponse(w, gp.APIerror{"Email required"}, 400)
+				return
 			}
-			if id > 0 {
-				token, err := api.FacebookLogin(_fbToken)
-				if err != nil {
-					jsonResponse(w, err, 500)
-					return
-				} else {
-					jsonResponse(w, token, 200)
-					return
-				}
-			} else {
-				log.Println("Should be unverified response")
-				jsonResponse(w, struct {
-					Status string `json:"status"`
-				}{"unverified"}, 201)
+			validates, err := api.ValidateEmail(email)
+			if !validates {
+				jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
+				return
+			}
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+				return
+			}
+			id, err = api.FacebookRegister(_fbToken, email, invite)
+			if err != nil {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 				return
 			}
 		}
-		//If there's an associated user, they're verified already so there's no need to check.
-		log.Println("Token: ", token)
-		jsonResponse(w, token, 201)
+		if id > 0 {
+			token, err := api.FacebookLogin(_fbToken)
+			if err != nil {
+				jsonResponse(w, err, 500)
+				return
+			} else {
+				jsonResponse(w, token, 200)
+				return
+			}
+		} else {
+			log.Println("Should be unverified response")
+			jsonResponse(w, struct {
+				Status string `json:"status"`
+			}{"unverified"}, 201)
+			return
+		}
 	} else {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
