@@ -1133,45 +1133,98 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
-		//Have we seen this facebook user before?
-		_, err = api.FBGetEmail(fbToken.FBUser)
-		var id gp.UserId
-		if err != nil {
-			//No. That means we need their email to create and verify their account.
-			if len(email) < 3 {
-				jsonResponse(w, gp.APIerror{"Email required"}, 400)
-				return
-			}
-			validates, err := api.ValidateEmail(email)
-			if !validates {
-				jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
-				return
-			}
+		//Did the user provide an email (takes precedence over stored email, because they might have typo'd the first time)
+		var storedEmail string
+		storedEmail, err = api.FBGetEmail(fbToken.FBUser)
+		switch {
+		//Has this email been seen before for this user?
+		case len(email) > 3 && (err != nil || storedEmail != email):
+			//Either we don't have a stored email for this user, or at least it wasn't this one.
+			//(So we should check if there's an existing signed up / verified user)
+			//(and if not, issue a verification email)
+			//(since this is the first time they've signed up with this email)
+			_, err := api.UserWithEmail(email)
 			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
-			}
-			id, err = api.FacebookRegister(_fbToken, email, invite)
-			if err != nil {
-				jsonResponse(w, gp.APIerror{err.Error()}, 500)
-				return
-			}
-		}
-		if id > 0 {
-			token, err := api.FacebookLogin(_fbToken)
-			if err != nil {
-				jsonResponse(w, err, 500)
+				//There isn't already a user with this email address.
+				validates, err := api.ValidateEmail(email)
+				if !validates {
+					jsonResponse(w, gp.APIerror{"Invalid email"}, 400)
+					return
+				}
+				if err != nil {
+					jsonResponse(w, gp.APIerror{err.Error()}, 500)
+					return
+				}
+				id, err := api.FacebookRegister(_fbToken, email, invite)
+				if err != nil {
+					jsonResponse(w, gp.APIerror{err.Error()}, 500)
+					return
+				}
+				if id > 0 {
+					//The invite was valid so an account has been created
+					//Login
+					token, err := api.CreateAndStoreToken(id)
+					if err == nil {
+						jsonResponse(w, token, 200)
+					} else {
+						jsonResponse(w, gp.APIerror{err.Error()}, 500)
+					}
+					return
+				}
+				log.Println("Should be unverified response")
+				jsonResponse(w, struct {
+					Status string `json:"status"`
+				}{"unverified"}, 201)
 				return
 			} else {
-				jsonResponse(w, token, 200)
+				//User has signed up already with a username+pass
+				//If invite is valid, we can log in immediately
+				exists, _ := api.InviteExists(email, invite)
+				if exists {
+					//Verify
+					id, err := api.FBSetVerified(email, fbToken.FBUser)
+					if err != nil {
+						jsonResponse(w, gp.APIerror{err.Error()}, 500)
+						return
+					}
+					//Login
+					token, err := api.CreateAndStoreToken(id)
+					if err == nil {
+						jsonResponse(w, token, 200)
+					} else {
+						jsonResponse(w, gp.APIerror{err.Error()}, 500)
+					}
+					return
+				}
+				//otherwise, we must ask for a password
+				status := struct {
+					Status string `json:"status"`
+				}{"registered"}
+				jsonResponse(w, status, 200)
 				return
 			}
-		} else {
-			log.Println("Should be unverified response")
-			jsonResponse(w, struct {
-				Status string `json:"status"`
-			}{"unverified"}, 201)
-			return
+		case len(email) > 3 && (err == nil && (storedEmail == email)):
+			//We already saw this user, so we don't need to re-send verification
+			fallthrough
+		case len(email) < 3 && (err == nil):
+			//We already saw this user, so we don't need to re-send verification
+			//So it should be "unverified" or "registered" as appropriate
+			_, err := api.UserWithEmail(storedEmail)
+			if err != nil {
+				log.Println("Should be unverified response")
+				jsonResponse(w, struct {
+					Status string `json:"status"`
+				}{"unverified"}, 201)
+				return
+			} else {
+				status := struct {
+					Status string `json:"status"`
+				}{"registered"}
+				jsonResponse(w, status, 200)
+				return
+			}
+		case len(email) < 3 && (err != nil):
+			jsonResponse(w, gp.APIerror{"Email required"}, 400)
 		}
 	} else {
 		jsonResponse(w, &EUNSUPPORTED, 405)
