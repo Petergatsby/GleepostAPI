@@ -41,6 +41,8 @@ These endpoints are accessible to the world.
 
 /profile/reset/[user-id]/[reset-token] [[POST]](#post-profileresetuser-idreset-token)
 
+/profile/facebook [[POST]](#post-profilefacebook).
+
 /verify/[token] [[POST]](#post-verifytoken)
 
 /resend_verification [[POST]](#post-resend_verification)
@@ -197,13 +199,23 @@ If this facebook user does not have a gleepost account associated, the facebook 
 {"error":"Email required"}
 ```
 
-In which case you must resubmit the request including the email parameter. This will issue a verification email and respond with:
+In which case you must resubmit the request including the email parameter.
+
+If the email you have provided doesn't have an existing gleepost account registered, this will issue a verification email and respond with:
+
 
 (HTTP 201)
 ```json
 {"status":"unverified"}
 ```
 
+If the email you have provided is already registered, the response will be:
+(HTTP 200)
+```json
+{"status":"registered"}
+```
+
+Whereupon the user should be prompted to provide their password to associate their account using [/profile/facebook](#post-profilefacebook).
 
 ##GET /posts
 required parameters:
