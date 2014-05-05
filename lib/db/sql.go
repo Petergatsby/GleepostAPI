@@ -75,7 +75,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["selectFBemail"] = "SELECT email FROM facebook WHERE fb_id = ?"
 	sqlStmt["fbUserByEmail"] = "SELECT fb_id FROM facebook WHERE email = ?"
 	sqlStmt["fbInsertVerification"] = "REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)"
-	sqlStmt["fbSetGPUser"] = "UPDATE facebook SET user_id = ? WHERE fb_id = ?"
 	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?, ?)"
 	sqlStmt["verificationExists"] = "SELECT user_id FROM verification WHERE token = ?"
 	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
@@ -360,7 +359,12 @@ func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 }
 
 func (db *DB) FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
-	res, err := db.stmt["fbSetGPUser"].Exec(userId, fbid)
+	fbSetGPUser := "REPLACE INTO facebook (user_id, fb_id) VALUES (?, ?)"
+	stmt, err := db.prepare(fbSetGPUser)
+	if err != nil {
+		return
+	}
+	res, err := stmt.Exec(userId, fbid)
 	log.Println(res.RowsAffected())
 	return
 }
