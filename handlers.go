@@ -1880,6 +1880,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	fbToken, errtoken := api.FBValidateToken(_fbToken)
 	switch {
 	case r.Method != "POST":
+		log.Println(r)
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
 		jsonResponse(w, gp.APIerror{"Bad email/password"}, 400)
