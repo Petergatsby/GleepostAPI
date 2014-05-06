@@ -8,12 +8,18 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-type Aggregate struct {
-	Type         Stat          `json:"type"`
-	Start        time.Time     `json:"start"`
-	Finish       time.Time     `json:"finish"`
-	BucketLength time.Duration `json:"period"`
-	Counts       []Bucket      `json:"data"`
+type View struct {
+	Start        time.Time         `json:"start"`
+	Finish       time.Time         `json:"finish"`
+	BucketLength time.Duration     `json:"period"`
+	Series       map[Stat][]Bucket `json:"data"`
+}
+
+func newView() *View {
+	view := new(View)
+	Series := make(map[Stat][]Bucket)
+	view.Series = Series
+	return view
 }
 
 type Bucket struct {
@@ -29,12 +35,12 @@ const POSTS Stat = "posts"
 const VIEWS Stat = "views"
 const RSVPS Stat = "rsvps"
 const INTERACTIONS Stat = "interactions"
+const OVERVIEW Stat = "overview"
 
 var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 
-func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
-	stats = new(Aggregate)
-	stats.Type = stat
+func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
+	stats = newView()
 	stats.Start = start.Round(time.Duration(time.Second))
 	stats.Finish = finish.Round(time.Duration(time.Second))
 	stats.BucketLength = bucket / time.Second
@@ -55,6 +61,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 		err = gp.APIerror{Reason: "I don't know what that stat is."}
 		return
 	}
+	var data []Bucket
 	for start.Before(finish) {
 		end := start.Add(bucket)
 		var count int
@@ -62,17 +69,22 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 		if err == nil {
 			if count > 0 {
 				result := Bucket{Start: start.Round(time.Duration(time.Second)), Count: count}
-				stats.Counts = append(stats.Counts, result)
+				data = append(data, result)
 			}
 		} else {
 			log.Println(err)
 		}
 		start = end
 	}
+	stats.Series[stat] = data
 	return
 }
 
-func aggregateStatForPost(stat Stat, post gp.PostId, start time.Time, finish time.Time, bucket time.Duration) (stats *Aggregate, err error) {
+func aggregateAllStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
+	return
+}
+
+func aggregateStatForPost(stat Stat, post gp.PostId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
 	return
 }
 

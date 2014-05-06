@@ -1386,15 +1386,15 @@ Example:
 GET https://dev.gleepost.com/api/v0.34/stats/user/2395/posts/rsvps/week/2013-01-01T00:00:00Z/2015-01-01T00:00:00Z
 ```json
 {
-"type":"rsvps",
 "start":"2013-01-01T00:00:00Z",
 "finish":"2015-01-01T00:00:00Z",
 "period":604800,
 "data":
-    [
-        {"start":"2014-02-11T00:00:00Z","count":1},
-        {"start":"2014-02-18T00:00:00Z","count":4},
-        {"start":"2014-02-25T00:00:00Z","count":5}
-    ]
+	{"rsvps":[
+		{"start":"2014-02-11T00:00:00Z","count":1},
+		{"start":"2014-02-18T00:00:00Z","count":4},
+		{"start":"2014-02-25T00:00:00Z","count":5}
+	         ]
+	}
 }
 ```
