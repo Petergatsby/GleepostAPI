@@ -52,7 +52,12 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		otherID := gp.UserId(_other)
 		stat := lib.Stat(vars["type"])
-		stats, err := api.AggregateStatForUser(stat, otherID, start, finish, bucket)
+		var stats *lib.View
+		if stat == lib.OVERVIEW {
+			stats, err = api.AggregateAllStatsForUser(otherID, start, finish, bucket)
+		} else {
+			stats, err = api.AggregateStatForUser(stat, otherID, start, finish, bucket)
+		}
 		if err != nil {
 			jsonResponse(w, err, 500)
 			return

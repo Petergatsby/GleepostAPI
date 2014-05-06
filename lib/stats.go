@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -53,6 +54,7 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	case stat == POSTS:
 		statF = api.db.PostsForUserBetween
 	case stat == VIEWS:
+		return
 	case stat == RSVPS:
 		statF = api.db.RsvpsForUserBetween
 	case stat == INTERACTIONS:
@@ -80,7 +82,16 @@ func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time,
 	return
 }
 
-func aggregateAllStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
+func (api *API) AggregateAllStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
+	var views []*View
+	for _, stat := range Stats {
+		s, err := api.AggregateStatForUser(stat, user, start, finish, bucket)
+		if err == nil {
+			views = append(views, s)
+		}
+
+	}
+	stats, err = combine(views...)
 	return
 }
 
@@ -207,4 +218,18 @@ func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 			start = start.Add(interval)
 		}
 	}
+}
+
+func combine(views ...*View) (combined *View, err error) {
+	combined = views[0]
+
+	for _, v := range views[1:] {
+		if v.Start != combined.Start || v.Finish != combined.Finish || v.BucketLength != combined.BucketLength {
+			return combined, errors.New("Can't combine incompatible views...")
+		}
+		for k, v := range v.Series {
+			combined.Series[k] = v
+		}
+	}
+	return combined, nil
 }
