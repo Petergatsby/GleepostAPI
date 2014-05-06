@@ -401,15 +401,21 @@ func (api *API) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, 
 //Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
-func (api *API) Attend(event gp.PostId, user gp.UserId) (err error) {
-	//TODO: Can this user actually attend this event? Does this event even exist?
-	return api.db.Attend(event, user)
-}
-
-//UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
-func (api *API) UnAttend(event gp.PostId, user gp.UserId) (err error) {
-	//TODO: Merge into Attend
-	return api.db.UnAttend(event, user)
+func (api *API) UserAttend(event gp.PostId, user gp.UserId, attending bool) (err error) {
+	post, err := api.GetPost(event)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(user, post.Network)
+	switch {
+	case err != nil || !in:
+		err = &ENOTALLOWED
+		return
+	case attending:
+		return api.db.Attend(event, user)
+	default:
+		return api.db.UnAttend(event, user)
+	}
 }
 
 //UserAttends returns all the event IDs that a user is attending.
@@ -433,4 +439,33 @@ func (api *API) UserDeletePost(user gp.UserId, post gp.PostId) (err error) {
 
 func (api *API) deletePost(post gp.PostId) (err error) {
 	return api.db.DeletePost(post)
+}
+
+func (api *API) UserGetEventAttendees(user gp.UserId, postId gp.PostId) (attendees []gp.User, err error) {
+	post, err := api.GetPost(postId)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(user, post.Network)
+	switch {
+	case err != nil || !in:
+		return attendees, &ENOTALLOWED
+	default:
+		return api.db.EventAttendees(postId)
+	}
+}
+
+func (api *API) UserGetEventPopularity(user gp.UserId, postId gp.PostId) (popularity int, attendees int, err error) {
+	post, err := api.GetPost(postId)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(user, post.Network)
+	switch {
+	case err != nil || !in:
+		err = &ENOTALLOWED
+		return
+	default:
+		return api.db.GetEventPopularity(postId)
+	}
 }

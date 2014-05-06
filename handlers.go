@@ -1401,7 +1401,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
-		err := api.Attend(post, userId)
+		err := api.UserAttend(post, userId, true)
 		if err != nil {
 			jsonResponse(w, err, 400)
 		}
@@ -1409,7 +1409,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "DELETE":
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
-		err := api.UnAttend(post, userId)
+		err := api.UserAttend(post, userId, false)
 		if err != nil {
 			jsonResponse(w, err, 400)
 		}
@@ -1901,5 +1901,68 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
+	}
+}
+
+func getAttendees(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_postId, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postId := gp.PostId(_postId)
+		attendees, err := api.UserGetEventAttendees(userId, postId)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
+		}
+		popularity, attendee_count, err := api.UserGetEventPopularity(userId, postId)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
+		}
+		resp := struct {
+			Popularity    int       `json:"popularity"`
+			AttendeeCount int       `json:"attendee_count"`
+			Attendees     []gp.User `json:"attendees"`
+		}{Popularity: popularity, AttendeeCount: attendee_count, Attendees: attendees}
+		jsonResponse(w, resp, 200)
+
+	}
+}
+
+func putAttendees(w http.ResponseWriter, r *http.Request) {
+	userId, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		attending, _ := strconv.ParseBool(r.FormValue("attending"))
+		vars := mux.Vars(r)
+		_postId, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postId := gp.PostId(_postId)
+		err = api.UserAttend(postId, userId, attending)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonResponse(w, gp.APIerror{err.Error()}, 500)
+			}
+			return
+		}
+		getAttendees(w, r)
 	}
 }

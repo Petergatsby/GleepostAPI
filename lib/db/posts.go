@@ -446,3 +446,28 @@ func (db *DB) DeletePost(post gp.PostId) (err error) {
 	_, err = s.Exec(post)
 	return
 }
+
+func (db *DB) EventAttendees(post gp.PostId) (attendees []gp.User, err error) {
+	q := "SELECT id, name, firstname, lastname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	if err != nil {
+		return
+	}
+	var first, avatar sql.NullString
+	for rows.Next() {
+		var user gp.User
+		err = rows.Scan(&user.Id, &user.Name, &first, &avatar)
+		if first.Valid {
+			user.Name = first.String
+		}
+		if avatar.Valid {
+			user.Avatar = avatar.String
+		}
+		attendees = append(attendees, user)
+	}
+	return
+}
