@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -40,58 +39,51 @@ const OVERVIEW Stat = "overview"
 
 var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 
-func (api *API) AggregateStatForUser(stat Stat, user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
-	stats = newView()
-	stats.Start = start.Round(time.Duration(time.Second))
-	stats.Finish = finish.Round(time.Duration(time.Second))
-	stats.BucketLength = bucket / time.Second
-	var statF func(gp.UserId, time.Time, time.Time) (int, error)
-	switch {
-	case stat == LIKES:
-		statF = api.db.LikesForUserBetween
-	case stat == COMMENTS:
-		statF = api.db.CommentsForUserBetween
-	case stat == POSTS:
-		statF = api.db.PostsForUserBetween
-	case stat == VIEWS:
-		return
-	case stat == RSVPS:
-		statF = api.db.RsvpsForUserBetween
-	case stat == INTERACTIONS:
-		statF = api.InteractionsForUserBetween
-	default:
-		err = gp.APIerror{Reason: "I don't know what that stat is."}
-		return
+func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
+	view = newView()
+	view.Start = start.Round(time.Duration(time.Second))
+	view.Finish = finish.Round(time.Duration(time.Second))
+	view.BucketLength = bucket / time.Second
+	if len(stats) == 0 {
+		stats = Stats
 	}
-	var data []Bucket
-	for start.Before(finish) {
-		end := start.Add(bucket)
-		var count int
-		count, err = statF(user, start, end)
-		if err == nil {
-			if count > 0 {
-				result := Bucket{Start: start.Round(time.Duration(time.Second)), Count: count}
-				data = append(data, result)
+	for _, stat := range stats {
+
+		var statF func(gp.UserId, time.Time, time.Time) (int, error)
+		switch {
+		case stat == LIKES:
+			statF = api.db.LikesForUserBetween
+		case stat == COMMENTS:
+			statF = api.db.CommentsForUserBetween
+		case stat == POSTS:
+			statF = api.db.PostsForUserBetween
+		case stat == VIEWS:
+			return
+		case stat == RSVPS:
+			statF = api.db.RsvpsForUserBetween
+		case stat == INTERACTIONS:
+			statF = api.InteractionsForUserBetween
+		default:
+			err = gp.APIerror{Reason: "I don't know what that stat is."}
+			return
+		}
+		var data []Bucket
+		for start.Before(finish) {
+			end := start.Add(bucket)
+			var count int
+			count, err = statF(user, start, end)
+			if err == nil {
+				if count > 0 {
+					result := Bucket{Start: start.Round(time.Duration(time.Second)), Count: count}
+					data = append(data, result)
+				}
+			} else {
+				log.Println(err)
 			}
-		} else {
-			log.Println(err)
+			start = end
 		}
-		start = end
+		view.Series[stat] = data
 	}
-	stats.Series[stat] = data
-	return
-}
-
-func (api *API) AggregateAllStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
-	var views []*View
-	for _, stat := range Stats {
-		s, err := api.AggregateStatForUser(stat, user, start, finish, bucket)
-		if err == nil {
-			views = append(views, s)
-		}
-
-	}
-	stats, err = combine(views...)
 	return
 }
 
@@ -218,18 +210,4 @@ func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 			start = start.Add(interval)
 		}
 	}
-}
-
-func combine(views ...*View) (combined *View, err error) {
-	combined = views[0]
-
-	for _, v := range views[1:] {
-		if v.Start != combined.Start || v.Finish != combined.Finish || v.BucketLength != combined.BucketLength {
-			return combined, errors.New("Can't combine incompatible views...")
-		}
-		for k, v := range v.Series {
-			combined.Series[k] = v
-		}
-	}
-	return combined, nil
 }

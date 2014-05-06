@@ -54,9 +54,9 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		stat := lib.Stat(vars["type"])
 		var stats *lib.View
 		if stat == lib.OVERVIEW {
-			stats, err = api.AggregateAllStatsForUser(otherID, start, finish, bucket)
+			stats, err = api.AggregateStatsForUser(otherID, start, finish, bucket)
 		} else {
-			stats, err = api.AggregateStatForUser(stat, otherID, start, finish, bucket)
+			stats, err = api.AggregateStatsForUser(otherID, start, finish, bucket, stat)
 		}
 		if err != nil {
 			jsonResponse(w, err, 500)
