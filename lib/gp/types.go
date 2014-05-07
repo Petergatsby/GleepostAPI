@@ -229,7 +229,7 @@ type Notification struct {
 	Type string         `json:"type"`
 	Time time.Time      `json:"time"`
 	By   User           `json:"user"`
-	Seen bool           `json:"-"`
+	Seen bool           `json:"seen"`
 }
 
 type PostNotification struct {
