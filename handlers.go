@@ -25,6 +25,11 @@ var ETOOFEW = gp.APIerror{"Must have at least one valid recipient."}
 var ETOOMANY = gp.APIerror{"Cannot send a message to more than 10 recipients"}
 var EBADINPUT = gp.APIerror{"Missing parameter: first / last"}
 
+type Status struct {
+	Status string `json:"status"`
+	Email  string `json:"email"`
+}
+
 func init() {
 	configInit()
 	config = GetConfig()
@@ -157,9 +162,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		case err != nil:
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		case !verified:
-			resp := struct {
-				Status string `json:"status"`
-			}{"unverified"}
+			resp := Status{"unverified", email}
 			jsonResponse(w, resp, 403)
 		default:
 			token, err := api.CreateAndStoreToken(id)
@@ -1174,9 +1177,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				log.Println("Should be unverified response")
-				jsonResponse(w, struct {
-					Status string `json:"status"`
-				}{"unverified"}, 201)
+				jsonResponse(w, Status{"unverified", email}, 201)
 				return
 			} else {
 				//User has signed up already with a username+pass
@@ -1214,14 +1215,10 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			_, err := api.UserWithEmail(storedEmail)
 			if err != nil {
 				log.Println("Should be unverified response")
-				jsonResponse(w, struct {
-					Status string `json:"status"`
-				}{"unverified"}, 201)
+				jsonResponse(w, Status{"unverified", storedEmail}, 201)
 				return
 			} else {
-				status := struct {
-					Status string `json:"status"`
-				}{"registered"}
+				status := Status{"registered", storedEmail}
 				jsonResponse(w, status, 200)
 				return
 			}

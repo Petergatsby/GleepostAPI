@@ -177,7 +177,7 @@ example responses:
 ```
 (HTTP 403)
 ```json
-{"status":"unverified"}
+{"status":"unverified", "email":"someone@stanford.edu"}
 ```
 
 ##POST /fblogin
@@ -208,13 +208,13 @@ If the email you have provided doesn't have an existing gleepost account registe
 
 (HTTP 201)
 ```json
-{"status":"unverified"}
+{"status":"unverified", "email":"someone@stanford.edu"}
 ```
 
 If the email you have provided is already registered, the response will be:
 (HTTP 200)
 ```json
-{"status":"registered"}
+{"status":"registered", "email":"someone@stanford.edu"}
 ```
 
 Whereupon the user should be prompted to provide their password to associate their account using [/profile/facebook](#post-profilefacebook).
