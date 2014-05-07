@@ -448,7 +448,7 @@ func (db *DB) DeletePost(post gp.PostId) (err error) {
 }
 
 func (db *DB) EventAttendees(post gp.PostId) (attendees []gp.User, err error) {
-	q := "SELECT id, name, firstname, lastname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
+	q := "SELECT id, name, firstname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
