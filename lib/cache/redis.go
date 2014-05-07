@@ -34,7 +34,7 @@ func getDialer(conf gp.RedisConfig) func() (redis.Conn, error) {
 	return f
 }
 
-var ErrEmptyCache = gp.APIerror{"Not in redis!"}
+var ErrEmptyCache = gp.APIerror{Reason: "Not in redis!"}
 
 /********************************************************************
 		Messages
@@ -43,7 +43,7 @@ var ErrEmptyCache = gp.APIerror{"Not in redis!"}
 func (c *Cache) Publish(msg gp.Message, participants []gp.User, convId gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	JSONmsg, _ := json.Marshal(gp.RedisMessage{msg, convId})
+	JSONmsg, _ := json.Marshal(gp.RedisMessage{Message: msg, Conversation: convId})
 	for _, user := range participants {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
 	}

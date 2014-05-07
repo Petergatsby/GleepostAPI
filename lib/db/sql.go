@@ -200,7 +200,7 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserId, e
 	s := db.stmt["createUser"]
 	res, err := s.Exec(user, hash, email)
 	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-		return 0, gp.APIerror{"Username or email address already taken"}
+		return 0, gp.APIerror{Reason: "Username or email address already taken"}
 	} else if err != nil {
 		return 0, err
 	} else {
@@ -969,10 +969,10 @@ func (db *DB) GetUserNotifications(id gp.UserId, includeSeen bool) (notification
 			case notification.Type == "liked":
 				fallthrough
 			case notification.Type == "commented":
-				np := gp.PostNotification{notification, gp.PostId(location.Int64)}
+				np := gp.PostNotification{Notification: notification, Post: gp.PostId(location.Int64)}
 				notifications = append(notifications, np)
 			case notification.Type == "added_group":
-				ng := gp.GroupNotification{notification, gp.NetworkId(location.Int64)}
+				ng := gp.GroupNotification{Notification: notification, Group: gp.NetworkId(location.Int64)}
 				notifications = append(notifications, ng)
 			default:
 				notifications = append(notifications, notification)
@@ -1034,10 +1034,10 @@ func (db *DB) CreateNotification(ntype string, by gp.UserId, recipient gp.UserId
 	case ntype == "liked":
 		fallthrough
 	case ntype == "commented":
-		np := gp.PostNotification{n, gp.PostId(location)}
+		np := gp.PostNotification{Notification: n, Post: gp.PostId(location)}
 		return np, nil
 	case ntype == "added_group":
-		ng := gp.GroupNotification{n, gp.NetworkId(location)}
+		ng := gp.GroupNotification{Notification: n, Group: gp.NetworkId(location)}
 		return ng, nil
 	default:
 		return n, nil

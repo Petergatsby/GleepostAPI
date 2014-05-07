@@ -126,10 +126,9 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (i
 	if exists {
 		id, err = api.FBSetVerified(email, t.FBUser)
 		return
-	} else {
-		if err == nil {
-			err = api.FBissueVerification(t.FBUser)
-		}
+	}
+	if err == nil {
+		err = api.FBissueVerification(t.FBUser)
 	}
 	return
 }
@@ -141,19 +140,18 @@ func (api *API) FBSetVerified(email string, fbuser uint64) (id gp.UserId, err er
 		log.Println("There isn't a user with this facebook email")
 		id, err = api.CreateUserFromFB(fbuser, email)
 		return
-	} else {
-		err = api.UserSetFB(id, fbuser)
+	}
+	err = api.UserSetFB(id, fbuser)
+	if err == nil {
+		err = api.db.Verify(id)
 		if err == nil {
-			err = api.db.Verify(id)
-			if err == nil {
-				log.Println("Verifying worked. Now setting networks from invites...")
-				err = api.AssignNetworksFromInvites(id, email)
-				if err != nil {
-					log.Println("Something went wrong while setting networks from invites:", err)
-					return
-				}
-				err = api.AcceptAllInvites(email)
+			log.Println("Verifying worked. Now setting networks from invites...")
+			err = api.AssignNetworksFromInvites(id, email)
+			if err != nil {
+				log.Println("Something went wrong while setting networks from invites:", err)
+				return
 			}
+			err = api.AcceptAllInvites(email)
 		}
 	}
 	return

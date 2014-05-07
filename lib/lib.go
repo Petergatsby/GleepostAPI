@@ -39,8 +39,8 @@ func New(conf gp.Config) (api *API) {
 	return
 }
 
-var ETOOWEAK = gp.APIerror{"Password too weak!"}
-var EBADREC = gp.APIerror{"Bad password recovery token."}
+var ETOOWEAK = gp.APIerror{Reason: "Password too weak!"}
+var EBADREC = gp.APIerror{Reason: "Bad password recovery token."}
 
 const INVITE_CAMPAIGN_IOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
 const INVITE_CAMPAIGN_ANDROID = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
@@ -68,10 +68,10 @@ func RandomString() (random string, err error) {
 func createToken(userId gp.UserId) gp.Token {
 	random, err := RandomString()
 	if err != nil {
-		return (gp.Token{userId, "foo", time.Now().UTC()})
+		return (gp.Token{UserId: userId, Token: "foo", Expiry: time.Now().UTC()})
 	} else {
 		expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
-		token := gp.Token{userId, random, expiry}
+		token := gp.Token{UserId: userId, Token: random, Expiry: expiry}
 		return (token)
 	}
 }
