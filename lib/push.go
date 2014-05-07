@@ -34,7 +34,7 @@ func (api *API) notify(user gp.UserId) {
 }
 
 func (api *API) notificationPush(user gp.UserId) {
-	notifications, err := api.GetUserNotifications(user)
+	notifications, err := api.GetUserNotifications(user, false)
 	if err != nil {
 		log.Println(err)
 		return
@@ -173,7 +173,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 	}
 	payload.Alert = d
 	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(user)
+	notifications, err := api.GetUserNotifications(user, false)
 	if err != nil {
 		log.Println(err)
 		return
@@ -241,7 +241,7 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	d.LocArgs = []string{with.Name}
 	payload.Alert = d
 	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(user)
+	notifications, err := api.GetUserNotifications(user, false)
 	if err != nil {
 		log.Println(err)
 		return
@@ -295,7 +295,7 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 	payload := apns.NewPayload()
 	payload.Alert = message
 	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(device.User)
+	notifications, err := api.GetUserNotifications(device.User, false)
 	if err != nil {
 		log.Println(err)
 		return
@@ -315,7 +315,7 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 }
 
 func (api *API) badgeCount(user gp.UserId) (count int, err error) {
-	notifications, err := api.GetUserNotifications(user)
+	notifications, err := api.GetUserNotifications(user, false)
 	if err != nil {
 		log.Println(err)
 		return

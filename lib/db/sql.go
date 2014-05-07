@@ -933,8 +933,12 @@ func (db *DB) UploadExists(user gp.UserId, url string) (exists bool, err error) 
 		Notification
 ********************************************************************/
 
-func (db *DB) GetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
-	notificationSelect := "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? AND seen = 0"
+//GetUserNotifications returns all the notifications for a given user, optionally including the seen ones.
+func (db *DB) GetUserNotifications(id gp.UserId, includeSeen bool) (notifications []interface{}, err error) {
+	notificationSelect := "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ?"
+	if !includeSeen {
+		notificationSelect += " AND seen = 0"
+	}
 	s, err := db.prepare(notificationSelect)
 	if err != nil {
 		return

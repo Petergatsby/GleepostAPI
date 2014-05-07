@@ -1293,7 +1293,9 @@ Otherwise, you will get 204 No Content.
 ##GET /notifications
 required parameters: id, token
 
-Returns all unread notifications for user [id]
+optional parameters: include_seen = (true|false)
+
+Returns all unread notifications for user [id], and includes the read ones if include_seen is true.
 
 example responses:
 HTTP 200

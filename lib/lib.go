@@ -369,8 +369,9 @@ func (api *API) userIsOnline(id gp.UserId) bool {
 	return api.cache.UserIsOnline(id)
 }
 
-func (api *API) GetUserNotifications(id gp.UserId) (notifications []interface{}, err error) {
-	return api.db.GetUserNotifications(id)
+//GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
+func (api *API) GetUserNotifications(id gp.UserId, includeSeen bool) (notifications []interface{}, err error) {
+	return api.db.GetUserNotifications(id, includeSeen)
 }
 
 func (api *API) MarkNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err error) {

@@ -1080,12 +1080,13 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			_upTo = 0
 		}
+		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
 		notificationId := gp.NotificationId(_upTo)
 		err = api.MarkNotificationsSeen(userId, notificationId)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
-			notifications, err := api.GetUserNotifications(userId)
+			notifications, err := api.GetUserNotifications(userId, includeSeen)
 			if err != nil {
 				jsonResponse(w, gp.APIerror{err.Error()}, 500)
 			} else {
@@ -1097,7 +1098,8 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "GET":
-		notifications, err := api.GetUserNotifications(userId)
+		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
+		notifications, err := api.GetUserNotifications(userId, includeSeen)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{err.Error()}, 500)
 		} else {
