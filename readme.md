@@ -63,7 +63,9 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
 
-/posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
+/posts/[post-id]/attendees [[GET]](#get-postspost-idattendees) [[PUT]](#put-postspost-idattendees)
+
+(DEPRECATED) /posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
 
 /networks [[POST]](#post-networks)
 
@@ -455,13 +457,50 @@ example responses:
 {"post":5, "liked":false}
 ```
 
+##GET /posts/[post-id]/attendees
+Returns the popularity, attendee-count and full list of attendees of an event.
+
+```json
+{
+    "popularity": 0,
+    "attendee_count": 0,
+    "attendees": [{
+			"id":9,
+			"name":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}]
+}
+```
+
+##PUT /posts/[post-id]/attendees
+Required parameters:
+attending = (true|false)
+
+`attending=true` marks the current user as attending this event.
+`attending=false` cancels the attendance.
+
+It returns the updated popularity, attendee_count and attendees list.
+```json
+{
+    "popularity": 0,
+    "attendee_count": 0,
+    "attendees": [{
+			"id":9,
+			"name":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}]
+}
+```
+
 ##POST /posts/[post-id]/attending
+##Deprecated. Please use [/attendees](#put-postspost-idattendees) instead.
 required parameters: id, token
 
 Issuing a POST to this URI should mark you as attending this event, and acts idempotently.
 It will return a 204 if successful.
 
 ##DELETE /posts/[post-id]/attending
+##Deprecated. Please use [/attendees](#put-postspost-idattendees) instead.
 required parameters: id, token
 
 Issuing a DELETE to this URI should mark you as not attending this event.
