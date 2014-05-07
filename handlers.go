@@ -1936,7 +1936,7 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 		resp := struct {
 			Popularity    int       `json:"popularity"`
 			AttendeeCount int       `json:"attendee_count"`
-			Attendees     []gp.User `json:"attendees"`
+			Attendees     []gp.User `json:"attendees,omitempty"`
 		}{Popularity: popularity, AttendeeCount: attendee_count, Attendees: attendees}
 		jsonResponse(w, resp, 200)
 
