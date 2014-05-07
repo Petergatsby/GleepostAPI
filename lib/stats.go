@@ -39,6 +39,10 @@ const OVERVIEW Stat = "overview"
 
 var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
 
+func blankF(user gp.UserId, start time.Time, finish time.Time) (count int, err error) {
+	return 0, nil
+}
+
 func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
@@ -48,6 +52,7 @@ func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish ti
 		stats = Stats
 	}
 	for _, stat := range stats {
+		start = view.Start
 
 		var statF func(gp.UserId, time.Time, time.Time) (int, error)
 		switch {
@@ -58,7 +63,7 @@ func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish ti
 		case stat == POSTS:
 			statF = api.db.PostsForUserBetween
 		case stat == VIEWS:
-			return
+			statF = blankF
 		case stat == RSVPS:
 			statF = api.db.RsvpsForUserBetween
 		case stat == INTERACTIONS:
