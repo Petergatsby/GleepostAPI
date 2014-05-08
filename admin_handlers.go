@@ -9,6 +9,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
+
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := authenticate(r)
 	switch {
@@ -65,7 +67,7 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 		if api.IsAdmin(userId) {
 			_netId, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
 			if err != nil {
-				jsonResponse(w, gp.APIerror{"Missing parameter: network"}, 400)
+				jsonResponse(w, MissingParameterNetwork, 400)
 				return
 			}
 			netId := gp.NetworkId(_netId)
