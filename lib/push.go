@@ -58,14 +58,14 @@ func (api *API) notificationPush(user gp.UserId) {
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
-				count += 1
+				count++
 			}
 		case device.Type == "android":
 			err = api.androidNotification(device.Id, badge, user)
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
-				count += 1
+				count++
 			}
 		}
 	}
@@ -87,14 +87,14 @@ func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.
 			if err != nil {
 				log.Println("Error sending new conversation push notification:", err)
 			} else {
-				count += 1
+				count++
 			}
 		case device.Type == "android":
 			err = api.androidNewConversationNotification(device.Id, conv, other, initiator)
 			if err != nil {
 				log.Println("Error sending new conversation push notification:", err)
 			} else {
-				count += 1
+				count++
 			}
 		}
 	}
@@ -463,7 +463,7 @@ func (api *API) Push(notification interface{}, recipient gp.UserId) {
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
-				count += 1
+				count++
 			}
 		case device.Type == "android":
 			pn, err := api.toAndroid(notification, recipient, device.Id, api.Config.NewPushEnabled)
@@ -474,7 +474,7 @@ func (api *API) Push(notification interface{}, recipient gp.UserId) {
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
-				count += 1
+				count++
 			}
 		}
 	}
