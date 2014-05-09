@@ -1213,6 +1213,8 @@ HTTP 200
 required parameters: email, pass, fbtoken
 where fbtoken is a facebook session token
 
+Alternatively, you may provide the normal gleepost [authentication](#authenticated-endpoints) and fbtoken.
+
 This associates the facebook account logged in with fbtoken with the user signed in with email, pass.
 
 On success, will return 204.

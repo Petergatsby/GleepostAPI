@@ -1901,12 +1901,31 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	_fbToken := r.FormValue("fbtoken")
 	//Is this a valid facebook token for this app?
 	fbToken, errtoken := api.FBValidateToken(_fbToken)
+	userID, autherr := authenticate(r)
 	switch {
 	case r.Method != "POST":
 		log.Println(r)
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
-		jsonResponse(w, gp.APIerror{Reason: "Bad email/password"}, 400)
+		if autherr != nil {
+			jsonResponse(w, gp.APIerror{Reason: "Bad email/password"}, 400)
+		} else {
+			//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
+			token, err := api.FacebookLogin(_fbToken)
+			if err != nil {
+				//This isn't associated with a gleepost account
+				err = api.UserSetFB(userID, fbToken.FBUser)
+				w.WriteHeader(204)
+			} else {
+				if token.UserId == userID {
+					//The facebook account is already associated with this gleepost account
+					w.WriteHeader(204)
+				} else {
+					jsonResponse(w, gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}, 400)
+				}
+
+			}
+		}
 	case errtoken != nil:
 		jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
 	default:
