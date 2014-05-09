@@ -391,7 +391,7 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 	return
 }
 
-func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device string, newPush bool) (pn *gcm.Message, err error) {
+func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device string, newPush bool) (msg *gcm.Message, err error) {
 	unknown := false
 	var CollapseKey string
 	var data map[string]interface{}
@@ -438,7 +438,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device 
 		data = map[string]interface{}{"count": count, "for": recipient}
 		CollapseKey = "New Notification"
 	}
-	msg := gcm.NewMessage(data, device)
+	msg = gcm.NewMessage(data, device)
 	msg.CollapseKey = CollapseKey
 	msg.TimeToLive = 0
 	log.Println(msg)
