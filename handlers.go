@@ -67,7 +67,9 @@ func authenticate(r *http.Request) (userId gp.UserId, err error) {
 		credentialsFromHeader := strings.Split(r.Header.Get("X-GP-Auth"), "-")
 		id, _ = strconv.ParseUint(credentialsFromHeader[0], 10, 64)
 		userId = gp.UserId(id)
-		token = credentialsFromHeader[1]
+		if len(credentialsFromHeader) == 2 {
+			token = credentialsFromHeader[1]
+		}
 	}
 	success := api.ValidateToken(userId, token)
 	if success {
