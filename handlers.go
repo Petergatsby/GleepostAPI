@@ -1226,9 +1226,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				//otherwise, we must ask for a password
-				status := struct {
-					Status string `json:"status"`
-				}{"registered"}
+				status := Status{"registered", email}
 				jsonResponse(w, status, 200)
 				return
 			}
