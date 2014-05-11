@@ -37,9 +37,13 @@ const RSVPS Stat = "rsvps"
 const INTERACTIONS Stat = "interactions"
 const OVERVIEW Stat = "overview"
 
-var Stats = []Stat{LIKES, COMMENTS, POSTS, VIEWS, RSVPS}
+var Stats = []Stat{LIKES, COMMENTS, VIEWS, RSVPS, POSTS}
 
 func blankF(user gp.UserId, start time.Time, finish time.Time) (count int, err error) {
+	return 0, nil
+}
+
+func blankPF(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
 	return 0, nil
 }
 
@@ -92,7 +96,50 @@ func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish ti
 	return
 }
 
-func aggregateStatForPost(stat Stat, post gp.PostId, start time.Time, finish time.Time, bucket time.Duration) (stats *View, err error) {
+func (api *API) AggregateStatsForPost(post gp.PostId, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
+	view = newView()
+	view.Start = start.Round(time.Duration(time.Second))
+	view.Finish = finish.Round(time.Duration(time.Second))
+	view.BucketLength = bucket / time.Second
+	if len(stats) == 0 {
+		stats = Stats
+	}
+	for _, stat := range stats {
+		start = view.Start
+
+		var statF func(gp.PostId, time.Time, time.Time) (int, error)
+		switch {
+		case stat == LIKES:
+			statF = api.db.LikesForPostBetween
+		case stat == COMMENTS:
+			statF = api.db.CommentsForPostBetween
+		case stat == VIEWS:
+			statF = blankPF
+		case stat == RSVPS:
+			statF = api.db.RsvpsForPostBetween
+		case stat == INTERACTIONS:
+			statF = api.InteractionsForPostBetween
+		default:
+			err = gp.APIerror{Reason: "I don't know what that stat is."}
+			return
+		}
+		var data []Bucket
+		for start.Before(finish) {
+			end := start.Add(bucket)
+			var count int
+			count, err = statF(post, start, end)
+			if err == nil {
+				if count > 0 {
+					result := Bucket{Start: start.Round(time.Duration(time.Second)), Count: count}
+					data = append(data, result)
+				}
+			} else {
+				log.Println(err)
+			}
+			start = end
+		}
+		view.Series[stat] = data
+	}
 	return
 }
 
@@ -111,6 +158,24 @@ func (api *API) InteractionsForUserBetween(user gp.UserId, start time.Time, fini
 	}
 	count = likes + comments + rsvps
 	return
+}
+
+func (api *API) InteractionsForPostBetween(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
+	likes, err := api.db.LikesForPostBetween(post, start, finish)
+	if err != nil {
+		return
+	}
+	comments, err := api.db.CommentsForPostBetween(post, start, finish)
+	if err != nil {
+		return
+	}
+	rsvps, err := api.db.RsvpsForPostBetween(post, start, finish)
+	if err != nil {
+		return
+	}
+	count = likes + comments + rsvps
+	return
+
 }
 
 func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserId, err error) {

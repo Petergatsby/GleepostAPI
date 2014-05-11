@@ -123,3 +123,32 @@ func (db *DB) UsersActivityInCohort(activity string, start time.Time, finish tim
 	}
 	return
 }
+
+func (db *DB) LikesForPostBetween(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
+	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
+	return
+
+}
+
+func (db *DB) CommentsForPostBetween(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
+	s, err := db.prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
+	return
+
+}
+
+func (db *DB) RsvpsForPostBetween(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
+	s, err := db.prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id = ? AND `time` > ? AND `time` < ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
+	return
+}
