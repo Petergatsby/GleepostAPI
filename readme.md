@@ -135,7 +135,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /stats/users/[user-id]/posts/[stat-type]/[period]/[start]/[finish] [[GET]](#get-statsusersuser-idpostsstat-typeperiodstartfinish)
 
-/stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish] [[GET]](#get-postspost-idstat-typeperiodstartfinish)
+/stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish] [[GET]](#get-statspostspost-idstat-typeperiodstartfinish)
 
 ##POST /register
 required parameters: first, last, pass, email
