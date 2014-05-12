@@ -12,14 +12,14 @@ import (
 var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
-		if api.IsAdmin(userId) {
+		if api.IsAdmin(userID) {
 			count, err := api.MassNotification(r.FormValue("message"), r.FormValue("version"), r.FormValue("type"))
 			if err != nil {
 				log.Println(err)
@@ -34,14 +34,14 @@ func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func mm(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
-		if api.IsAdmin(userId) {
+		if api.IsAdmin(userID) {
 			err := api.Massmail()
 			if err != nil {
 				jsonResponse(w, err, 500)
@@ -57,22 +57,22 @@ func mm(w http.ResponseWriter, r *http.Request) {
 }
 
 func postUsers(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
-		if api.IsAdmin(userId) {
-			_netId, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
+		if api.IsAdmin(userID) {
+			_netID, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
 			if err != nil {
 				jsonResponse(w, MissingParameterNetwork, 400)
 				return
 			}
-			netId := gp.NetworkId(_netId)
+			netID := gp.NetworkId(_netID)
 			verified, _ := strconv.ParseBool(r.FormValue("verified"))
-			err = api.CreateUserSpecial(r.FormValue("first"), r.FormValue("last"), r.FormValue("email"), r.FormValue("pass"), verified, netId)
+			err = api.CreateUserSpecial(r.FormValue("first"), r.FormValue("last"), r.FormValue("email"), r.FormValue("pass"), verified, netID)
 			if err != nil {
 				jsonResponse(w, err, 500)
 				return

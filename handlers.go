@@ -59,21 +59,21 @@ func init() {
 }
 
 //Note to self: validateToken should probably return an error at some point
-func authenticate(r *http.Request) (userId gp.UserId, err error) {
+func authenticate(r *http.Request) (userID gp.UserId, err error) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userId = gp.UserId(id)
+	userID = gp.UserId(id)
 	token := r.FormValue("token")
 	if len(token) == 0 {
 		credentialsFromHeader := strings.Split(r.Header.Get("X-GP-Auth"), "-")
 		id, _ = strconv.ParseUint(credentialsFromHeader[0], 10, 64)
-		userId = gp.UserId(id)
+		userID = gp.UserId(id)
 		if len(credentialsFromHeader) == 2 {
 			token = credentialsFromHeader[1]
 		}
 	}
-	success := api.ValidateToken(userId, token)
+	success := api.ValidateToken(userID, token)
 	if success {
-		return userId, nil
+		return userID, nil
 	} else {
 		return 0, &EBADTOKEN
 	}
@@ -204,7 +204,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPosts(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -234,7 +234,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			}
 			network = gp.NetworkId(_network)
 		default: //We haven't been given a network, which means this handler is being called by /posts and we just want the users' default network
-			networks, err := api.GetUserNetworks(userId)
+			networks, err := api.GetUserNetworks(userID)
 			if err != nil {
 				jsonErr(w, err, 500)
 				return
@@ -256,7 +256,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			index = start
 		}
 		var posts []gp.PostSmall
-		posts, err = api.UserGetNetworkPosts(userId, network, mode, index, api.Config.PostPageSize, filter)
+		posts, err = api.UserGetNetworkPosts(userID, network, mode, index, api.Config.PostPageSize, filter)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -289,7 +289,7 @@ func ignored(key string) bool {
 }
 
 func postPosts(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -304,7 +304,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				attribs[k] = strings.Join(v, "")
 			}
 		}
-		var postId gp.PostId
+		var postID gp.PostId
 		var ts []string
 		if len(tags) > 1 {
 			ts = strings.Split(tags, ",")
@@ -312,7 +312,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		n, ok := vars["network"]
 		var network gp.NetworkId
 		if !ok {
-			networks, err := api.GetUserNetworks(userId)
+			networks, err := api.GetUserNetworks(userID)
 			if err != nil {
 				jsonErr(w, err, 500)
 				return
@@ -328,9 +328,9 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		switch {
 		case len(url) > 5:
-			postId, err = api.AddPostWithImage(userId, network, text, attribs, url, ts...)
+			postID, err = api.AddPostWithImage(userID, network, text, attribs, url, ts...)
 		default:
-			postId, err = api.AddPost(userId, network, text, attribs, ts...)
+			postID, err = api.AddPost(userID, network, text, attribs, ts...)
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -340,18 +340,18 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			}
 		} else {
-			jsonResponse(w, &gp.Created{Id: uint64(postId)}, 201)
+			jsonResponse(w, &gp.Created{Id: uint64(postID)}, 201)
 		}
 	}
 }
 
 func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		conversations, err := api.GetLiveConversations(userId)
+		conversations, err := api.GetLiveConversations(userID)
 		switch {
 		case err != nil:
 			jsonErr(w, err, 500)
@@ -367,7 +367,7 @@ func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getConversations(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
@@ -376,7 +376,7 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		start = 0
 	}
-	conversations, err := api.GetConversations(userId, start, api.Config.ConversationPageSize)
+	conversations, err := api.GetConversations(userID, start, api.Config.ConversationPageSize)
 	if err != nil {
 		jsonErr(w, err, 500)
 	} else {
@@ -393,7 +393,7 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func postConversations(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
@@ -414,7 +414,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 		case partners < 2:
 			partners = 2
 		}
-		conversation, err = api.CreateRandomConversation(userId, int(partners), true)
+		conversation, err = api.CreateRandomConversation(userID, int(partners), true)
 	} else {
 		idstring := r.FormValue("participants")
 		ids := strings.Split(idstring, ",")
@@ -433,7 +433,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, &ETOOMANY, 400)
 			return
 		default:
-			conversation, err = api.CreateConversationWith(userId, user_ids, false)
+			conversation, err = api.CreateConversationWith(userID, user_ids, false)
 		}
 
 	}
@@ -452,19 +452,19 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
 	vars := mux.Vars(r)
-	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convId := gp.ConversationId(_convId)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	convID := gp.ConversationId(_convID)
 	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
 		start = 0
 	}
-	conv, err := api.UserGetConversation(userId, convId, start, api.Config.MessagePageSize)
+	conv, err := api.UserGetConversation(userID, convID, start, api.Config.MessagePageSize)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
@@ -478,21 +478,21 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
 	vars := mux.Vars(r)
-	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convId := gp.ConversationId(_convId)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	convID := gp.ConversationId(_convID)
 	expires, err := strconv.ParseBool(r.FormValue("expiry"))
 	if err != nil {
 		jsonErr(w, err, 400)
 		return
 	}
 	if expires == false {
-		err = api.UserDeleteExpiry(userId, convId)
+		err = api.UserDeleteExpiry(userID, convID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -502,7 +502,7 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 			return
 		}
-		conversation, err := api.GetConversation(userId, convId)
+		conversation, err := api.GetConversation(userID, convID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -520,15 +520,15 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
 	vars := mux.Vars(r)
-	_convId, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convId := gp.ConversationId(_convId)
-	err = api.UserEndConversation(userId, convId)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	convID := gp.ConversationId(_convID)
+	err = api.UserEndConversation(userID, convID)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
@@ -542,14 +542,14 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
 	vars := mux.Vars(r)
-	_convId, _ := strconv.ParseUint(vars["id"], 10, 64)
-	convId := gp.ConversationId(_convId)
+	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
+	convID := gp.ConversationId(_convID)
 	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
 		start = 0
@@ -565,11 +565,11 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	var messages []gp.Message
 	switch {
 	case after > 0:
-		messages, err = api.UserGetMessages(userId, convId, after, "after", api.Config.MessagePageSize)
+		messages, err = api.UserGetMessages(userID, convID, after, "after", api.Config.MessagePageSize)
 	case before > 0:
-		messages, err = api.UserGetMessages(userId, convId, before, "before", api.Config.MessagePageSize)
+		messages, err = api.UserGetMessages(userID, convID, before, "before", api.Config.MessagePageSize)
 	default:
-		messages, err = api.UserGetMessages(userId, convId, start, "start", api.Config.MessagePageSize)
+		messages, err = api.UserGetMessages(userID, convID, start, "start", api.Config.MessagePageSize)
 	}
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
@@ -592,16 +592,16 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func postMessages(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
 	vars := mux.Vars(r)
-	_convId, _ := strconv.ParseUint(vars["id"], 10, 64)
-	convId := gp.ConversationId(_convId)
+	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
+	convID := gp.ConversationId(_convID)
 	text := r.FormValue("text")
-	messageId, err := api.AddMessage(convId, userId, text)
+	messageID, err := api.AddMessage(convID, userID, text)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
@@ -610,32 +610,32 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonErr(w, err, 500)
 	} else {
-		jsonResponse(w, &gp.Created{Id: uint64(messageId)}, 201)
+		jsonResponse(w, &gp.Created{Id: uint64(messageID)}, 201)
 	}
 }
 
 func putMessages(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
 	vars := mux.Vars(r)
-	_convId, _ := strconv.ParseUint(vars["id"], 10, 64)
+	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
 	if err != nil {
 		jsonErr(w, err, 400)
 	}
-	convId := gp.ConversationId(_convId)
+	convID := gp.ConversationId(_convID)
 	_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 	if err != nil {
 		_upTo = 0
 	}
 	upTo := gp.MessageId(_upTo)
-	err = api.MarkConversationSeen(userId, convId, upTo)
+	err = api.MarkConversationSeen(userID, convID, upTo)
 	if err != nil {
 		jsonErr(w, err, 500)
 	} else {
-		conversation, err := api.GetConversation(userId, convId)
+		conversation, err := api.GetConversation(userID, convID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -652,12 +652,12 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_id)
+		postID := gp.PostId(_id)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
 		}
-		comments, err := api.GetComments(postId, start, api.Config.CommentPageSize)
+		comments, err := api.GetComments(postID, start, api.Config.CommentPageSize)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
@@ -675,16 +675,16 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func postComments(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_id)
+		postID := gp.PostId(_id)
 		text := r.FormValue("text")
-		commentId, err := api.CreateComment(postId, userId, text)
+		commentId, err := api.CreateComment(postID, userID, text)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
@@ -694,15 +694,15 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPost(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_id)
-		post, err := api.UserGetPost(userId, postId)
+		postID := gp.PostId(_id)
+		post, err := api.UserGetPost(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -718,22 +718,22 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func postImages(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_id)
+		postID := gp.PostId(_id)
 		url := r.FormValue("url")
-		exists, err := api.UserUploadExists(userId, url)
+		exists, err := api.UserUploadExists(userID, url)
 		if exists && err == nil {
-			err := api.AddPostImage(postId, url)
+			err := api.AddPostImage(postID, url)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
-				images := api.GetPostImages(postId)
+				images := api.GetPostImages(postID)
 				jsonResponse(w, images, 201)
 			}
 		} else {
@@ -743,20 +743,20 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 }
 
 func postLikes(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_id)
+		postID := gp.PostId(_id)
 		liked, err := strconv.ParseBool(r.FormValue("liked"))
 		switch {
 		case err != nil:
 			jsonErr(w, err, 400)
 		case liked:
-			err = api.AddLike(userId, postId)
+			err = api.AddLike(userID, postID)
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {
@@ -765,14 +765,14 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 					jsonErr(w, err, 500)
 				}
 			} else {
-				jsonResponse(w, gp.Liked{Post: postId, Liked: true}, 200)
+				jsonResponse(w, gp.Liked{Post: postID, Liked: true}, 200)
 			}
 		default:
-			err = api.DelLike(userId, postId)
+			err = api.DelLike(userID, postID)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
-				jsonResponse(w, gp.Liked{Post: postId, Liked: false}, 200)
+				jsonResponse(w, gp.Liked{Post: postID, Liked: false}, 200)
 			}
 		}
 	}
@@ -801,7 +801,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserPosts(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -837,7 +837,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			after = 0
 		}
-		posts, err := api.GetUserPosts(profileId, userId, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
+		posts, err := api.GetUserPosts(profileId, userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -856,7 +856,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 
 func longPollHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -864,19 +864,19 @@ func longPollHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		//awaitOneMessage will block until a message arrives over redis
-		message := api.AwaitOneMessage(userId)
+		message := api.AwaitOneMessage(userID)
 		w.Write(message)
 	}
 }
 
 func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		contacts, err := api.GetContacts(userId)
+		contacts, err := api.GetContacts(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
@@ -889,7 +889,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		_otherId, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
 		otherId := gp.UserId(_otherId)
-		contact, err := api.AddContact(userId, otherId)
+		contact, err := api.AddContact(userID, otherId)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
@@ -901,7 +901,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func contactHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	vars := mux.Vars(r)
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	contactId := gp.UserId(_id)
@@ -914,7 +914,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 			accepted = false
 		}
 		if accepted {
-			contact, err := api.AcceptContact(userId, contactId)
+			contact, err := api.AcceptContact(userID, contactId)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
@@ -932,7 +932,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func postDevice(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -940,7 +940,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 		deviceType := r.FormValue("type")
 		deviceId := r.FormValue("device_id")
 		log.Println("Device:", deviceType, deviceId)
-		device, err := api.AddDevice(userId, deviceType, deviceId)
+		device, err := api.AddDevice(userID, deviceType, deviceId)
 		log.Println(device, err)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -957,14 +957,14 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	log.Println("Delete device hit")
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
 		log.Println("Bad auth")
 	case r.Method == "DELETE":
 		vars := mux.Vars(r)
-		err := api.DeleteDevice(userId, vars["id"])
+		err := api.DeleteDevice(userID, vars["id"])
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -979,7 +979,7 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -989,7 +989,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 		} else {
 			defer file.Close()
-			url, err := api.StoreFile(userId, file, header)
+			url, err := api.StoreFile(userID, file, header)
 			if err != nil {
 				jsonErr(w, err, 400)
 			} else {
@@ -1002,13 +1002,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func profileImageHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		url := r.FormValue("url")
-		exists, err := api.UserUploadExists(userId, url)
+		exists, err := api.UserUploadExists(userID, url)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
@@ -1016,11 +1016,11 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 		if !exists {
 			jsonResponse(w, NoSuchUpload, 400)
 		} else {
-			err = api.SetProfileImage(userId, url)
+			err = api.SetProfileImage(userID, url)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
-				user, err := api.GetProfile(userId)
+				user, err := api.GetProfile(userID)
 				if err != nil {
 					jsonErr(w, err, 500)
 				}
@@ -1033,7 +1033,7 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func busyHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1042,14 +1042,14 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, gp.APIerror{Reason: "Bad input"}, 400)
 		}
-		err = api.SetBusyStatus(userId, status)
+		err = api.SetBusyStatus(userID, status)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
 			jsonResponse(w, &gp.BusyStatus{Busy: status}, 200)
 		}
 	case r.Method == "GET":
-		status, err := api.BusyStatus(userId)
+		status, err := api.BusyStatus(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -1061,14 +1061,14 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func changePassHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		oldPass := r.FormValue("old")
 		newPass := r.FormValue("new")
-		err := api.ChangePass(userId, oldPass, newPass)
+		err := api.ChangePass(userID, oldPass, newPass)
 		if err != nil {
 			//Assuming that most errors will be bad input for now
 			jsonErr(w, err, 400)
@@ -1081,14 +1081,14 @@ func changePassHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func changeNameHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		firstName := r.FormValue("first")
 		lastName := r.FormValue("last")
-		err := api.SetUserName(userId, firstName, lastName)
+		err := api.SetUserName(userID, firstName, lastName)
 		if err != nil {
 			jsonResponse(w, &EBADINPUT, 400)
 			return
@@ -1100,7 +1100,7 @@ func changeNameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func notificationHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1111,11 +1111,11 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
 		notificationId := gp.NotificationId(_upTo)
-		err = api.MarkNotificationsSeen(userId, notificationId)
+		err = api.MarkNotificationsSeen(userID, notificationId)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
-			notifications, err := api.GetUserNotifications(userId, includeSeen)
+			notifications, err := api.GetUserNotifications(userID, includeSeen)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
@@ -1128,7 +1128,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "GET":
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
-		notifications, err := api.GetUserNotifications(userId, includeSeen)
+		notifications, err := api.GetUserNotifications(userID, includeSeen)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
@@ -1275,14 +1275,14 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 func jsonServer(ws *websocket.Conn) {
 	r := ws.Request()
 	defer ws.Close()
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	if err != nil {
 		ws.Write([]byte(err.Error()))
 		return
 	}
 	//Change this. 12/12/13
-	chans := lib.ConversationChannelKeys([]gp.User{gp.User{Id: userId}})
-	chans = append(chans, lib.NotificationChannelKey(userId))
+	chans := lib.ConversationChannelKeys([]gp.User{gp.User{Id: userID}})
+	chans = append(chans, lib.NotificationChannelKey(userID))
 	events := api.EventSubscribe(chans)
 	for {
 		message, ok := <-events.Messages
@@ -1327,9 +1327,9 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		userId := gp.UserId(id)
+		userID := gp.UserId(id)
 		pass := r.FormValue("pass")
-		err = api.ResetPass(userId, vars["token"], pass)
+		err = api.ResetPass(userID, vars["token"], pass)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
@@ -1345,7 +1345,7 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "POST":
 		email := r.FormValue("email")
-		userId, err := api.UserWithEmail(email)
+		userID, err := api.UserWithEmail(email)
 		if err != nil {
 			fbid, err := api.FBUserWithEmail(email)
 			if err == nil {
@@ -1354,12 +1354,12 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			api.FBissueVerification(fbid)
 		} else {
-			user, err := api.GetUser(userId)
+			user, err := api.GetUser(userID)
 			if err != nil {
 				jsonErr(w, err, 500)
 				return
 			}
-			api.GenerateAndSendVerification(userId, user.Name, email)
+			api.GenerateAndSendVerification(userID, user.Name, email)
 		}
 		w.WriteHeader(204)
 	default:
@@ -1380,13 +1380,13 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func liveHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		after := r.FormValue("after")
-		posts, err := api.UserGetLive(userId, after, api.Config.PostPageSize)
+		posts, err := api.UserGetLive(userID, after, api.Config.PostPageSize)
 		if err != nil {
 			code := 500
 			if err == lib.EBADTIME {
@@ -1410,7 +1410,7 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func attendHandler(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	vars := mux.Vars(r)
 	//We can safely ignore this error since vars["id"] matches a numeric regex
 	//... maybe. What if it's bigger than max(uint64) ??
@@ -1424,7 +1424,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
-		err := api.UserAttend(post, userId, true)
+		err := api.UserAttend(post, userID, true)
 		if err != nil {
 			jsonResponse(w, err, 400)
 		}
@@ -1432,7 +1432,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "DELETE":
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
-		err := api.UserAttend(post, userId, false)
+		err := api.UserAttend(post, userID, false)
 		if err != nil {
 			jsonResponse(w, err, 400)
 		}
@@ -1443,12 +1443,12 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func userAttending(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		events, err := api.UserAttends(userId)
+		events, err := api.UserAttends(userID)
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}
@@ -1468,12 +1468,12 @@ func userAttending(w http.ResponseWriter, r *http.Request) {
 
 func readAll(w http.ResponseWriter, r *http.Request) {
 	log.Println("Someone hit readAll")
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
-		err = api.MarkAllConversationsSeen(userId)
+		err = api.MarkAllConversationsSeen(userID)
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}
@@ -1484,11 +1484,11 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func unread(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case userId != 2:
+	case userID != 2:
 		jsonResponse(w, gp.APIerror{Reason: "Not allowed"}, 403)
 	case r.Method == "GET":
 		vars := mux.Vars(r)
@@ -1505,11 +1505,11 @@ func unread(w http.ResponseWriter, r *http.Request) {
 }
 
 func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case userId != 2:
+	case userID != 2:
 		jsonResponse(w, gp.APIerror{Reason: "Not allowed"}, 403)
 	case r.Method == "GET":
 		vars := mux.Vars(r)
@@ -1526,12 +1526,12 @@ func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		networks, err := api.GetUserGroups(userId)
+		networks, err := api.GetUserGroups(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -1551,19 +1551,19 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNetwork(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		vars := mux.Vars(r)
-		_netId, err := strconv.ParseUint(vars["network"], 10, 16)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 16)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
 		}
-		netId := gp.NetworkId(_netId)
-		network, err := api.UserGetNetwork(userId, netId)
+		netID := gp.NetworkId(_netID)
+		network, err := api.UserGetNetwork(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1580,7 +1580,7 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworks(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1592,7 +1592,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		case len(name) == 0:
 			jsonResponse(w, missingParamErr("name"), 400)
 		default:
-			network, err := api.CreateGroup(userId, name, url, desc)
+			network, err := api.CreateGroup(userID, name, url, desc)
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {
@@ -1610,18 +1610,18 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		vars := mux.Vars(r)
-		_netId, err := strconv.ParseUint(vars["network"], 10, 64)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
 		}
-		netId := gp.NetworkId(_netId)
+		netID := gp.NetworkId(_netID)
 		_users := strings.Split(r.FormValue("users"), ",")
 		_fbUsers := strings.Split(r.FormValue("fbusers"), ",")
 		var fbusers []uint64
@@ -1640,11 +1640,11 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		switch {
 		case len(users) > 0:
-			_, err = api.UserAddUsersToGroup(userId, users, netId)
+			_, err = api.UserAddUsersToGroup(userID, users, netID)
 		case len(fbusers) > 0:
-			_, err = api.UserAddFBUsersToGroup(userId, fbusers, netId)
+			_, err = api.UserAddFBUsersToGroup(userID, fbusers, netID)
 		case len(r.FormValue("email")) > 5:
-			err = api.UserInviteEmail(userId, netId, r.FormValue("email"))
+			err = api.UserInviteEmail(userID, netID, r.FormValue("email"))
 		default:
 			jsonResponse(w, gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}, 400)
 			return
@@ -1665,19 +1665,19 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		vars := mux.Vars(r)
-		_netId, err := strconv.ParseUint(vars["network"], 10, 64)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
 		}
-		netId := gp.NetworkId(_netId)
-		users, err := api.UserGetGroupMembers(userId, netId)
+		netID := gp.NetworkId(_netID)
+		users, err := api.UserGetGroupMembers(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1701,19 +1701,19 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "DELETE":
 		vars := mux.Vars(r)
-		_netId, err := strconv.ParseUint(vars["network"], 10, 64)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
 		}
-		netId := gp.NetworkId(_netId)
-		err = api.UserLeaveGroup(userId, netId)
+		netID := gp.NetworkId(_netID)
+		err = api.UserLeaveGroup(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1729,7 +1729,7 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchUsers(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1739,12 +1739,12 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 		for i := range query {
 			query[i] = strings.TrimSpace(query[i])
 		}
-		networks, err := api.GetUserNetworks(userId)
+		networks, err := api.GetUserNetworks(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
 		}
-		users, err := api.UserSearchUsersInNetwork(userId, query[0], strings.Join(query[1:], " "), networks[0].Id)
+		users, err := api.UserSearchUsersInNetwork(userID, query[0], strings.Join(query[1:], " "), networks[0].Id)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			switch {
@@ -1775,7 +1775,7 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 
 //getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
 func getGroupPosts(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1806,7 +1806,7 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 			mode = gp.OSTART
 			index = start
 		}
-		posts, err := api.UserGetGroupsPosts(userId, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
+		posts, err := api.UserGetGroupsPosts(userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1831,20 +1831,20 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func putNetwork(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
 		vars := mux.Vars(r)
-		_netId, err := strconv.ParseUint(vars["network"], 10, 64)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
 		}
-		netId := gp.NetworkId(_netId)
+		netID := gp.NetworkId(_netID)
 		url := r.FormValue("url")
-		err = api.UserSetNetworkImage(userId, netId, url)
+		err = api.UserSetNetworkImage(userID, netID, url)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1854,7 +1854,7 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		group, err := api.UserGetNetwork(userId, netId)
+		group, err := api.UserGetNetwork(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1871,15 +1871,15 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func deletePost(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_id)
-		err := api.UserDeletePost(userId, postId)
+		postID := gp.PostId(_id)
+		err := api.UserDeletePost(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1947,15 +1947,15 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAttendees(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
-		_postId, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_postId)
-		attendees, err := api.UserGetEventAttendees(userId, postId)
+		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postID := gp.PostId(_postID)
+		attendees, err := api.UserGetEventAttendees(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1965,7 +1965,7 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		popularity, attendee_count, err := api.UserGetEventPopularity(userId, postId)
+		popularity, attendee_count, err := api.UserGetEventPopularity(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1986,16 +1986,16 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 }
 
 func putAttendees(w http.ResponseWriter, r *http.Request) {
-	userId, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		attending, _ := strconv.ParseBool(r.FormValue("attending"))
 		vars := mux.Vars(r)
-		_postId, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postId := gp.PostId(_postId)
-		err = api.UserAttend(postId, userId, attending)
+		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postID := gp.PostId(_postID)
+		err = api.UserAttend(postID, userID, attending)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {

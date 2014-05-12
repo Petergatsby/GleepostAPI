@@ -11,10 +11,10 @@ import (
 		Networks
 ********************************************************************/
 
-func (c *Cache) GetUserNetworks(userId gp.UserId) (networks []gp.Group, err error) {
+func (c *Cache) GetUserNetworks(userID gp.UserId) (networks []gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("users:%d:networks", userId)
+	key := fmt.Sprintf("users:%d:networks", userID)
 	values, err := redis.Values(conn.Do("SMEMBERS", key))
 	if err != nil {
 		return networks, err
@@ -40,10 +40,10 @@ func (c *Cache) GetUserNetworks(userId gp.UserId) (networks []gp.Group, err erro
 }
 
 //SetUserNetworks
-func (c *Cache) SetUserNetworks(userId gp.UserId, networks ...gp.Group) {
+func (c *Cache) SetUserNetworks(userID gp.UserId, networks ...gp.Group) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	baseKey := fmt.Sprintf("users:%d:networks", userId)
+	baseKey := fmt.Sprintf("users:%d:networks", userID)
 	for _, n := range networks {
 		conn.Send("SADD", baseKey+":id")
 		go c.SetNetwork(n)
@@ -64,10 +64,10 @@ func (c *Cache) SetNetwork(network gp.Group) {
 }
 
 //GetNetwork returns the network with id netId from the cache, or err if it isn't there.
-func (c *Cache) GetNetwork(netId gp.NetworkId) (network gp.Group, err error) {
+func (c *Cache) GetNetwork(netID gp.NetworkId) (network gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("networks:%d", netId)
+	key := fmt.Sprintf("networks:%d", netID)
 	reply, err := redis.Values(conn.Do("MGET", key+":id", key+":name", key+":image", key+":desc", key+":creator"))
 	if err != nil {
 		return

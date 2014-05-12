@@ -358,29 +358,29 @@ func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 	return
 }
 
-func (db *DB) FBSetGPUser(fbid uint64, userId gp.UserId) (err error) {
+func (db *DB) FBSetGPUser(fbid uint64, userID gp.UserId) (err error) {
 	fbSetGPUser := "REPLACE INTO facebook (user_id, fb_id) VALUES (?, ?)"
 	stmt, err := db.prepare(fbSetGPUser)
 	if err != nil {
 		return
 	}
-	res, err := stmt.Exec(userId, fbid)
+	res, err := stmt.Exec(userID, fbid)
 	log.Println(res.RowsAffected())
 	return
 }
 
-func (db *DB) AddPasswordRecovery(userId gp.UserId, token string) (err error) {
-	_, err = db.stmt["addPasswordRecovery"].Exec(token, userId)
+func (db *DB) AddPasswordRecovery(userID gp.UserId, token string) (err error) {
+	_, err = db.stmt["addPasswordRecovery"].Exec(token, userID)
 	return
 }
 
-func (db *DB) CheckPasswordRecovery(userId gp.UserId, token string) (exists bool, err error) {
-	err = db.stmt["checkPasswordRecovery"].QueryRow(userId, token).Scan(&exists)
+func (db *DB) CheckPasswordRecovery(userID gp.UserId, token string) (exists bool, err error) {
+	err = db.stmt["checkPasswordRecovery"].QueryRow(userID, token).Scan(&exists)
 	return
 }
 
-func (db *DB) DeletePasswordRecovery(userId gp.UserId, token string) (err error) {
-	_, err = db.stmt["deletePasswordRecovery"].Exec(userId, token)
+func (db *DB) DeletePasswordRecovery(userID gp.UserId, token string) (err error) {
+	_, err = db.stmt["deletePasswordRecovery"].Exec(userID, token)
 	return
 }
 
@@ -490,13 +490,13 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 	return
 }
 
-func (db *DB) LiveCount(userId gp.UserId) (count int, err error) {
+func (db *DB) LiveCount(userID gp.UserId) (count int, err error) {
 	q := "SELECT COUNT( conversation_participants.conversation_id ) FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id WHERE participant_id = ? AND conversation_expirations.ended = 0 AND conversation_expirations.expiry > NOW( )"
 	stmt, err := db.prepare(q)
 	if err != nil {
 		return
 	}
-	err = stmt.QueryRow(userId).Scan(&count)
+	err = stmt.QueryRow(userID).Scan(&count)
 	return
 }
 
@@ -510,14 +510,14 @@ func (db *DB) UpdateConversation(id gp.ConversationId) (err error) {
 	return err
 }
 
-func (db *DB) GetConversations(userId gp.UserId, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
+func (db *DB) GetConversations(userID gp.UserId, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
 	var s *sql.Stmt
 	if all {
 		s = db.stmt["conversationsAll"]
 	} else {
 		s = db.stmt["conversationSelect"]
 	}
-	rows, err := s.Query(userId, start, count)
+	rows, err := s.Query(userID, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
 	if err != nil {
 		return conversations, err
@@ -712,10 +712,10 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 		Message
 ********************************************************************/
 
-func (db *DB) AddMessage(convId gp.ConversationId, userId gp.UserId, text string) (id gp.MessageId, err error) {
-	log.Printf("Adding message to db: %d, %d %s", convId, userId, text)
+func (db *DB) AddMessage(convId gp.ConversationId, userID gp.UserId, text string) (id gp.MessageId, err error) {
+	log.Printf("Adding message to db: %d, %d %s", convId, userID, text)
 	s := db.stmt["messageInsert"]
-	res, err := s.Exec(convId, userId, text)
+	res, err := s.Exec(convId, userID, text)
 	if err != nil {
 		return 0, err
 	}

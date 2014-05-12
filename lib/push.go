@@ -103,9 +103,9 @@ func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.
 
 }
 
-func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
+func (api *API) messagePush(message gp.Message, convID gp.ConversationId) {
 	log.Println("Trying to send a push notification")
-	recipients := api.GetParticipants(convId)
+	recipients := api.GetParticipants(convID)
 	for _, user := range recipients {
 		if user.Id != message.By.Id {
 			log.Println("Trying to send a push notification to", user.Name)
@@ -118,14 +118,14 @@ func (api *API) messagePush(message gp.Message, convId gp.ConversationId) {
 				log.Println("Sending push notification to device: ", device)
 				switch {
 				case device.Type == "ios":
-					err = api.iosPushMessage(device.Id, message, convId, user.Id)
+					err = api.iosPushMessage(device.Id, message, convID, user.Id)
 					if err != nil {
 						log.Println(err)
 					} else {
 						count++
 					}
 				case device.Type == "android":
-					err = api.androidPushMessage(device.Id, message, convId, user.Id)
+					err = api.androidPushMessage(device.Id, message, convID, user.Id)
 					if err != nil {
 						log.Println(err)
 					} else {
@@ -161,7 +161,7 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 	return
 }
 
-func (api *API) iosPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
+func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationId, user gp.UserId) (err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "MSG"
@@ -187,13 +187,13 @@ func (api *API) iosPushMessage(device string, message gp.Message, convId gp.Conv
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
-	pn.Set("conv", convId)
+	pn.Set("conv", convID)
 	err = api.push.IOSPush(pn)
 	return
 }
 
-func (api *API) androidPushMessage(device string, message gp.Message, convId gp.ConversationId, user gp.UserId) (err error) {
-	data := map[string]interface{}{"type": "MSG", "sender": message.By.Name, "sender-id": message.By.Id, "conv": convId, "for": user}
+func (api *API) androidPushMessage(device string, message gp.Message, convID gp.ConversationId, user gp.UserId) (err error) {
+	data := map[string]interface{}{"type": "MSG", "sender": message.By.Name, "sender-id": message.By.Id, "conv": convID, "for": user}
 	if len(message.Text) > 3200 {
 		data["text"] = message.Text[:3200] + "..."
 	} else {
@@ -274,7 +274,7 @@ func (api *API) MassNotification(message string, version string, platform string
 		return
 	}
 	if len(devices) == 0 {
-		return 0, errors.New("No devices on that platform.")
+		return 0, errors.New("no devices on that platform")
 	}
 	for _, device := range devices {
 		switch {

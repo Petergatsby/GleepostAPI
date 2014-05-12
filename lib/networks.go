@@ -39,8 +39,8 @@ func (api *API) UserInNetwork(id gp.UserId, network gp.NetworkId) (in bool, err 
 }
 
 //isGroup returns false if this network isn't a group (ie isn't user-created) and error if the group doesn't exist.
-func (api *API) isGroup(netId gp.NetworkId) (group bool, err error) {
-	return api.db.IsGroup(netId)
+func (api *API) isGroup(netID gp.NetworkId) (group bool, err error) {
+	return api.db.IsGroup(netID)
 }
 
 //UserAddUsersToGroup adds all addees to the group until the first error.
@@ -80,8 +80,8 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserId, group gp.NetworkId) (
 	}
 }
 
-func (api *API) setNetwork(userId gp.UserId, netId gp.NetworkId) (err error) {
-	return api.db.SetNetwork(userId, netId)
+func (api *API) setNetwork(userID gp.UserId, netID gp.NetworkId) (err error) {
+	return api.db.SetNetwork(userID, netID)
 }
 
 func (api *API) assignNetworks(user gp.UserId, email string) (networks int, err error) {
@@ -105,36 +105,36 @@ func (api *API) assignNetworks(user gp.UserId, email string) (networks int, err 
 	return
 }
 
-func (api *API) UserGetNetwork(userId gp.UserId, netId gp.NetworkId) (network gp.Group, err error) {
-	in, err := api.UserInNetwork(userId, netId)
+func (api *API) UserGetNetwork(userID gp.UserId, netID gp.NetworkId) (network gp.Group, err error) {
+	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
 	case !in:
 		return network, &ENOTALLOWED
 	default:
-		return api.getNetwork(netId)
+		return api.getNetwork(netID)
 	}
 }
 
-func (api *API) getNetwork(netId gp.NetworkId) (network gp.Group, err error) {
-	return api.db.GetNetwork(netId)
+func (api *API) getNetwork(netID gp.NetworkId) (network gp.Group, err error) {
+	return api.db.GetNetwork(netID)
 }
 
 //CreateGroup creates a group and adds the creator as a member.
-func (api *API) CreateGroup(userId gp.UserId, name, url, desc string) (network gp.Group, err error) {
-	exists, eupload := api.UserUploadExists(userId, url)
+func (api *API) CreateGroup(userID gp.UserId, name, url, desc string) (network gp.Group, err error) {
+	exists, eupload := api.UserUploadExists(userID, url)
 	switch {
 	case eupload != nil:
 		return network, eupload
 	case !exists && len(url) > 0:
 		return network, &ENOTALLOWED
 	default:
-		network, err = api.db.CreateNetwork(name, url, desc, userId, true)
+		network, err = api.db.CreateNetwork(name, url, desc, userID, true)
 		if err != nil {
 			return
 		}
-		err = api.db.SetNetwork(userId, network.Id)
+		err = api.db.SetNetwork(userID, network.Id)
 		return
 	}
 }
@@ -160,9 +160,9 @@ func (api *API) HaveSharedNetwork(a gp.UserId, b gp.UserId) (shared bool, err er
 }
 
 //UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
-func (api *API) UserGetGroupMembers(userId gp.UserId, netId gp.NetworkId) (users []gp.User, err error) {
-	in, errin := api.UserInNetwork(userId, netId)
-	group, errgroup := api.isGroup(netId)
+func (api *API) UserGetGroupMembers(userID gp.UserId, netID gp.NetworkId) (users []gp.User, err error) {
+	in, errin := api.UserInNetwork(userID, netID)
+	group, errgroup := api.isGroup(netID)
 	switch {
 	case errin != nil:
 		return users, errin
@@ -171,26 +171,26 @@ func (api *API) UserGetGroupMembers(userId gp.UserId, netId gp.NetworkId) (users
 	case !in || !group:
 		return users, &ENOTALLOWED
 	default:
-		return api.db.GetNetworkUsers(netId)
+		return api.db.GetNetworkUsers(netID)
 	}
 }
 
 //UserLeaveGroup removes userId from group netId. If attempted on an official group it will give ENOTALLOWED (you can't leave your university...) but otherwise should always succeed.
-func (api *API) UserLeaveGroup(userId gp.UserId, netId gp.NetworkId) (err error) {
-	group, err := api.isGroup(netId)
+func (api *API) UserLeaveGroup(userID gp.UserId, netID gp.NetworkId) (err error) {
+	group, err := api.isGroup(netID)
 	switch {
 	case err != nil:
 		return
 	case !group:
 		return &ENOTALLOWED
 	default:
-		return api.db.LeaveNetwork(userId, netId)
+		return api.db.LeaveNetwork(userID, netID)
 	}
 }
 
-func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email string) (err error) {
-	in, neterr := api.UserInNetwork(userId, netId)
-	isgroup, grouperr := api.isGroup(netId)
+func (api *API) UserInviteEmail(userID gp.UserId, netID gp.NetworkId, email string) (err error) {
+	in, neterr := api.UserInNetwork(userID, netID)
+	isgroup, grouperr := api.isGroup(netID)
 	switch {
 	case neterr != nil:
 		return neterr
@@ -202,21 +202,21 @@ func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email stri
 		//If the user already exists, add them straight into the group and don't email them.
 		invitee, e := api.UserWithEmail(email)
 		if e == nil {
-			return api.setNetwork(invitee, netId)
+			return api.setNetwork(invitee, netID)
 		}
 		token, e := RandomString()
 		if e != nil {
 			return e
 		}
-		err = api.db.CreateInvite(userId, netId, email, token)
+		err = api.db.CreateInvite(userID, netID, email, token)
 		if err == nil {
 			var from gp.User
-			from, err = api.GetUser(userId)
+			from, err = api.GetUser(userID)
 			if err != nil {
 				return
 			}
 			var group gp.Group
-			group, err = api.getNetwork(netId)
+			group, err = api.getNetwork(netID)
 			if err != nil {
 				return
 			}
@@ -226,15 +226,15 @@ func (api *API) UserInviteEmail(userId gp.UserId, netId gp.NetworkId, email stri
 	}
 }
 
-func (api *API) UserIsNetworkOwner(userId gp.UserId, netId gp.NetworkId) (owner bool, err error) {
-	creator, err := api.db.NetworkCreator(netId)
-	return (creator == userId), err
+func (api *API) UserIsNetworkOwner(userID gp.UserId, netID gp.NetworkId) (owner bool, err error) {
+	creator, err := api.db.NetworkCreator(netID)
+	return (creator == userID), err
 }
 
 //UserSetNetworkImage sets the network's cover image to url, if userId is allowed to do so (currently, if they are the group's creator) or returns ENOTALLOWED otherwise.
-func (api *API) UserSetNetworkImage(userId gp.UserId, netId gp.NetworkId, url string) (err error) {
-	exists, eupload := api.UserUploadExists(userId, url)
-	owner, eowner := api.UserIsNetworkOwner(userId, netId)
+func (api *API) UserSetNetworkImage(userID gp.UserId, netID gp.NetworkId, url string) (err error) {
+	exists, eupload := api.UserUploadExists(userID, url)
+	owner, eowner := api.UserIsNetworkOwner(userID, netID)
 	switch {
 	case eowner != nil:
 		return eowner
@@ -246,7 +246,7 @@ func (api *API) UserSetNetworkImage(userId gp.UserId, netId gp.NetworkId, url st
 		//TODO: Return a different error
 		return &ENOTALLOWED
 	default:
-		return api.db.SetNetworkImage(netId, url)
+		return api.db.SetNetworkImage(netID, url)
 	}
 }
 

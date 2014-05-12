@@ -40,10 +40,10 @@ var ErrEmptyCache = gp.APIerror{Reason: "Not in redis!"}
 		Messages
 ********************************************************************/
 
-func (c *Cache) Publish(msg gp.Message, participants []gp.User, convId gp.ConversationId) {
+func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	JSONmsg, _ := json.Marshal(gp.RedisMessage{Message: msg, Conversation: convId})
+	JSONmsg, _ := json.Marshal(gp.RedisMessage{Message: msg, Conversation: convID})
 	for _, user := range participants {
 		conn.Send("PUBLISH", user.Id, JSONmsg)
 	}
@@ -62,12 +62,12 @@ func (c *Cache) PublishEvent(etype string, where string, data interface{}, chann
 }
 
 //TODO: Delete Printf
-func (c *Cache) Subscribe(messages chan []byte, userId gp.UserId) {
+func (c *Cache) Subscribe(messages chan []byte, userID gp.UserId) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
-	psc.Subscribe(userId)
-	defer psc.Unsubscribe(userId)
+	psc.Subscribe(userID)
+	defer psc.Unsubscribe(userID)
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:
@@ -80,16 +80,16 @@ func (c *Cache) Subscribe(messages chan []byte, userId gp.UserId) {
 	}
 }
 
-func (c *Cache) MessageChan(userId gp.UserId) (messages chan []byte) {
+func (c *Cache) MessageChan(userID gp.UserId) (messages chan []byte) {
 	messages = make(chan []byte)
-	go c.Subscribe(messages, userId)
+	go c.Subscribe(messages, userID)
 	return
 }
 
-func (c *Cache) AddMessage(msg gp.Message, convId gp.ConversationId) {
+func (c *Cache) AddMessage(msg gp.Message, convID gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messages", convId)
+	key := fmt.Sprintf("conversations:%d:messages", convID)
 	conn.Send("ZADD", key, msg.Time.Unix(), msg.Id)
 	conn.Flush()
 	go c.SetMessage(msg)
@@ -107,10 +107,10 @@ func (c *Cache) GetLastMessage(id gp.ConversationId) (message gp.Message, err er
 	return message, err
 }
 
-func (c *Cache) AddMessages(convId gp.ConversationId, messages []gp.Message) {
+func (c *Cache) AddMessages(convID gp.ConversationId, messages []gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messages", convId)
+	key := fmt.Sprintf("conversations:%d:messages", convID)
 	for _, message := range messages {
 		conn.Send("ZADD", key, message.Time.Unix(), message.Id)
 		go c.SetMessage(message)
@@ -128,25 +128,25 @@ func (c *Cache) SetMessage(message gp.Message) {
 }
 
 //MarkConversationSeen registers the id:upTo (last read) pair in redis for convId
-func (c *Cache) MarkConversationSeen(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) {
+func (c *Cache) MarkConversationSeen(id gp.UserId, convID gp.ConversationId, upTo gp.MessageId) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:read", convId)
+	key := fmt.Sprintf("conversations:%d:read", convID)
 	conn.Send("HSET", key, id, upTo)
 	conn.Flush()
 	return
 }
 
-func (c *Cache) SetReadStatus(convId gp.ConversationId, read []gp.Read) {
+func (c *Cache) SetReadStatus(convID gp.ConversationId, read []gp.Read) {
 	for _, r := range read {
-		c.MarkConversationSeen(r.UserId, convId, r.LastRead)
+		c.MarkConversationSeen(r.UserId, convID, r.LastRead)
 	}
 }
 
-func (c *Cache) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (c *Cache) GetMessages(convID gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messages", convId)
+	key := fmt.Sprintf("conversations:%d:messages", convID)
 	var start, finish int
 	switch {
 	case sel == "before":
@@ -235,14 +235,14 @@ func (c *Cache) GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
 }
 
 //AddMessagesFromDB takes up to config.MessageCache messages from the database and adds them to the cache.
-func (c *Cache) AddMessagesFromDB(convId gp.ConversationId, db db.DB) (err error) {
-	messages, err := db.GetMessages(convId, 0, "start", c.config.MessageCache)
+func (c *Cache) AddMessagesFromDB(convID gp.ConversationId, db db.DB) (err error) {
+	messages, err := db.GetMessages(convID, 0, "start", c.config.MessageCache)
 	if err != nil {
 		return
 	}
 	conn := c.pool.Get()
 	defer conn.Close()
-	zkey := fmt.Sprintf("conversations:%d:messages", convId)
+	zkey := fmt.Sprintf("conversations:%d:messages", convID)
 	for _, message := range messages {
 		key := fmt.Sprintf("messages:%d", message.Id)
 		conn.Send("ZADD", zkey, message.Time.Unix(), message.Id)
@@ -289,10 +289,10 @@ func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkId) (err error)
 	return nil
 }
 
-func (c *Cache) GetPost(postId gp.PostId) (post gp.PostCore, err error) {
+func (c *Cache) GetPost(postID gp.PostId) (post gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	baseKey := fmt.Sprintf("posts:%d", postId)
+	baseKey := fmt.Sprintf("posts:%d", postID)
 	values, err := redis.Values(conn.Do("MGET", baseKey+":by", baseKey+":time", baseKey+":text"))
 	if err != nil {
 		return post, err
@@ -302,7 +302,7 @@ func (c *Cache) GetPost(postId gp.PostId) (post gp.PostCore, err error) {
 	if _, err = redis.Scan(values, &by, &t, &post.Text); err != nil {
 		return post, err
 	}
-	post.Id = postId
+	post.Id = postID
 	post.By, err = c.GetUser(by)
 	if err != nil {
 		return post, err
@@ -364,8 +364,8 @@ func (c *Cache) GetPosts(id gp.NetworkId, mode int, index int64, count int) (pos
 		if curr == -1 {
 			return
 		}
-		postId := gp.PostId(curr)
-		post, err := c.GetPost(postId)
+		postID := gp.PostId(curr)
+		post, err := c.GetPost(postID)
 		if err != nil {
 			return posts, err
 		}
@@ -374,14 +374,14 @@ func (c *Cache) GetPosts(id gp.NetworkId, mode int, index int64, count int) (pos
 	return
 }
 
-func (c *Cache) AddPostsFromDB(netId gp.NetworkId, db *db.DB) {
-	posts, err := db.GetPosts(netId, 1, 0, c.config.PostCache, "")
+func (c *Cache) AddPostsFromDB(netID gp.NetworkId, db *db.DB) {
+	posts, err := db.GetPosts(netID, 1, 0, c.config.PostCache, "")
 	if err != nil {
 		log.Println(err)
 	}
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("networks:%d:posts", netId)
+	key := fmt.Sprintf("networks:%d:posts", netID)
 	for _, post := range posts {
 		baseKey := fmt.Sprintf("posts:%d", post.Id)
 		conn.Send("MSET", baseKey+":by", post.By.Id, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
@@ -408,10 +408,10 @@ func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.Conversati
 	conn.Flush()
 }
 
-func (c *Cache) GetConversationMessageCount(convId gp.ConversationId) (count int, err error) {
+func (c *Cache) GetConversationMessageCount(convID gp.ConversationId) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:messages", convId)
+	key := fmt.Sprintf("conversations:%d:messages", convID)
 	count, err = redis.Int(conn.Do("ZCARD", key))
 	if err != nil {
 		return 0, err
@@ -419,10 +419,10 @@ func (c *Cache) GetConversationMessageCount(convId gp.ConversationId) (count int
 	return count, nil
 }
 
-func (c *Cache) SetConversationParticipants(convId gp.ConversationId, participants []gp.User) {
+func (c *Cache) SetConversationParticipants(convID gp.ConversationId, participants []gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:participants", convId)
+	key := fmt.Sprintf("conversations:%d:participants", convID)
 	for _, user := range participants {
 		conn.Send("SADD", key, user.Id)
 	}
@@ -430,10 +430,10 @@ func (c *Cache) SetConversationParticipants(convId gp.ConversationId, participan
 }
 
 //TODO: Return []gp.UserId.
-func (c *Cache) GetParticipants(convId gp.ConversationId) (participants []gp.User, err error) {
+func (c *Cache) GetParticipants(convID gp.ConversationId) (participants []gp.User, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:participants", convId)
+	key := fmt.Sprintf("conversations:%d:participants", convID)
 	values, err := redis.Values(conn.Do("SMEMBERS", key))
 	if err != nil {
 		return
@@ -499,10 +499,10 @@ func (c *Cache) GetConversations(id gp.UserId, start int64, count int) (conversa
 }
 
 //GetRead returns the point which participants have read up to in conversation convId.
-func (c *Cache) GetRead(convId gp.ConversationId) (read []gp.Read, err error) {
+func (c *Cache) GetRead(convID gp.ConversationId) (read []gp.Read, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:read", convId)
+	key := fmt.Sprintf("conversations:%d:read", convID)
 	values, err := redis.Values(conn.Do("HGETALL", key))
 	if err != nil {
 		return
@@ -522,10 +522,10 @@ func (c *Cache) GetRead(convId gp.ConversationId) (read []gp.Read, err error) {
 	return
 }
 
-func (c *Cache) ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+func (c *Cache) ConversationExpiry(convID gp.ConversationId) (expiry gp.Expiry, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d", convId)
+	key := fmt.Sprintf("conversations:%d", convID)
 	t, err := redis.Int(conn.Do("GET", key+":expiry"))
 	if err != nil {
 		return
@@ -535,18 +535,18 @@ func (c *Cache) ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, 
 	return
 }
 
-func (c *Cache) SetConversationExpiry(convId gp.ConversationId, expiry gp.Expiry) {
+func (c *Cache) SetConversationExpiry(convID gp.ConversationId, expiry gp.Expiry) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d", convId)
+	key := fmt.Sprintf("conversations:%d", convID)
 	conn.Send("MSET", key+":expiry", expiry.Time.Unix(), key+":ended", expiry.Ended)
 	conn.Flush()
 }
 
-func (c *Cache) DelConversationExpiry(convId gp.ConversationId) {
+func (c *Cache) DelConversationExpiry(convID gp.ConversationId) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d", convId)
+	key := fmt.Sprintf("conversations:%d", convID)
 	conn.Send("DEL", key+":expiry", key+":ended")
 	conn.Flush()
 }
@@ -567,15 +567,15 @@ func (c *Cache) AddConversation(conv gp.Conversation) {
 	conn.Flush()
 }
 
-func (c *Cache) TerminateConversation(convId gp.ConversationId) (err error) {
+func (c *Cache) TerminateConversation(convID gp.ConversationId) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d:ended", convId)
+	key := fmt.Sprintf("conversations:%d:ended", convID)
 	conn.Send("SET", key, true)
-	participants, err := c.GetParticipants(convId)
+	participants, err := c.GetParticipants(convID)
 	if err != nil {
 		for _, p := range participants {
-			conn.Send("ZREM", fmt.Sprintf("users:%d:conversations", p.Id), convId)
+			conn.Send("ZREM", fmt.Sprintf("users:%d:conversations", p.Id), convID)
 		}
 	}
 	conn.Flush()
@@ -608,14 +608,14 @@ func (c *Cache) AddComment(id gp.PostId, comment gp.Comment) {
 	conn.Flush()
 }
 
-func (c *Cache) AddAllCommentsFromDB(postId gp.PostId, db *db.DB) {
-	comments, err := db.GetComments(postId, 0, c.config.CommentCache)
+func (c *Cache) AddAllCommentsFromDB(postID gp.PostId, db *db.DB) {
+	comments, err := db.GetComments(postID, 0, c.config.CommentCache)
 	if err != nil {
 		log.Println(err)
 	}
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("posts:%d:comments", postId)
+	key := fmt.Sprintf("posts:%d:comments", postID)
 	for _, comment := range comments {
 		baseKey := fmt.Sprintf("comments:%d", comment.Id)
 		conn.Send("ZADD", key, comment.Time.Unix(), comment.Id)
@@ -624,10 +624,10 @@ func (c *Cache) AddAllCommentsFromDB(postId gp.PostId, db *db.DB) {
 	}
 }
 
-func (c *Cache) GetComments(postId gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
+func (c *Cache) GetComments(postID gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("posts:%d:comments", postId)
+	key := fmt.Sprintf("posts:%d:comments", postID)
 	values, err := redis.Values(conn.Do("ZREVRANGE", key, start, start+int64(count)-1))
 	if err != nil {
 		return

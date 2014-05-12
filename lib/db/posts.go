@@ -184,24 +184,24 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userId gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	where := WhereClause{Mode: WUSER, User: userId, Perspective: perspective, Category: category}
+func (db *DB) GetUserPosts(userID gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	where := WhereClause{Mode: WUSER, User: userID, Perspective: perspective, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
 
-func (db *DB) AddPost(userId gp.UserId, text string, network gp.NetworkId) (postId gp.PostId, err error) {
+func (db *DB) AddPost(userID gp.UserId, text string, network gp.NetworkId) (postID gp.PostId, err error) {
 	s := db.stmt["postInsert"]
-	res, err := s.Exec(userId, text, network)
+	res, err := s.Exec(userID, text, network)
 	if err != nil {
 		return 0, err
 	}
 	_postId, err := res.LastInsertId()
-	postId = gp.PostId(_postId)
+	postID = gp.PostId(_postId)
 	if err != nil {
 		return 0, err
 	}
-	return postId, nil
+	return postID, nil
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
@@ -250,9 +250,9 @@ func (db *DB) GetPosts(netId gp.NetworkId, mode int, index int64, count int, cat
 	return
 }
 
-func (db *DB) GetPostImages(postId gp.PostId) (images []string, err error) {
+func (db *DB) GetPostImages(postID gp.PostId) (images []string, err error) {
 	s := db.stmt["imageSelect"]
-	rows, err := s.Query(postId)
+	rows, err := s.Query(postID)
 	defer rows.Close()
 	log.Println("DB hit: getImages postId(image)")
 	if err != nil {
@@ -269,14 +269,14 @@ func (db *DB) GetPostImages(postId gp.PostId) (images []string, err error) {
 	return
 }
 
-func (db *DB) AddPostImage(postId gp.PostId, url string) (err error) {
-	_, err = db.stmt["imageInsert"].Exec(postId, url)
+func (db *DB) AddPostImage(postID gp.PostId, url string) (err error) {
+	_, err = db.stmt["imageInsert"].Exec(postID, url)
 	return
 }
 
-func (db *DB) CreateComment(postId gp.PostId, userId gp.UserId, text string) (commId gp.CommentId, err error) {
+func (db *DB) CreateComment(postID gp.PostId, userID gp.UserId, text string) (commId gp.CommentId, err error) {
 	s := db.stmt["commentInsert"]
-	if res, err := s.Exec(postId, userId, text); err == nil {
+	if res, err := s.Exec(postID, userID, text); err == nil {
 		cId, err := res.LastInsertId()
 		commId = gp.CommentId(cId)
 		return commId, err
@@ -285,9 +285,9 @@ func (db *DB) CreateComment(postId gp.PostId, userId gp.UserId, text string) (co
 	}
 }
 
-func (db *DB) GetComments(postId gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
+func (db *DB) GetComments(postID gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
 	s := db.stmt["commentSelect"]
-	rows, err := s.Query(postId, start, count)
+	rows, err := s.Query(postID, start, count)
 	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
 	if err != nil {
 		return comments, err
@@ -295,7 +295,7 @@ func (db *DB) GetComments(postId gp.PostId, start int64, count int) (comments []
 	defer rows.Close()
 	for rows.Next() {
 		var comment gp.Comment
-		comment.Post = postId
+		comment.Post = postID
 		var timeString string
 		var by gp.UserId
 		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
@@ -323,12 +323,12 @@ func (db *DB) GetCommentCount(id gp.PostId) (count int) {
 
 //GetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
-func (db *DB) GetPost(postId gp.PostId) (post gp.Post, err error) {
+func (db *DB) GetPost(postID gp.PostId) (post gp.Post, err error) {
 	s := db.stmt["postSelect"]
-	post.Id = postId
+	post.Id = postID
 	var by gp.UserId
 	var t string
-	err = s.QueryRow(postId).Scan(&post.Network, &by, &t, &post.Text)
+	err = s.QueryRow(postID).Scan(&post.Network, &by, &t, &post.Text)
 	if err != nil {
 		return
 	}
@@ -340,7 +340,7 @@ func (db *DB) GetPost(postId gp.PostId) (post gp.Post, err error) {
 	if err != nil {
 		return
 	}
-	post.Images, err = db.GetPostImages(postId)
+	post.Images, err = db.GetPostImages(postID)
 	return
 }
 

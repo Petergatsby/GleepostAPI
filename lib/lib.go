@@ -65,13 +65,13 @@ func RandomString() (random string, err error) {
 //it issues a token which expires now
 //createtoken might do with returning an error
 //why would it break though
-func createToken(userId gp.UserId) gp.Token {
+func createToken(userID gp.UserId) gp.Token {
 	random, err := RandomString()
 	if err != nil {
-		return (gp.Token{UserId: userId, Token: "foo", Expiry: time.Now().UTC()})
+		return (gp.Token{UserId: userID, Token: "foo", Expiry: time.Now().UTC()})
 	} else {
 		expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
-		token := gp.Token{UserId: userId, Token: random, Expiry: expiry}
+		token := gp.Token{UserId: userID, Token: random, Expiry: expiry}
 		return (token)
 	}
 }
@@ -184,40 +184,40 @@ func (api *API) testEmail(email string, rules []gp.Rule) bool {
 //RegisterUser accepts a username, password, email address, firstname and lastname. It will return an error if user or email aren't unique, or if pass is too short.
 //If the optional "invite" is set and corresponds to email, it will skip the verification step.
 func (api *API) RegisterUser(user, pass, email, first, last, invite string) (newUser gp.NewUser, err error) {
-	userId, err := api.createUser(user, pass, email)
+	userID, err := api.createUser(user, pass, email)
 	if err != nil {
 		return
 	}
-	_, err = api.assignNetworks(userId, email)
+	_, err = api.assignNetworks(userID, email)
 	if err != nil {
 		return
 	}
-	err = api.SetUserName(userId, first, last)
+	err = api.SetUserName(userID, first, last)
 	if err != nil {
 		return
 	}
 	exists, err := api.InviteExists(email, invite)
 	log.Println(exists, err)
-	newUser.Id = userId
+	newUser.Id = userID
 	newUser.Status = "unverified"
 	if err == nil && exists {
-		err = api.db.Verify(userId)
+		err = api.db.Verify(userID)
 		if err != nil {
 			return
 		}
 		newUser.Status = "verified"
-		err = api.AssignNetworksFromInvites(userId, email)
+		err = api.AssignNetworksFromInvites(userID, email)
 		if err != nil {
 			return
 		}
 		err = api.AcceptAllInvites(email)
 	} else {
-		err = api.GenerateAndSendVerification(userId, first, email)
+		err = api.GenerateAndSendVerification(userID, first, email)
 	}
 	return
 }
 
-func (api *API) createUser(user string, pass string, email string) (userId gp.UserId, err error) {
+func (api *API) createUser(user string, pass string, email string) (userID gp.UserId, err error) {
 	err = checkPassStrength(pass)
 	if err != nil {
 		return
@@ -226,7 +226,7 @@ func (api *API) createUser(user string, pass string, email string) (userId gp.Us
 	if err != nil {
 		return 0, err
 	}
-	userId, err = api.db.RegisterUser(user, hash, email)
+	userID, err = api.db.RegisterUser(user, hash, email)
 	if err != nil {
 		return 0, err
 	}
@@ -234,12 +234,12 @@ func (api *API) createUser(user string, pass string, email string) (userId gp.Us
 }
 
 //TODO: this might end up using user input directly in an email. Sanitize!
-func (api *API) GenerateAndSendVerification(userId gp.UserId, user string, email string) (err error) {
+func (api *API) GenerateAndSendVerification(userID gp.UserId, user string, email string) (err error) {
 	random, err := RandomString()
 	if err != nil {
 		return
 	}
-	err = api.db.SetVerificationToken(userId, random)
+	err = api.db.SetVerificationToken(userID, random)
 	if err != nil {
 		return
 	}
@@ -488,20 +488,20 @@ func (api *API) Verify(token string) (err error) {
 		log.Println("Couldn't get this facebook account's email:", err)
 		return
 	}
-	userId, err := api.UserWithEmail(email)
+	userID, err := api.UserWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
-		userId, err = api.CreateUserFromFB(fbid, email)
+		userID, err = api.CreateUserFromFB(fbid, email)
 		if err != nil {
 			return
 		}
 	}
-	err = api.UserSetFB(userId, fbid)
+	err = api.UserSetFB(userID, fbid)
 	if err == nil {
-		err = api.db.Verify(userId)
+		err = api.db.Verify(userID)
 		if err == nil {
 			log.Println("Verifying worked. Now setting networks from invites...")
-			err = api.AssignNetworksFromInvites(userId, email)
+			err = api.AssignNetworksFromInvites(userID, email)
 			if err != nil {
 				log.Println("Something went wrong while setting networks from invites:", err)
 				return
@@ -520,9 +520,9 @@ func (api *API) UserWithEmail(email string) (id gp.UserId, err error) {
 	return api.db.UserWithEmail(email)
 }
 
-func (api *API) ChangePass(userId gp.UserId, oldPass string, newPass string) (err error) {
+func (api *API) ChangePass(userID gp.UserId, oldPass string, newPass string) (err error) {
 	passBytes := []byte(oldPass)
-	hash, err := api.db.GetHashById(userId)
+	hash, err := api.db.GetHashById(userID)
 	if err != nil {
 		return
 	} else {
@@ -534,18 +534,18 @@ func (api *API) ChangePass(userId gp.UserId, oldPass string, newPass string) (er
 		if err != nil {
 			return
 		}
-		err = api.db.PassUpdate(userId, hash)
+		err = api.db.PassUpdate(userID, hash)
 		return
 	}
 
 }
 
 func (api *API) RequestReset(email string) (err error) {
-	userId, err := api.UserWithEmail(email)
+	userID, err := api.UserWithEmail(email)
 	if err != nil {
 		return
 	}
-	user, err := api.GetUser(userId)
+	user, err := api.GetUser(userID)
 	if err != nil {
 		return
 	}
@@ -553,7 +553,7 @@ func (api *API) RequestReset(email string) (err error) {
 	if err != nil {
 		return
 	}
-	err = api.db.AddPasswordRecovery(userId, token)
+	err = api.db.AddPasswordRecovery(userID, token)
 	if err != nil {
 		return
 	}
@@ -561,8 +561,8 @@ func (api *API) RequestReset(email string) (err error) {
 	return
 }
 
-func (api *API) ResetPass(userId gp.UserId, token string, newPass string) (err error) {
-	exists, err := api.db.CheckPasswordRecovery(userId, token)
+func (api *API) ResetPass(userID gp.UserId, token string, newPass string) (err error) {
+	exists, err := api.db.CheckPasswordRecovery(userID, token)
 	if err != nil {
 		return
 	}
@@ -574,16 +574,16 @@ func (api *API) ResetPass(userId gp.UserId, token string, newPass string) (err e
 	if err != nil {
 		return
 	}
-	err = api.db.PassUpdate(userId, hash)
+	err = api.db.PassUpdate(userID, hash)
 	return
 }
 
-func (api *API) IsVerified(userId gp.UserId) (verified bool, err error) {
-	return api.db.IsVerified(userId)
+func (api *API) IsVerified(userID gp.UserId) (verified bool, err error) {
+	return api.db.IsVerified(userID)
 }
 
-func (api *API) GetLiveConversations(userId gp.UserId) (conversations []gp.ConversationSmall, err error) {
-	return api.db.GetLiveConversations(userId)
+func (api *API) GetLiveConversations(userID gp.UserId) (conversations []gp.ConversationSmall, err error) {
+	return api.db.GetLiveConversations(userID)
 }
 
 func (api *API) DeviceFeedback(deviceId string, timestamp uint32) (err error) {
@@ -605,20 +605,20 @@ func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool
 	if err != nil {
 		return
 	}
-	userId, err := api.createUser(user, pass, email)
+	userID, err := api.createUser(user, pass, email)
 	if err != nil {
 		return
 	}
-	err = api.SetUserName(userId, first, last)
+	err = api.SetUserName(userID, first, last)
 	if err != nil {
 		return
 	}
 	if verified {
-		err = api.db.Verify(userId)
+		err = api.db.Verify(userID)
 		if err != nil {
 			return
 		}
 	}
-	err = api.setNetwork(userId, primaryNetwork)
+	err = api.setNetwork(userID, primaryNetwork)
 	return
 }
