@@ -287,7 +287,7 @@ func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkID) (err error)
 	return nil
 }
 
-func (c *Cache) GetPost(postID gp.PostId) (post gp.PostCore, err error) {
+func (c *Cache) GetPost(postID gp.PostID) (post gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("posts:%d", postID)
@@ -362,7 +362,7 @@ func (c *Cache) GetPosts(id gp.NetworkID, mode int, index int64, count int) (pos
 		if curr == -1 {
 			return
 		}
-		postID := gp.PostId(curr)
+		postID := gp.PostID(curr)
 		post, err := c.GetPost(postID)
 		if err != nil {
 			return posts, err
@@ -584,7 +584,7 @@ func (c *Cache) TerminateConversation(convID gp.ConversationId) (err error) {
 		Comments
 ********************************************************************/
 
-func (c *Cache) GetCommentCount(id gp.PostId) (count int, err error) {
+func (c *Cache) GetCommentCount(id gp.PostID) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
@@ -595,7 +595,7 @@ func (c *Cache) GetCommentCount(id gp.PostId) (count int, err error) {
 	return count, nil
 }
 
-func (c *Cache) AddComment(id gp.PostId, comment gp.Comment) {
+func (c *Cache) AddComment(id gp.PostID, comment gp.Comment) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
@@ -605,7 +605,7 @@ func (c *Cache) AddComment(id gp.PostId, comment gp.Comment) {
 	conn.Flush()
 }
 
-func (c *Cache) AddAllCommentsFromDB(postID gp.PostId, db *db.DB) {
+func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
 	comments, err := db.GetComments(postID, 0, c.config.CommentCache)
 	if err != nil {
 		log.Println(err)
@@ -621,7 +621,7 @@ func (c *Cache) AddAllCommentsFromDB(postID gp.PostId, db *db.DB) {
 	}
 }
 
-func (c *Cache) GetComments(postID gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
+func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", postID)

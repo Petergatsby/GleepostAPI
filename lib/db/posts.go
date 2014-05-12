@@ -190,14 +190,14 @@ func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, in
 	return
 }
 
-func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (postID gp.PostId, err error) {
+func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (postID gp.PostID, err error) {
 	s := db.stmt["postInsert"]
 	res, err := s.Exec(userID, text, network)
 	if err != nil {
 		return 0, err
 	}
 	_postID, err := res.LastInsertId()
-	postID = gp.PostId(_postID)
+	postID = gp.PostID(_postID)
 	if err != nil {
 		return 0, err
 	}
@@ -250,7 +250,7 @@ func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, cat
 	return
 }
 
-func (db *DB) GetPostImages(postID gp.PostId) (images []string, err error) {
+func (db *DB) GetPostImages(postID gp.PostID) (images []string, err error) {
 	s := db.stmt["imageSelect"]
 	rows, err := s.Query(postID)
 	defer rows.Close()
@@ -269,12 +269,12 @@ func (db *DB) GetPostImages(postID gp.PostId) (images []string, err error) {
 	return
 }
 
-func (db *DB) AddPostImage(postID gp.PostId, url string) (err error) {
+func (db *DB) AddPostImage(postID gp.PostID, url string) (err error) {
 	_, err = db.stmt["imageInsert"].Exec(postID, url)
 	return
 }
 
-func (db *DB) CreateComment(postID gp.PostId, userID gp.UserID, text string) (commID gp.CommentId, err error) {
+func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentId, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postID, userID, text); err == nil {
 		cID, err := res.LastInsertId()
@@ -284,7 +284,7 @@ func (db *DB) CreateComment(postID gp.PostId, userID gp.UserID, text string) (co
 	return 0, err
 }
 
-func (db *DB) GetComments(postID gp.PostId, start int64, count int) (comments []gp.Comment, err error) {
+func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	s := db.stmt["commentSelect"]
 	rows, err := s.Query(postID, start, count)
 	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
@@ -311,7 +311,7 @@ func (db *DB) GetComments(postID gp.PostId, start int64, count int) (comments []
 	return comments, nil
 }
 
-func (db *DB) GetCommentCount(id gp.PostId) (count int) {
+func (db *DB) GetCommentCount(id gp.PostID) (count int) {
 	s := db.stmt["commentCountSelect"]
 	err := s.QueryRow(id).Scan(&count)
 	if err != nil {
@@ -322,7 +322,7 @@ func (db *DB) GetCommentCount(id gp.PostId) (count int) {
 
 //GetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
-func (db *DB) GetPost(postID gp.PostId) (post gp.Post, err error) {
+func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
 	s := db.stmt["postSelect"]
 	post.Id = postID
 	var by gp.UserID
@@ -347,7 +347,7 @@ func (db *DB) GetPost(postID gp.PostId) (post gp.Post, err error) {
 //At the moment, it doesn't check if these attributes are at all reasonable;
 //the onus is on the viewer of the attributes to look for just the ones which make sense,
 //and on the caller of this function to ensure that the values conform to a particular format.
-func (db *DB) SetPostAttribs(post gp.PostId, attribs map[string]string) (err error) {
+func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
 	s := db.stmt["setPostAttribs"]
 	for attrib, value := range attribs {
 		//How could I be so foolish to store time strings rather than unix timestamps...
@@ -372,7 +372,7 @@ func (db *DB) SetPostAttribs(post gp.PostId, attribs map[string]string) (err err
 }
 
 //GetPostAttribs returns a map of all attributes associated with post.
-func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, err error) {
+func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
 	s := db.stmt["getPostAttribs"]
 	rows, err := s.Query(post)
 	if err != nil {
@@ -403,7 +403,7 @@ func (db *DB) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, er
 }
 
 //GetEventPopularity returns the popularity score (0 - 99) and the actual attendees count
-func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, attendees int, err error) {
+func (db *DB) GetEventPopularity(post gp.PostID) (popularity int, attendees int, err error) {
 	query := "SELECT COUNT(*) FROM event_attendees WHERE post_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -436,7 +436,7 @@ func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count in
 }
 
 //DeletePost marks a post as deleted in the database.
-func (db *DB) DeletePost(post gp.PostId) (err error) {
+func (db *DB) DeletePost(post gp.PostID) (err error) {
 	q := "UPDATE wall_posts SET deleted = 1 WHERE id = ?"
 	s, err := db.prepare(q)
 	if err != nil {
@@ -446,7 +446,7 @@ func (db *DB) DeletePost(post gp.PostId) (err error) {
 	return
 }
 
-func (db *DB) EventAttendees(post gp.PostId) (attendees []gp.User, err error) {
+func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 	q := "SELECT id, name, firstname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
 	s, err := db.prepare(q)
 	if err != nil {

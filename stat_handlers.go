@@ -105,7 +105,7 @@ func individualPostStats(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, err, 404)
 		}
-		postID := gp.PostId(_post)
+		postID := gp.PostID(_post)
 		stat := lib.Stat(vars["type"])
 		var stats *lib.View
 		if stat == lib.OVERVIEW {

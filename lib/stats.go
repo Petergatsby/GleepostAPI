@@ -43,7 +43,7 @@ func blankF(user gp.UserID, start time.Time, finish time.Time) (count int, err e
 	return 0, nil
 }
 
-func blankPF(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
+func blankPF(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
 	return 0, nil
 }
 
@@ -96,7 +96,7 @@ func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish ti
 	return
 }
 
-func (api *API) AggregateStatsForPost(post gp.PostId, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
+func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
 	view.Finish = finish.Round(time.Duration(time.Second))
@@ -107,7 +107,7 @@ func (api *API) AggregateStatsForPost(post gp.PostId, start time.Time, finish ti
 	for _, stat := range stats {
 		start = view.Start
 
-		var statF func(gp.PostId, time.Time, time.Time) (int, error)
+		var statF func(gp.PostID, time.Time, time.Time) (int, error)
 		switch {
 		case stat == LIKES:
 			statF = api.db.LikesForPostBetween
@@ -160,7 +160,7 @@ func (api *API) InteractionsForUserBetween(user gp.UserID, start time.Time, fini
 	return
 }
 
-func (api *API) InteractionsForPostBetween(post gp.PostId, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) InteractionsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
 	likes, err := api.db.LikesForPostBetween(post, start, finish)
 	if err != nil {
 		return

@@ -774,7 +774,7 @@ func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationId, upTo gp.MessageID
 }
 
 //AddCategory marks the post id as a member of category.
-func (db *DB) AddCategory(id gp.PostId, category gp.CategoryId) (err error) {
+func (db *DB) AddCategory(id gp.PostID, category gp.CategoryId) (err error) {
 	_, err = db.stmt["categoryAdd"].Exec(id, category)
 	return
 }
@@ -795,7 +795,7 @@ func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
 }
 
 //SetCategories accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
-func (db *DB) TagPost(post gp.PostId, tags ...string) (err error) {
+func (db *DB) TagPost(post gp.PostID, tags ...string) (err error) {
 	for _, tag := range tags {
 		_, err = db.stmt["addCategoryWhereExists"].Exec(post, tag)
 		if err != nil {
@@ -806,7 +806,7 @@ func (db *DB) TagPost(post gp.PostId, tags ...string) (err error) {
 }
 
 //PostCategories returns all the categories which post belongs to.
-func (db *DB) PostCategories(post gp.PostId) (categories []gp.PostCategory, err error) {
+func (db *DB) PostCategories(post gp.PostID) (categories []gp.PostCategory, err error) {
 	rows, err := db.stmt["postCategories"].Query(post)
 	if err != nil {
 		return
@@ -965,7 +965,7 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 			case notification.Type == "liked":
 				fallthrough
 			case notification.Type == "commented":
-				np := gp.PostNotification{Notification: notification, Post: gp.PostId(location.Int64)}
+				np := gp.PostNotification{Notification: notification, Post: gp.PostID(location.Int64)}
 				notifications = append(notifications, np)
 			case notification.Type == "added_group":
 				ng := gp.GroupNotification{Notification: notification, Group: gp.NetworkID(location.Int64)}
@@ -1030,7 +1030,7 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 	case ntype == "liked":
 		fallthrough
 	case ntype == "commented":
-		np := gp.PostNotification{Notification: n, Post: gp.PostId(location)}
+		np := gp.PostNotification{Notification: n, Post: gp.PostID(location)}
 		return np, nil
 	case ntype == "added_group":
 		ng := gp.GroupNotification{Notification: n, Group: gp.NetworkID(location)}
@@ -1040,7 +1040,7 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 	}
 }
 
-func (db *DB) CreateLike(user gp.UserID, post gp.PostId) (err error) {
+func (db *DB) CreateLike(user gp.UserID, post gp.PostID) (err error) {
 	_, err = db.stmt["addLike"].Exec(post, user)
 	// Suppress duplicate entry errors
 	if err != nil {
@@ -1051,12 +1051,12 @@ func (db *DB) CreateLike(user gp.UserID, post gp.PostId) (err error) {
 	return
 }
 
-func (db *DB) RemoveLike(user gp.UserID, post gp.PostId) (err error) {
+func (db *DB) RemoveLike(user gp.UserID, post gp.PostID) (err error) {
 	_, err = db.stmt["delLike"].Exec(post, user)
 	return
 }
 
-func (db *DB) GetLikes(post gp.PostId) (likes []gp.Like, err error) {
+func (db *DB) GetLikes(post gp.PostID) (likes []gp.Like, err error) {
 	rows, err := db.stmt["likeSelect"].Query(post)
 	defer rows.Close()
 	if err != nil {
@@ -1078,12 +1078,12 @@ func (db *DB) GetLikes(post gp.PostId) (likes []gp.Like, err error) {
 	return
 }
 
-func (db *DB) HasLiked(user gp.UserID, post gp.PostId) (liked bool, err error) {
+func (db *DB) HasLiked(user gp.UserID, post gp.PostID) (liked bool, err error) {
 	err = db.stmt["likeExists"].QueryRow(post, user).Scan(&liked)
 	return
 }
 
-func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
+func (db *DB) LikeCount(post gp.PostID) (count int, err error) {
 	err = db.stmt["likeCount"].QueryRow(post).Scan(&count)
 	return
 }
@@ -1091,7 +1091,7 @@ func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
 //Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
-func (db *DB) Attend(event gp.PostId, user gp.UserID) (err error) {
+func (db *DB) Attend(event gp.PostID, user gp.UserID) (err error) {
 	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1102,7 +1102,7 @@ func (db *DB) Attend(event gp.PostId, user gp.UserID) (err error) {
 }
 
 //UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
-func (db *DB) UnAttend(event gp.PostId, user gp.UserID) (err error) {
+func (db *DB) UnAttend(event gp.PostID, user gp.UserID) (err error) {
 	query := "DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1113,7 +1113,7 @@ func (db *DB) UnAttend(event gp.PostId, user gp.UserID) (err error) {
 }
 
 //UserAttends returns all the event IDs that a user is attending.
-func (db *DB) UserAttends(user gp.UserID) (events []gp.PostId, err error) {
+func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1125,7 +1125,7 @@ func (db *DB) UserAttends(user gp.UserID) (events []gp.PostId, err error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var post gp.PostId
+		var post gp.PostID
 		err = rows.Scan(&post)
 		if err != nil {
 			return

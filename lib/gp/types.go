@@ -7,7 +7,7 @@ import (
 type UserID uint64
 type NetworkID uint64
 type MessageID uint64
-type PostId uint64
+type PostID uint64
 type CommentId uint64
 type ConversationId uint64
 type NotificationId uint64
@@ -74,7 +74,7 @@ type Token struct {
 }
 
 type PostCore struct {
-	Id   PostId    `json:"id"`
+	Id   PostID    `json:"id"`
 	By   User      `json:"by"`
 	Time time.Time `json:"timestamp"`
 	Text string    `json:"text"`
@@ -82,7 +82,7 @@ type PostCore struct {
 
 type Post struct {
 	Network    NetworkID              `json:"-"`
-	Id         PostId                 `json:"id"`
+	Id         PostID                 `json:"id"`
 	By         User                   `json:"by"`
 	Time       time.Time              `json:"timestamp"`
 	Text       string                 `json:"text"`
@@ -111,7 +111,7 @@ type PostFull struct {
 
 type Comment struct {
 	Id   CommentId `json:"id"`
-	Post PostId    `json:"-"`
+	Post PostID    `json:"-"`
 	By   User      `json:"by"`
 	Time time.Time `json:"timestamp"`
 	Text string    `json:"text"`
@@ -234,7 +234,7 @@ type Notification struct {
 
 type PostNotification struct {
 	Notification
-	Post PostId `json:"post"`
+	Post PostID `json:"post"`
 }
 
 type GroupNotification struct {
@@ -268,7 +268,7 @@ type BusyStatus struct {
 }
 
 type Liked struct {
-	Post  PostId `json:"post"`
+	Post  PostID `json:"post"`
 	Liked bool   `json:"liked"`
 }
 

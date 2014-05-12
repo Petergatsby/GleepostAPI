@@ -303,7 +303,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				attribs[k] = strings.Join(v, "")
 			}
 		}
-		var postID gp.PostId
+		var postID gp.PostID
 		var ts []string
 		if len(tags) > 1 {
 			ts = strings.Split(tags, ",")
@@ -651,7 +651,7 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_id)
+		postID := gp.PostID(_id)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -681,7 +681,7 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_id)
+		postID := gp.PostID(_id)
 		text := r.FormValue("text")
 		commentID, err := api.CreateComment(postID, userID, text)
 		if err != nil {
@@ -700,7 +700,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_id)
+		postID := gp.PostID(_id)
 		post, err := api.UserGetPost(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -723,7 +723,7 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_id)
+		postID := gp.PostID(_id)
 		url := r.FormValue("url")
 		exists, err := api.UserUploadExists(userID, url)
 		if exists && err == nil {
@@ -748,7 +748,7 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_id)
+		postID := gp.PostID(_id)
 		liked, err := strconv.ParseBool(r.FormValue("liked"))
 		switch {
 		case err != nil:
@@ -1410,7 +1410,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	//We can safely ignore this error since vars["id"] matches a numeric regex
 	//... maybe. What if it's bigger than max(uint64) ??
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-	post := gp.PostId(_id)
+	post := gp.PostID(_id)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1873,7 +1873,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_id)
+		postID := gp.PostID(_id)
 		err := api.UserDeletePost(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -1948,7 +1948,7 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_postID)
+		postID := gp.PostID(_postID)
 		attendees, err := api.UserGetEventAttendees(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -1988,7 +1988,7 @@ func putAttendees(w http.ResponseWriter, r *http.Request) {
 		attending, _ := strconv.ParseBool(r.FormValue("attending"))
 		vars := mux.Vars(r)
 		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
-		postID := gp.PostId(_postID)
+		postID := gp.PostID(_postID)
 		err = api.UserAttend(postID, userID, attending)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
