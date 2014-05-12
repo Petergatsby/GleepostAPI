@@ -65,13 +65,13 @@ func RandomString() (random string, err error) {
 //it issues a token which expires now
 //createtoken might do with returning an error
 //why would it break though
-func createToken(userID gp.UserId) gp.Token {
+func createToken(userID gp.UserID) gp.Token {
 	random, err := RandomString()
 	if err != nil {
-		return (gp.Token{UserId: userID, Token: "foo", Expiry: time.Now().UTC()})
+		return (gp.Token{UserID: userID, Token: "foo", Expiry: time.Now().UTC()})
 	}
 	expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
-	token := gp.Token{UserId: userID, Token: random, Expiry: expiry}
+	token := gp.Token{UserID: userID, Token: random, Expiry: expiry}
 	return (token)
 }
 
@@ -91,7 +91,7 @@ func checkPassStrength(pass string) (err error) {
 	return nil
 }
 
-func (api *API) ValidateToken(id gp.UserId, token string) bool {
+func (api *API) ValidateToken(id gp.UserID, token string) bool {
 	//If the api.db is down, this will fail for everyone who doesn't have a api.cached
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
@@ -104,7 +104,7 @@ func (api *API) ValidateToken(id gp.UserId, token string) bool {
 	}
 }
 
-func (api *API) ValidatePass(email string, pass string) (id gp.UserId, err error) {
+func (api *API) ValidatePass(email string, pass string) (id gp.UserID, err error) {
 	passBytes := []byte(pass)
 	hash, id, err := api.db.GetHash(email)
 	if err != nil {
@@ -117,7 +117,7 @@ func (api *API) ValidatePass(email string, pass string) (id gp.UserId, err error
 	return id, nil
 }
 
-func (api *API) CreateAndStoreToken(id gp.UserId) (gp.Token, error) {
+func (api *API) CreateAndStoreToken(id gp.UserID) (gp.Token, error) {
 	token := createToken(id)
 	err := api.db.AddToken(token)
 	api.cache.PutToken(token)
@@ -127,7 +127,7 @@ func (api *API) CreateAndStoreToken(id gp.UserId) (gp.Token, error) {
 	return token, nil
 }
 
-func (api *API) GetUser(id gp.UserId) (user gp.User, err error) {
+func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
 	/* Hits the api.cache then the api.db
 	only I'm not 100% confident yet with what
 	happens when you attempt to get a redis key
@@ -142,7 +142,7 @@ func (api *API) GetUser(id gp.UserId) (user gp.User, err error) {
 	return
 }
 
-func (api *API) GetProfile(id gp.UserId) (user gp.Profile, err error) {
+func (api *API) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	user, err = api.db.GetProfile(id)
 	if err != nil {
 		return
@@ -211,7 +211,7 @@ func (api *API) RegisterUser(user, pass, email, first, last, invite string) (new
 	return
 }
 
-func (api *API) createUser(user string, pass string, email string) (userID gp.UserId, err error) {
+func (api *API) createUser(user string, pass string, email string) (userID gp.UserID, err error) {
 	err = checkPassStrength(pass)
 	if err != nil {
 		return
@@ -228,7 +228,7 @@ func (api *API) createUser(user string, pass string, email string) (userID gp.Us
 }
 
 //TODO: this might end up using user input directly in an email. Sanitize!
-func (api *API) GenerateAndSendVerification(userID gp.UserId, user string, email string) (err error) {
+func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email string) (err error) {
 	random, err := RandomString()
 	if err != nil {
 		return
@@ -241,13 +241,13 @@ func (api *API) GenerateAndSendVerification(userID gp.UserId, user string, email
 	return
 }
 
-func (api *API) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
+func (api *API) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
 	return api.db.GetContacts(user)
 }
 
 //AreContacts returns true if a and b are (confirmed) contacts.
 //TODO: Implement a proper db-level version
-func (api *API) AreContacts(a, b gp.UserId) (areContacts bool, err error) {
+func (api *API) AreContacts(a, b gp.UserID) (areContacts bool, err error) {
 	contacts, err := api.GetContacts(a)
 	if err != nil {
 		return
@@ -262,7 +262,7 @@ func (api *API) AreContacts(a, b gp.UserId) (areContacts bool, err error) {
 
 //UserHasPosted returns true if user has ever created a post from the perspective of perspective.
 //TODO: Implement a direct version
-func (api *API) UserHasPosted(user gp.UserId, perspective gp.UserId) (posted bool, err error) {
+func (api *API) UserHasPosted(user gp.UserID, perspective gp.UserID) (posted bool, err error) {
 	posts, err := api.GetUserPosts(user, perspective, gp.OSTART, 0, 1, "")
 	if err != nil {
 		return
@@ -273,7 +273,7 @@ func (api *API) UserHasPosted(user gp.UserId, perspective gp.UserId) (posted boo
 	return false, nil
 }
 
-func (api *API) AddContact(adder gp.UserId, addee gp.UserId) (contact gp.Contact, err error) {
+func (api *API) AddContact(adder gp.UserID, addee gp.UserID) (contact gp.Contact, err error) {
 	user, err := api.GetUser(addee)
 	if err != nil {
 		return
@@ -295,11 +295,11 @@ func (api *API) AddContact(adder gp.UserId, addee gp.UserId) (contact gp.Contact
 	return
 }
 
-func (api *API) ContactRequestExists(adder gp.UserId, addee gp.UserId) (exists bool, err error) {
+func (api *API) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists bool, err error) {
 	return api.db.ContactRequestExists(adder, addee)
 }
 
-func (api *API) AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Contact, err error) {
+func (api *API) AcceptContact(user gp.UserID, toAccept gp.UserID) (contact gp.Contact, err error) {
 	err = api.db.UpdateContact(user, toAccept)
 	if err != nil {
 		return
@@ -311,11 +311,11 @@ func (api *API) AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Co
 	contact.YouConfirmed = true
 	contact.TheyConfirmed = true
 	go api.createNotification("accepted_you", user, toAccept, 0)
-	go api.UnExpireBetween([]gp.UserId{user, toAccept})
+	go api.UnExpireBetween([]gp.UserID{user, toAccept})
 	return
 }
 
-func (api *API) AddDevice(user gp.UserId, deviceType string, deviceID string) (device gp.Device, err error) {
+func (api *API) AddDevice(user gp.UserID, deviceType string, deviceID string) (device gp.Device, err error) {
 	err = api.db.AddDevice(user, deviceType, deviceID)
 	if err != nil {
 		return
@@ -326,15 +326,15 @@ func (api *API) AddDevice(user gp.UserId, deviceType string, deviceID string) (d
 	return
 }
 
-func (api *API) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
+func (api *API) GetDevices(user gp.UserID) (devices []gp.Device, err error) {
 	return api.db.GetDevices(user)
 }
 
-func (api *API) DeleteDevice(user gp.UserId, deviceID string) (err error) {
+func (api *API) DeleteDevice(user gp.UserID, deviceID string) (err error) {
 	return api.db.DeleteDevice(user, deviceID)
 }
 
-func (api *API) SetProfileImage(id gp.UserId, url string) (err error) {
+func (api *API) SetProfileImage(id gp.UserID, url string) (err error) {
 	err = api.db.SetProfileImage(id, url)
 	if err == nil {
 		go api.cache.SetProfileImage(id, url)
@@ -342,7 +342,7 @@ func (api *API) SetProfileImage(id gp.UserId, url string) (err error) {
 	return
 }
 
-func (api *API) SetBusyStatus(id gp.UserId, busy bool) (err error) {
+func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
 	err = api.db.SetBusyStatus(id, busy)
 	if err == nil {
 		go api.cache.SetBusyStatus(id, busy)
@@ -350,30 +350,30 @@ func (api *API) SetBusyStatus(id gp.UserId, busy bool) (err error) {
 	return
 }
 
-func (api *API) BusyStatus(id gp.UserId) (busy bool, err error) {
+func (api *API) BusyStatus(id gp.UserID) (busy bool, err error) {
 	busy, err = api.db.BusyStatus(id)
 	return
 }
 
-func (api *API) userPing(id gp.UserId) {
+func (api *API) userPing(id gp.UserID) {
 	api.cache.UserPing(id, api.Config.OnlineTimeout)
 }
 
-func (api *API) userIsOnline(id gp.UserId) bool {
+func (api *API) userIsOnline(id gp.UserID) bool {
 	return api.cache.UserIsOnline(id)
 }
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
-func (api *API) GetUserNotifications(id gp.UserId, includeSeen bool) (notifications []interface{}, err error) {
+func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
 	return api.db.GetUserNotifications(id, includeSeen)
 }
 
-func (api *API) MarkNotificationsSeen(id gp.UserId, upTo gp.NotificationId) (err error) {
+func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationId) (err error) {
 	return api.db.MarkNotificationsSeen(id, upTo)
 }
 
 //createNotification creates a new gleepost notification. location is the id of the object where the notification happened - a post id if the notification is "liked" or "commented", or a network id if the notification type is "added_group". Otherwise, the location will be ignored.
-func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.UserId, location uint64) (err error) {
+func (api *API) createNotification(ntype string, by gp.UserID, recipient gp.UserID, location uint64) (err error) {
 	notification, err := api.db.CreateNotification(ntype, by, recipient, location)
 	if err == nil {
 		api.Push(notification, recipient)
@@ -382,7 +382,7 @@ func (api *API) createNotification(ntype string, by gp.UserId, recipient gp.User
 	return
 }
 
-func NotificationChannelKey(id gp.UserId) (channel string) {
+func NotificationChannelKey(id gp.UserID) (channel string) {
 	return fmt.Sprintf("n:%d", id)
 }
 
@@ -398,7 +398,7 @@ func (api *API) appVerificationUrl(token string) (url string) {
 	return "gleepost://verify/" + token
 }
 
-func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
+func (api *API) recoveryUrl(id gp.UserID, token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = fmt.Sprintf("https://dev.gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
 	}
@@ -440,7 +440,7 @@ func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, tok
 	return
 }
 
-func (api *API) GetEmail(id gp.UserId) (email string, err error) {
+func (api *API) GetEmail(id gp.UserID) (email string, err error) {
 	return api.db.GetEmail(id)
 }
 
@@ -503,15 +503,15 @@ func (api *API) Verify(token string) (err error) {
 	return
 }
 
-func (api *API) SetUserName(id gp.UserId, firstName, lastName string) (err error) {
+func (api *API) SetUserName(id gp.UserID, firstName, lastName string) (err error) {
 	return api.db.SetUserName(id, firstName, lastName)
 }
 
-func (api *API) UserWithEmail(email string) (id gp.UserId, err error) {
+func (api *API) UserWithEmail(email string) (id gp.UserID, err error) {
 	return api.db.UserWithEmail(email)
 }
 
-func (api *API) ChangePass(userID gp.UserId, oldPass string, newPass string) (err error) {
+func (api *API) ChangePass(userID gp.UserID, oldPass string, newPass string) (err error) {
 	passBytes := []byte(oldPass)
 	hash, err := api.db.GetHashById(userID)
 	if err != nil {
@@ -550,7 +550,7 @@ func (api *API) RequestReset(email string) (err error) {
 	return
 }
 
-func (api *API) ResetPass(userID gp.UserId, token string, newPass string) (err error) {
+func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err error) {
 	exists, err := api.db.CheckPasswordRecovery(userID, token)
 	if err != nil {
 		return
@@ -567,11 +567,11 @@ func (api *API) ResetPass(userID gp.UserId, token string, newPass string) (err e
 	return
 }
 
-func (api *API) IsVerified(userID gp.UserId) (verified bool, err error) {
+func (api *API) IsVerified(userID gp.UserID) (verified bool, err error) {
 	return api.db.IsVerified(userID)
 }
 
-func (api *API) GetLiveConversations(userID gp.UserId) (conversations []gp.ConversationSmall, err error) {
+func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.ConversationSmall, err error) {
 	return api.db.GetLiveConversations(userID)
 }
 
@@ -580,7 +580,7 @@ func (api *API) DeviceFeedback(deviceID string, timestamp uint32) (err error) {
 	return api.db.Feedback(deviceID, t)
 }
 
-func (api *API) IsAdmin(user gp.UserId) (admin bool) {
+func (api *API) IsAdmin(user gp.UserID) (admin bool) {
 	in, err := api.UserInNetwork(user, gp.NetworkId(api.Config.Admins))
 	if err == nil && in {
 		return true

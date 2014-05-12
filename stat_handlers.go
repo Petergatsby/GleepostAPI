@@ -50,7 +50,7 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, err, 404)
 		}
-		otherID := gp.UserId(_other)
+		otherID := gp.UserID(_other)
 		stat := lib.Stat(vars["type"])
 		var stats *lib.View
 		if stat == lib.OVERVIEW {

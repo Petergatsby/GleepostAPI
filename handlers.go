@@ -59,14 +59,14 @@ func init() {
 }
 
 //Note to self: validateToken should probably return an error at some point
-func authenticate(r *http.Request) (userID gp.UserId, err error) {
+func authenticate(r *http.Request) (userID gp.UserID, err error) {
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
-	userID = gp.UserId(id)
+	userID = gp.UserID(id)
 	token := r.FormValue("token")
 	if len(token) == 0 {
 		credentialsFromHeader := strings.Split(r.Header.Get("X-GP-Auth"), "-")
 		id, _ = strconv.ParseUint(credentialsFromHeader[0], 10, 64)
-		userID = gp.UserId(id)
+		userID = gp.UserID(id)
 		if len(credentialsFromHeader) == 2 {
 			token = credentialsFromHeader[1]
 		}
@@ -417,11 +417,11 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	} else {
 		idstring := r.FormValue("participants")
 		ids := strings.Split(idstring, ",")
-		userIds := make([]gp.UserId, 0, 10)
+		userIds := make([]gp.UserID, 0, 10)
 		for _, _id := range ids {
 			id, err := strconv.ParseUint(_id, 10, 64)
 			if err == nil {
-				userIds = append(userIds, gp.UserId(id))
+				userIds = append(userIds, gp.UserID(id))
 			}
 		}
 		switch {
@@ -784,7 +784,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_otherID, _ := strconv.ParseUint(vars["id"], 10, 64)
-		otherID := gp.UserId(_otherID)
+		otherID := gp.UserID(_otherID)
 		user, err := api.GetProfile(otherID)
 		if err != nil {
 			if err == gp.ENOSUCHUSER {
@@ -806,7 +806,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		otherID := gp.UserId(_id)
+		otherID := gp.UserID(_id)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -886,7 +886,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "POST":
 		_otherID, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
-		otherID := gp.UserId(_otherID)
+		otherID := gp.UserID(_otherID)
 		contact, err := api.AddContact(userID, otherID)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -902,7 +902,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	vars := mux.Vars(r)
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-	contactID := gp.UserId(_id)
+	contactID := gp.UserID(_id)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -1322,7 +1322,7 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		userID := gp.UserId(id)
+		userID := gp.UserID(id)
 		pass := r.FormValue("pass")
 		err = api.ResetPass(userID, vars["token"], pass)
 		if err != nil {
@@ -1488,7 +1488,7 @@ func unread(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET":
 		vars := mux.Vars(r)
 		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
-		uid := gp.UserId(_uid)
+		uid := gp.UserID(_uid)
 		count, err := api.UnreadMessageCount(uid)
 		if err != nil {
 			jsonResponse(w, err, 500)
@@ -1509,7 +1509,7 @@ func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET":
 		vars := mux.Vars(r)
 		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
-		uid := gp.UserId(_uid)
+		uid := gp.UserID(_uid)
 		count, err := api.TotalLiveConversations(uid)
 		if err != nil {
 			jsonResponse(w, err, 500)
@@ -1620,11 +1620,11 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		_users := strings.Split(r.FormValue("users"), ",")
 		_fbUsers := strings.Split(r.FormValue("fbusers"), ",")
 		var fbusers []uint64
-		var users []gp.UserId
+		var users []gp.UserID
 		for _, u := range _users {
 			user, err := strconv.ParseUint(u, 10, 64)
 			if err == nil {
-				users = append(users, gp.UserId(user))
+				users = append(users, gp.UserID(user))
 			}
 		}
 		for _, f := range _fbUsers {
@@ -1911,7 +1911,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 				err = api.UserSetFB(userID, fbToken.FBUser)
 				w.WriteHeader(204)
 			} else {
-				if token.UserId == userID {
+				if token.UserID == userID {
 					//The facebook account is already associated with this gleepost account
 					w.WriteHeader(204)
 				} else {
@@ -1929,7 +1929,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 			err = api.UserSetFB(id, fbToken.FBUser)
 			w.WriteHeader(204)
 		} else {
-			if token.UserId == id {
+			if token.UserID == id {
 				//The facebook account is already associated with this gleepost account
 				w.WriteHeader(204)
 			} else {

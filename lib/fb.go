@@ -107,7 +107,7 @@ func (api *API) UpdateFBData(fbToken string) (err error) {
 
 //FBGetGPUser returns the associated gleepost user for a given facebook id, or sql.ErrNoRows if that user doesn't exist.
 //TODO: Change to ENOSUCHUSER
-func (api *API) FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
+func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
 	return api.db.UserIdFromFB(fbid)
 }
 
@@ -116,7 +116,7 @@ func (api *API) FBGetGPUser(fbid uint64) (id gp.UserId, err error) {
 // email address, or create a gleepost account as appropriate.
 //If the invite is invalid or nonexistent, it issues a verification email
 //(the rest of the association will be handled upon verification in FBVerify.
-func (api *API) FacebookRegister(fbToken string, email string, invite string) (id gp.UserId, err error) {
+func (api *API) FacebookRegister(fbToken string, email string, invite string) (id gp.UserID, err error) {
 	t, err := api.FBValidateToken(fbToken)
 	if err != nil {
 		return
@@ -134,7 +134,7 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (i
 }
 
 //FBSetVerified creates a gleepost user for this fbuser, or associates with an existing one as appropriate.
-func (api *API) FBSetVerified(email string, fbuser uint64) (id gp.UserId, err error) {
+func (api *API) FBSetVerified(email string, fbuser uint64) (id gp.UserID, err error) {
 	id, err = api.UserWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
@@ -216,7 +216,7 @@ func (api *API) FBGetEmail(fbid uint64) (email string, err error) {
 }
 
 //UserSetFB sets the associated facebook account for the gleepost user userID.
-func (api *API) UserSetFB(userID gp.UserId, fbid uint64) (err error) {
+func (api *API) UserSetFB(userID gp.UserID, fbid uint64) (err error) {
 	return api.db.FBSetGPUser(fbid, userID)
 }
 
@@ -226,7 +226,7 @@ func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
 }
 
 //UserAddFBUsersToGroup takes a list of facebook users and records that they've been invited to the group netID by userID
-func (api *API) UserAddFBUsersToGroup(userID gp.UserId, fbusers []uint64, netID gp.NetworkId) (count int, err error) {
+func (api *API) UserAddFBUsersToGroup(userID gp.UserID, fbusers []uint64, netID gp.NetworkId) (count int, err error) {
 	for _, u := range fbusers {
 		err = api.db.UserAddFBUserToGroup(userID, u, netID)
 		if err == nil {
@@ -239,7 +239,7 @@ func (api *API) UserAddFBUsersToGroup(userID gp.UserId, fbusers []uint64, netID 
 }
 
 //CreateUserFromFB takes a facebook id and an email address and creates a gleepost user, returning their newly created id.
-func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserId, err error) {
+func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, err error) {
 	firstName, lastName, username, err := FBName(fbid)
 	if err != nil {
 		log.Println("Couldn't get name info from facebook:", err)

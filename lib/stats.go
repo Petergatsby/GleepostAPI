@@ -39,7 +39,7 @@ const OVERVIEW Stat = "overview"
 
 var Stats = []Stat{LIKES, COMMENTS, VIEWS, RSVPS, POSTS}
 
-func blankF(user gp.UserId, start time.Time, finish time.Time) (count int, err error) {
+func blankF(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	return 0, nil
 }
 
@@ -47,7 +47,7 @@ func blankPF(post gp.PostId, start time.Time, finish time.Time) (count int, err 
 	return 0, nil
 }
 
-func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
+func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
 	view.Finish = finish.Round(time.Duration(time.Second))
@@ -58,7 +58,7 @@ func (api *API) AggregateStatsForUser(user gp.UserId, start time.Time, finish ti
 	for _, stat := range stats {
 		start = view.Start
 
-		var statF func(gp.UserId, time.Time, time.Time) (int, error)
+		var statF func(gp.UserID, time.Time, time.Time) (int, error)
 		switch {
 		case stat == LIKES:
 			statF = api.db.LikesForUserBetween
@@ -143,7 +143,7 @@ func (api *API) AggregateStatsForPost(post gp.PostId, start time.Time, finish ti
 	return
 }
 
-func (api *API) InteractionsForUserBetween(user gp.UserId, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) InteractionsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	likes, err := api.db.LikesForUserBetween(user, start, finish)
 	if err != nil {
 		return
@@ -178,8 +178,8 @@ func (api *API) InteractionsForPostBetween(post gp.PostId, start time.Time, fini
 
 }
 
-func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserId, err error) {
-	ActiveUsers = make(map[string][]gp.UserId)
+func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserID, err error) {
+	ActiveUsers = make(map[string][]gp.UserID)
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
 		users, err := api.db.UsersActivityInCohort(activity, start, finish)
@@ -192,8 +192,8 @@ func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (Activ
 	return
 }
 
-func deduplicate(userLists ...[]gp.UserId) (deduplicated []gp.UserId) {
-	deduped := make(map[gp.UserId]bool)
+func deduplicate(userLists ...[]gp.UserID) (deduplicated []gp.UserID) {
+	deduped := make(map[gp.UserID]bool)
 	for _, list := range userLists {
 		for _, u := range list {
 			deduped[u] = true
@@ -206,7 +206,7 @@ func deduplicate(userLists ...[]gp.UserId) (deduplicated []gp.UserId) {
 }
 
 func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[string]int) {
-	statFs := make(map[string]func(time.Time, time.Time) ([]gp.UserId, error))
+	statFs := make(map[string]func(time.Time, time.Time) ([]gp.UserID, error))
 	stats = make(map[string]int)
 	statFs["signups"] = api.db.CohortSignedUpBetween
 	statFs["verified"] = api.db.UsersVerifiedInCohort
@@ -222,7 +222,7 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 	if err != nil {
 		return
 	}
-	usersLists := make([][]gp.UserId, len(UsersByActivity))
+	usersLists := make([][]gp.UserID, len(UsersByActivity))
 	for k, v := range UsersByActivity {
 		stats[k] = len(v)
 		usersLists = append(usersLists, v)

@@ -195,7 +195,7 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		User
 ********************************************************************/
 
-func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserId, error) {
+func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserID, error) {
 	s := db.stmt["createUser"]
 	res, err := s.Exec(user, hash, email)
 	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
@@ -204,32 +204,32 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserId, e
 		return 0, err
 	} else {
 		id, _ := res.LastInsertId()
-		return gp.UserId(id), nil
+		return gp.UserID(id), nil
 	}
 }
 
-func (db *DB) SetUserName(id gp.UserId, firstName, lastName string) (err error) {
+func (db *DB) SetUserName(id gp.UserID, firstName, lastName string) (err error) {
 	_, err = db.stmt["setName"].Exec(firstName, lastName, id)
 	return
 }
 
-func (db *DB) GetHash(user string) (hash []byte, id gp.UserId, err error) {
+func (db *DB) GetHash(user string) (hash []byte, id gp.UserID, err error) {
 	s := db.stmt["passSelect"]
 	err = s.QueryRow(user).Scan(&id, &hash)
 	return
 }
 
-func (db *DB) GetHashById(id gp.UserId) (hash []byte, err error) {
+func (db *DB) GetHashById(id gp.UserID) (hash []byte, err error) {
 	err = db.stmt["hashById"].QueryRow(id).Scan(&hash)
 	return
 }
 
-func (db *DB) PassUpdate(id gp.UserId, newHash []byte) (err error) {
+func (db *DB) PassUpdate(id gp.UserID, newHash []byte) (err error) {
 	_, err = db.stmt["passUpdate"].Exec(newHash, id)
 	return
 }
 
-func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
+func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 	var av, firstName sql.NullString
 	s := db.stmt["userSelect"]
 	err = s.QueryRow(id).Scan(&user.Id, &user.Name, &av, &firstName)
@@ -250,7 +250,7 @@ func (db *DB) GetUser(id gp.UserId) (user gp.User, err error) {
 }
 
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
-func (db *DB) GetProfile(id gp.UserId) (user gp.Profile, err error) {
+func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	var av, desc, firstName, lastName sql.NullString
 	s := db.stmt["profileSelect"]
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av, &firstName, &lastName)
@@ -277,54 +277,54 @@ func (db *DB) GetProfile(id gp.UserId) (user gp.Profile, err error) {
 	return
 }
 
-func (db *DB) SetProfileImage(id gp.UserId, url string) (err error) {
+func (db *DB) SetProfileImage(id gp.UserID, url string) (err error) {
 	_, err = db.stmt["setAvatar"].Exec(url, id)
 	return
 }
 
-func (db *DB) SetBusyStatus(id gp.UserId, busy bool) (err error) {
+func (db *DB) SetBusyStatus(id gp.UserID, busy bool) (err error) {
 	_, err = db.stmt["setBusy"].Exec(busy, id)
 	return
 }
 
-func (db *DB) BusyStatus(id gp.UserId) (busy bool, err error) {
+func (db *DB) BusyStatus(id gp.UserID) (busy bool, err error) {
 	err = db.stmt["getBusy"].QueryRow(id).Scan(&busy)
 	return
 }
 
-func (db *DB) UserIdFromFB(fbid uint64) (id gp.UserId, err error) {
+func (db *DB) UserIdFromFB(fbid uint64) (id gp.UserID, err error) {
 	err = db.stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
 	return
 }
 
 //TODO: return ENOSUCHUSER instead.
 
-func (db *DB) SetVerificationToken(id gp.UserId, token string) (err error) {
+func (db *DB) SetVerificationToken(id gp.UserID, token string) (err error) {
 	_, err = db.stmt["insertVerification"].Exec(id, token)
 	return
 }
 
-func (db *DB) VerificationTokenExists(token string) (id gp.UserId, err error) {
+func (db *DB) VerificationTokenExists(token string) (id gp.UserID, err error) {
 	err = db.stmt["verificationExists"].QueryRow(token).Scan(&id)
 	return
 }
 
-func (db *DB) Verify(id gp.UserId) (err error) {
+func (db *DB) Verify(id gp.UserID) (err error) {
 	_, err = db.stmt["verify"].Exec(id)
 	return
 }
 
-func (db *DB) IsVerified(user gp.UserId) (verified bool, err error) {
+func (db *DB) IsVerified(user gp.UserID) (verified bool, err error) {
 	err = db.stmt["userIsVerified"].QueryRow(user).Scan(&verified)
 	return
 }
 
-func (db *DB) GetEmail(id gp.UserId) (email string, err error) {
+func (db *DB) GetEmail(id gp.UserID) (email string, err error) {
 	err = db.stmt["emailSelect"].QueryRow(id).Scan(&email)
 	return
 }
 
-func (db *DB) UserWithEmail(email string) (id gp.UserId, err error) {
+func (db *DB) UserWithEmail(email string) (id gp.UserID, err error) {
 	err = db.stmt["userWithEmail"].QueryRow(email).Scan(&id)
 	return
 }
@@ -357,7 +357,7 @@ func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 	return
 }
 
-func (db *DB) FBSetGPUser(fbid uint64, userID gp.UserId) (err error) {
+func (db *DB) FBSetGPUser(fbid uint64, userID gp.UserID) (err error) {
 	fbSetGPUser := "REPLACE INTO facebook (user_id, fb_id) VALUES (?, ?)"
 	stmt, err := db.prepare(fbSetGPUser)
 	if err != nil {
@@ -368,17 +368,17 @@ func (db *DB) FBSetGPUser(fbid uint64, userID gp.UserId) (err error) {
 	return
 }
 
-func (db *DB) AddPasswordRecovery(userID gp.UserId, token string) (err error) {
+func (db *DB) AddPasswordRecovery(userID gp.UserID, token string) (err error) {
 	_, err = db.stmt["addPasswordRecovery"].Exec(token, userID)
 	return
 }
 
-func (db *DB) CheckPasswordRecovery(userID gp.UserId, token string) (exists bool, err error) {
+func (db *DB) CheckPasswordRecovery(userID gp.UserID, token string) (exists bool, err error) {
 	err = db.stmt["checkPasswordRecovery"].QueryRow(userID, token).Scan(&exists)
 	return
 }
 
-func (db *DB) DeletePasswordRecovery(userID gp.UserId, token string) (err error) {
+func (db *DB) DeletePasswordRecovery(userID gp.UserID, token string) (err error) {
 	_, err = db.stmt["deletePasswordRecovery"].Exec(userID, token)
 	return
 }
@@ -389,7 +389,7 @@ func (db *DB) DeletePasswordRecovery(userID gp.UserId, token string) (err error)
 
 //GetLiveConversations returns the three most recent unfinished live conversations for a given user.
 //TODO: retrieve conversation & expiry in a single query
-func (db *DB) GetLiveConversations(id gp.UserId) (conversations []gp.ConversationSmall, err error) {
+func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.ConversationSmall, err error) {
 	s := db.stmt["liveConversations"]
 	rows, err := s.Query(id)
 	if err != nil {
@@ -418,7 +418,7 @@ func (db *DB) GetLiveConversations(id gp.UserId) (conversations []gp.Conversatio
 	return conversations, nil
 }
 
-func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
+func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
 	s := db.stmt["conversationInsert"]
 	r, _ := s.Exec(id)
 	cID, _ := r.LastInsertId()
@@ -443,7 +443,7 @@ func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *g
 	return
 }
 
-func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
+func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	q := "SELECT DISTINCT id, name, firstname, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
@@ -488,7 +488,7 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 	return
 }
 
-func (db *DB) LiveCount(userID gp.UserId) (count int, err error) {
+func (db *DB) LiveCount(userID gp.UserID) (count int, err error) {
 	q := "SELECT COUNT( conversation_participants.conversation_id ) FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id WHERE participant_id = ? AND conversation_expirations.ended = 0 AND conversation_expirations.expiry > NOW( )"
 	stmt, err := db.prepare(q)
 	if err != nil {
@@ -508,7 +508,7 @@ func (db *DB) UpdateConversation(id gp.ConversationId) (err error) {
 	return err
 }
 
-func (db *DB) GetConversations(userID gp.UserId, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
+func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
 	var s *sql.Stmt
 	if all {
 		s = db.stmt["conversationsAll"]
@@ -605,7 +605,7 @@ func (db *DB) GetConversation(convID gp.ConversationId, count int) (conversation
 	return
 }
 
-func (db *DB) ConversationsToTerminate(id gp.UserId) (conversations []gp.ConversationId, err error) {
+func (db *DB) ConversationsToTerminate(id gp.UserID) (conversations []gp.ConversationId, err error) {
 	q := "SELECT conversation_participants.conversation_id " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
@@ -643,7 +643,7 @@ func (db *DB) GetReadStatus(convID gp.ConversationId) (read []gp.Read, err error
 	defer rows.Close()
 	for rows.Next() {
 		var r gp.Read
-		err = rows.Scan(&r.UserId, &r.LastRead)
+		err = rows.Scan(&r.UserID, &r.LastRead)
 		if err != nil {
 			return
 		}
@@ -666,7 +666,7 @@ func (db *DB) GetParticipants(conv gp.ConversationId) []gp.User {
 	defer rows.Close()
 	participants := make([]gp.User, 0, 5)
 	for rows.Next() {
-		var id gp.UserId
+		var id gp.UserID
 		err = rows.Scan(&id)
 		user, err := db.GetUser(id)
 		if err == nil {
@@ -679,7 +679,7 @@ func (db *DB) GetParticipants(conv gp.ConversationId) []gp.User {
 //GetLastMessage retrieves the most recent message in conversation id.
 func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
 	var timeString string
-	var by gp.UserId
+	var by gp.UserID
 	//Ordered by id rather than timestamp because timestamps are limited to 1-second resolution
 	//ie, the last message by timestamp may be _several
 	//note: this won't work if we move away from incremental message ids.
@@ -709,7 +709,7 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 		Message
 ********************************************************************/
 
-func (db *DB) AddMessage(convID gp.ConversationId, userID gp.UserId, text string) (id gp.MessageId, err error) {
+func (db *DB) AddMessage(convID gp.ConversationId, userID gp.UserID, text string) (id gp.MessageId, err error) {
 	log.Printf("Adding message to db: %d, %d %s", convID, userID, text)
 	s := db.stmt["messageInsert"]
 	res, err := s.Exec(convID, userID, text)
@@ -747,7 +747,7 @@ func (db *DB) GetMessages(convID gp.ConversationId, index int64, sel string, cou
 	for rows.Next() {
 		var message gp.Message
 		var timeString string
-		var by gp.UserId
+		var by gp.UserID
 		err = rows.Scan(&message.Id, &by, &message.Text, &timeString)
 		if err != nil {
 			log.Printf("%v", err)
@@ -768,7 +768,7 @@ func (db *DB) GetMessages(convID gp.ConversationId, index int64, sel string, cou
 //MarkRead will set all messages in the conversation convId read = true
 //up to and including upTo and excluding messages sent by user id.
 //TODO: This won't generalize to >2 participants
-func (db *DB) MarkRead(id gp.UserId, convID gp.ConversationId, upTo gp.MessageId) (err error) {
+func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationId, upTo gp.MessageId) (err error) {
 	_, err = db.stmt["messagesRead"].Exec(upTo, convID, id)
 	return
 }
@@ -827,7 +827,7 @@ func (db *DB) PostCategories(post gp.PostId) (categories []gp.PostCategory, err 
 		Token
 ********************************************************************/
 
-func (db *DB) TokenExists(id gp.UserId, token string) bool {
+func (db *DB) TokenExists(id gp.UserID, token string) bool {
 	var expiry string
 	s := db.stmt["tokenSelect"]
 	err := s.QueryRow(id, token).Scan(&expiry)
@@ -843,7 +843,7 @@ func (db *DB) TokenExists(id gp.UserId, token string) bool {
 
 func (db *DB) AddToken(token gp.Token) (err error) {
 	s := db.stmt["tokenInsert"]
-	_, err = s.Exec(token.UserId, token.Token, token.Expiry)
+	_, err = s.Exec(token.UserID, token.Token, token.Expiry)
 	return
 }
 
@@ -851,7 +851,7 @@ func (db *DB) AddToken(token gp.Token) (err error) {
 		Contact
 ********************************************************************/
 
-func (db *DB) AddContact(adder gp.UserId, addee gp.UserId) (err error) {
+func (db *DB) AddContact(adder gp.UserID, addee gp.UserID) (err error) {
 	log.Println("DB hit: addContact")
 	s := db.stmt["contactInsert"]
 	_, err = s.Exec(adder, addee)
@@ -860,7 +860,7 @@ func (db *DB) AddContact(adder gp.UserId, addee gp.UserId) (err error) {
 
 //GetContacts retrieves all the contacts for user.
 //TODO: This could return contacts which doesn't embed a user
-func (db *DB) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
+func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
 	s := db.stmt["contactSelect"]
 	rows, err := s.Query(user, user)
 	log.Println("DB hit: db.GetContacts")
@@ -870,7 +870,7 @@ func (db *DB) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	defer rows.Close()
 	for rows.Next() {
 		var contact gp.Contact
-		var adder, addee gp.UserId
+		var adder, addee gp.UserID
 		var confirmed bool
 		err = rows.Scan(&adder, &addee, &confirmed)
 		if err != nil {
@@ -900,13 +900,13 @@ func (db *DB) GetContacts(user gp.UserId) (contacts []gp.Contact, err error) {
 	return contacts, nil
 }
 
-func (db *DB) UpdateContact(user gp.UserId, contact gp.UserId) (err error) {
+func (db *DB) UpdateContact(user gp.UserID, contact gp.UserID) (err error) {
 	s := db.stmt["contactUpdate"]
 	_, err = s.Exec(user, contact)
 	return
 }
 
-func (db *DB) ContactRequestExists(adder gp.UserId, addee gp.UserId) (exists bool, err error) {
+func (db *DB) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists bool, err error) {
 	err = db.stmt["contactExists"].QueryRow(adder, addee).Scan(&exists)
 	return
 }
@@ -915,12 +915,12 @@ func (db *DB) ContactRequestExists(adder gp.UserId, addee gp.UserId) (exists boo
 		Upload
 ********************************************************************/
 
-func (db *DB) AddUpload(user gp.UserId, url string) (err error) {
+func (db *DB) AddUpload(user gp.UserID, url string) (err error) {
 	_, err = db.stmt["userUpload"].Exec(user, url)
 	return
 }
 
-func (db *DB) UploadExists(user gp.UserId, url string) (exists bool, err error) {
+func (db *DB) UploadExists(user gp.UserID, url string) (exists bool, err error) {
 	err = db.stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
 	return
 }
@@ -930,7 +930,7 @@ func (db *DB) UploadExists(user gp.UserId, url string) (exists bool, err error) 
 ********************************************************************/
 
 //GetUserNotifications returns all the notifications for a given user, optionally including the seen ones.
-func (db *DB) GetUserNotifications(id gp.UserId, includeSeen bool) (notifications []interface{}, err error) {
+func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
 	notificationSelect := "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ?"
 	if !includeSeen {
 		notificationSelect += " AND seen = 0"
@@ -948,7 +948,7 @@ func (db *DB) GetUserNotifications(id gp.UserId, includeSeen bool) (notification
 		var notification gp.Notification
 		var t string
 		var location sql.NullInt64
-		var by gp.UserId
+		var by gp.UserID
 		if err = rows.Scan(&notification.Id, &notification.Type, &t, &by, &location, &notification.Seen); err != nil {
 			return
 		}
@@ -980,13 +980,13 @@ func (db *DB) GetUserNotifications(id gp.UserId, includeSeen bool) (notification
 	return
 }
 
-func (db *DB) MarkNotificationsSeen(user gp.UserId, upTo gp.NotificationId) (err error) {
+func (db *DB) MarkNotificationsSeen(user gp.UserID, upTo gp.NotificationId) (err error) {
 	_, err = db.stmt["notificationUpdate"].Exec(user, upTo)
 	return
 }
 
 //TODO: All this stuff should not be in the db layer.
-func (db *DB) CreateNotification(ntype string, by gp.UserId, recipient gp.UserId, location uint64) (notification interface{}, err error) {
+func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID, location uint64) (notification interface{}, err error) {
 	var res sql.Result
 	notificationInsert := "INSERT INTO notifications (type, time, `by`, recipient) VALUES (?, NOW(), ?, ?)"
 	notificationInsertLocation := "INSERT INTO notifications (type, time, `by`, recipient, location_id) VALUES (?, NOW(), ?, ?, ?)"
@@ -1040,7 +1040,7 @@ func (db *DB) CreateNotification(ntype string, by gp.UserId, recipient gp.UserId
 	}
 }
 
-func (db *DB) CreateLike(user gp.UserId, post gp.PostId) (err error) {
+func (db *DB) CreateLike(user gp.UserID, post gp.PostId) (err error) {
 	_, err = db.stmt["addLike"].Exec(post, user)
 	// Suppress duplicate entry errors
 	if err != nil {
@@ -1051,7 +1051,7 @@ func (db *DB) CreateLike(user gp.UserId, post gp.PostId) (err error) {
 	return
 }
 
-func (db *DB) RemoveLike(user gp.UserId, post gp.PostId) (err error) {
+func (db *DB) RemoveLike(user gp.UserID, post gp.PostId) (err error) {
 	_, err = db.stmt["delLike"].Exec(post, user)
 	return
 }
@@ -1078,7 +1078,7 @@ func (db *DB) GetLikes(post gp.PostId) (likes []gp.Like, err error) {
 	return
 }
 
-func (db *DB) HasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
+func (db *DB) HasLiked(user gp.UserID, post gp.PostId) (liked bool, err error) {
 	err = db.stmt["likeExists"].QueryRow(post, user).Scan(&liked)
 	return
 }
@@ -1091,7 +1091,7 @@ func (db *DB) LikeCount(post gp.PostId) (count int, err error) {
 //Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
-func (db *DB) Attend(event gp.PostId, user gp.UserId) (err error) {
+func (db *DB) Attend(event gp.PostId, user gp.UserID) (err error) {
 	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1102,7 +1102,7 @@ func (db *DB) Attend(event gp.PostId, user gp.UserId) (err error) {
 }
 
 //UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
-func (db *DB) UnAttend(event gp.PostId, user gp.UserId) (err error) {
+func (db *DB) UnAttend(event gp.PostId, user gp.UserID) (err error) {
 	query := "DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1113,7 +1113,7 @@ func (db *DB) UnAttend(event gp.PostId, user gp.UserId) (err error) {
 }
 
 //UserAttends returns all the event IDs that a user is attending.
-func (db *DB) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
+func (db *DB) UserAttends(user gp.UserID) (events []gp.PostId, err error) {
 	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1135,7 +1135,7 @@ func (db *DB) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
 	return
 }
 
-func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
+func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ?"
 	sParticipate, err := db.prepare(qParticipate)
 	if err != nil {
@@ -1169,7 +1169,7 @@ func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
 	return count, nil
 }
 
-func (db *DB) TotalLiveConversations(user gp.UserId) (count int, err error) {
+func (db *DB) TotalLiveConversations(user gp.UserID) (count int, err error) {
 	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +

@@ -12,7 +12,7 @@ import (
 		Device
 ********************************************************************/
 
-func (db *DB) AddDevice(user gp.UserId, deviceType string, deviceID string) (err error) {
+func (db *DB) AddDevice(user gp.UserID, deviceType string, deviceID string) (err error) {
 	s, err := db.prepare("REPLACE INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)")
 	if err != nil {
 		return
@@ -21,7 +21,7 @@ func (db *DB) AddDevice(user gp.UserId, deviceType string, deviceID string) (err
 	return
 }
 
-func (db *DB) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
+func (db *DB) GetDevices(user gp.UserID) (devices []gp.Device, err error) {
 	s, err := db.prepare("SELECT user_id, device_type, device_id FROM devices WHERE user_id = ?")
 	if err != nil {
 		return
@@ -41,7 +41,7 @@ func (db *DB) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	return
 }
 
-func (db *DB) DeleteDevice(user gp.UserId, device string) (err error) {
+func (db *DB) DeleteDevice(user gp.UserID, device string) (err error) {
 	log.Printf("Deleting %d's device: %s\n", user, device)
 	s, err := db.prepare("DELETE FROM devices WHERE user_id = ? AND device_id = ?")
 	if err != nil {

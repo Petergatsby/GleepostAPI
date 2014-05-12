@@ -15,7 +15,7 @@ func (api *API) GetPost(postID gp.PostId) (post gp.Post, err error) {
 }
 
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
-func (api *API) UserGetPost(userID gp.UserId, postID gp.PostId) (post gp.PostFull, err error) {
+func (api *API) UserGetPost(userID gp.UserID, postID gp.PostId) (post gp.PostFull, err error) {
 	p, err := api.getPostFull(postID)
 	if err != nil {
 		return
@@ -65,7 +65,7 @@ func (api *API) getPostFull(postID gp.PostId) (post gp.PostFull, err error) {
 }
 
 //UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
-func (api *API) UserGetLive(userID gp.UserId, after string, count int) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []gp.PostSmall, err error) {
 	t, enotstringtime := time.Parse(after, time.RFC3339)
 	if enotstringtime != nil {
 		unix, enotunixtime := strconv.ParseInt(after, 10, 64)
@@ -99,7 +99,7 @@ func (api *API) getLive(netID gp.NetworkId, after time.Time, count int) (posts [
 }
 
 //GetUserPosts returns the count most recent posts by userId since post `after`.
-func (api *API) GetUserPosts(userID gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetUserPosts(userID, perspective, mode, index, count, category)
 	if err != nil {
 		return
@@ -114,7 +114,7 @@ func (api *API) GetUserPosts(userID gp.UserId, perspective gp.UserId, mode int, 
 }
 
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
-func (api *API) UserGetNetworkPosts(userID gp.UserId, netID gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -143,7 +143,7 @@ func (api *API) getPosts(netID gp.NetworkId, mode int, index int64, count int, c
 }
 
 //UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
-func (api *API) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.UserGetGroupsPosts(user, mode, index, count, category)
 	if err != nil {
 		return
@@ -262,7 +262,7 @@ func (api *API) GetLikes(post gp.PostId) (likes []gp.LikeFull, err error) {
 	return
 }
 
-func (api *API) hasLiked(user gp.UserId, post gp.PostId) (liked bool, err error) {
+func (api *API) hasLiked(user gp.UserID, post gp.PostId) (liked bool, err error) {
 	return api.db.HasLiked(user, post)
 }
 
@@ -279,7 +279,7 @@ func (api *API) LikesAndCount(post gp.PostId) (count int, likes []gp.LikeFull, e
 	return
 }
 
-func (api *API) CreateComment(postID gp.PostId, userID gp.UserId, text string) (commID gp.CommentId, err error) {
+func (api *API) CreateComment(postID gp.PostId, userID gp.UserID, text string) (commID gp.CommentId, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
@@ -303,7 +303,7 @@ func (api *API) AddPostImage(postID gp.PostId, url string) (err error) {
 	return api.db.AddPostImage(postID, url)
 }
 
-func (api *API) AddPost(userID gp.UserId, netID gp.NetworkId, text string, attribs map[string]string, tags ...string) (postID gp.PostId, err error) {
+func (api *API) AddPost(userID gp.UserID, netID gp.NetworkId, text string, attribs map[string]string, tags ...string) (postID gp.PostId, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -336,7 +336,7 @@ func (api *API) AddPost(userID gp.UserId, netID gp.NetworkId, text string, attri
 	}
 }
 
-func (api *API) AddPostWithImage(userID gp.UserId, netID gp.NetworkId, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostId, err error) {
+func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkId, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostId, err error) {
 	postID, err = api.AddPost(userID, netID, text, attribs, tags...)
 	if err != nil {
 		return
@@ -360,7 +360,7 @@ func (api *API) tagPost(post gp.PostId, tags ...string) (err error) {
 	return api.db.TagPost(post, tags...)
 }
 
-func (api *API) AddLike(user gp.UserId, postID gp.PostId) (err error) {
+func (api *API) AddLike(user gp.UserID, postID gp.PostId) (err error) {
 	//TODO: add like to redis
 	post, err := api.GetPost(postID)
 	if err != nil {
@@ -385,7 +385,7 @@ func (api *API) AddLike(user gp.UserId, postID gp.PostId) (err error) {
 	}
 }
 
-func (api *API) DelLike(user gp.UserId, post gp.PostId) (err error) {
+func (api *API) DelLike(user gp.UserID, post gp.PostId) (err error) {
 	return api.db.RemoveLike(user, post)
 }
 
@@ -401,7 +401,7 @@ func (api *API) GetPostAttribs(post gp.PostId) (attribs map[string]interface{}, 
 //Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
-func (api *API) UserAttend(event gp.PostId, user gp.UserId, attending bool) (err error) {
+func (api *API) UserAttend(event gp.PostId, user gp.UserID, attending bool) (err error) {
 	post, err := api.GetPost(event)
 	if err != nil {
 		return
@@ -419,12 +419,12 @@ func (api *API) UserAttend(event gp.PostId, user gp.UserId, attending bool) (err
 }
 
 //UserAttends returns all the event IDs that a user is attending.
-func (api *API) UserAttends(user gp.UserId) (events []gp.PostId, err error) {
+func (api *API) UserAttends(user gp.UserID) (events []gp.PostId, err error) {
 	return api.db.UserAttends(user)
 }
 
 //UserDeletePost marks a post as deleted (it remains in the db but doesn't show up in feeds). You can only delete your own posts.
-func (api *API) UserDeletePost(user gp.UserId, post gp.PostId) (err error) {
+func (api *API) UserDeletePost(user gp.UserID, post gp.PostId) (err error) {
 	p, err := api.getPostFull(post)
 	switch {
 	case err != nil:
@@ -441,7 +441,7 @@ func (api *API) deletePost(post gp.PostId) (err error) {
 	return api.db.DeletePost(post)
 }
 
-func (api *API) UserGetEventAttendees(user gp.UserId, postID gp.PostId) (attendees []gp.User, err error) {
+func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostId) (attendees []gp.User, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
@@ -455,7 +455,7 @@ func (api *API) UserGetEventAttendees(user gp.UserId, postID gp.PostId) (attende
 	}
 }
 
-func (api *API) UserGetEventPopularity(user gp.UserId, postID gp.PostId) (popularity int, attendees int, err error) {
+func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostId) (popularity int, attendees int, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return

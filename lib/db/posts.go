@@ -24,8 +24,8 @@ var EBADWHERE = gp.APIerror{Reason: "Bad WhereClause!"}
 type WhereClause struct {
 	Mode        int
 	Network     gp.NetworkId
-	User        gp.UserId
-	Perspective gp.UserId
+	User        gp.UserID
+	Perspective gp.UserID
 	Category    string
 }
 
@@ -147,7 +147,7 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 		log.Println("Post!")
 		var post gp.PostSmall
 		var t string
-		var by gp.UserId
+		var by gp.UserID
 		err = rows.Scan(&post.Id, &by, &t, &post.Text, &post.Network)
 		if err != nil {
 			return posts, err
@@ -184,13 +184,13 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userID gp.UserId, perspective gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	where := WhereClause{Mode: WUSER, User: userID, Perspective: perspective, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
 
-func (db *DB) AddPost(userID gp.UserId, text string, network gp.NetworkId) (postID gp.PostId, err error) {
+func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkId) (postID gp.PostId, err error) {
 	s := db.stmt["postInsert"]
 	res, err := s.Exec(userID, text, network)
 	if err != nil {
@@ -215,7 +215,7 @@ func (db *DB) GetLive(netID gp.NetworkId, after time.Time, count int) (posts []g
 	for rows.Next() {
 		var post gp.PostSmall
 		var t string
-		var by gp.UserId
+		var by gp.UserID
 		err = rows.Scan(&post.Id, &by, &t, &post.Text)
 		if err != nil {
 			return posts, err
@@ -274,7 +274,7 @@ func (db *DB) AddPostImage(postID gp.PostId, url string) (err error) {
 	return
 }
 
-func (db *DB) CreateComment(postID gp.PostId, userID gp.UserId, text string) (commID gp.CommentId, err error) {
+func (db *DB) CreateComment(postID gp.PostId, userID gp.UserID, text string) (commID gp.CommentId, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postID, userID, text); err == nil {
 		cID, err := res.LastInsertId()
@@ -296,7 +296,7 @@ func (db *DB) GetComments(postID gp.PostId, start int64, count int) (comments []
 		var comment gp.Comment
 		comment.Post = postID
 		var timeString string
-		var by gp.UserId
+		var by gp.UserID
 		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
 		if err != nil {
 			return comments, err
@@ -325,7 +325,7 @@ func (db *DB) GetCommentCount(id gp.PostId) (count int) {
 func (db *DB) GetPost(postID gp.PostId) (post gp.Post, err error) {
 	s := db.stmt["postSelect"]
 	post.Id = postID
-	var by gp.UserId
+	var by gp.UserID
 	var t string
 	err = s.QueryRow(postID).Scan(&post.Network, &by, &t, &post.Text)
 	if err != nil {
@@ -429,7 +429,7 @@ func (db *DB) GetEventPopularity(post gp.PostId) (popularity int, attendees int,
 }
 
 //TODO: Verify shit doesn't break when a user has no user-groups
-func (db *DB) UserGetGroupsPosts(user gp.UserId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	where := WhereClause{Mode: WGROUPS, User: user, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return

@@ -21,19 +21,19 @@ func (api *API) terminateConversation(convID gp.ConversationId) (err error) {
 }
 
 //UserEndConversation finishes a live conversation, or returns ENOTALLOWED if the user isn't allowed to.
-func (api *API) UserEndConversation(userID gp.UserId, convID gp.ConversationId) (err error) {
+func (api *API) UserEndConversation(userID gp.UserID, convID gp.ConversationId) (err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.terminateConversation(convID)
 	}
 	return &ENOTALLOWED
 }
 
-func (api *API) generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {
+func (api *API) generatePartners(id gp.UserID, count int, network gp.NetworkId) (partners []gp.User, err error) {
 	return api.db.RandomPartners(id, count, network)
 }
 
 //MarkConversationSeen sets the "read" location to upTo for user id in conversation convId.
-func (api *API) MarkConversationSeen(id gp.UserId, convID gp.ConversationId, upTo gp.MessageId) (err error) {
+func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upTo gp.MessageId) (err error) {
 	err = api.db.MarkRead(id, convID, upTo)
 	if err != nil {
 		return
@@ -42,7 +42,7 @@ func (api *API) MarkConversationSeen(id gp.UserId, convID gp.ConversationId, upT
 	return
 }
 
-func (api *API) CreateConversation(initiator gp.UserId, participants []gp.User, live bool) (conversation gp.Conversation, err error) {
+func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, live bool) (conversation gp.Conversation, err error) {
 	var expiry *gp.Expiry
 	if live {
 		expiry = gp.NewExpiry(time.Duration(api.Config.Expiry) * time.Second)
@@ -64,7 +64,7 @@ func (api *API) CreateConversation(initiator gp.UserId, participants []gp.User, 
 }
 
 //CreateRandomConversation generates a new conversation for user id witn nParticipants participants.
-func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live bool) (conversation gp.Conversation, err error) {
+func (api *API) CreateRandomConversation(id gp.UserID, nParticipants int, live bool) (conversation gp.Conversation, err error) {
 	log.Println("Terminating old conversations")
 	conversations, err := api.db.ConversationsToTerminate(id)
 	if err == nil {
@@ -111,7 +111,7 @@ func (api *API) CreateRandomConversation(id gp.UserId, nParticipants int, live b
 }
 
 //CreateConversationWith generates a new conversation with a particular group of participants.
-func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, live bool) (conversation gp.Conversation, err error) {
+func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID, live bool) (conversation gp.Conversation, err error) {
 	var participants []gp.User
 	user, err := api.GetUser(initiator)
 	if err != nil {
@@ -141,7 +141,7 @@ func (api *API) CreateConversationWith(initiator gp.UserId, with []gp.UserId, li
 //CanContact returns true if the initiator is allowed to contact the recipient.
 //This means that a) they are contacts already or b) recipient has posted somewhere a) can see.
 //TODO: Include comments / attends too.
-func (api *API) CanContact(initiator gp.UserId, recipient gp.UserId) (contactable bool, err error) {
+func (api *API) CanContact(initiator gp.UserID, recipient gp.UserID) (contactable bool, err error) {
 	contacts, err := api.AreContacts(initiator, recipient)
 	if err != nil {
 		return
@@ -185,7 +185,7 @@ func (api *API) ConversationChangedEvent(conversation gp.Conversation) {
 	go api.cache.PublishEvent("changed-conversation", ConversationURI(conversation.Id), conversation, chans)
 }
 
-func (api *API) AwaitOneMessage(userID gp.UserId) (resp []byte) {
+func (api *API) AwaitOneMessage(userID gp.UserID) (resp []byte) {
 	c := api.GetMessageChan(userID)
 	select {
 	case resp = <-c:
@@ -195,12 +195,12 @@ func (api *API) AwaitOneMessage(userID gp.UserId) (resp []byte) {
 	}
 }
 
-func (api *API) GetMessageChan(userID gp.UserId) (c chan []byte) {
+func (api *API) GetMessageChan(userID gp.UserID) (c chan []byte) {
 	return api.cache.MessageChan(userID)
 }
 
 //TODO: use conf.ConversationPageSize
-func (api *API) addAllConversations(userID gp.UserId) (err error) {
+func (api *API) addAllConversations(userID gp.UserID) (err error) {
 	conversations, err := api.db.GetConversations(userID, 0, 2000, false)
 	for _, conv := range conversations {
 		go api.cache.AddConversation(conv.Conversation)
@@ -210,7 +210,7 @@ func (api *API) addAllConversations(userID gp.UserId) (err error) {
 
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
 //TODO: Restrict access to correct userId
-func (api *API) GetConversation(userID gp.UserId, convID gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
+func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationId) (conversation gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.getConversation(convID)
 	}
@@ -237,7 +237,7 @@ func (api *API) updateConversation(id gp.ConversationId) (err error) {
 }
 
 //AddMessage creates a new message from userId in conversation convId, or returns ENOTALLOWED if the user is not a participant.
-func (api *API) AddMessage(convID gp.ConversationId, userID gp.UserId, text string) (messageID gp.MessageId, err error) {
+func (api *API) AddMessage(convID gp.ConversationId, userID gp.UserID, text string) (messageID gp.MessageId, err error) {
 	if !api.UserCanViewConversation(userID, convID) {
 		return messageID, &ENOTALLOWED
 	}
@@ -275,7 +275,7 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 	return keys
 }
 
-func (api *API) UserCanViewConversation(userID gp.UserId, convID gp.ConversationId) (viewable bool) {
+func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.ConversationId) (viewable bool) {
 	participants := api.GetParticipants(convID)
 	for _, u := range participants {
 		if userID == u.Id {
@@ -286,7 +286,7 @@ func (api *API) UserCanViewConversation(userID gp.UserId, convID gp.Conversation
 }
 
 //UserGetConversation returns the conversation convId if userId is allowed to view it; otherwise returns ENOTALLOWED.
-func (api *API) UserGetConversation(userID gp.UserId, convID gp.ConversationId, start int64, count int) (conv gp.ConversationAndMessages, err error) {
+func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationId, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.GetFullConversation(convID, start, count)
 	}
@@ -332,7 +332,7 @@ func (api *API) GetParticipants(convID gp.ConversationId) []gp.User {
 //start (returns messages starting from the index'th)
 //before (returns messages historically earlier than the one with id index)
 //after (returns messages newer than index)
-func (api *API) UserGetMessages(userID gp.UserId, convID gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.getMessages(convID, index, sel, count)
 	}
@@ -360,7 +360,7 @@ func (api *API) FillMessageCache(convID gp.ConversationId) (err error) {
 }
 
 //GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.
-func (api *API) GetConversations(userID gp.UserId, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations, err = api.db.GetConversations(userID, start, count, false)
 	return
 }
@@ -390,7 +390,7 @@ func (api *API) Expiry(convID gp.ConversationId) (expiry gp.Expiry, err error) {
 
 //UserDeleteExpiry converts a conversation from live to regular.
 //If the user isn't allowed to do this, it returns ENOTALLOWED.
-func (api *API) UserDeleteExpiry(userID gp.UserId, convID gp.ConversationId) (err error) {
+func (api *API) UserDeleteExpiry(userID gp.UserID, convID gp.ConversationId) (err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.deleteExpiry(convID)
 	}
@@ -407,7 +407,7 @@ func (api *API) deleteExpiry(convID gp.ConversationId) (err error) {
 
 //UnExpireBetweenUsers should fetch all of users[0] conversations, find the ones which contain
 //exactly the same participants as users and delete its expiry(if it exists).
-func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
+func (api *API) UnExpireBetween(users []gp.UserID) (err error) {
 	if len(users) < 2 {
 		return gp.APIerror{Reason: ">1 user required?"}
 	}
@@ -439,7 +439,7 @@ func (api *API) UnExpireBetween(users []gp.UserId) (err error) {
 }
 
 //MarkAllConversationsSeen sets "read" = LastMessage for all user's conversations.
-func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
+func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 	conversations, err := api.db.GetConversations(user, 0, 10000, true)
 	if err != nil {
 		return
@@ -457,11 +457,11 @@ func (api *API) MarkAllConversationsSeen(user gp.UserId) (err error) {
 	return
 }
 
-func (api *API) UnreadMessageCount(user gp.UserId) (count int, err error) {
+func (api *API) UnreadMessageCount(user gp.UserID) (count int, err error) {
 	return api.db.UnreadMessageCount(user)
 }
 
-func (api *API) TotalLiveConversations(user gp.UserId) (count int, err error) {
+func (api *API) TotalLiveConversations(user gp.UserID) (count int, err error) {
 	return api.db.TotalLiveConversations(user)
 }
 

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type UserId uint64
+type UserID uint64
 type NetworkId uint64
 type MessageId uint64
 type PostId uint64
@@ -19,7 +19,7 @@ const (
 )
 
 type User struct {
-	Id     UserId `json:"id"`
+	Id     UserID `json:"id"`
 	Name   string `json:"name"`
 	Avatar string `json:"profile_image"`
 }
@@ -58,7 +58,7 @@ type Message struct {
 }
 
 type Read struct {
-	UserId   UserId    `json:"user"`
+	UserID   UserID    `json:"user"`
 	LastRead MessageId `json:"last_read"`
 }
 
@@ -68,7 +68,7 @@ type RedisMessage struct {
 }
 
 type Token struct {
-	UserId UserId    `json:"id"`
+	UserID UserID    `json:"id"`
 	Token  string    `json:"value"`
 	Expiry time.Time `json:"expiry"`
 }
@@ -118,7 +118,7 @@ type Comment struct {
 }
 
 type Like struct {
-	UserID UserId
+	UserID UserID
 	Time   time.Time
 }
 
@@ -219,7 +219,7 @@ type Config struct {
 }
 
 type Device struct {
-	User UserId `json:"user"`
+	User UserID `json:"user"`
 	Type string `json:"type"`
 	Id   string `json:"id"`
 }
@@ -255,7 +255,7 @@ type Created struct {
 }
 
 type NewUser struct {
-	Id     UserId `json:"id"`
+	Id     UserID `json:"id"`
 	Status string `json:"status"`
 }
 

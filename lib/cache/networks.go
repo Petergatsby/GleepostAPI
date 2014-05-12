@@ -11,7 +11,7 @@ import (
 		Networks
 ********************************************************************/
 
-func (c *Cache) GetUserNetworks(userID gp.UserId) (networks []gp.Group, err error) {
+func (c *Cache) GetUserNetworks(userID gp.UserID) (networks []gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:networks", userID)
@@ -40,7 +40,7 @@ func (c *Cache) GetUserNetworks(userID gp.UserId) (networks []gp.Group, err erro
 }
 
 //SetUserNetworks
-func (c *Cache) SetUserNetworks(userID gp.UserId, networks ...gp.Group) {
+func (c *Cache) SetUserNetworks(userID gp.UserID, networks ...gp.Group) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	baseKey := fmt.Sprintf("users:%d:networks", userID)
@@ -72,7 +72,7 @@ func (c *Cache) GetNetwork(netID gp.NetworkId) (network gp.Group, err error) {
 	if err != nil {
 		return
 	}
-	var u gp.UserId
+	var u gp.UserID
 	if _, err = redis.Scan(reply, &network.Id, &network.Name, &network.Image, &network.Desc, &u); err != nil {
 		return
 	}

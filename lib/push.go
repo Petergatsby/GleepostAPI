@@ -10,7 +10,7 @@ import (
 	"github.com/draaglom/gcm"
 )
 
-func (api *API) notify(user gp.UserId) {
+func (api *API) notify(user gp.UserID) {
 	payload := apns.NewPayload()
 	payload.Alert = "Sup"
 	payload.Badge = 1337
@@ -33,7 +33,7 @@ func (api *API) notify(user gp.UserId) {
 	}
 }
 
-func (api *API) notificationPush(user gp.UserId) {
+func (api *API) notificationPush(user gp.UserID) {
 	notifications, err := api.GetUserNotifications(user, false)
 	if err != nil {
 		log.Println(err)
@@ -72,7 +72,7 @@ func (api *API) notificationPush(user gp.UserId) {
 	log.Printf("Badged %d's %d devices\n", user, count)
 }
 
-func (api *API) newConversationPush(initiator gp.User, other gp.UserId, conv gp.ConversationId) (err error) {
+func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.ConversationId) (err error) {
 	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.Id)
 	devices, e := api.GetDevices(other)
 	if e != nil {
@@ -152,7 +152,7 @@ func (api *API) iosBadge(device string, badge int) (err error) {
 //androidNotification sends a "You have new notifications" push to this device.
 //user is included because GCM doesn't really like deregistering, so we include the
 //recipient id in the notification so the app can filter itself.
-func (api *API) androidNotification(device string, count int, user gp.UserId) (err error) {
+func (api *API) androidNotification(device string, count int, user gp.UserID) (err error) {
 	data := map[string]interface{}{"count": count, "for": user}
 	msg := gcm.NewMessage(data, device)
 	msg.CollapseKey = "New Notification"
@@ -161,7 +161,7 @@ func (api *API) androidNotification(device string, count int, user gp.UserId) (e
 	return
 }
 
-func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationId, user gp.UserId) (err error) {
+func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationId, user gp.UserID) (err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "MSG"
@@ -192,7 +192,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 	return
 }
 
-func (api *API) androidPushMessage(device string, message gp.Message, convID gp.ConversationId, user gp.UserId) (err error) {
+func (api *API) androidPushMessage(device string, message gp.Message, convID gp.ConversationId, user gp.UserID) (err error) {
 	data := map[string]interface{}{"type": "MSG", "sender": message.By.Name, "sender-id": message.By.Id, "conv": convID, "for": user}
 	if len(message.Text) > 3200 {
 		data["text"] = message.Text[:3200] + "..."
@@ -234,7 +234,7 @@ func (api *API) FeedbackDaemon(frequency int) {
 	}
 }
 
-func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
+func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationId, user gp.UserID, with gp.User) (err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	d.LocKey = "NEW_CONV"
@@ -260,7 +260,7 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	return
 }
 
-func (api *API) androidNewConversationNotification(device string, conv gp.ConversationId, user gp.UserId, with gp.User) (err error) {
+func (api *API) androidNewConversationNotification(device string, conv gp.ConversationId, user gp.UserID, with gp.User) (err error) {
 	data := map[string]interface{}{"type": "NEW_CONV", "with": with.Name, "with-id": with.Id, "conv": conv, "for": user}
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
@@ -314,7 +314,7 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 	return
 }
 
-func (api *API) badgeCount(user gp.UserId) (count int, err error) {
+func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 	notifications, err := api.GetUserNotifications(user, false)
 	if err != nil {
 		log.Println(err)
@@ -330,7 +330,7 @@ func (api *API) badgeCount(user gp.UserId) (count int, err error) {
 	return
 }
 
-func (api *API) toIOS(notification interface{}, recipient gp.UserId, device string, newPush bool) (pn *apns.PushNotification, err error) {
+func (api *API) toIOS(notification interface{}, recipient gp.UserID, device string, newPush bool) (pn *apns.PushNotification, err error) {
 	alert := true
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -391,7 +391,7 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserId, device stri
 	return
 }
 
-func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device string, newPush bool) (msg *gcm.Message, err error) {
+func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device string, newPush bool) (msg *gcm.Message, err error) {
 	unknown := false
 	var CollapseKey string
 	var data map[string]interface{}
@@ -445,7 +445,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserId, device 
 	return
 }
 
-func (api *API) Push(notification interface{}, recipient gp.UserId) {
+func (api *API) Push(notification interface{}, recipient gp.UserID) {
 	devices, err := api.GetDevices(recipient)
 	if err != nil {
 		log.Println(err)
