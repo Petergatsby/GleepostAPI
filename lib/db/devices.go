@@ -33,7 +33,7 @@ func (db *DB) GetDevices(user gp.UserID) (devices []gp.Device, err error) {
 	defer rows.Close()
 	for rows.Next() {
 		device := gp.Device{}
-		if err = rows.Scan(&device.User, &device.Type, &device.Id); err != nil {
+		if err = rows.Scan(&device.User, &device.Type, &device.ID); err != nil {
 			return
 		}
 		devices = append(devices, device)
@@ -71,7 +71,7 @@ func (db *DB) GetAllDevices(platform string) (devices []gp.Device, err error) {
 	defer rows.Close()
 	for rows.Next() {
 		device := gp.Device{}
-		if err = rows.Scan(&device.User, &device.Type, &device.Id); err != nil {
+		if err = rows.Scan(&device.User, &device.Type, &device.ID); err != nil {
 			return
 		}
 		devices = append(devices, device)

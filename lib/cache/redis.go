@@ -40,12 +40,12 @@ var ErrEmptyCache = gp.APIerror{Reason: "Not in redis!"}
 		Messages
 ********************************************************************/
 
-func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationId) {
+func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	JSONmsg, _ := json.Marshal(gp.RedisMessage{Message: msg, Conversation: convID})
 	for _, user := range participants {
-		conn.Send("PUBLISH", user.Id, JSONmsg)
+		conn.Send("PUBLISH", user.ID, JSONmsg)
 	}
 	conn.Flush()
 }
@@ -86,16 +86,16 @@ func (c *Cache) MessageChan(userID gp.UserID) (messages chan []byte) {
 	return
 }
 
-func (c *Cache) AddMessage(msg gp.Message, convID gp.ConversationId) {
+func (c *Cache) AddMessage(msg gp.Message, convID gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)
-	conn.Send("ZADD", key, msg.Time.Unix(), msg.Id)
+	conn.Send("ZADD", key, msg.Time.Unix(), msg.ID)
 	conn.Flush()
 	go c.SetMessage(msg)
 }
 
-func (c *Cache) GetLastMessage(id gp.ConversationId) (message gp.Message, err error) {
+func (c *Cache) GetLastMessage(id gp.ConversationID) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", id)
@@ -107,12 +107,12 @@ func (c *Cache) GetLastMessage(id gp.ConversationId) (message gp.Message, err er
 	return message, err
 }
 
-func (c *Cache) AddMessages(convID gp.ConversationId, messages []gp.Message) {
+func (c *Cache) AddMessages(convID gp.ConversationID, messages []gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)
 	for _, message := range messages {
-		conn.Send("ZADD", key, message.Time.Unix(), message.Id)
+		conn.Send("ZADD", key, message.Time.Unix(), message.ID)
 		go c.SetMessage(message)
 	}
 	conn.Flush()
@@ -122,13 +122,13 @@ func (c *Cache) AddMessages(convID gp.ConversationId, messages []gp.Message) {
 func (c *Cache) SetMessage(message gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("messages:%d", message.Id)
-	conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339))
+	key := fmt.Sprintf("messages:%d", message.ID)
+	conn.Send("MSET", key+":by", message.By.ID, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339))
 	conn.Flush()
 }
 
 //MarkConversationSeen registers the id:upTo (last read) pair in redis for convId
-func (c *Cache) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upTo gp.MessageID) {
+func (c *Cache) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:read", convID)
@@ -137,13 +137,13 @@ func (c *Cache) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upT
 	return
 }
 
-func (c *Cache) SetReadStatus(convID gp.ConversationId, read []gp.Read) {
+func (c *Cache) SetReadStatus(convID gp.ConversationID, read []gp.Read) {
 	for _, r := range read {
 		c.MarkConversationSeen(r.UserID, convID, r.LastRead)
 	}
 }
 
-func (c *Cache) GetMessages(convID gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (c *Cache) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)
@@ -217,7 +217,7 @@ func (c *Cache) GetMessage(msgID gp.MessageID) (message gp.Message, err error) {
 	if err != nil {
 		return message, err
 	}
-	message.Id = msgID
+	message.ID = msgID
 	var timeString string
 	var by gp.UserID
 	if _, err = redis.Scan(reply, &by, &message.Text, &timeString); err != nil {
@@ -234,7 +234,7 @@ func (c *Cache) GetMessage(msgID gp.MessageID) (message gp.Message, err error) {
 }
 
 //AddMessagesFromDB takes up to config.MessageCache messages from the database and adds them to the cache.
-func (c *Cache) AddMessagesFromDB(convID gp.ConversationId, db db.DB) (err error) {
+func (c *Cache) AddMessagesFromDB(convID gp.ConversationID, db db.DB) (err error) {
 	messages, err := db.GetMessages(convID, 0, "start", c.config.MessageCache)
 	if err != nil {
 		return
@@ -243,9 +243,9 @@ func (c *Cache) AddMessagesFromDB(convID gp.ConversationId, db db.DB) (err error
 	defer conn.Close()
 	zkey := fmt.Sprintf("conversations:%d:messages", convID)
 	for _, message := range messages {
-		key := fmt.Sprintf("messages:%d", message.Id)
-		conn.Send("ZADD", zkey, message.Time.Unix(), message.Id)
-		conn.Send("MSET", key+":by", message.By.Id, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339))
+		key := fmt.Sprintf("messages:%d", message.ID)
+		conn.Send("ZADD", zkey, message.Time.Unix(), message.ID)
+		conn.Send("MSET", key+":by", message.By.ID, key+":text", message.Text, key+":time", message.Time.Format(time.RFC3339))
 		conn.Flush()
 	}
 	return nil
@@ -269,8 +269,8 @@ func (c *Cache) AddPosts(net gp.NetworkID, posts []gp.Post) (err error) {
 func (c *Cache) AddPost(post gp.Post) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	baseKey := fmt.Sprintf("posts:%d", post.Id)
-	conn.Send("MSET", baseKey+":by", post.By.Id, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
+	baseKey := fmt.Sprintf("posts:%d", post.ID)
+	conn.Send("MSET", baseKey+":by", post.By.ID, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
 	conn.Flush()
 }
 
@@ -282,7 +282,7 @@ func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkID) (err error)
 	if !exists { //Without this we might get stuck with only recent posts in cache
 		return ErrEmptyCache
 	}
-	conn.Send("ZADD", key, post.Time.Unix(), post.Id)
+	conn.Send("ZADD", key, post.Time.Unix(), post.ID)
 	conn.Flush()
 	return nil
 }
@@ -300,7 +300,7 @@ func (c *Cache) GetPost(postID gp.PostID) (post gp.PostCore, err error) {
 	if _, err = redis.Scan(values, &by, &t, &post.Text); err != nil {
 		return post, err
 	}
-	post.Id = postID
+	post.ID = postID
 	post.By, err = c.GetUser(by)
 	if err != nil {
 		return post, err
@@ -381,9 +381,9 @@ func (c *Cache) AddPostsFromDB(netID gp.NetworkID, db *db.DB) {
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d:posts", netID)
 	for _, post := range posts {
-		baseKey := fmt.Sprintf("posts:%d", post.Id)
-		conn.Send("MSET", baseKey+":by", post.By.Id, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
-		conn.Send("ZADD", key, post.Time.Unix(), post.Id)
+		baseKey := fmt.Sprintf("posts:%d", post.ID)
+		conn.Send("MSET", baseKey+":by", post.By.ID, baseKey+":time", post.Time.Format(time.RFC3339), baseKey+":text", post.Text)
+		conn.Send("ZADD", key, post.Time.Unix(), post.ID)
 		conn.Flush()
 	}
 }
@@ -392,11 +392,11 @@ func (c *Cache) AddPostsFromDB(netID gp.NetworkID, db *db.DB) {
 		Conversations
 ********************************************************************/
 
-func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.ConversationId) {
+func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	for _, user := range participants {
-		key := fmt.Sprintf("users:%d:conversations", user.Id)
+		key := fmt.Sprintf("users:%d:conversations", user.ID)
 		//nb: this means that the last activity time for a conversation will
 		//differ slightly from the db to the cache (and even from user to user)
 		//but I think this is okay because it's only for ordering purposes
@@ -406,7 +406,7 @@ func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.Conversati
 	conn.Flush()
 }
 
-func (c *Cache) GetConversationMessageCount(convID gp.ConversationId) (count int, err error) {
+func (c *Cache) GetConversationMessageCount(convID gp.ConversationID) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)
@@ -417,18 +417,18 @@ func (c *Cache) GetConversationMessageCount(convID gp.ConversationId) (count int
 	return count, nil
 }
 
-func (c *Cache) SetConversationParticipants(convID gp.ConversationId, participants []gp.User) {
+func (c *Cache) SetConversationParticipants(convID gp.ConversationID, participants []gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convID)
 	for _, user := range participants {
-		conn.Send("SADD", key, user.Id)
+		conn.Send("SADD", key, user.ID)
 	}
 	conn.Flush()
 }
 
 //TODO: Return []gp.UserId.
-func (c *Cache) GetParticipants(convID gp.ConversationId) (participants []gp.User, err error) {
+func (c *Cache) GetParticipants(convID gp.ConversationID) (participants []gp.User, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:participants", convID)
@@ -441,11 +441,11 @@ func (c *Cache) GetParticipants(convID gp.ConversationId) (participants []gp.Use
 	}
 	for len(values) > 0 {
 		user := gp.User{}
-		values, err = redis.Scan(values, &user.Id)
+		values, err = redis.Scan(values, &user.ID)
 		if err != nil {
 			return
 		}
-		user, err = c.GetUser(user.Id)
+		user, err = c.GetUser(user.ID)
 		if err != nil {
 			return
 		}
@@ -477,17 +477,17 @@ func (c *Cache) GetConversations(id gp.UserID, start int64, count int) (conversa
 			return
 		}
 		conv := gp.ConversationSmall{}
-		conv.Id = gp.ConversationId(curr)
+		conv.ID = gp.ConversationID(curr)
 		conv.LastActivity = time.Unix(int64(unix), 0).UTC()
-		conv.Participants, err = c.GetParticipants(conv.Id)
+		conv.Participants, err = c.GetParticipants(conv.ID)
 		if err != nil {
 			return
 		}
-		conv.Read, err = c.GetRead(conv.Id)
+		conv.Read, err = c.GetRead(conv.ID)
 		if err != nil {
 			return
 		}
-		LastMessage, err := c.GetLastMessage(conv.Id)
+		LastMessage, err := c.GetLastMessage(conv.ID)
 		if err == nil {
 			conv.LastMessage = &LastMessage
 		}
@@ -497,7 +497,7 @@ func (c *Cache) GetConversations(id gp.UserID, start int64, count int) (conversa
 }
 
 //GetRead returns the point which participants have read up to in conversation convId.
-func (c *Cache) GetRead(convID gp.ConversationId) (read []gp.Read, err error) {
+func (c *Cache) GetRead(convID gp.ConversationID) (read []gp.Read, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:read", convID)
@@ -520,7 +520,7 @@ func (c *Cache) GetRead(convID gp.ConversationId) (read []gp.Read, err error) {
 	return
 }
 
-func (c *Cache) ConversationExpiry(convID gp.ConversationId) (expiry gp.Expiry, err error) {
+func (c *Cache) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d", convID)
@@ -533,7 +533,7 @@ func (c *Cache) ConversationExpiry(convID gp.ConversationId) (expiry gp.Expiry, 
 	return
 }
 
-func (c *Cache) SetConversationExpiry(convID gp.ConversationId, expiry gp.Expiry) {
+func (c *Cache) SetConversationExpiry(convID gp.ConversationID, expiry gp.Expiry) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d", convID)
@@ -541,7 +541,7 @@ func (c *Cache) SetConversationExpiry(convID gp.ConversationId, expiry gp.Expiry
 	conn.Flush()
 }
 
-func (c *Cache) DelConversationExpiry(convID gp.ConversationId) {
+func (c *Cache) DelConversationExpiry(convID gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d", convID)
@@ -553,19 +553,19 @@ func (c *Cache) AddConversation(conv gp.Conversation) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	if conv.Expiry != nil {
-		go c.SetConversationExpiry(conv.Id, *conv.Expiry)
+		go c.SetConversationExpiry(conv.ID, *conv.Expiry)
 	}
 	if len(conv.Read) > 0 {
-		go c.SetReadStatus(conv.Id, conv.Read)
+		go c.SetReadStatus(conv.ID, conv.Read)
 	}
 	for _, participant := range conv.Participants {
-		key := fmt.Sprintf("users:%d:conversations", participant.Id)
-		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.Id)
+		key := fmt.Sprintf("users:%d:conversations", participant.ID)
+		conn.Send("ZADD", key, conv.LastActivity.Unix(), conv.ID)
 	}
 	conn.Flush()
 }
 
-func (c *Cache) TerminateConversation(convID gp.ConversationId) (err error) {
+func (c *Cache) TerminateConversation(convID gp.ConversationID) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:ended", convID)
@@ -573,7 +573,7 @@ func (c *Cache) TerminateConversation(convID gp.ConversationId) (err error) {
 	participants, err := c.GetParticipants(convID)
 	if err != nil {
 		for _, p := range participants {
-			conn.Send("ZREM", fmt.Sprintf("users:%d:conversations", p.Id), convID)
+			conn.Send("ZREM", fmt.Sprintf("users:%d:conversations", p.ID), convID)
 		}
 	}
 	conn.Flush()
@@ -599,9 +599,9 @@ func (c *Cache) AddComment(id gp.PostID, comment gp.Comment) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", id)
-	baseKey := fmt.Sprintf("comments:%d", comment.Id)
-	conn.Send("ZADD", key, comment.Time.Unix(), comment.Id)
-	conn.Send("MSET", baseKey+":by", comment.By.Id, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
+	baseKey := fmt.Sprintf("comments:%d", comment.ID)
+	conn.Send("ZADD", key, comment.Time.Unix(), comment.ID)
+	conn.Send("MSET", baseKey+":by", comment.By.ID, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
 	conn.Flush()
 }
 
@@ -614,9 +614,9 @@ func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", postID)
 	for _, comment := range comments {
-		baseKey := fmt.Sprintf("comments:%d", comment.Id)
-		conn.Send("ZADD", key, comment.Time.Unix(), comment.Id)
-		conn.Send("MSET", baseKey+":by", comment.By.Id, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
+		baseKey := fmt.Sprintf("comments:%d", comment.ID)
+		conn.Send("ZADD", key, comment.Time.Unix(), comment.ID)
+		conn.Send("MSET", baseKey+":by", comment.By.ID, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
 		conn.Flush()
 	}
 }
@@ -641,7 +641,7 @@ func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments 
 		if curr == -1 {
 			return
 		}
-		comment, e := c.GetComment(gp.CommentId(curr))
+		comment, e := c.GetComment(gp.CommentID(curr))
 		if e != nil {
 			return comments, e
 		}
@@ -650,7 +650,7 @@ func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments 
 	return
 }
 
-func (c *Cache) GetComment(commentID gp.CommentId) (comment gp.Comment, err error) {
+func (c *Cache) GetComment(commentID gp.CommentID) (comment gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("comments:%d", commentID)
@@ -663,7 +663,7 @@ func (c *Cache) GetComment(commentID gp.CommentId) (comment gp.Comment, err erro
 	if _, err = redis.Scan(reply, &by, &comment.Text, &timeString); err != nil {
 		return
 	}
-	comment.Id = commentID
+	comment.ID = commentID
 	comment.By, err = c.GetUser(by)
 	if err != nil {
 		return
@@ -679,7 +679,7 @@ func (c *Cache) GetComment(commentID gp.CommentId) (comment gp.Comment, err erro
 func (c *Cache) SetUser(user gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	BaseKey := fmt.Sprintf("users:%d", user.Id)
+	BaseKey := fmt.Sprintf("users:%d", user.ID)
 	conn.Send("MSET", BaseKey+":name", user.Name, BaseKey+":profile_image", user.Avatar)
 	conn.Flush()
 }
@@ -701,7 +701,7 @@ func (c *Cache) GetUser(id gp.UserID) (user gp.User, err error) {
 	if user.Name == "" {
 		return user, redis.Error("That user isn't cached!")
 	}
-	user.Id = id
+	user.ID = id
 	return user, nil
 }
 

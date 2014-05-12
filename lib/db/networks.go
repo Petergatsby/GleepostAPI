@@ -57,7 +57,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		var network gp.Group
 		var img, desc sql.NullString
 		var creator sql.NullInt64
-		err = rows.Scan(&network.Id, &network.Name, &img, &desc, &creator)
+		err = rows.Scan(&network.ID, &network.Name, &img, &desc, &creator)
 		if err != nil {
 			return
 		}
@@ -105,7 +105,7 @@ func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 	if err != nil {
 		return
 	}
-	network.Id = netID
+	network.ID = netID
 	if coverImg.Valid {
 		network.Image = coverImg.String
 	}
@@ -133,7 +133,7 @@ func (db *DB) CreateNetwork(name, url, desc string, creator gp.UserID, usergroup
 		return
 	}
 	id, _ := res.LastInsertId()
-	group.Id = gp.NetworkID(id)
+	group.ID = gp.NetworkID(id)
 	group.Name = name
 	group.Image = url
 	group.Desc = desc
@@ -173,7 +173,7 @@ func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.User, err error) {
 		var user gp.User
 		var av sql.NullString
 		var name sql.NullString
-		err = rows.Scan(&user.Id, &user.Name, &av, &name)
+		err = rows.Scan(&user.ID, &user.Name, &av, &name)
 		if err != nil {
 			return
 		}

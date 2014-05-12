@@ -148,7 +148,7 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 		var post gp.PostSmall
 		var t string
 		var by gp.UserID
-		err = rows.Scan(&post.Id, &by, &t, &post.Text, &post.Network)
+		err = rows.Scan(&post.ID, &by, &t, &post.Text, &post.Network)
 		if err != nil {
 			return posts, err
 		}
@@ -158,12 +158,12 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 		}
 		post.By, err = db.GetUser(by)
 		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.Id)
-			post.Images, err = db.GetPostImages(post.Id)
+			post.CommentCount = db.GetCommentCount(post.ID)
+			post.Images, err = db.GetPostImages(post.ID)
 			if err != nil {
 				return
 			}
-			post.LikeCount, err = db.LikeCount(post.Id)
+			post.LikeCount, err = db.LikeCount(post.ID)
 			if err != nil {
 				return
 			}
@@ -216,7 +216,7 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 		var post gp.PostSmall
 		var t string
 		var by gp.UserID
-		err = rows.Scan(&post.Id, &by, &t, &post.Text)
+		err = rows.Scan(&post.ID, &by, &t, &post.Text)
 		if err != nil {
 			return posts, err
 		}
@@ -226,12 +226,12 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 		}
 		post.By, err = db.GetUser(by)
 		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.Id)
-			post.Images, err = db.GetPostImages(post.Id)
+			post.CommentCount = db.GetCommentCount(post.ID)
+			post.Images, err = db.GetPostImages(post.ID)
 			if err != nil {
 				return
 			}
-			post.LikeCount, err = db.LikeCount(post.Id)
+			post.LikeCount, err = db.LikeCount(post.ID)
 			if err != nil {
 				return
 			}
@@ -274,11 +274,11 @@ func (db *DB) AddPostImage(postID gp.PostID, url string) (err error) {
 	return
 }
 
-func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentId, err error) {
+func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postID, userID, text); err == nil {
 		cID, err := res.LastInsertId()
-		commID = gp.CommentId(cID)
+		commID = gp.CommentID(cID)
 		return commID, err
 	}
 	return 0, err
@@ -297,7 +297,7 @@ func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []
 		comment.Post = postID
 		var timeString string
 		var by gp.UserID
-		err := rows.Scan(&comment.Id, &by, &comment.Text, &timeString)
+		err := rows.Scan(&comment.ID, &by, &comment.Text, &timeString)
 		if err != nil {
 			return comments, err
 		}
@@ -324,7 +324,7 @@ func (db *DB) GetCommentCount(id gp.PostID) (count int) {
 //TODO: This could return without an embedded user or images array
 func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
 	s := db.stmt["postSelect"]
-	post.Id = postID
+	post.ID = postID
 	var by gp.UserID
 	var t string
 	err = s.QueryRow(postID).Scan(&post.Network, &by, &t, &post.Text)
@@ -459,7 +459,7 @@ func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 	var first, avatar sql.NullString
 	for rows.Next() {
 		var user gp.User
-		err = rows.Scan(&user.Id, &user.Name, &first, &avatar)
+		err = rows.Scan(&user.ID, &user.Name, &first, &avatar)
 		if first.Valid {
 			user.Name = first.String
 		}

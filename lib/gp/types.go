@@ -8,9 +8,9 @@ type UserID uint64
 type NetworkID uint64
 type MessageID uint64
 type PostID uint64
-type CommentId uint64
-type ConversationId uint64
-type NotificationId uint64
+type CommentID uint64
+type ConversationID uint64
+type NotificationID uint64
 
 const (
 	OSTART = iota
@@ -19,7 +19,7 @@ const (
 )
 
 type User struct {
-	Id     UserID `json:"id"`
+	ID     UserID `json:"id"`
 	Name   string `json:"name"`
 	Avatar string `json:"profile_image"`
 }
@@ -39,7 +39,7 @@ type Contact struct {
 }
 
 type Network struct {
-	Id   NetworkID `json:"id"`
+	ID   NetworkID `json:"id"`
 	Name string    `json:"name"`
 }
 
@@ -51,7 +51,7 @@ type Group struct {
 }
 
 type Message struct {
-	Id   MessageID `json:"id"`
+	ID   MessageID `json:"id"`
 	By   User      `json:"by"`
 	Text string    `json:"text"`
 	Time time.Time `json:"timestamp"`
@@ -64,7 +64,7 @@ type Read struct {
 
 type RedisMessage struct {
 	Message
-	Conversation ConversationId `json:"conversation_id"`
+	Conversation ConversationID `json:"conversation_id"`
 }
 
 type Token struct {
@@ -74,7 +74,7 @@ type Token struct {
 }
 
 type PostCore struct {
-	Id   PostID    `json:"id"`
+	ID   PostID    `json:"id"`
 	By   User      `json:"by"`
 	Time time.Time `json:"timestamp"`
 	Text string    `json:"text"`
@@ -82,7 +82,7 @@ type PostCore struct {
 
 type Post struct {
 	Network    NetworkID              `json:"-"`
-	Id         PostID                 `json:"id"`
+	ID         PostID                 `json:"id"`
 	By         User                   `json:"by"`
 	Time       time.Time              `json:"timestamp"`
 	Text       string                 `json:"text"`
@@ -110,7 +110,7 @@ type PostFull struct {
 }
 
 type Comment struct {
-	Id   CommentId `json:"id"`
+	ID   CommentID `json:"id"`
 	Post PostID    `json:"-"`
 	By   User      `json:"by"`
 	Time time.Time `json:"timestamp"`
@@ -134,7 +134,7 @@ type Rule struct {
 }
 
 type Conversation struct {
-	Id           ConversationId `json:"id"`
+	ID           ConversationID `json:"id"`
 	LastActivity time.Time      `json:"lastActivity"`
 	Participants []User         `json:"participants"`
 	Read         []Read         `json:"read,omitempty"`
@@ -221,11 +221,11 @@ type Config struct {
 type Device struct {
 	User UserID `json:"user"`
 	Type string `json:"type"`
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 }
 
 type Notification struct {
-	Id   NotificationId `json:"id"`
+	ID   NotificationID `json:"id"`
 	Type string         `json:"type"`
 	Time time.Time      `json:"time"`
 	By   User           `json:"user"`
@@ -251,11 +251,11 @@ type APIerror struct {
 }
 
 type Created struct {
-	Id uint64 `json:"id"`
+	ID uint64 `json:"id"`
 }
 
 type NewUser struct {
-	Id     UserID `json:"id"`
+	ID     UserID `json:"id"`
 	Status string `json:"status"`
 }
 
@@ -275,7 +275,7 @@ type Liked struct {
 type CategoryId uint64
 
 type PostCategory struct {
-	Id   CategoryId `json:"id"`
+	ID   CategoryId `json:"id"`
 	Tag  string     `json:"tag"`
 	Name string     `json:"name"`
 }

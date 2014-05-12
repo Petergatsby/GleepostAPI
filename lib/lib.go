@@ -147,7 +147,7 @@ func (api *API) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	if err != nil {
 		return
 	}
-	nets, err := api.GetUserNetworks(user.Id)
+	nets, err := api.GetUserNetworks(user.ID)
 	if err != nil {
 		return
 	}
@@ -192,7 +192,7 @@ func (api *API) RegisterUser(user, pass, email, first, last, invite string) (new
 	}
 	exists, err := api.InviteExists(email, invite)
 	log.Println(exists, err)
-	newUser.Id = userID
+	newUser.ID = userID
 	newUser.Status = "unverified"
 	if err == nil && exists {
 		err = api.db.Verify(userID)
@@ -253,7 +253,7 @@ func (api *API) AreContacts(a, b gp.UserID) (areContacts bool, err error) {
 		return
 	}
 	for _, c := range contacts {
-		if c.Id == b && c.YouConfirmed && c.TheyConfirmed {
+		if c.ID == b && c.YouConfirmed && c.TheyConfirmed {
 			return true, nil
 		}
 	}
@@ -322,7 +322,7 @@ func (api *API) AddDevice(user gp.UserID, deviceType string, deviceID string) (d
 	}
 	device.User = user
 	device.Type = deviceType
-	device.Id = deviceID
+	device.ID = deviceID
 	return
 }
 
@@ -368,7 +368,7 @@ func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notificati
 	return api.db.GetUserNotifications(id, includeSeen)
 }
 
-func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationId) (err error) {
+func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationID) (err error) {
 	return api.db.MarkNotificationsSeen(id, upTo)
 }
 
@@ -415,7 +415,7 @@ func (api *API) issueVerificationEmail(email string, name string, token string) 
 }
 
 func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (err error) {
-	url := api.recoveryUrl(user.Id, token)
+	url := api.recoveryUrl(user.ID, token)
 	html := "<html><body><a href=\"" + url + "\">Click here to recover your password.</a></body></html>"
 	err = api.mail.SendHTML(email, user.Name+", recover your Gleepost password!", html)
 	return

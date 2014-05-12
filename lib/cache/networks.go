@@ -55,10 +55,10 @@ func (c *Cache) SetUserNetworks(userID gp.UserID, networks ...gp.Group) {
 func (c *Cache) SetNetwork(network gp.Group) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	baseKey := fmt.Sprintf("networks:%d", network.Id)
-	conn.Send("MSET", baseKey+":id", network.Id, baseKey+":name", network.Name, baseKey+":image", network.Image, baseKey+":desc", network.Desc)
+	baseKey := fmt.Sprintf("networks:%d", network.ID)
+	conn.Send("MSET", baseKey+":id", network.ID, baseKey+":name", network.Name, baseKey+":image", network.Image, baseKey+":desc", network.Desc)
 	if network.Creator != nil {
-		conn.Send("SET", baseKey+":creator", network.Creator.Id)
+		conn.Send("SET", baseKey+":creator", network.Creator.ID)
 	}
 	conn.Flush()
 }
@@ -73,10 +73,10 @@ func (c *Cache) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 		return
 	}
 	var u gp.UserID
-	if _, err = redis.Scan(reply, &network.Id, &network.Name, &network.Image, &network.Desc, &u); err != nil {
+	if _, err = redis.Scan(reply, &network.ID, &network.Name, &network.Image, &network.Desc, &u); err != nil {
 		return
 	}
-	if network.Id == 0 {
+	if network.ID == 0 {
 		err = redis.Error("Cache miss")
 	}
 	if u != 0 {

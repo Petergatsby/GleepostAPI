@@ -80,7 +80,7 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 	if err != nil {
 		return
 	}
-	return api.getLive(networks[0].Id, t, count)
+	return api.getLive(networks[0].ID, t, count)
 }
 
 //getLive returns the first count events happening after after, within network netId.
@@ -163,22 +163,22 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err error) {
 	//Ha! I am so funny...
 	processed = post
-	processed.Likes, err = api.GetLikes(processed.Id)
+	processed.Likes, err = api.GetLikes(processed.ID)
 	if err != nil {
 		return
 	}
-	processed.Attribs, err = api.GetPostAttribs(processed.Id)
+	processed.Attribs, err = api.GetPostAttribs(processed.ID)
 	if err != nil {
 		return
 	}
-	processed.Categories, err = api.postCategories(processed.Id)
+	processed.Categories, err = api.postCategories(processed.ID)
 	if err != nil {
 		return
 	}
 	for _, c := range processed.Categories {
 		if c.Tag == "event" {
 			//Don't squelch the error, that shit's useful yo
-			processed.Popularity, processed.Attendees, err = api.db.GetEventPopularity(processed.Id)
+			processed.Popularity, processed.Attendees, err = api.db.GetEventPopularity(processed.ID)
 			if err != nil {
 				log.Println(err)
 			}
@@ -189,28 +189,28 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 }
 
 func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
-	post.Id = p.Id
+	post.ID = p.ID
 	post.By = p.By
 	post.Time = p.Time
 	post.Text = p.Text
-	post.Images = api.GetPostImages(p.Id)
-	post.CommentCount = api.GetCommentCount(p.Id)
-	post.Categories, err = api.postCategories(p.Id)
+	post.Images = api.GetPostImages(p.ID)
+	post.CommentCount = api.GetCommentCount(p.ID)
+	post.Categories, err = api.postCategories(p.ID)
 	if err != nil {
 		return
 	}
-	post.Attribs, err = api.GetPostAttribs(p.Id)
+	post.Attribs, err = api.GetPostAttribs(p.ID)
 	if err != nil {
 		return
 	}
-	post.LikeCount, post.Likes, err = api.LikesAndCount(p.Id)
+	post.LikeCount, post.Likes, err = api.LikesAndCount(p.ID)
 	if err != nil {
 		return
 	}
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
 			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(post.Id)
+			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(post.ID)
 			break
 		}
 	}
@@ -279,7 +279,7 @@ func (api *API) LikesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, e
 	return
 }
 
-func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentId, err error) {
+func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
@@ -290,9 +290,9 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		if e != nil {
 			return commID, e
 		}
-		comment := gp.Comment{Id: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
-		if userID != post.By.Id {
-			go api.createNotification("commented", userID, post.By.Id, uint64(postID))
+		comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
+		if userID != post.By.ID {
+			go api.createNotification("commented", userID, post.By.ID, uint64(postID))
 		}
 		go api.cache.AddComment(postID, comment)
 	}
@@ -327,7 +327,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 			}
 			user, err := api.db.GetUser(userID)
 			if err == nil {
-				post := gp.Post{Id: postID, By: user, Text: text, Time: time.Now().UTC()}
+				post := gp.Post{ID: postID, By: user, Text: text, Time: time.Now().UTC()}
 				go api.cache.AddPost(post)
 				go api.cache.AddPostToNetwork(post, netID)
 			}
@@ -377,8 +377,8 @@ func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 		if err != nil {
 			return
 		} else {
-			if user != post.By.Id {
-				api.createNotification("liked", user, post.By.Id, uint64(postID))
+			if user != post.By.ID {
+				api.createNotification("liked", user, post.By.ID, uint64(postID))
 			}
 		}
 		return
@@ -429,7 +429,7 @@ func (api *API) UserDeletePost(user gp.UserID, post gp.PostID) (err error) {
 	switch {
 	case err != nil:
 		return
-	case p.By.Id != user:
+	case p.By.ID != user:
 		return &ENOTALLOWED
 	default:
 		err = api.deletePost(post)

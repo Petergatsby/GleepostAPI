@@ -238,7 +238,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 				return
 			}
-			network = networks[0].Id
+			network = networks[0].ID
 		}
 		//First: which paging scheme are we using
 		var mode int
@@ -316,7 +316,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 				return
 			}
-			network = networks[0].Id
+			network = networks[0].ID
 		} else {
 			_network, err := strconv.ParseUint(n, 10, 64)
 			if err != nil {
@@ -339,7 +339,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			}
 		} else {
-			jsonResponse(w, &gp.Created{Id: uint64(postID)}, 201)
+			jsonResponse(w, &gp.Created{ID: uint64(postID)}, 201)
 		}
 	}
 }
@@ -458,7 +458,7 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convID := gp.ConversationId(_convID)
+	convID := gp.ConversationID(_convID)
 	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
 		start = 0
@@ -484,7 +484,7 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convID := gp.ConversationId(_convID)
+	convID := gp.ConversationID(_convID)
 	expires, err := strconv.ParseBool(r.FormValue("expiry"))
 	if err != nil {
 		jsonErr(w, err, 400)
@@ -526,7 +526,7 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convID := gp.ConversationId(_convID)
+	convID := gp.ConversationID(_convID)
 	err = api.UserEndConversation(userID, convID)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
@@ -548,7 +548,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
-	convID := gp.ConversationId(_convID)
+	convID := gp.ConversationID(_convID)
 	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
 		start = 0
@@ -598,7 +598,7 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
-	convID := gp.ConversationId(_convID)
+	convID := gp.ConversationID(_convID)
 	text := r.FormValue("text")
 	messageID, err := api.AddMessage(convID, userID, text)
 	if err != nil {
@@ -609,7 +609,7 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonErr(w, err, 500)
 	} else {
-		jsonResponse(w, &gp.Created{Id: uint64(messageID)}, 201)
+		jsonResponse(w, &gp.Created{ID: uint64(messageID)}, 201)
 	}
 }
 
@@ -624,7 +624,7 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonErr(w, err, 400)
 	}
-	convID := gp.ConversationId(_convID)
+	convID := gp.ConversationID(_convID)
 	_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 	if err != nil {
 		_upTo = 0
@@ -687,7 +687,7 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
-			jsonResponse(w, &gp.Created{Id: uint64(commentID)}, 201)
+			jsonResponse(w, &gp.Created{ID: uint64(commentID)}, 201)
 		}
 	}
 }
@@ -1108,7 +1108,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			_upTo = 0
 		}
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
-		notificationID := gp.NotificationId(_upTo)
+		notificationID := gp.NotificationID(_upTo)
 		err = api.MarkNotificationsSeen(userID, notificationID)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -1276,7 +1276,7 @@ func jsonServer(ws *websocket.Conn) {
 		return
 	}
 	//Change this. 12/12/13
-	chans := lib.ConversationChannelKeys([]gp.User{gp.User{Id: userID}})
+	chans := lib.ConversationChannelKeys([]gp.User{gp.User{ID: userID}})
 	chans = append(chans, lib.NotificationChannelKey(userID))
 	events := api.EventSubscribe(chans)
 	for {
@@ -1739,7 +1739,7 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 			return
 		}
-		users, err := api.UserSearchUsersInNetwork(userID, query[0], strings.Join(query[1:], " "), networks[0].Id)
+		users, err := api.UserSearchUsersInNetwork(userID, query[0], strings.Join(query[1:], " "), networks[0].ID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			switch {

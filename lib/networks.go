@@ -31,7 +31,7 @@ func (api *API) UserInNetwork(id gp.UserID, network gp.NetworkID) (in bool, err 
 		return false, err
 	}
 	for _, n := range networks {
-		if n.Id == network {
+		if n.ID == network {
 			return true, nil
 		}
 	}
@@ -134,7 +134,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc string) (network g
 		if err != nil {
 			return
 		}
-		err = api.db.SetNetwork(userID, network.Id)
+		err = api.db.SetNetwork(userID, network.ID)
 		return
 	}
 }
@@ -151,7 +151,7 @@ func (api *API) HaveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err er
 	}
 	for _, an := range anets {
 		for _, bn := range bnets {
-			if an.Id == bn.Id {
+			if an.ID == bn.ID {
 				return true, nil
 			}
 		}

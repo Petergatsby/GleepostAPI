@@ -29,7 +29,7 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 	for rows.Next() {
 		var av, first sql.NullString
 		var user gp.User
-		err = rows.Scan(&user.Id, &user.Name, &av, &first)
+		err = rows.Scan(&user.ID, &user.Name, &av, &first)
 		if err != nil {
 			return
 		}

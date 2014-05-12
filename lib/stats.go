@@ -247,7 +247,7 @@ func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 		return
 	}
 	for _, u := range users {
-		email, err := api.GetEmail(u.Id)
+		email, err := api.GetEmail(u.ID)
 		if err != nil {
 			log.Println(err)
 		} else {
