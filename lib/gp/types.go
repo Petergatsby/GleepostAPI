@@ -272,10 +272,10 @@ type Liked struct {
 	Liked bool   `json:"liked"`
 }
 
-type CategoryId uint64
+type CategoryID uint64
 
 type PostCategory struct {
-	ID   CategoryId `json:"id"`
+	ID   CategoryID `json:"id"`
 	Tag  string     `json:"tag"`
 	Name string     `json:"name"`
 }

@@ -774,7 +774,7 @@ func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID
 }
 
 //AddCategory marks the post id as a member of category.
-func (db *DB) AddCategory(id gp.PostID, category gp.CategoryId) (err error) {
+func (db *DB) AddCategory(id gp.PostID, category gp.CategoryID) (err error) {
 	_, err = db.stmt["categoryAdd"].Exec(id, category)
 	return
 }
