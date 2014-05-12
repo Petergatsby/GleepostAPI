@@ -89,7 +89,7 @@ func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts [
 	if err != nil {
 		return
 	}
-	for i, _ := range posts {
+	for i := range posts {
 		processed, err := api.PostProcess(posts[i])
 		if err == nil {
 			posts[i] = processed
@@ -104,7 +104,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 	if err != nil {
 		return
 	}
-	for i, _ := range posts {
+	for i := range posts {
 		processed, err := api.PostProcess(posts[i])
 		if err == nil {
 			posts[i] = processed
@@ -131,7 +131,7 @@ func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, c
 	if err != nil {
 		return
 	}
-	for i, _ := range posts {
+	for i := range posts {
 		processed, err := api.PostProcess(posts[i])
 		if err == nil {
 			posts[i] = processed
@@ -148,7 +148,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 	if err != nil {
 		return
 	}
-	for i, _ := range posts {
+	for i := range posts {
 		processed, err := api.PostProcess(posts[i])
 		if err == nil {
 			posts[i] = processed
@@ -376,10 +376,9 @@ func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 		err = api.db.CreateLike(user, postID)
 		if err != nil {
 			return
-		} else {
-			if user != post.By.ID {
-				api.createNotification("liked", user, post.By.ID, uint64(postID))
-			}
+		}
+		if user != post.By.ID {
+			api.createNotification("liked", user, post.By.ID, uint64(postID))
 		}
 		return
 	}

@@ -276,8 +276,7 @@ func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 			wait := start.Sub(time.Now())
 			time.AfterFunc(wait, f)
 			return
-		} else {
-			start = start.Add(interval)
 		}
+		start = start.Add(interval)
 	}
 }

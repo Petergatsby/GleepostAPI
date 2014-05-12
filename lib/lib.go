@@ -42,8 +42,8 @@ func New(conf gp.Config) (api *API) {
 var ETOOWEAK = gp.APIerror{Reason: "Password too weak!"}
 var EBADREC = gp.APIerror{Reason: "Bad password recovery token."}
 
-const INVITE_CAMPAIGN_IOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
-const INVITE_CAMPAIGN_ANDROID = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
+const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
+const inviteCampaignAndroid = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
 
 /********************************************************************
 Top-level functions
@@ -386,7 +386,7 @@ func NotificationChannelKey(id gp.UserID) (channel string) {
 	return fmt.Sprintf("n:%d", id)
 }
 
-func (api *API) verificationUrl(token string) (url string) {
+func (api *API) verificationURL(token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = "https://dev.gleepost.com/verification.html?token=" + token
 	}
@@ -394,11 +394,11 @@ func (api *API) verificationUrl(token string) (url string) {
 	return
 }
 
-func (api *API) appVerificationUrl(token string) (url string) {
+func (api *API) appVerificationURL(token string) (url string) {
 	return "gleepost://verify/" + token
 }
 
-func (api *API) recoveryUrl(id gp.UserID, token string) (url string) {
+func (api *API) recoveryURL(id gp.UserID, token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = fmt.Sprintf("https://dev.gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
 	}
@@ -408,20 +408,20 @@ func (api *API) recoveryUrl(id gp.UserID, token string) (url string) {
 
 //TODO: send an actual link
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
-	url := api.verificationUrl(token)
+	url := api.verificationURL(token)
 	html := "<html><body><a href=\"" + url + "\">Verify your account online here.</a></body></html>"
 	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
 
 func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (err error) {
-	url := api.recoveryUrl(user.ID, token)
+	url := api.recoveryURL(user.ID, token)
 	html := "<html><body><a href=\"" + url + "\">Click here to recover your password.</a></body></html>"
 	err = api.mail.SendHTML(email, user.Name+", recover your Gleepost password!", html)
 	return
 }
 
-func (api *API) inviteUrl(token, email string) string {
+func (api *API) inviteURL(token, email string) string {
 	if api.Config.DevelopmentMode {
 		return fmt.Sprintf("https://dev.gleepost.com/?invite=%s&email=%s", token, email)
 	}
@@ -429,12 +429,12 @@ func (api *API) inviteUrl(token, email string) string {
 }
 
 func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, token string) (err error) {
-	url := api.inviteUrl(token, email)
+	url := api.inviteURL(token, email)
 	subject := fmt.Sprintf("%s has invited you to the private group \"%s\" on Gleepost.", from.Name, group.Name)
 	html := "<html><body>" +
 		"Don't miss out on their events - <a href=" + url + ">Click here to accept the invitation.</a><br>" +
-		"On your phone? <a href=\"" + INVITE_CAMPAIGN_IOS + "\">install the app on your iPhone here</a>" +
-		" or <a href=\"" + INVITE_CAMPAIGN_ANDROID + "\">click here to get the Android app.</a>" +
+		"On your phone? <a href=\"" + inviteCampaignIOS + "\">install the app on your iPhone here</a>" +
+		" or <a href=\"" + inviteCampaignAndroid + "\">click here to get the Android app.</a>" +
 		"</body></html>"
 	err = api.mail.SendHTML(email, subject, html)
 	return
