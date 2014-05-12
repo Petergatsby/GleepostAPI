@@ -60,21 +60,20 @@ func (db *DB) GetUserNetworks(id gp.UserId, userGroupsOnly bool) (networks []gp.
 		err = rows.Scan(&network.Id, &network.Name, &img, &desc, &creator)
 		if err != nil {
 			return
-		} else {
-			if img.Valid {
-				network.Image = img.String
-			}
-			if desc.Valid {
-				network.Desc = desc.String
-			}
-			if creator.Valid {
-				u, err := db.GetUser(gp.UserId(creator.Int64))
-				if err == nil {
-					network.Creator = &u
-				}
-			}
-			networks = append(networks, network)
 		}
+		if img.Valid {
+			network.Image = img.String
+		}
+		if desc.Valid {
+			network.Desc = desc.String
+		}
+		if creator.Valid {
+			u, err := db.GetUser(gp.UserId(creator.Int64))
+			if err == nil {
+				network.Creator = &u
+			}
+		}
+		networks = append(networks, network)
 	}
 	return
 }
@@ -99,16 +98,16 @@ func (db *DB) GetNetwork(netID gp.NetworkId) (network gp.Group, err error) {
 	if err != nil {
 		return
 	}
-	var cover_img, desc sql.NullString
+	var coverImg, desc sql.NullString
 	var creator sql.NullInt64
-	var user_group bool
-	err = s.QueryRow(netID).Scan(&network.Name, &cover_img, &desc, &creator, &user_group)
+	var userGroup bool
+	err = s.QueryRow(netID).Scan(&network.Name, &coverImg, &desc, &creator, &userGroup)
 	if err != nil {
 		return
 	}
 	network.Id = netID
-	if cover_img.Valid {
-		network.Image = cover_img.String
+	if coverImg.Valid {
+		network.Image = coverImg.String
 	}
 	if desc.Valid {
 		network.Desc = desc.String

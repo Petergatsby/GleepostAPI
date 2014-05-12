@@ -196,8 +196,8 @@ func (db *DB) AddPost(userID gp.UserId, text string, network gp.NetworkId) (post
 	if err != nil {
 		return 0, err
 	}
-	_postId, err := res.LastInsertId()
-	postID = gp.PostId(_postId)
+	_postID, err := res.LastInsertId()
+	postID = gp.PostId(_postID)
 	if err != nil {
 		return 0, err
 	}
@@ -277,12 +277,11 @@ func (db *DB) AddPostImage(postID gp.PostId, url string) (err error) {
 func (db *DB) CreateComment(postID gp.PostId, userID gp.UserId, text string) (commID gp.CommentId, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postID, userID, text); err == nil {
-		cId, err := res.LastInsertId()
-		commID = gp.CommentId(cId)
+		cID, err := res.LastInsertId()
+		commID = gp.CommentId(cID)
 		return commID, err
-	} else {
-		return 0, err
 	}
+	return 0, err
 }
 
 func (db *DB) GetComments(postID gp.PostId, start int64, count int) (comments []gp.Comment, err error) {

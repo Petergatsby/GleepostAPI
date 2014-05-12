@@ -69,11 +69,10 @@ func createToken(userID gp.UserId) gp.Token {
 	random, err := RandomString()
 	if err != nil {
 		return (gp.Token{UserId: userID, Token: "foo", Expiry: time.Now().UTC()})
-	} else {
-		expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
-		token := gp.Token{UserId: userID, Token: random, Expiry: expiry}
-		return (token)
 	}
+	expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
+	token := gp.Token{UserId: userID, Token: random, Expiry: expiry}
+	return (token)
 }
 
 func looksLikeEmail(email string) bool {
@@ -81,9 +80,8 @@ func looksLikeEmail(email string) bool {
 	regex, _ := regexp.Compile(rx)
 	if !regex.MatchString(email) {
 		return (false)
-	} else {
-		return (true)
 	}
+	return (true)
 }
 
 func checkPassStrength(pass string) (err error) {
@@ -111,14 +109,12 @@ func (api *API) ValidatePass(email string, pass string) (id gp.UserId, err error
 	hash, id, err := api.db.GetHash(email)
 	if err != nil {
 		return 0, err
-	} else {
-		err := bcrypt.CompareHashAndPassword(hash, passBytes)
-		if err != nil {
-			return 0, err
-		} else {
-			return id, nil
-		}
 	}
+	err = bcrypt.CompareHashAndPassword(hash, passBytes)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func (api *API) CreateAndStoreToken(id gp.UserId) (gp.Token, error) {
@@ -127,9 +123,8 @@ func (api *API) CreateAndStoreToken(id gp.UserId) (gp.Token, error) {
 	api.cache.PutToken(token)
 	if err != nil {
 		return token, err
-	} else {
-		return token, nil
 	}
+	return token, nil
 }
 
 func (api *API) GetUser(id gp.UserId) (user gp.User, err error) {
@@ -163,13 +158,12 @@ func (api *API) GetProfile(id gp.UserId) (user gp.Profile, err error) {
 func (api *API) ValidateEmail(email string) (validates bool, err error) {
 	if !looksLikeEmail(email) {
 		return false, nil
-	} else {
-		rules, err := api.db.GetRules()
-		if err != nil {
-			return false, err
-		}
-		return api.testEmail(email, rules), nil
 	}
+	rules, err := api.db.GetRules()
+	if err != nil {
+		return false, err
+	}
+	return api.testEmail(email, rules), nil
 }
 
 func (api *API) testEmail(email string, rules []gp.Rule) bool {
@@ -395,9 +389,8 @@ func NotificationChannelKey(id gp.UserId) (channel string) {
 func (api *API) verificationUrl(token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = "https://dev.gleepost.com/verification.html?token=" + token
-	} else {
-		url = "https://gleepost.com/verification.html?token=" + token
 	}
+	url = "https://gleepost.com/verification.html?token=" + token
 	return
 }
 
@@ -408,9 +401,8 @@ func (api *API) appVerificationUrl(token string) (url string) {
 func (api *API) recoveryUrl(id gp.UserId, token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = fmt.Sprintf("https://dev.gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
-	} else {
-		url = fmt.Sprintf("https://gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
 	}
+	url = fmt.Sprintf("https://gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
 	return
 }
 
@@ -432,9 +424,8 @@ func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (er
 func (api *API) inviteUrl(token, email string) string {
 	if api.Config.DevelopmentMode {
 		return fmt.Sprintf("https://dev.gleepost.com/?invite=%s&email=%s", token, email)
-	} else {
-		return fmt.Sprintf("https://gleepost.com/?invite=%s&email=%s", token, email)
 	}
+	return fmt.Sprintf("https://gleepost.com/?invite=%s&email=%s", token, email)
 }
 
 func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, token string) (err error) {
@@ -525,19 +516,17 @@ func (api *API) ChangePass(userID gp.UserId, oldPass string, newPass string) (er
 	hash, err := api.db.GetHashById(userID)
 	if err != nil {
 		return
-	} else {
-		err = bcrypt.CompareHashAndPassword(hash, passBytes)
-		if err != nil {
-			return
-		}
-		hash, err = bcrypt.GenerateFromPassword([]byte(newPass), 10)
-		if err != nil {
-			return
-		}
-		err = api.db.PassUpdate(userID, hash)
+	}
+	err = bcrypt.CompareHashAndPassword(hash, passBytes)
+	if err != nil {
 		return
 	}
-
+	hash, err = bcrypt.GenerateFromPassword([]byte(newPass), 10)
+	if err != nil {
+		return
+	}
+	err = api.db.PassUpdate(userID, hash)
+	return
 }
 
 func (api *API) RequestReset(email string) (err error) {

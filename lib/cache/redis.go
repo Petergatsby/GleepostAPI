@@ -198,9 +198,8 @@ func (c *Cache) GetMessages(convID gp.ConversationId, index int64, sel string, c
 			message, errGettingMessage := c.GetMessage(gp.MessageId(curr))
 			if errGettingMessage != nil {
 				return messages, errGettingMessage
-			} else {
-				go c.SetMessage(message)
 			}
+			go c.SetMessage(message)
 			messages = append(messages, message)
 		}
 	}
@@ -282,10 +281,9 @@ func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkId) (err error)
 	exists, _ := redis.Bool(conn.Do("EXISTS", key))
 	if !exists { //Without this we might get stuck with only recent posts in cache
 		return ErrEmptyCache
-	} else {
-		conn.Send("ZADD", key, post.Time.Unix(), post.Id)
-		conn.Flush()
 	}
+	conn.Send("ZADD", key, post.Time.Unix(), post.Id)
+	conn.Flush()
 	return nil
 }
 
@@ -593,9 +591,8 @@ func (c *Cache) GetCommentCount(id gp.PostId) (count int, err error) {
 	count, err = redis.Int(conn.Do("ZCARD", key))
 	if err != nil {
 		return 0, err
-	} else {
-		return count, nil
 	}
+	return count, nil
 }
 
 func (c *Cache) AddComment(id gp.PostId, comment gp.Comment) {

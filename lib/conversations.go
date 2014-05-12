@@ -24,9 +24,8 @@ func (api *API) terminateConversation(convID gp.ConversationId) (err error) {
 func (api *API) UserEndConversation(userID gp.UserId, convID gp.ConversationId) (err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.terminateConversation(convID)
-	} else {
-		return &ENOTALLOWED
 	}
+	return &ENOTALLOWED
 }
 
 func (api *API) generatePartners(id gp.UserId, count int, network gp.NetworkId) (partners []gp.User, err error) {

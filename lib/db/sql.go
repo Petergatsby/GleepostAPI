@@ -46,13 +46,12 @@ func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
 	stmt, ok := db.stmt[statement]
 	if ok {
 		return
-	} else {
-		stmt, err = db.database.Prepare(statement)
-		if err == nil {
-			db.stmt[statement] = stmt
-		}
-		return
 	}
+	stmt, err = db.database.Prepare(statement)
+	if err == nil {
+		db.stmt[statement] = stmt
+	}
+	return
 }
 
 //why.png
@@ -330,8 +329,8 @@ func (db *DB) UserWithEmail(email string) (id gp.UserId, err error) {
 	return
 }
 
-func (db *DB) CreateFBUser(fbId uint64, email string) (err error) {
-	_, err = db.stmt["fbInsert"].Exec(fbId, email)
+func (db *DB) CreateFBUser(fbID uint64, email string) (err error) {
+	_, err = db.stmt["fbInsert"].Exec(fbID, email)
 	return
 }
 
@@ -422,8 +421,8 @@ func (db *DB) GetLiveConversations(id gp.UserId) (conversations []gp.Conversatio
 func (db *DB) CreateConversation(id gp.UserId, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
 	s := db.stmt["conversationInsert"]
 	r, _ := s.Exec(id)
-	cId, _ := r.LastInsertId()
-	conversation.Id = gp.ConversationId(cId)
+	cID, _ := r.LastInsertId()
+	conversation.Id = gp.ConversationId(cID)
 	if err != nil {
 		return
 	}
@@ -472,19 +471,18 @@ func (db *DB) RandomPartners(id gp.UserId, count int, network gp.NetworkId) (par
 		if err != nil {
 			log.Println("Error scanning from user query", err)
 			return
-		} else {
-			log.Println("Got a partner")
-			liveCount, err := db.LiveCount(user.Id)
-			if err == nil && liveCount < 3 && user.Id != id {
-				if av.Valid {
-					user.Avatar = av.String
-				}
-				if first.Valid {
-					user.Name = first.String
-				}
-				partners = append(partners, user)
-				count--
+		}
+		log.Println("Got a partner")
+		liveCount, err := db.LiveCount(user.Id)
+		if err == nil && liveCount < 3 && user.Id != id {
+			if av.Valid {
+				user.Avatar = av.String
 			}
+			if first.Valid {
+				user.Name = first.String
+			}
+			partners = append(partners, user)
+			count--
 		}
 	}
 	return
@@ -697,15 +695,14 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time)")
 	if err != nil {
 		return message, err
-	} else {
-		message.By, err = db.GetUser(by)
-		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
-		}
-		message.Time, _ = time.Parse(mysqlTime, timeString)
-
-		return message, nil
 	}
+	message.By, err = db.GetUser(by)
+	if err != nil {
+		log.Printf("error getting user %d %v", by, err)
+	}
+	message.Time, _ = time.Parse(mysqlTime, timeString)
+
+	return message, nil
 }
 
 /********************************************************************
@@ -836,13 +833,12 @@ func (db *DB) TokenExists(id gp.UserId, token string) bool {
 	err := s.QueryRow(id, token).Scan(&expiry)
 	if err != nil {
 		return (false)
-	} else {
-		t, _ := time.Parse(mysqlTime, expiry)
-		if t.After(time.Now()) {
-			return (true)
-		}
-		return (false)
 	}
+	t, _ := time.Parse(mysqlTime, expiry)
+	if t.After(time.Now()) {
+		return (true)
+	}
+	return (false)
 }
 
 func (db *DB) AddToken(token gp.Token) (err error) {
@@ -1156,15 +1152,15 @@ func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
 		return
 	}
 	var convID gp.ConversationId
-	var lastId gp.MessageId
+	var lastID gp.MessageId
 	for rows.Next() {
-		err = rows.Scan(&convID, &lastId)
+		err = rows.Scan(&convID, &lastID)
 		if err != nil {
 			return
 		}
-		log.Printf("Conversation %d, last read message was %d\n", convID, lastId)
+		log.Printf("Conversation %d, last read message was %d\n", convID, lastID)
 		_count := 0
-		err = sUnreadCount.QueryRow(convID, lastId).Scan(&_count)
+		err = sUnreadCount.QueryRow(convID, lastID).Scan(&_count)
 		if err == nil {
 			log.Printf("Conversation %d, unread message count was %d\n", convID, _count)
 			count += _count
