@@ -103,7 +103,7 @@ func (c *Cache) GetLastMessage(id gp.ConversationId) (message gp.Message, err er
 	if err != nil {
 		return
 	}
-	message, err = c.GetMessage(gp.MessageId(messageID))
+	message, err = c.GetMessage(gp.MessageID(messageID))
 	return message, err
 }
 
@@ -128,7 +128,7 @@ func (c *Cache) SetMessage(message gp.Message) {
 }
 
 //MarkConversationSeen registers the id:upTo (last read) pair in redis for convId
-func (c *Cache) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upTo gp.MessageId) {
+func (c *Cache) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upTo gp.MessageID) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:read", convID)
@@ -195,7 +195,7 @@ func (c *Cache) GetMessages(convID gp.ConversationId, index int64, sel string, c
 			return
 		}
 		if curr != 0 {
-			message, errGettingMessage := c.GetMessage(gp.MessageId(curr))
+			message, errGettingMessage := c.GetMessage(gp.MessageID(curr))
 			if errGettingMessage != nil {
 				return messages, errGettingMessage
 			}
@@ -209,7 +209,7 @@ func (c *Cache) GetMessages(convID gp.ConversationId, index int64, sel string, c
 //GetMessage attempts to retrieve the message with id msgId from cache. If it doesn't exist in the cache it returns an error. Maybe.
 //TODO: get a message which doesn't embed a gp.User
 //TODO: return an APIerror when the message doesn't exist.
-func (c *Cache) GetMessage(msgID gp.MessageId) (message gp.Message, err error) {
+func (c *Cache) GetMessage(msgID gp.MessageID) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("messages:%d", msgID)

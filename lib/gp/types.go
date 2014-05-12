@@ -6,7 +6,7 @@ import (
 
 type UserID uint64
 type NetworkID uint64
-type MessageId uint64
+type MessageID uint64
 type PostId uint64
 type CommentId uint64
 type ConversationId uint64
@@ -51,7 +51,7 @@ type Group struct {
 }
 
 type Message struct {
-	Id   MessageId `json:"id"`
+	Id   MessageID `json:"id"`
 	By   User      `json:"by"`
 	Text string    `json:"text"`
 	Time time.Time `json:"timestamp"`
@@ -59,7 +59,7 @@ type Message struct {
 
 type Read struct {
 	UserID   UserID    `json:"user"`
-	LastRead MessageId `json:"last_read"`
+	LastRead MessageID `json:"last_read"`
 }
 
 type RedisMessage struct {

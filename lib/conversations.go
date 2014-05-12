@@ -33,7 +33,7 @@ func (api *API) generatePartners(id gp.UserID, count int, network gp.NetworkID) 
 }
 
 //MarkConversationSeen sets the "read" location to upTo for user id in conversation convId.
-func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upTo gp.MessageId) (err error) {
+func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationId, upTo gp.MessageID) (err error) {
 	err = api.db.MarkRead(id, convID, upTo)
 	if err != nil {
 		return
@@ -221,7 +221,7 @@ func (api *API) getConversation(convID gp.ConversationId) (conversation gp.Conve
 	return api.db.GetConversation(convID, api.Config.ConversationPageSize)
 }
 
-func (api *API) GetMessage(msgID gp.MessageId) (message gp.Message, err error) {
+func (api *API) GetMessage(msgID gp.MessageID) (message gp.Message, err error) {
 	message, err = api.cache.GetMessage(msgID)
 	return message, err
 }
@@ -237,7 +237,7 @@ func (api *API) updateConversation(id gp.ConversationId) (err error) {
 }
 
 //AddMessage creates a new message from userId in conversation convId, or returns ENOTALLOWED if the user is not a participant.
-func (api *API) AddMessage(convID gp.ConversationId, userID gp.UserID, text string) (messageID gp.MessageId, err error) {
+func (api *API) AddMessage(convID gp.ConversationId, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
 	if !api.UserCanViewConversation(userID, convID) {
 		return messageID, &ENOTALLOWED
 	}
@@ -250,7 +250,7 @@ func (api *API) AddMessage(convID gp.ConversationId, userID gp.UserID, text stri
 		return
 	}
 	msg := gp.Message{
-		Id:   gp.MessageId(messageID),
+		Id:   gp.MessageID(messageID),
 		By:   user,
 		Text: text,
 		Time: time.Now().UTC()}

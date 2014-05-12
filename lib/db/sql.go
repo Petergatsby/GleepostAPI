@@ -709,7 +709,7 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 		Message
 ********************************************************************/
 
-func (db *DB) AddMessage(convID gp.ConversationId, userID gp.UserID, text string) (id gp.MessageId, err error) {
+func (db *DB) AddMessage(convID gp.ConversationId, userID gp.UserID, text string) (id gp.MessageID, err error) {
 	log.Printf("Adding message to db: %d, %d %s", convID, userID, text)
 	s := db.stmt["messageInsert"]
 	res, err := s.Exec(convID, userID, text)
@@ -717,7 +717,7 @@ func (db *DB) AddMessage(convID gp.ConversationId, userID gp.UserID, text string
 		return 0, err
 	}
 	_id, err := res.LastInsertId()
-	id = gp.MessageId(_id)
+	id = gp.MessageID(_id)
 	return
 }
 
@@ -768,7 +768,7 @@ func (db *DB) GetMessages(convID gp.ConversationId, index int64, sel string, cou
 //MarkRead will set all messages in the conversation convId read = true
 //up to and including upTo and excluding messages sent by user id.
 //TODO: This won't generalize to >2 participants
-func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationId, upTo gp.MessageId) (err error) {
+func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationId, upTo gp.MessageID) (err error) {
 	_, err = db.stmt["messagesRead"].Exec(upTo, convID, id)
 	return
 }
@@ -1152,7 +1152,7 @@ func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 		return
 	}
 	var convID gp.ConversationId
-	var lastID gp.MessageId
+	var lastID gp.MessageID
 	for rows.Next() {
 		err = rows.Scan(&convID, &lastID)
 		if err != nil {

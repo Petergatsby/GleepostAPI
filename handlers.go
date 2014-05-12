@@ -629,7 +629,7 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_upTo = 0
 	}
-	upTo := gp.MessageId(_upTo)
+	upTo := gp.MessageID(_upTo)
 	err = api.MarkConversationSeen(userID, convID, upTo)
 	if err != nil {
 		jsonErr(w, err, 500)
