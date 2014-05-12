@@ -135,6 +135,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /stats/users/[user-id]/posts/[stat-type]/[period]/[start]/[finish] [[GET]](#get-statsusersuser-idpostsstat-typeperiodstartfinish)
 
+/stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish] [[GET]](#get-postspost-idsstat-typeperiodstartfinish)
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1428,6 +1430,31 @@ required parameters: id, token
 
 Example:
 GET https://dev.gleepost.com/api/v0.34/stats/user/2395/posts/rsvps/week/2013-01-01T00:00:00Z/2015-01-01T00:00:00Z
+```json
+{
+"start":"2013-01-01T00:00:00Z",
+"finish":"2015-01-01T00:00:00Z",
+"period":604800,
+"data":
+	{"rsvps":[
+		{"start":"2014-02-11T00:00:00Z","count":1},
+		{"start":"2014-02-18T00:00:00Z","count":4},
+		{"start":"2014-02-25T00:00:00Z","count":5}
+	         ]
+	}
+}
+```
+
+##GET /stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish]
+required parameters: id, token
+
+- stat-type is one of "likes", "comments", "rsvps", "interactions"
+- The special stat type "overview" will give you a combined view containing all the above stat types for this interval.
+- period is either "hour", "day" or "week" and indicates how the counts are bucketed (the interval within which counts are summed)
+- start and finish are RFC3339 formatted strings which indicate the beginning and end of the period you are viewing stats for.
+
+Example:
+GET https://dev.gleepost.com/api/v1/stats/posts/2395/rsvps/week/2013-01-01T00:00:00Z/2015-01-01T00:00:00Z
 ```json
 {
 "start":"2013-01-01T00:00:00Z",
