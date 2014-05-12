@@ -8,7 +8,7 @@ import (
 )
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
-func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkId) (users []gp.User, err error) {
+func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (users []gp.User, err error) {
 	search := "SELECT id, name, avatar, firstname " +
 		"FROM users JOIN user_network ON users.id = user_network.user_id " +
 		"WHERE network_id = ? " +

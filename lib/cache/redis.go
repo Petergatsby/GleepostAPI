@@ -255,7 +255,7 @@ func (c *Cache) AddMessagesFromDB(convID gp.ConversationId, db db.DB) (err error
 		Posts
 ********************************************************************/
 
-func (c *Cache) AddPosts(net gp.NetworkId, posts []gp.Post) (err error) {
+func (c *Cache) AddPosts(net gp.NetworkID, posts []gp.Post) (err error) {
 	for _, post := range posts {
 		go c.AddPost(post)
 		err = c.AddPostToNetwork(post, net)
@@ -274,7 +274,7 @@ func (c *Cache) AddPost(post gp.Post) {
 	conn.Flush()
 }
 
-func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkId) (err error) {
+func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkID) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d:posts", network)
@@ -310,7 +310,7 @@ func (c *Cache) GetPost(postID gp.PostId) (post gp.PostCore, err error) {
 }
 
 //TODO: Return posts which don't embed a user
-func (c *Cache) GetPosts(id gp.NetworkId, mode int, index int64, count int) (posts []gp.PostCore, err error) {
+func (c *Cache) GetPosts(id gp.NetworkID, mode int, index int64, count int) (posts []gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 
@@ -372,7 +372,7 @@ func (c *Cache) GetPosts(id gp.NetworkId, mode int, index int64, count int) (pos
 	return
 }
 
-func (c *Cache) AddPostsFromDB(netID gp.NetworkId, db *db.DB) {
+func (c *Cache) AddPostsFromDB(netID gp.NetworkID, db *db.DB) {
 	posts, err := db.GetPosts(netID, 1, 0, c.config.PostCache, "")
 	if err != nil {
 		log.Println(err)

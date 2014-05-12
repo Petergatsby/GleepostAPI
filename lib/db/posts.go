@@ -23,7 +23,7 @@ var EBADWHERE = gp.APIerror{Reason: "Bad WhereClause!"}
 
 type WhereClause struct {
 	Mode        int
-	Network     gp.NetworkId
+	Network     gp.NetworkID
 	User        gp.UserID
 	Perspective gp.UserID
 	Category    string
@@ -190,7 +190,7 @@ func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, in
 	return
 }
 
-func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkId) (postID gp.PostId, err error) {
+func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (postID gp.PostId, err error) {
 	s := db.stmt["postInsert"]
 	res, err := s.Exec(userID, text, network)
 	if err != nil {
@@ -205,7 +205,7 @@ func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkId) (post
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
-func (db *DB) GetLive(netID gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
 	s := db.stmt["liveSelect"]
 	rows, err := s.Query(netID, after.Unix(), count)
 	if err != nil {
@@ -244,7 +244,7 @@ func (db *DB) GetLive(netID gp.NetworkId, after time.Time, count int) (posts []g
 }
 
 //GetPosts finds posts in the network netId.
-func (db *DB) GetPosts(netID gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	where := WhereClause{Mode: WNETWORK, Network: netID, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return

@@ -581,7 +581,7 @@ func (api *API) DeviceFeedback(deviceID string, timestamp uint32) (err error) {
 }
 
 func (api *API) IsAdmin(user gp.UserID) (admin bool) {
-	in, err := api.UserInNetwork(user, gp.NetworkId(api.Config.Admins))
+	in, err := api.UserInNetwork(user, gp.NetworkID(api.Config.Admins))
 	if err == nil && in {
 		return true
 	}
@@ -589,7 +589,7 @@ func (api *API) IsAdmin(user gp.UserID) (admin bool) {
 }
 
 //CreateUserSpecial manually creates a user with these details, bypassing validation etc
-func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool, primaryNetwork gp.NetworkId) (err error) {
+func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool, primaryNetwork gp.NetworkID) (err error) {
 	user, err := RandomString()
 	if err != nil {
 		return

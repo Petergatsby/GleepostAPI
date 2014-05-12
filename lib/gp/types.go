@@ -5,7 +5,7 @@ import (
 )
 
 type UserID uint64
-type NetworkId uint64
+type NetworkID uint64
 type MessageId uint64
 type PostId uint64
 type CommentId uint64
@@ -39,7 +39,7 @@ type Contact struct {
 }
 
 type Network struct {
-	Id   NetworkId `json:"id"`
+	Id   NetworkID `json:"id"`
 	Name string    `json:"name"`
 }
 
@@ -81,7 +81,7 @@ type PostCore struct {
 }
 
 type Post struct {
-	Network    NetworkId              `json:"-"`
+	Network    NetworkID              `json:"-"`
 	Id         PostId                 `json:"id"`
 	By         User                   `json:"by"`
 	Time       time.Time              `json:"timestamp"`
@@ -128,7 +128,7 @@ type LikeFull struct {
 }
 
 type Rule struct {
-	NetworkID NetworkId
+	NetworkID NetworkID
 	Type      string
 	Value     string
 }
@@ -239,7 +239,7 @@ type PostNotification struct {
 
 type GroupNotification struct {
 	Notification
-	Group NetworkId `json:"network"`
+	Group NetworkID `json:"network"`
 }
 
 func (c *MysqlConfig) ConnectionString() string {

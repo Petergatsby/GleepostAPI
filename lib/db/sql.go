@@ -443,7 +443,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 	return
 }
 
-func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkId) (partners []gp.User, err error) {
+func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
 	q := "SELECT DISTINCT id, name, firstname, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
@@ -968,7 +968,7 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 				np := gp.PostNotification{Notification: notification, Post: gp.PostId(location.Int64)}
 				notifications = append(notifications, np)
 			case notification.Type == "added_group":
-				ng := gp.GroupNotification{Notification: notification, Group: gp.NetworkId(location.Int64)}
+				ng := gp.GroupNotification{Notification: notification, Group: gp.NetworkID(location.Int64)}
 				notifications = append(notifications, ng)
 			default:
 				notifications = append(notifications, notification)
@@ -1033,7 +1033,7 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 		np := gp.PostNotification{Notification: n, Post: gp.PostId(location)}
 		return np, nil
 	case ntype == "added_group":
-		ng := gp.GroupNotification{Notification: n, Group: gp.NetworkId(location)}
+		ng := gp.GroupNotification{Notification: n, Group: gp.NetworkID(location)}
 		return ng, nil
 	default:
 		return n, nil

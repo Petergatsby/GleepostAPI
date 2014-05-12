@@ -28,7 +28,7 @@ func (api *API) UserEndConversation(userID gp.UserID, convID gp.ConversationId) 
 	return &ENOTALLOWED
 }
 
-func (api *API) generatePartners(id gp.UserID, count int, network gp.NetworkId) (partners []gp.User, err error) {
+func (api *API) generatePartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
 	return api.db.RandomPartners(id, count, network)
 }
 

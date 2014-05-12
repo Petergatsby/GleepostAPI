@@ -29,7 +29,7 @@ func (c *Cache) GetUserNetworks(userID gp.UserID) (networks []gp.Group, err erro
 		case err != nil || net <= 0:
 			return
 		default:
-			network, e := c.GetNetwork(gp.NetworkId(net))
+			network, e := c.GetNetwork(gp.NetworkID(net))
 			if e != nil {
 				return networks, e
 			}
@@ -64,7 +64,7 @@ func (c *Cache) SetNetwork(network gp.Group) {
 }
 
 //GetNetwork returns the network with id netId from the cache, or err if it isn't there.
-func (c *Cache) GetNetwork(netID gp.NetworkId) (network gp.Group, err error) {
+func (c *Cache) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("networks:%d", netID)

@@ -84,7 +84,7 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 }
 
 //getLive returns the first count events happening after after, within network netId.
-func (api *API) getLive(netID gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetLive(netID, after, count)
 	if err != nil {
 		return
@@ -114,7 +114,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 }
 
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
-func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -126,7 +126,7 @@ func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkId, mode i
 	}
 }
 
-func (api *API) getPosts(netID gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts, err = api.db.GetPosts(netID, mode, index, count, category)
 	if err != nil {
 		return
@@ -303,7 +303,7 @@ func (api *API) AddPostImage(postID gp.PostId, url string) (err error) {
 	return api.db.AddPostImage(postID, url)
 }
 
-func (api *API) AddPost(userID gp.UserID, netID gp.NetworkId, text string, attribs map[string]string, tags ...string) (postID gp.PostId, err error) {
+func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostId, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -336,7 +336,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkId, text string, attri
 	}
 }
 
-func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkId, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostId, err error) {
+func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostId, err error) {
 	postID, err = api.AddPost(userID, netID, text, attribs, tags...)
 	if err != nil {
 		return

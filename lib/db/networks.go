@@ -78,7 +78,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 	return
 }
 
-func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkId) (err error) {
+func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
 	networkInsert := "REPLACE INTO user_network (user_id, network_id) VALUES (?, ?)"
 	s, err := db.prepare(networkInsert)
 	if err != nil {
@@ -90,7 +90,7 @@ func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkId) (err error) {
 
 //GetNetwork returns the network netId.
 //TODO: add extra details.
-func (db *DB) GetNetwork(netID gp.NetworkId) (network gp.Group, err error) {
+func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group " +
 		"FROM network " +
 		"WHERE network.id = ?"
@@ -133,7 +133,7 @@ func (db *DB) CreateNetwork(name, url, desc string, creator gp.UserID, usergroup
 		return
 	}
 	id, _ := res.LastInsertId()
-	group.Id = gp.NetworkId(id)
+	group.Id = gp.NetworkID(id)
 	group.Name = name
 	group.Image = url
 	group.Desc = desc
@@ -147,7 +147,7 @@ func (db *DB) CreateNetwork(name, url, desc string, creator gp.UserID, usergroup
 }
 
 //IsGroup returns false if netId isn't a user group, and ErrNoRows if netId doesn't exist.
-func (db *DB) IsGroup(netID gp.NetworkId) (group bool, err error) {
+func (db *DB) IsGroup(netID gp.NetworkID) (group bool, err error) {
 	isgroup := "SELECT user_group FROM network WHERE id = ?"
 	s, err := db.prepare(isgroup)
 	if err != nil {
@@ -158,7 +158,7 @@ func (db *DB) IsGroup(netID gp.NetworkId) (group bool, err error) {
 }
 
 //GetNetworkUsers returns all the members of the group netId
-func (db *DB) GetNetworkUsers(netID gp.NetworkId) (users []gp.User, err error) {
+func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.User, err error) {
 	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
 	s, err := db.prepare(memberQuery)
 	if err != nil {
@@ -188,7 +188,7 @@ func (db *DB) GetNetworkUsers(netID gp.NetworkId) (users []gp.User, err error) {
 	return
 }
 
-func (db *DB) LeaveNetwork(userID gp.UserID, netID gp.NetworkId) (err error) {
+func (db *DB) LeaveNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {
 	leaveQuery := "DELETE FROM user_network WHERE user_id = ? AND network_id = ?"
 	s, err := db.prepare(leaveQuery)
 	if err != nil {
@@ -198,7 +198,7 @@ func (db *DB) LeaveNetwork(userID gp.UserID, netID gp.NetworkId) (err error) {
 	return
 }
 
-func (db *DB) CreateInvite(userID gp.UserID, netID gp.NetworkId, email string, token string) (err error) {
+func (db *DB) CreateInvite(userID gp.UserID, netID gp.NetworkID, email string, token string) (err error) {
 	inviteQuery := "INSERT INTO group_invites (group_id, inviter, email, `key`) VALUES (?, ?, ?, ?)"
 	s, err := db.prepare(inviteQuery)
 	if err != nil {
@@ -208,7 +208,7 @@ func (db *DB) CreateInvite(userID gp.UserID, netID gp.NetworkId, email string, t
 	return
 }
 
-func (db *DB) SetNetworkImage(netID gp.NetworkId, url string) (err error) {
+func (db *DB) SetNetworkImage(netID gp.NetworkID, url string) (err error) {
 	networkUpdate := "UPDATE network SET cover_img = ? WHERE id = ?"
 	s, err := db.prepare(networkUpdate)
 	if err != nil {
@@ -218,7 +218,7 @@ func (db *DB) SetNetworkImage(netID gp.NetworkId, url string) (err error) {
 	return
 }
 
-func (db *DB) NetworkCreator(netID gp.NetworkId) (creator gp.UserID, err error) {
+func (db *DB) NetworkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
 	qCreator := "SELECT creator FROM network WHERE id = ?"
 	s, err := db.prepare(qCreator)
 	if err != nil {
@@ -278,7 +278,7 @@ func (db *DB) AcceptAllFBInvites(facebook uint64) (err error) {
 	return
 }
 
-func (db *DB) UserAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.NetworkId) (err error) {
+func (db *DB) UserAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.NetworkID) (err error) {
 	q := "INSERT INTO fb_group_invites (inviter_user_id, facebook_id, network_id) VALUES (?, ?, ?)"
 	s, err := db.prepare(q)
 	if err != nil {

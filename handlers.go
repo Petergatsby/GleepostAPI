@@ -223,7 +223,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		filter := r.FormValue("filter")
 		vars := mux.Vars(r)
 		id, ok := vars["network"]
-		var network gp.NetworkId
+		var network gp.NetworkID
 		switch {
 		case ok:
 			_network, err := strconv.ParseUint(id, 10, 64)
@@ -231,7 +231,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 				return
 			}
-			network = gp.NetworkId(_network)
+			network = gp.NetworkID(_network)
 		default: //We haven't been given a network, which means this handler is being called by /posts and we just want the users' default network
 			networks, err := api.GetUserNetworks(userID)
 			if err != nil {
@@ -309,7 +309,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			ts = strings.Split(tags, ",")
 		}
 		n, ok := vars["network"]
-		var network gp.NetworkId
+		var network gp.NetworkID
 		if !ok {
 			networks, err := api.GetUserNetworks(userID)
 			if err != nil {
@@ -323,7 +323,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 				return
 			}
-			network = gp.NetworkId(_network)
+			network = gp.NetworkID(_network)
 		}
 		switch {
 		case len(url) > 5:
@@ -1557,7 +1557,7 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		netID := gp.NetworkId(_netID)
+		netID := gp.NetworkID(_netID)
 		network, err := api.UserGetNetwork(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -1616,7 +1616,7 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		netID := gp.NetworkId(_netID)
+		netID := gp.NetworkID(_netID)
 		_users := strings.Split(r.FormValue("users"), ",")
 		_fbUsers := strings.Split(r.FormValue("fbusers"), ",")
 		var fbusers []uint64
@@ -1671,7 +1671,7 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		netID := gp.NetworkId(_netID)
+		netID := gp.NetworkID(_netID)
 		users, err := api.UserGetGroupMembers(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -1707,7 +1707,7 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		netID := gp.NetworkId(_netID)
+		netID := gp.NetworkID(_netID)
 		err = api.UserLeaveGroup(userID, netID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -1837,7 +1837,7 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 			return
 		}
-		netID := gp.NetworkId(_netID)
+		netID := gp.NetworkID(_netID)
 		url := r.FormValue("url")
 		err = api.UserSetNetworkImage(userID, netID, url)
 		if err != nil {

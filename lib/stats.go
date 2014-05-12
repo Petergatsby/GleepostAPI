@@ -241,7 +241,7 @@ func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	for _, activity := range activities {
 		text += fmt.Sprintf("%s: %d (%2.1f%%)\n", activity, stats[activity], 100*float64(stats[activity])/float64(stats["verified"]))
 	}
-	users, err := api.db.GetNetworkUsers(gp.NetworkId(api.Config.Admins))
+	users, err := api.db.GetNetworkUsers(gp.NetworkID(api.Config.Admins))
 	if err != nil {
 		log.Println(err)
 		return

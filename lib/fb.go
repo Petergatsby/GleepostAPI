@@ -226,7 +226,7 @@ func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
 }
 
 //UserAddFBUsersToGroup takes a list of facebook users and records that they've been invited to the group netID by userID
-func (api *API) UserAddFBUsersToGroup(userID gp.UserID, fbusers []uint64, netID gp.NetworkId) (count int, err error) {
+func (api *API) UserAddFBUsersToGroup(userID gp.UserID, fbusers []uint64, netID gp.NetworkID) (count int, err error) {
 	for _, u := range fbusers {
 		err = api.db.UserAddFBUserToGroup(userID, u, netID)
 		if err == nil {

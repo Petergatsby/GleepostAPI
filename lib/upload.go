@@ -26,7 +26,7 @@ func randomFilename(extension string) (string, error) {
 	return "", err
 }
 
-func (api *API) getS3(network gp.NetworkId) (s *s3.S3) {
+func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
 	var auth aws.Auth
 	auth.AccessKey, auth.SecretKey = api.Config.AWS.KeyId, api.Config.AWS.SecretKey
 	//1911 == Stanford.

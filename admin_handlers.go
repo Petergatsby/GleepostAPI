@@ -70,7 +70,7 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, MissingParameterNetwork, 400)
 				return
 			}
-			netID := gp.NetworkId(_netID)
+			netID := gp.NetworkID(_netID)
 			verified, _ := strconv.ParseBool(r.FormValue("verified"))
 			err = api.CreateUserSpecial(r.FormValue("first"), r.FormValue("last"), r.FormValue("email"), r.FormValue("pass"), verified, netID)
 			if err != nil {
