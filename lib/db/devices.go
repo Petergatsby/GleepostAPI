@@ -12,12 +12,12 @@ import (
 		Device
 ********************************************************************/
 
-func (db *DB) AddDevice(user gp.UserId, deviceType string, deviceId string) (err error) {
+func (db *DB) AddDevice(user gp.UserId, deviceType string, deviceID string) (err error) {
 	s, err := db.prepare("REPLACE INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(user, deviceType, deviceId)
+	_, err = s.Exec(user, deviceType, deviceID)
 	return
 }
 
@@ -51,9 +51,9 @@ func (db *DB) DeleteDevice(user gp.UserId, device string) (err error) {
 	return
 }
 
-func (db *DB) Feedback(deviceId string, timestamp time.Time) (err error) {
+func (db *DB) Feedback(deviceID string, timestamp time.Time) (err error) {
 	s, err := db.prepare("DELETE FROM devices WHERE device_id = ? AND last_update < ? AND device_type = 'ios'")
-	r, err := s.Exec(deviceId, timestamp)
+	r, err := s.Exec(deviceID, timestamp)
 	n, _ := r.RowsAffected()
 	log.Printf("Feedback: %d devices deleted\n", n)
 	return

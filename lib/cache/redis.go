@@ -99,11 +99,11 @@ func (c *Cache) GetLastMessage(id gp.ConversationId) (message gp.Message, err er
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", id)
-	messageId, err := redis.Int(conn.Do("ZREVRANGE", key, 0, 0))
+	messageID, err := redis.Int(conn.Do("ZREVRANGE", key, 0, 0))
 	if err != nil {
 		return
 	}
-	message, err = c.GetMessage(gp.MessageId(messageId))
+	message, err = c.GetMessage(gp.MessageId(messageID))
 	return message, err
 }
 
@@ -210,15 +210,15 @@ func (c *Cache) GetMessages(convID gp.ConversationId, index int64, sel string, c
 //GetMessage attempts to retrieve the message with id msgId from cache. If it doesn't exist in the cache it returns an error. Maybe.
 //TODO: get a message which doesn't embed a gp.User
 //TODO: return an APIerror when the message doesn't exist.
-func (c *Cache) GetMessage(msgId gp.MessageId) (message gp.Message, err error) {
+func (c *Cache) GetMessage(msgID gp.MessageId) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("messages:%d", msgId)
+	key := fmt.Sprintf("messages:%d", msgID)
 	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":time"))
 	if err != nil {
 		return message, err
 	}
-	message.Id = msgId
+	message.Id = msgID
 	var timeString string
 	var by gp.UserId
 	if _, err = redis.Scan(reply, &by, &message.Text, &timeString); err != nil {
@@ -653,10 +653,10 @@ func (c *Cache) GetComments(postID gp.PostId, start int64, count int) (comments 
 	return
 }
 
-func (c *Cache) GetComment(commentId gp.CommentId) (comment gp.Comment, err error) {
+func (c *Cache) GetComment(commentID gp.CommentId) (comment gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	key := fmt.Sprintf("comments:%d", commentId)
+	key := fmt.Sprintf("comments:%d", commentID)
 	reply, err := redis.Values(conn.Do("MGET", key+":by", key+":text", key+":time"))
 	if err != nil {
 		return
@@ -666,7 +666,7 @@ func (c *Cache) GetComment(commentId gp.CommentId) (comment gp.Comment, err erro
 	if _, err = redis.Scan(reply, &by, &comment.Text, &timeString); err != nil {
 		return
 	}
-	comment.Id = commentId
+	comment.Id = commentID
 	comment.By, err = c.GetUser(by)
 	if err != nil {
 		return

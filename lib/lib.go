@@ -321,14 +321,14 @@ func (api *API) AcceptContact(user gp.UserId, toAccept gp.UserId) (contact gp.Co
 	return
 }
 
-func (api *API) AddDevice(user gp.UserId, deviceType string, deviceId string) (device gp.Device, err error) {
-	err = api.db.AddDevice(user, deviceType, deviceId)
+func (api *API) AddDevice(user gp.UserId, deviceType string, deviceID string) (device gp.Device, err error) {
+	err = api.db.AddDevice(user, deviceType, deviceID)
 	if err != nil {
 		return
 	}
 	device.User = user
 	device.Type = deviceType
-	device.Id = deviceId
+	device.Id = deviceID
 	return
 }
 
@@ -336,8 +336,8 @@ func (api *API) GetDevices(user gp.UserId) (devices []gp.Device, err error) {
 	return api.db.GetDevices(user)
 }
 
-func (api *API) DeleteDevice(user gp.UserId, deviceId string) (err error) {
-	return api.db.DeleteDevice(user, deviceId)
+func (api *API) DeleteDevice(user gp.UserId, deviceID string) (err error) {
+	return api.db.DeleteDevice(user, deviceID)
 }
 
 func (api *API) SetProfileImage(id gp.UserId, url string) (err error) {
@@ -586,9 +586,9 @@ func (api *API) GetLiveConversations(userID gp.UserId) (conversations []gp.Conve
 	return api.db.GetLiveConversations(userID)
 }
 
-func (api *API) DeviceFeedback(deviceId string, timestamp uint32) (err error) {
+func (api *API) DeviceFeedback(deviceID string, timestamp uint32) (err error) {
 	t := time.Unix(int64(timestamp), 0)
-	return api.db.Feedback(deviceId, t)
+	return api.db.Feedback(deviceID, t)
 }
 
 func (api *API) IsAdmin(user gp.UserId) (admin bool) {

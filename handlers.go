@@ -418,22 +418,22 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	} else {
 		idstring := r.FormValue("participants")
 		ids := strings.Split(idstring, ",")
-		user_ids := make([]gp.UserId, 0, 10)
+		userIds := make([]gp.UserId, 0, 10)
 		for _, _id := range ids {
 			id, err := strconv.ParseUint(_id, 10, 64)
 			if err == nil {
-				user_ids = append(user_ids, gp.UserId(id))
+				userIds = append(userIds, gp.UserId(id))
 			}
 		}
 		switch {
-		case len(user_ids) < 1:
+		case len(userIds) < 1:
 			jsonResponse(w, &ETOOFEW, 400)
 			return
-		case len(user_ids) > 10:
+		case len(userIds) > 10:
 			jsonResponse(w, &ETOOMANY, 400)
 			return
 		default:
-			conversation, err = api.CreateConversationWith(userID, user_ids, false)
+			conversation, err = api.CreateConversationWith(userID, userIds, false)
 		}
 
 	}
@@ -684,11 +684,11 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postID := gp.PostId(_id)
 		text := r.FormValue("text")
-		commentId, err := api.CreateComment(postID, userID, text)
+		commentID, err := api.CreateComment(postID, userID, text)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
-			jsonResponse(w, &gp.Created{Id: uint64(commentId)}, 201)
+			jsonResponse(w, &gp.Created{Id: uint64(commentID)}, 201)
 		}
 	}
 }
@@ -785,9 +785,9 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
-		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		profileId := gp.UserId(_id)
-		user, err := api.GetProfile(profileId)
+		_otherID, _ := strconv.ParseUint(vars["id"], 10, 64)
+		otherID := gp.UserId(_otherID)
+		user, err := api.GetProfile(otherID)
 		if err != nil {
 			if err == gp.ENOSUCHUSER {
 				jsonErr(w, err, 404)
@@ -808,7 +808,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-		profileId := gp.UserId(_id)
+		otherID := gp.UserId(_id)
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -837,7 +837,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			after = 0
 		}
-		posts, err := api.GetUserPosts(profileId, userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
+		posts, err := api.GetUserPosts(otherID, userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -887,9 +887,9 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "POST":
-		_otherId, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
-		otherId := gp.UserId(_otherId)
-		contact, err := api.AddContact(userID, otherId)
+		_otherID, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
+		otherID := gp.UserId(_otherID)
+		contact, err := api.AddContact(userID, otherID)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
@@ -904,7 +904,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	vars := mux.Vars(r)
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
-	contactId := gp.UserId(_id)
+	contactID := gp.UserId(_id)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -914,7 +914,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 			accepted = false
 		}
 		if accepted {
-			contact, err := api.AcceptContact(userID, contactId)
+			contact, err := api.AcceptContact(userID, contactID)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
@@ -938,9 +938,9 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
-		deviceId := r.FormValue("device_id")
-		log.Println("Device:", deviceType, deviceId)
-		device, err := api.AddDevice(userID, deviceType, deviceId)
+		deviceID := r.FormValue("device_id")
+		log.Println("Device:", deviceType, deviceID)
+		device, err := api.AddDevice(userID, deviceType, deviceID)
 		log.Println(device, err)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -1110,8 +1110,8 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			_upTo = 0
 		}
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
-		notificationId := gp.NotificationId(_upTo)
-		err = api.MarkNotificationsSeen(userID, notificationId)
+		notificationID := gp.NotificationId(_upTo)
+		err = api.MarkNotificationsSeen(userID, notificationID)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {

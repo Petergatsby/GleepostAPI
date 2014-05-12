@@ -205,9 +205,9 @@ func (db *DB) AddPost(userID gp.UserId, text string, network gp.NetworkId) (post
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
-func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (db *DB) GetLive(netID gp.NetworkId, after time.Time, count int) (posts []gp.PostSmall, err error) {
 	s := db.stmt["liveSelect"]
-	rows, err := s.Query(netId, after.Unix(), count)
+	rows, err := s.Query(netID, after.Unix(), count)
 	if err != nil {
 		return
 	}
@@ -244,8 +244,8 @@ func (db *DB) GetLive(netId gp.NetworkId, after time.Time, count int) (posts []g
 }
 
 //GetPosts finds posts in the network netId.
-func (db *DB) GetPosts(netId gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	where := WhereClause{Mode: WNETWORK, Network: netId, Category: category}
+func (db *DB) GetPosts(netID gp.NetworkId, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	where := WhereClause{Mode: WNETWORK, Network: netID, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
 }
@@ -274,12 +274,12 @@ func (db *DB) AddPostImage(postID gp.PostId, url string) (err error) {
 	return
 }
 
-func (db *DB) CreateComment(postID gp.PostId, userID gp.UserId, text string) (commId gp.CommentId, err error) {
+func (db *DB) CreateComment(postID gp.PostId, userID gp.UserId, text string) (commID gp.CommentId, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postID, userID, text); err == nil {
 		cId, err := res.LastInsertId()
-		commId = gp.CommentId(cId)
-		return commId, err
+		commID = gp.CommentId(cId)
+		return commID, err
 	} else {
 		return 0, err
 	}

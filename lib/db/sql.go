@@ -549,10 +549,10 @@ func (db *DB) GetConversations(userID gp.UserId, start int64, count int, all boo
 	return conversations, nil
 }
 
-func (db *DB) ConversationActivity(convId gp.ConversationId) (t time.Time, err error) {
+func (db *DB) ConversationActivity(convID gp.ConversationId) (t time.Time, err error) {
 	s := db.stmt["conversationActivity"]
 	var tstring string
-	err = s.QueryRow(convId).Scan(&tstring)
+	err = s.QueryRow(convID).Scan(&tstring)
 	if err != nil {
 		return
 	}
@@ -560,10 +560,10 @@ func (db *DB) ConversationActivity(convId gp.ConversationId) (t time.Time, err e
 	return
 }
 
-func (db *DB) ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, err error) {
+func (db *DB) ConversationExpiry(convID gp.ConversationId) (expiry gp.Expiry, err error) {
 	s := db.stmt["conversationExpiry"]
 	var t string
-	err = s.QueryRow(convId).Scan(&t, &expiry.Ended)
+	err = s.QueryRow(convID).Scan(&t, &expiry.Ended)
 	if err != nil {
 		return
 	}
@@ -571,39 +571,39 @@ func (db *DB) ConversationExpiry(convId gp.ConversationId) (expiry gp.Expiry, er
 	return
 }
 
-func (db *DB) DeleteConversationExpiry(convId gp.ConversationId) (err error) {
-	_, err = db.stmt["deleteExpiry"].Exec(convId)
+func (db *DB) DeleteConversationExpiry(convID gp.ConversationId) (err error) {
+	_, err = db.stmt["deleteExpiry"].Exec(convID)
 	return
 }
 
-func (db *DB) TerminateConversation(convId gp.ConversationId) (err error) {
-	_, err = db.stmt["endConversation"].Exec(convId)
+func (db *DB) TerminateConversation(convID gp.ConversationId) (err error) {
+	_, err = db.stmt["endConversation"].Exec(convID)
 	return
 }
 
-func (db *DB) ConversationSetExpiry(convId gp.ConversationId, expiry gp.Expiry) (err error) {
+func (db *DB) ConversationSetExpiry(convID gp.ConversationId, expiry gp.Expiry) (err error) {
 	s := db.stmt["conversationSetExpiry"]
-	_, err = s.Exec(convId, expiry.Time)
+	_, err = s.Exec(convID, expiry.Time)
 	return
 }
 
 //GetConversation returns the conversation convId, including up to count messages.
-func (db *DB) GetConversation(convId gp.ConversationId, count int) (conversation gp.ConversationAndMessages, err error) {
-	conversation.Id = convId
-	conversation.LastActivity, err = db.ConversationActivity(convId)
+func (db *DB) GetConversation(convID gp.ConversationId, count int) (conversation gp.ConversationAndMessages, err error) {
+	conversation.Id = convID
+	conversation.LastActivity, err = db.ConversationActivity(convID)
 	if err != nil {
 		return
 	}
-	conversation.Participants = db.GetParticipants(convId)
-	read, err := db.GetReadStatus(convId)
+	conversation.Participants = db.GetParticipants(convID)
+	read, err := db.GetReadStatus(convID)
 	if err == nil {
 		conversation.Read = read
 	}
-	expiry, err := db.ConversationExpiry(convId)
+	expiry, err := db.ConversationExpiry(convID)
 	if err == nil {
 		conversation.Expiry = &expiry
 	}
-	conversation.Messages, err = db.GetMessages(convId, 0, "start", count)
+	conversation.Messages, err = db.GetMessages(convID, 0, "start", count)
 	return
 }
 
@@ -637,8 +637,8 @@ func (db *DB) ConversationsToTerminate(id gp.UserId) (conversations []gp.Convers
 }
 
 //GetReadStatus returns all the positions the participants in this conversation have read to. It omits participants who haven't read.
-func (db *DB) GetReadStatus(convId gp.ConversationId) (read []gp.Read, err error) {
-	rows, err := db.stmt["readStatus"].Query(convId)
+func (db *DB) GetReadStatus(convID gp.ConversationId) (read []gp.Read, err error) {
+	rows, err := db.stmt["readStatus"].Query(convID)
 	if err != nil {
 		return
 	}
@@ -712,10 +712,10 @@ func (db *DB) GetLastMessage(id gp.ConversationId) (message gp.Message, err erro
 		Message
 ********************************************************************/
 
-func (db *DB) AddMessage(convId gp.ConversationId, userID gp.UserId, text string) (id gp.MessageId, err error) {
-	log.Printf("Adding message to db: %d, %d %s", convId, userID, text)
+func (db *DB) AddMessage(convID gp.ConversationId, userID gp.UserId, text string) (id gp.MessageId, err error) {
+	log.Printf("Adding message to db: %d, %d %s", convID, userID, text)
 	s := db.stmt["messageInsert"]
-	res, err := s.Exec(convId, userID, text)
+	res, err := s.Exec(convID, userID, text)
 	if err != nil {
 		return 0, err
 	}
@@ -731,7 +731,7 @@ func (db *DB) AddMessage(convId gp.ConversationId, userID gp.UserId, text string
 //exception.
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
-func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (db *DB) GetMessages(convID gp.ConversationId, index int64, sel string, count int) (messages []gp.Message, err error) {
 	var s *sql.Stmt
 	switch {
 	case sel == "after":
@@ -741,7 +741,7 @@ func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, cou
 	case sel == "start":
 		s = db.stmt["messageSelect"]
 	}
-	rows, err := s.Query(convId, index, count)
+	rows, err := s.Query(convID, index, count)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time)")
 	if err != nil {
 		return
@@ -771,8 +771,8 @@ func (db *DB) GetMessages(convId gp.ConversationId, index int64, sel string, cou
 //MarkRead will set all messages in the conversation convId read = true
 //up to and including upTo and excluding messages sent by user id.
 //TODO: This won't generalize to >2 participants
-func (db *DB) MarkRead(id gp.UserId, convId gp.ConversationId, upTo gp.MessageId) (err error) {
-	_, err = db.stmt["messagesRead"].Exec(upTo, convId, id)
+func (db *DB) MarkRead(id gp.UserId, convID gp.ConversationId, upTo gp.MessageId) (err error) {
+	_, err = db.stmt["messagesRead"].Exec(upTo, convID, id)
 	return
 }
 
@@ -1155,18 +1155,18 @@ func (db *DB) UnreadMessageCount(user gp.UserId) (count int, err error) {
 	if err != nil {
 		return
 	}
-	var convId gp.ConversationId
+	var convID gp.ConversationId
 	var lastId gp.MessageId
 	for rows.Next() {
-		err = rows.Scan(&convId, &lastId)
+		err = rows.Scan(&convID, &lastId)
 		if err != nil {
 			return
 		}
-		log.Printf("Conversation %d, last read message was %d\n", convId, lastId)
+		log.Printf("Conversation %d, last read message was %d\n", convID, lastId)
 		_count := 0
-		err = sUnreadCount.QueryRow(convId, lastId).Scan(&_count)
+		err = sUnreadCount.QueryRow(convID, lastId).Scan(&_count)
 		if err == nil {
-			log.Printf("Conversation %d, unread message count was %d\n", convId, _count)
+			log.Printf("Conversation %d, unread message count was %d\n", convID, _count)
 			count += _count
 		}
 	}
