@@ -74,9 +74,8 @@ func authenticate(r *http.Request) (userID gp.UserId, err error) {
 	success := api.ValidateToken(userID, token)
 	if success {
 		return userID, nil
-	} else {
-		return 0, &EBADTOKEN
 	}
+	return 0, &EBADTOKEN
 }
 
 func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
@@ -711,9 +710,8 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			}
 			return
-		} else {
-			jsonResponse(w, post, 200)
 		}
+		jsonResponse(w, post, 200)
 	}
 }
 
@@ -1205,31 +1203,30 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				log.Println("Should be unverified response")
 				jsonResponse(w, Status{"unverified", email}, 201)
 				return
-			} else {
-				//User has signed up already with a username+pass
-				//If invite is valid, we can log in immediately
-				exists, _ := api.InviteExists(email, invite)
-				if exists {
-					//Verify
-					id, err := api.FBSetVerified(email, fbToken.FBUser)
-					if err != nil {
-						jsonErr(w, err, 500)
-						return
-					}
-					//Login
-					token, err := api.CreateAndStoreToken(id)
-					if err == nil {
-						jsonResponse(w, token, 200)
-					} else {
-						jsonErr(w, err, 500)
-					}
+			}
+			//User has signed up already with a username+pass
+			//If invite is valid, we can log in immediately
+			exists, _ := api.InviteExists(email, invite)
+			if exists {
+				//Verify
+				id, err := api.FBSetVerified(email, fbToken.FBUser)
+				if err != nil {
+					jsonErr(w, err, 500)
 					return
 				}
-				//otherwise, we must ask for a password
-				status := Status{"registered", email}
-				jsonResponse(w, status, 200)
+				//Login
+				token, err := api.CreateAndStoreToken(id)
+				if err == nil {
+					jsonResponse(w, token, 200)
+				} else {
+					jsonErr(w, err, 500)
+				}
 				return
 			}
+			//otherwise, we must ask for a password
+			status := Status{"registered", email}
+			jsonResponse(w, status, 200)
+			return
 		case len(email) > 3 && (err == nil && (storedEmail == email)):
 			//We already saw this user, so we don't need to re-send verification
 			fallthrough
@@ -1241,11 +1238,10 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				log.Println("Should be unverified response")
 				jsonResponse(w, Status{"unverified", storedEmail}, 201)
 				return
-			} else {
-				status := Status{"registered", storedEmail}
-				jsonResponse(w, status, 200)
-				return
 			}
+			status := Status{"registered", storedEmail}
+			jsonResponse(w, status, 200)
+			return
 		case len(email) < 3 && (err != nil):
 			jsonResponse(w, gp.APIerror{Reason: "Email required"}, 400)
 		}
@@ -1267,9 +1263,8 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 			Verified bool `json:"verified"`
 		}{true}, 200)
 		return
-	} else {
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
+	jsonResponse(w, &EUNSUPPORTED, 405)
 }
 
 func jsonServer(ws *websocket.Conn) {
@@ -1888,9 +1883,8 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			}
 			return
-		} else {
-			w.WriteHeader(204)
 		}
+		w.WriteHeader(204)
 	}
 }
 
@@ -1965,7 +1959,7 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		popularity, attendee_count, err := api.UserGetEventPopularity(userID, postID)
+		popularity, attendeeCount, err := api.UserGetEventPopularity(userID, postID)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -1979,7 +1973,7 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 			Popularity    int       `json:"popularity"`
 			AttendeeCount int       `json:"attendee_count"`
 			Attendees     []gp.User `json:"attendees,omitempty"`
-		}{Popularity: popularity, AttendeeCount: attendee_count, Attendees: attendees}
+		}{Popularity: popularity, AttendeeCount: attendeeCount, Attendees: attendees}
 		jsonResponse(w, resp, 200)
 
 	}
