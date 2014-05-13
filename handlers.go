@@ -984,15 +984,18 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "POST":
 		file, header, err := r.FormFile("image")
 		if err != nil {
-			jsonErr(w, err, 400)
-		} else {
-			defer file.Close()
-			url, err := api.StoreFile(userID, file, header)
+			file, header, err = r.FormFile("video")
 			if err != nil {
 				jsonErr(w, err, 400)
-			} else {
-				jsonResponse(w, gp.URLCreated{URL: url}, 201)
+				return
 			}
+		}
+		defer file.Close()
+		url, err := api.StoreFile(userID, file, header)
+		if err != nil {
+			jsonErr(w, err, 400)
+		} else {
+			jsonResponse(w, gp.URLCreated{URL: url}, 201)
 		}
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

@@ -53,6 +53,12 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 	case strings.HasSuffix(header.Filename, ".png"):
 		filename, err = randomFilename(".png")
 		contenttype = "image/png"
+	case strings.HasSuffix(header.Filename, ".mp4"):
+		filename, err = randomFilename(".mp4")
+		contenttype = "video/mp4"
+	case strings.HasSuffix(header.Filename, ".webm"):
+		filename, err = randomFilename(".webm")
+		contenttype = "video/webm"
 	default:
 		return "", gp.APIerror{Reason: "Unsupported file type"}
 	}
