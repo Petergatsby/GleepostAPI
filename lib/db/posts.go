@@ -250,8 +250,12 @@ func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, cat
 	return
 }
 
+//GetPostImages returns all the images associated with postID.
 func (db *DB) GetPostImages(postID gp.PostID) (images []string, err error) {
-	s := db.stmt["imageSelect"]
+	s, err := db.prepare("SELECT url FROM post_images WHERE post_id = ?")
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
 	log.Println("DB hit: getImages postId(image)")
@@ -269,8 +273,50 @@ func (db *DB) GetPostImages(postID gp.PostID) (images []string, err error) {
 	return
 }
 
+//AddPostImage adds an image (url) to postID.
 func (db *DB) AddPostImage(postID gp.PostID, url string) (err error) {
-	_, err = db.stmt["imageInsert"].Exec(postID, url)
+	s, err := db.prepare("INSERT INTO post_images (post_id, url) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, url)
+	return
+}
+
+//AddPostVideo adds this video URL to a post.
+//TODO: merge with AddPostImage
+//TODO: handle multiple encodes
+//TODO: provide thumbnails
+func (db *DB) AddPostVideo(postID gp.PostID, URL string) (err error) {
+	s, err := db.prepare("INSERT INTO post_videos (post_id, url) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, URL)
+	return
+}
+
+//GetPostVideos returns all the videos associated with postID
+//TODO: Return a video object
+func (db *DB) GetPostVideos(postID gp.PostID) (videos []string, err error) {
+	s, err := db.prepare("SELECT url FROM post_videos WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID)
+	defer rows.Close()
+	log.Println("DB hit: getImages postId(image)")
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var video string
+		err = rows.Scan(&video)
+		if err != nil {
+			return
+		}
+		videos = append(videos, video)
+	}
 	return
 }
 

@@ -740,6 +740,31 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func postVideos(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postID := gp.PostID(_id)
+		url := r.FormValue("url")
+		exists, err := api.UserUploadExists(userID, url)
+		if exists && err == nil {
+			err := api.AddPostVideo(postID, url)
+			if err != nil {
+				jsonErr(w, err, 500)
+			} else {
+				videos := api.GetPostVideos(postID)
+				jsonResponse(w, videos, 201)
+			}
+		} else {
+			jsonErr(w, NoSuchUpload, 400)
+		}
+	}
+}
+
 func postLikes(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {

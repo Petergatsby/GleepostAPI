@@ -234,8 +234,15 @@ func (api *API) GetCommentCount(id gp.PostID) (count int) {
 	return count
 }
 
+//GetPostImages returns all the images attached to postID.
 func (api *API) GetPostImages(postID gp.PostID) (images []string) {
 	images, _ = api.db.GetPostImages(postID)
+	return
+}
+
+//GetPostVideos returns all the videos attached to postID.
+func (api *API) GetPostVideos(postID gp.PostID) (videos []string) {
+	videos, _ = api.db.GetPostVideos(postID)
 	return
 }
 
@@ -301,6 +308,11 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 
 func (api *API) AddPostImage(postID gp.PostID, url string) (err error) {
 	return api.db.AddPostImage(postID, url)
+}
+
+//AddPostVideo attaches a URL of a video file to a post.
+func (api *API) AddPostVideo(postID gp.PostID, URL string) (err error) {
+	return api.db.AddPostVideo(postID, URL)
 }
 
 func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, err error) {

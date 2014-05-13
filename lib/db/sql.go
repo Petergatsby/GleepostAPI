@@ -127,8 +127,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
 		"WHERE deleted = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
 		"ORDER BY value ASC LIMIT 0, ?"
-	sqlStmt["imageSelect"] = "SELECT url FROM post_images WHERE post_id = ?"
-	sqlStmt["imageInsert"] = "INSERT INTO post_images (post_id, url) VALUES (?, ?)"
 	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
 	sqlStmt["commentSelect"] = "SELECT id, `by`, text, `timestamp` " +
 		"FROM post_comments " +
