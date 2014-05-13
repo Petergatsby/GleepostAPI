@@ -39,7 +39,7 @@ func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
 	return
 }
 
-//StoreFile takes an uploaded file, checks if it is allowed (ie, is jpg / png) and uploads it to s3 (selecting a bucket based on the user who uploaded it).
+//StoreFile takes an uploaded file, checks if it is allowed (ie, is jpg / png / appropriate video file) and uploads it to s3 (selecting a bucket based on the user who uploaded it).
 func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.FileHeader) (url string, err error) {
 	var filename string
 	var contenttype string
