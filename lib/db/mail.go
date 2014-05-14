@@ -1,5 +1,6 @@
 package db
 
+//AllEmails returns all registered emails.
 func (db *DB) AllEmails() (emails []string, err error) {
 	s, err := db.prepare("SELECT email FROM users")
 	if err != nil {

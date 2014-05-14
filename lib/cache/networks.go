@@ -11,6 +11,7 @@ import (
 		Networks
 ********************************************************************/
 
+//GetUserNetworks returns all the networks userID is a member of.
 func (c *Cache) GetUserNetworks(userID gp.UserID) (networks []gp.Group, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -39,7 +40,7 @@ func (c *Cache) GetUserNetworks(userID gp.UserID) (networks []gp.Group, err erro
 	return networks, nil
 }
 
-//SetUserNetworks
+//SetUserNetworks takes a list of networks and records in the cache that this user belongs to them.
 func (c *Cache) SetUserNetworks(userID gp.UserID, networks ...gp.Group) {
 	conn := c.pool.Get()
 	defer conn.Close()

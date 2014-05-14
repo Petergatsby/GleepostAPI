@@ -41,6 +41,7 @@ func loadConfig(fail bool) {
 	configLock.Unlock()
 }
 
+//GetConfig returns a pointer to the current API configuration.
 func GetConfig() *gp.Config {
 	configLock.RLock()
 	defer configLock.RUnlock()
