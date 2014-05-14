@@ -204,6 +204,7 @@ func (api *API) androidPushMessage(device string, message gp.Message, convID gp.
 	return api.push.AndroidPush(msg)
 }
 
+//CheckFeedbackService receives any bad device tokens from APNS and deletes the device.
 func (api *API) CheckFeedbackService() {
 	url := "feedback.sandbox.push.apple.com:2196"
 	if api.Config.APNS.Production {
@@ -268,6 +269,7 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	return api.push.AndroidPush(msg)
 }
 
+//MassNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
 func (api *API) MassNotification(message string, version string, platform string) (count int, err error) {
 	devices, err := api.db.GetAllDevices(platform)
 	if err != nil {
@@ -445,6 +447,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device 
 	return
 }
 
+//Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (api *API) Push(notification interface{}, recipient gp.UserID) {
 	devices, err := api.GetDevices(recipient)
 	if err != nil {
