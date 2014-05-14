@@ -1153,9 +1153,11 @@ HTTP 204
 (no content)
 
 ##POST /upload
-required parameters: id, token, image
+required parameters: id, token
 
-/upload expects a single multipart/form-data encoded image and on success will return a url.
+optional parameters: `image` or `video`.
+
+/upload expects a single multipart/form-data encoded image or video and on success will return a url.
 
 example responses:
 HTTP 201

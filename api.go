@@ -110,6 +110,7 @@ func main() {
 	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}/", deletePost).Methods("DELETE")
 	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}", deletePost).Methods("DELETE")
 	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}/images", postImages).Methods("POST")
+	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}/videos", postVideos).Methods("POST")
 	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}/likes", postLikes).Methods("POST")
 	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}/attendees", getAttendees).Methods("GET")
 	r.HandleFunc("/api/{version}/posts/{id:[0-9]+}/attendees", putAttendees).Methods("PUT")
