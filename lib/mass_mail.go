@@ -4,6 +4,7 @@ import (
 	"log"
 )
 
+//Massmail sends a standard email to all users. Probably just use MailChimp instead, though.
 func (api *API) Massmail() (err error) {
 	subject := "FREE REDBULL STUDYGRAMS AT TRESIDDER AND GREEN LIBRARY!"
 	body := `<html><body>Hey guys!<br><br>
