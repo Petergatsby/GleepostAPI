@@ -87,6 +87,7 @@ type Post struct {
 	Time       time.Time              `json:"timestamp"`
 	Text       string                 `json:"text"`
 	Images     []string               `json:"images"`
+	Videos     []string               `json:"videos,omitempty"`
 	Categories []PostCategory         `json:"categories,omitempty"`
 	Attribs    map[string]interface{} `json:"attribs,omitempty"`
 	Popularity int                    `json:"popularity,omitempty"`

@@ -194,6 +194,7 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.Time = p.Time
 	post.Text = p.Text
 	post.Images = api.GetPostImages(p.ID)
+	post.Videos = api.GetPostVideos(p.ID)
 	post.CommentCount = api.GetCommentCount(p.ID)
 	post.Categories, err = api.postCategories(p.ID)
 	if err != nil {

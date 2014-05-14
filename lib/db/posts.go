@@ -163,6 +163,10 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 			if err != nil {
 				return
 			}
+			post.Videos, err = db.GetPostVideos(post.ID)
+			if err != nil {
+				return
+			}
 			post.LikeCount, err = db.LikeCount(post.ID)
 			if err != nil {
 				return
@@ -228,6 +232,10 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 		if err == nil {
 			post.CommentCount = db.GetCommentCount(post.ID)
 			post.Images, err = db.GetPostImages(post.ID)
+			if err != nil {
+				return
+			}
+			post.Videos, err = db.GetPostVideos(post.ID)
 			if err != nil {
 				return
 			}
@@ -386,6 +394,10 @@ func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
 		return
 	}
 	post.Images, err = db.GetPostImages(postID)
+	if err != nil {
+		return
+	}
+	post.Videos, err = db.GetPostVideos(postID)
 	return
 }
 
