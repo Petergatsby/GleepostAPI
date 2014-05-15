@@ -114,7 +114,9 @@ func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish ti
 		case stat == COMMENTS:
 			statF = api.db.CommentsForPostBetween
 		case stat == VIEWS:
-			statF = blankPF
+			continue
+		case stat == POSTS:
+			continue
 		case stat == RSVPS:
 			statF = api.db.RsvpsForPostBetween
 		case stat == INTERACTIONS:
