@@ -20,7 +20,7 @@ type Header struct {
 func (m *Mailer) NewHeader() *Header {
 	h := Header{}
 	h.Headers = []byte("From: " + m.config.FromHeader + "\r\n")
-	h.Headers = append(h.Headers, []byte("Date: "+time.Now().Truncate(time.Second).UTC().String()+"\r\n"))
+	h.Headers = append(h.Headers, []byte("Date: "+time.Now().Truncate(time.Second).UTC().String()+"\r\n")...)
 	return &h
 }
 

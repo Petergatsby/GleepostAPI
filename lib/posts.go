@@ -3,6 +3,7 @@ package lib
 import (
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -356,7 +357,11 @@ func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 	}
 	exists, err := api.UserUploadExists(userID, image)
 	if exists && err == nil {
-		err = api.AddPostImage(postID, image)
+		if strings.HasSuffix(image, ".mp4") || strings.HasSuffix(image, ".webm") {
+			err = api.AddPostVideo(postID, image)
+		} else {
+			err = api.AddPostImage(postID, image)
+		}
 		return
 	}
 	return
