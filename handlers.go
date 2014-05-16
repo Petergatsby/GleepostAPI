@@ -21,19 +21,31 @@ var (
 	api        *lib.API
 )
 
+//ETOOFEW = You tried to create a conversation with 0 other participants (or you gave all invalid participants)
 var ETOOFEW = gp.APIerror{Reason: "Must have at least one valid recipient."}
+
+//ETOOMANY = You tried to create a conversation with a whole bunch of participants
 var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipients"}
+
+//EBADINPUT = You didn't supply a name for your account
 var EBADINPUT = gp.APIerror{Reason: "Missing parameter: first / last"}
+
+//EBADTOKEN = Your token was missing or invalid
 var EBADTOKEN = gp.APIerror{Reason: "Invalid credentials"}
+
+//EUNSUPPORTED = 405
 var EUNSUPPORTED = gp.APIerror{Reason: "Method not supported"}
+
+//ENOTFOUNT = 404
 var ENOTFOUND = gp.APIerror{Reason: "404 not found"}
-var MissingParameterFirst = missingParamErr("first")
-var MissingParameterLast = missingParamErr("last")
-var MissingParameterPass = missingParamErr("pass")
-var MissingParameterEmail = missingParamErr("email")
-var MissingParameterAccepted = missingParamErr("accepted")
+
+//InvalidEmail = Your email isn't in our approved list
 var InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
+
+//BadLogin = guess...
 var BadLogin = gp.APIerror{Reason: "Bad username/password"}
+
+//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
 var NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
 
 func missingParamErr(param string) *gp.APIerror {
@@ -129,13 +141,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		//Note to future self : would be neater if
 		//we returned _all_ errors not just the first
 	case len(first) < 2:
-		jsonResponse(w, MissingParameterFirst, 400)
+		jsonResponse(w, missingParamErr("first"), 400)
 	case len(last) < 1:
-		jsonResponse(w, MissingParameterLast, 400)
+		jsonResponse(w, missingParamErr("last"), 400)
 	case len(pass) == 0:
-		jsonResponse(w, MissingParameterPass, 400)
+		jsonResponse(w, missingParamErr("pass"), 400)
 	case len(email) == 0:
-		jsonResponse(w, MissingParameterEmail, 400)
+		jsonResponse(w, missingParamErr("email"), 400)
 	default:
 		validates, err := api.ValidateEmail(email)
 		if err != nil {
@@ -944,7 +956,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, contact, 200)
 			}
 		} else {
-			jsonResponse(w, MissingParameterAccepted, 400)
+			jsonResponse(w, missingParamErr("accepted"), 400)
 		}
 	case r.Method == "DELETE":
 		//Implement refusing requests
