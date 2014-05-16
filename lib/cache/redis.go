@@ -15,17 +15,20 @@ import (
 		General
 ********************************************************************/
 
+//A Cache represents a redis cache configuration + pool of connections to operate against.
 type Cache struct {
 	pool   *redis.Pool
 	config gp.RedisConfig
 }
 
+//New constructs a new Cache from config.
 func New(conf gp.RedisConfig) (cache *Cache) {
 	cache = new(Cache)
 	cache.config = conf
 	cache.pool = redis.NewPool(getDialer(conf), 100)
 	return
 }
+
 func getDialer(conf gp.RedisConfig) func() (redis.Conn, error) {
 	f := func() (redis.Conn, error) {
 		conn, err := redis.Dial(conf.Proto, conf.Address)
@@ -34,12 +37,14 @@ func getDialer(conf gp.RedisConfig) func() (redis.Conn, error) {
 	return f
 }
 
+//ErrEmptyCache is a cache miss
 var ErrEmptyCache = gp.APIerror{Reason: "Not in redis!"}
 
 /********************************************************************
 		Messages
 ********************************************************************/
 
+//Publish takes a Message and publishes it to all participants (to be eventually consumed over websocket)
 func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -50,6 +55,7 @@ func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.Conver
 	conn.Flush()
 }
 
+//PublishEvent broadcasts an event of type etype with location "where" and a payload of data encoded as JSON to all of channels.
 func (c *Cache) PublishEvent(etype string, where string, data interface{}, channels []string) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -61,6 +67,7 @@ func (c *Cache) PublishEvent(etype string, where string, data interface{}, chann
 	conn.Flush()
 }
 
+//Subscribe connects to userID's event channel and sends any messages over the messages chan.
 //TODO: Delete Printf
 func (c *Cache) Subscribe(messages chan []byte, userID gp.UserID) {
 	conn := c.pool.Get()
@@ -80,12 +87,14 @@ func (c *Cache) Subscribe(messages chan []byte, userID gp.UserID) {
 	}
 }
 
+//MessageChan returns a channel containing events for userID (Contents are slices of byte containing JSON)
 func (c *Cache) MessageChan(userID gp.UserID) (messages chan []byte) {
 	messages = make(chan []byte)
 	go c.Subscribe(messages, userID)
 	return
 }
 
+//AddMessage records msg.ID in the ZSET for convID (with its unix timestamp as ZSCORE)
 func (c *Cache) AddMessage(msg gp.Message, convID gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -95,6 +104,8 @@ func (c *Cache) AddMessage(msg gp.Message, convID gp.ConversationID) {
 	go c.SetMessage(msg)
 }
 
+//GetLastMessage returns the most recent message in this conversation if available,
+//or an error (not sure what exactly) if it's not in the cache.
 func (c *Cache) GetLastMessage(id gp.ConversationID) (message gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -107,6 +118,7 @@ func (c *Cache) GetLastMessage(id gp.ConversationID) (message gp.Message, err er
 	return message, err
 }
 
+//AddMessages: Identical to addMessage, except it can do several messages at once.
 func (c *Cache) AddMessages(convID gp.ConversationID, messages []gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -118,7 +130,7 @@ func (c *Cache) AddMessages(convID gp.ConversationID, messages []gp.Message) {
 	conn.Flush()
 }
 
-//SetMessage caches message.
+//SetMessage records the actual content of the message at messages:id:by, message:id:text, messages:id:time (RFC3339)
 func (c *Cache) SetMessage(message gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -137,6 +149,8 @@ func (c *Cache) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 	return
 }
 
+//SetReadStatus marks convId seen up to messageID for each read (userID:messageID pair).
+//I don't know what this is for?
 func (c *Cache) SetReadStatus(convID gp.ConversationID, read []gp.Read) {
 	for _, r := range read {
 		c.MarkConversationSeen(r.UserID, convID, r.LastRead)
