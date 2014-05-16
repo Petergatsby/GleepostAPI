@@ -9,6 +9,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
+//{"error":"Missing parameter: network"}
 var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
