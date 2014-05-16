@@ -10,7 +10,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//a Mailer is able to send email.
+//Mailer is able to send email.
 type Mailer struct {
 	config gp.EmailConfig
 }
@@ -48,7 +48,7 @@ func (m *Mailer) Send(to string, subject string, body string) (err error) {
 	return
 }
 
-//SendHTML: Send, but with HTML
+//SendHTML - Send, but with HTML
 func (m *Mailer) SendHTML(to string, subject string, body string) (err error) {
 	header := m.NewHeader()
 	header["Content-Type"] = []string{"text/html; charset=\"UTF-8\"\r\n"}
