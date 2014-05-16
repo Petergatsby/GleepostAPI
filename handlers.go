@@ -52,12 +52,13 @@ func missingParamErr(param string) *gp.APIerror {
 	return &gp.APIerror{Reason: "Missing parameter: " + param}
 }
 
+//Status represents a user's current signup state (You should only ever see "unverified" (you have an account pending email verification" or "registered" (this email is taken by someone else)
 type Status struct {
 	Status string `json:"status"`
 	Email  string `json:"email"`
 }
 
-func NewStatus(status, email string) *Status {
+func newStatus(status, email string) *Status {
 	return &Status{Status: status, Email: email}
 }
 
@@ -199,7 +200,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		case err != nil:
 			jsonErr(w, err, 500)
 		case !verified:
-			resp := NewStatus("unverified", email)
+			resp := newStatus("unverified", email)
 			jsonResponse(w, resp, 403)
 		default:
 			token, err := api.CreateAndStoreToken(id)
