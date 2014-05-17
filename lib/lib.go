@@ -513,7 +513,7 @@ func (api *API) UserWithEmail(email string) (id gp.UserID, err error) {
 
 func (api *API) ChangePass(userID gp.UserID, oldPass string, newPass string) (err error) {
 	passBytes := []byte(oldPass)
-	hash, err := api.db.GetHashById(userID)
+	hash, err := api.db.GetHashByID(userID)
 	if err != nil {
 		return
 	}

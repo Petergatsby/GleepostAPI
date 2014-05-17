@@ -108,7 +108,7 @@ func (api *API) UpdateFBData(fbToken string) (err error) {
 //FBGetGPUser returns the associated gleepost user for a given facebook id, or sql.ErrNoRows if that user doesn't exist.
 //TODO: Change to ENOSUCHUSER
 func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
-	return api.db.UserIdFromFB(fbid)
+	return api.db.UserIDFromFB(fbid)
 }
 
 //FacebookRegister takes a facebook access token, an email and an (optional) invite key.

@@ -217,7 +217,7 @@ func (db *DB) GetHash(user string) (hash []byte, id gp.UserID, err error) {
 	return
 }
 
-func (db *DB) GetHashById(id gp.UserID) (hash []byte, err error) {
+func (db *DB) GetHashByID(id gp.UserID) (hash []byte, err error) {
 	err = db.stmt["hashById"].QueryRow(id).Scan(&hash)
 	return
 }
@@ -290,7 +290,7 @@ func (db *DB) BusyStatus(id gp.UserID) (busy bool, err error) {
 	return
 }
 
-func (db *DB) UserIdFromFB(fbid uint64) (id gp.UserID, err error) {
+func (db *DB) UserIDFromFB(fbid uint64) (id gp.UserID, err error) {
 	err = db.stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
 	return
 }
