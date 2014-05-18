@@ -8,6 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//View represents a series of statistics about something over time.
 type View struct {
 	Start        time.Time         `json:"start"`
 	Finish       time.Time         `json:"finish"`
