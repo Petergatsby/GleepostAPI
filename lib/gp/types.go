@@ -311,3 +311,10 @@ type Event struct {
 	Location string      `json:"location,omitempty"`
 	Data     interface{} `json:"data"`
 }
+
+//Video contains a URL for an .mp4 and .webm encode of the same video, as well as thumbnails where available.
+type Video struct {
+	MP4    string `json:"mp4"`
+	WebM   string `json:"webm"`
+	Thumbs string `json:"thumbnails,omitempty"`
+}
