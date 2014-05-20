@@ -314,6 +314,7 @@ type Event struct {
 
 //Video contains a URL for an .mp4 and .webm encode of the same video, as well as thumbnails where available.
 type Video struct {
+	ID     string `json:"id"`
 	MP4    string `json:"mp4"`
 	WebM   string `json:"webm"`
 	Thumbs string `json:"thumbnails,omitempty"`
