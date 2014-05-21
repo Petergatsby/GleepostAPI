@@ -8,6 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//LikesForUserBetween finds all likes for user's posts in the interval between start and finish.
 func (db *DB) LikesForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
@@ -17,6 +18,7 @@ func (db *DB) LikesForUserBetween(user gp.UserID, start time.Time, finish time.T
 	return
 }
 
+//CommentsForUserBetween - Same as LikesForUserBetween, but for comments
 func (db *DB) CommentsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM post_comments WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
@@ -26,6 +28,7 @@ func (db *DB) CommentsForUserBetween(user gp.UserID, start time.Time, finish tim
 	return
 }
 
+//PostsForUserBetween returns the number of posts a user has made in this interval.
 func (db *DB) PostsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND `time` > ? AND `time` < ?")
 	if err != nil {
@@ -35,6 +38,7 @@ func (db *DB) PostsForUserBetween(user gp.UserID, start time.Time, finish time.T
 	return
 }
 
+//RsvpsForUserBetween - Same as LikesForUserBetween, but for "attending"s
 func (db *DB) RsvpsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `time` > ? AND `time` < ?")
 	if err != nil {
@@ -102,7 +106,7 @@ func (db *DB) UsersActivityInCohort(activity string, start time.Time, finish tim
 	case activity == "messaged":
 		s, err = db.prepare("SELECT DISTINCT `from` FROM chat_messages WHERE `from` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	default:
-		err = errors.New("No such activity")
+		err = errors.New("no such activity")
 		return
 	}
 	if err != nil {
@@ -124,6 +128,7 @@ func (db *DB) UsersActivityInCohort(activity string, start time.Time, finish tim
 	return
 }
 
+//LikesForPostBetween returns the number of likes this post has gained in the interval between start and finish.
 func (db *DB) LikesForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
@@ -134,6 +139,7 @@ func (db *DB) LikesForPostBetween(post gp.PostID, start time.Time, finish time.T
 
 }
 
+//CommentsForPostBetween returns the number of comments this post has gained in the interval between start and finish.
 func (db *DB) CommentsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
@@ -144,6 +150,7 @@ func (db *DB) CommentsForPostBetween(post gp.PostID, start time.Time, finish tim
 
 }
 
+//RsvpsForPostBetween returns the number of RSVPs this post has gained in the interval between start and finish.
 func (db *DB) RsvpsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
 	s, err := db.prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id = ? AND `time` > ? AND `time` < ?")
 	if err != nil {
