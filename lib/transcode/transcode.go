@@ -31,6 +31,8 @@ func randomFilename(extension string) string {
 	}
 }
 
+//HandleVideoUpload takes an uploaded multipart.File and hands it off for background processing.
+//It returns an ID which you can then attach to a post.
 func HandleVideoUpload(file multipart.File, header multipart.FileHeader) (ID gp.VideoID, err error) {
 	//First we must copy the file to /tmp,
 	//because while ffmpeg _can_ operate on a stream directly,
@@ -79,11 +81,13 @@ func pipeline(inProgress gp.Video) {
 	}
 	inProgress.Thumbs = append(inProgress.Thumbs, thumb)
 	//Work out which bucket to put it in
+
 	//Upload
 	uploaded, err := Upload(inProgress)
 	//Mark as processed
 
 	//Delete temp files
+	err = del(inProgress)
 }
 
 //MP4ToWebM converts an MP4 video to WebM, returning the path to the output video.
@@ -167,4 +171,23 @@ func upload(path, contentType string, b s3.Bucket) (url string, err error) {
 	}
 	url = b.URL(path[5:])
 	return
+}
+
+//del removes all temp files associated with this video
+func del(v gp.Video) (err error) {
+	err = os.Remove(v.MP4)
+	if err != nil {
+		return
+	}
+	err = os.Remove(v.WebM)
+	if err != nil {
+		return
+	}
+	for _, v := range v.Thumbs {
+		err = os.Remove(v)
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
