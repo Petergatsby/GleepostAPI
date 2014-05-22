@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"launchpad.net/goamz/s3"
+
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -70,14 +72,22 @@ func pipeline(inProgress gp.Video) {
 		}
 	}
 	//Extract initial thumb
-
+	thumb, err := MP4Thumb(inProgress.MP4)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	inProgress.Thumbs = append(inProgress.Thumbs, thumb)
+	//Work out which bucket to put it in
 	//Upload
-
+	uploaded, err := Upload(inProgress)
 	//Mark as processed
 
 	//Delete temp files
 }
 
+//MP4ToWebM converts an MP4 video to WebM, returning the path to the output video.
+//The caller is responsible for cleaning up after itself (ie, deleting the videos from local storage when it is done)
 func MP4ToWebM(in string) (output string, err error) {
 	//do transcode
 	output = "/tmp/" + randomFilename(".webm")
@@ -90,6 +100,16 @@ func MP4ToWebM(in string) (output string, err error) {
 
 	//hand back temp file?
 	return output, nil
+}
+
+//MP4Thumb attempts to extract a thumbnail from the first second of a video at path `in`, returning the path for the thumbnail
+//The caller is responsible for cleaning up after itself (ie, deleting the files from local storage when it is done)
+func MP4Thumb(in string) (output string, err error) {
+	output = "/tmp/" + randomFilename(".jpg")
+	log.Println("Extracting thumbnail")
+	cmd := exec.Command("ffmpeg", "-ss", "00:00:01", "-i", in, "-frames:v", "1", output)
+	err = cmd.Run()
+	return
 }
 
 //TransientStoreFile writes a multipart.File to disk, returning its location.
@@ -105,4 +125,46 @@ func TransientStoreFile(f multipart.File, ext string) (location string, err erro
 		return
 	}
 	return location, nil
+}
+
+//Upload sends all versions and thumbnails of a Video to the bucket b.
+func Upload(v gp.Video, b s3.Bucket) (uploaded gp.Video, err error) {
+	v.MP4, err = upload(v.MP4, "video/mp4", b)
+	if err != nil {
+		return
+	}
+	v.WebM, err = upload(v.WebM, "video/webm", b)
+	if err != nil {
+		return
+	}
+	var ts []string
+	var url string
+	for _, i := range v.Thumbs {
+		url, err = upload(i, "image/jpeg", b)
+		if err != nil {
+			return
+		}
+		ts = append(ts, url)
+	}
+	v.Thumbs = ts
+	v.Uploaded = true
+	return v, nil
+}
+
+func upload(path, contentType string, b s3.Bucket) (url string, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	fi, err := file.Stat()
+	if err != nil {
+		return
+	}
+	//The [5:] is assuming all files will be in "/tmp/" (so it extracts their filename from their full path)
+	err = b.PutReader(path[5:], file, fi.Size(), contentType, s3.PublicRead)
+	if err != nil {
+		return
+	}
+	url = b.URL(path[5:])
+	return
 }

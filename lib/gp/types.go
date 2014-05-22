@@ -315,11 +315,11 @@ type Event struct {
 //Video contains a URL for an .mp4 and .webm encode of the same video, as well as thumbnails where available.
 type Video struct {
 	//uploaded marks whether this is just a local copy or refers to properly hosted files
-	uploaded bool    `json:"-"`
-	ID       VideoID `json:"id"`
-	MP4      string  `json:"mp4"`
-	WebM     string  `json:"webm"`
-	Thumbs   string  `json:"thumbnails,omitempty"`
+	Uploaded bool     `json:"-"`
+	ID       VideoID  `json:"id"`
+	MP4      string   `json:"mp4"`
+	WebM     string   `json:"webm"`
+	Thumbs   []string `json:"thumbnails,omitempty"`
 }
 
 //VideoID is a reference to an uploaded video.
