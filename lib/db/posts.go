@@ -13,14 +13,26 @@ import (
 		Post
 ********************************************************************/
 const (
+	//WNETWORK is posts in this network.
 	WNETWORK = iota
+	//WUSER is posts by this user.
 	WUSER
+	//WGROUPS is posts in all groups this user belongs to.
 	WGROUPS
 )
 
+//EBADORDER means you tried to order a post query in an unexpected way.
 var EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
+
+//EBADWHERE means you tried to filter posts in an unexpected way.
 var EBADWHERE = gp.APIerror{Reason: "Bad WhereClause!"}
 
+//WhereClause specifies how we're looking for posts.
+//Mode may be one of WNETWORk, WUSER, WGROUPS.
+//Network specifies which network we're looking at if using WNETWORK
+//User specifies the user we're looking at if using WUSER
+//Perspective is the user whose perspective we're looking from when using WUSER or WGROUPS
+//Category optionally restricts posts just to this one category.
 type WhereClause struct {
 	Mode        int
 	Network     gp.NetworkID
@@ -29,6 +41,9 @@ type WhereClause struct {
 	Category    string
 }
 
+//WhereRows basically acts as a shitty ORM and returns a sql.Rows which can then be blindly iterated over by NewGetPosts.
+//This is an abomination which I'm too scared and have no time to touch, but it works. For now.
+//Let's just hope that you, dear reader, don't ever have to extend it.
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
 	//Oh shit. I accidentally an ORM?
 	baseQuery := "SELECT wall_posts.id, `by`, time, text, network_id FROM wall_posts "
@@ -137,6 +152,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 	return rows, err
 }
 
+//NewGetPosts returns posts matching the WhereClause.
 func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
 	rows, err := db.WhereRows(where, orderMode, index, count)
 	if err != nil {
@@ -194,6 +210,7 @@ func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, in
 	return
 }
 
+//AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
 func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (postID gp.PostID, err error) {
 	s := db.stmt["postInsert"]
 	res, err := s.Exec(userID, text, network)
@@ -328,6 +345,7 @@ func (db *DB) GetPostVideos(postID gp.PostID) (videos []string, err error) {
 	return
 }
 
+//CreateComment adds a comment on this post.
 func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
 	s := db.stmt["commentInsert"]
 	if res, err := s.Exec(postID, userID, text); err == nil {
@@ -338,6 +356,7 @@ func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (co
 	return 0, err
 }
 
+//GetComments returns up to count comments for this post.
 func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	s := db.stmt["commentSelect"]
 	rows, err := s.Query(postID, start, count)
@@ -365,6 +384,7 @@ func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []
 	return comments, nil
 }
 
+//GetCommentCount returns the total number of comments for this post.
 func (db *DB) GetCommentCount(id gp.PostID) (count int) {
 	s := db.stmt["commentCountSelect"]
 	err := s.QueryRow(id).Scan(&count)
@@ -504,6 +524,7 @@ func (db *DB) DeletePost(post gp.PostID) (err error) {
 	return
 }
 
+//EventAttendees returns all users who are attending this event.
 func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 	q := "SELECT id, name, firstname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
 	s, err := db.prepare(q)
