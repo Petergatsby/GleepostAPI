@@ -11,6 +11,7 @@ import (
 		Network
 ********************************************************************/
 
+//GetRules returns all the network matching rules for every network.
 func (db *DB) GetRules() (rules []gp.Rule, err error) {
 	ruleSelect := "SELECT network_id, rule_type, rule_value FROM net_rules"
 	s, err := db.prepare(ruleSelect)
@@ -78,6 +79,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 	return
 }
 
+//SetNetwork idempotently makes userID a member of networkID
 func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
 	networkInsert := "REPLACE INTO user_network (user_id, network_id) VALUES (?, ?)"
 	s, err := db.prepare(networkInsert)
@@ -188,6 +190,7 @@ func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.User, err error) {
 	return
 }
 
+//LeaveNetwork idempotently removes userID from the network netID.
 func (db *DB) LeaveNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {
 	leaveQuery := "DELETE FROM user_network WHERE user_id = ? AND network_id = ?"
 	s, err := db.prepare(leaveQuery)
@@ -198,6 +201,7 @@ func (db *DB) LeaveNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {
 	return
 }
 
+//CreateInvite stores an invite for a particular email to a particular network.
 func (db *DB) CreateInvite(userID gp.UserID, netID gp.NetworkID, email string, token string) (err error) {
 	inviteQuery := "INSERT INTO group_invites (group_id, inviter, email, `key`) VALUES (?, ?, ?, ?)"
 	s, err := db.prepare(inviteQuery)
@@ -208,6 +212,7 @@ func (db *DB) CreateInvite(userID gp.UserID, netID gp.NetworkID, email string, t
 	return
 }
 
+//SetNetworkImage updates a network's profile image.
 func (db *DB) SetNetworkImage(netID gp.NetworkID, url string) (err error) {
 	networkUpdate := "UPDATE network SET cover_img = ? WHERE id = ?"
 	s, err := db.prepare(networkUpdate)
@@ -218,6 +223,7 @@ func (db *DB) SetNetworkImage(netID gp.NetworkID, url string) (err error) {
 	return
 }
 
+//NetworkCreator returns the user who created this network.
 func (db *DB) NetworkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
 	qCreator := "SELECT creator FROM network WHERE id = ?"
 	s, err := db.prepare(qCreator)
@@ -228,6 +234,7 @@ func (db *DB) NetworkCreator(netID gp.NetworkID) (creator gp.UserID, err error) 
 	return
 }
 
+//InviteExists returns true if there is a matching invite for email:invite (that's not already accepted)
 func (db *DB) InviteExists(email, invite string) (exists bool, err error) {
 	q := "SELECT COUNT(*) FROM group_invites WHERE `email` = ? AND `key` = ? AND `accepted` = 0"
 	s, err := db.prepare(q)
@@ -238,6 +245,7 @@ func (db *DB) InviteExists(email, invite string) (exists bool, err error) {
 	return
 }
 
+//AcceptAllInvites marks all invites as accepted for this email address.
 func (db *DB) AcceptAllInvites(email string) (err error) {
 	q := "UPDATE group_invites SET accepted = 1 WHERE email = ?"
 	s, err := db.prepare(q)
@@ -248,6 +256,8 @@ func (db *DB) AcceptAllInvites(email string) (err error) {
 	return
 }
 
+//AssignTetworksFromInvites adds user to all networks which email has been invited to.
+//TODO: only do un-accepted invites (!)
 func (db *DB) AssignNetworksFromInvites(user gp.UserID, email string) (err error) {
 	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"
 	s, err := db.prepare(q)
@@ -258,6 +268,8 @@ func (db *DB) AssignNetworksFromInvites(user gp.UserID, email string) (err error
 	return
 }
 
+//AssignNetworksFromFBInvites adds user to all networks which this facebook id has been invited to.
+//TODO: only do un-accepted invites (!)
 func (db *DB) AssignNetworksFromFBInvites(user gp.UserID, facebook uint64) (err error) {
 	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, network_id FROM fb_group_invites WHERE facebook_id = ?"
 	s, err := db.prepare(q)
@@ -268,6 +280,7 @@ func (db *DB) AssignNetworksFromFBInvites(user gp.UserID, facebook uint64) (err 
 	return
 }
 
+//AcceptAllFBInvites marks all invites for this facebook user as accepted.
 func (db *DB) AcceptAllFBInvites(facebook uint64) (err error) {
 	q := "UPDATE fb_group_invites SET accepted = 1 WHERE facebook_id = ?"
 	s, err := db.prepare(q)
@@ -278,6 +291,7 @@ func (db *DB) AcceptAllFBInvites(facebook uint64) (err error) {
 	return
 }
 
+//UserAddFBUserToGroup records that this facebook user has been invited to netID.
 func (db *DB) UserAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.NetworkID) (err error) {
 	q := "INSERT INTO fb_group_invites (inviter_user_id, facebook_id, network_id) VALUES (?, ?, ?)"
 	s, err := db.prepare(q)
