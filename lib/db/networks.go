@@ -256,7 +256,7 @@ func (db *DB) AcceptAllInvites(email string) (err error) {
 	return
 }
 
-//AssignTetworksFromInvites adds user to all networks which email has been invited to.
+//AssignNetworksFromInvites adds user to all networks which email has been invited to.
 //TODO: only do un-accepted invites (!)
 func (db *DB) AssignNetworksFromInvites(user gp.UserID, email string) (err error) {
 	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"

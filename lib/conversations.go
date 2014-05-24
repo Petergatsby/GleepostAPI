@@ -422,7 +422,7 @@ func (api *API) deleteExpiry(convID gp.ConversationID) (err error) {
 	return
 }
 
-//UnExpireBetweenUsers should fetch all of users[0] conversations, find the ones which contain
+//UnExpireBetween should fetch all of users[0] conversations, find the ones which contain
 //exactly the same participants as users and delete its expiry(if it exists).
 func (api *API) UnExpireBetween(users []gp.UserID) (err error) {
 	if len(users) < 2 {
