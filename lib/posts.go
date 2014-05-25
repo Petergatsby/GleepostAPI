@@ -9,8 +9,10 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//EBADTIME is
 var EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
 
+//GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
 	return api.db.GetPost(postID)
 }
@@ -161,6 +163,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 	return
 }
 
+//PostProcess fetches all the parts of a post which the newGetPosts style methods don't provide
 func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err error) {
 	//Ha! I am so funny...
 	processed = post
@@ -189,6 +192,7 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 	return processed, nil
 }
 
+//PostSmall turns a PostCore (minimal detail Post) into a PostSmall (full detail but omitting comments).
 func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.ID = p.ID
 	post.By = p.By
