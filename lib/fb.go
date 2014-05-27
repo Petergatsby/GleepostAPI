@@ -48,6 +48,7 @@ func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error)
 		"input_token":  fbToken,
 	})
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	data := res["data"].(map[string]interface{})
