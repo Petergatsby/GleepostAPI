@@ -23,21 +23,37 @@ func newView() *View {
 	return view
 }
 
+//Bucket represents an event count in the period beginning at Start. The length of the period will be in the View this bucket is a member of.
 type Bucket struct {
 	Start time.Time `json:"start"`
 	Count int       `json:"count"`
 }
 
+//Stat is a type of event.
 type Stat string
 
+//LIKES - nubmer of likes a given entity has received.
 const LIKES Stat = "likes"
+
+//COMMENTS - nubmer of comments a given entity has received.
 const COMMENTS Stat = "comments"
+
+//POSTS - nubmer of posts a given entity has created.
 const POSTS Stat = "posts"
+
+//VIEWS - number of views a given entity has received:w
 const VIEWS Stat = "views"
+
+//RSVPS - Number of people who have attended events.
 const RSVPS Stat = "rsvps"
+
+//INTERACTIONS - Sum(LIKES, COMMENTS, RSVPS)
 const INTERACTIONS Stat = "interactions"
+
+//OVERVIEW - all the available stats together.
 const OVERVIEW Stat = "overview"
 
+//Used for OVERVIEW
 var Stats = []Stat{LIKES, COMMENTS, VIEWS, RSVPS, POSTS}
 
 func blankF(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
@@ -48,6 +64,8 @@ func blankPF(post gp.PostID, start time.Time, finish time.Time) (count int, err 
 	return 0, nil
 }
 
+//AggregateStatsForUser aggregates the given Stat in the period between start and finish, grouped into buckets of length bucket.
+//If no stats are given, it will return all.
 func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
@@ -97,6 +115,7 @@ func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish ti
 	return
 }
 
+//AggregateStatsForPost - Same as AggregateStatsForUser, but for an individual post (therefore POSTS is no longer a valid stat).
 func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
@@ -146,6 +165,7 @@ func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish ti
 	return
 }
 
+//InteractionsForUserBetween returns the number of interactions this user has received in the period between start and finish.
 func (api *API) InteractionsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
 	likes, err := api.db.LikesForUserBetween(user, start, finish)
 	if err != nil {
@@ -163,6 +183,7 @@ func (api *API) InteractionsForUserBetween(user gp.UserID, start time.Time, fini
 	return
 }
 
+//InteractionsForPostBetween - the number of interactions this post has received in the period between start and finish.
 func (api *API) InteractionsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
 	likes, err := api.db.LikesForPostBetween(post, start, finish)
 	if err != nil {
@@ -181,6 +202,8 @@ func (api *API) InteractionsForPostBetween(post gp.PostID, start time.Time, fini
 
 }
 
+//ActivatedUsersInCohort finds, among the cohort of users signed up between start and finish, all the users who have performed each activity
+//"liked", "commented", "posted", "attended", "initiated", "messaged".
 func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserID, err error) {
 	ActiveUsers = make(map[string][]gp.UserID)
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
@@ -208,6 +231,7 @@ func deduplicate(userLists ...[]gp.UserID) (deduplicated []gp.UserID) {
 	return
 }
 
+//SummarizePeriod returns an overview of all the users who have signed up, verified, performed specific actions and performed any action, in a given period.
 func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[string]int) {
 	statFs := make(map[string]func(time.Time, time.Time) ([]gp.UserID, error))
 	stats = make(map[string]int)
@@ -234,6 +258,7 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 	return (stats)
 }
 
+//SummaryEmail sends out an email to everyone in the Admin group, summarizing what the users have done in this period.
 func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
 	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
@@ -262,6 +287,8 @@ func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	}
 }
 
+//PeriodicSummary is intended to send out a summary email for each time interval starting from start.
+//What it actually does, however, is send an email summarizing the previous day every interval.
 func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 	f := func() {
 		api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now())

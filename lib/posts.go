@@ -9,8 +9,10 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//EBADTIME is
 var EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
 
+//GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
 	return api.db.GetPost(postID)
 }
@@ -161,6 +163,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 	return
 }
 
+//PostProcess fetches all the parts of a post which the newGetPosts style methods don't provide
 func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err error) {
 	//Ha! I am so funny...
 	processed = post
@@ -189,6 +192,7 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 	return processed, nil
 }
 
+//PostSmall turns a PostCore (minimal detail Post) into a PostSmall (full detail but omitting comments).
 func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.ID = p.ID
 	post.By = p.By
@@ -219,6 +223,7 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	return
 }
 
+//GetComments returns comments for this post, chronologically ordered starting from the start-th.
 func (api *API) GetComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	comments, err = api.cache.GetComments(id, start, count)
 	if err != nil {
@@ -228,6 +233,7 @@ func (api *API) GetComments(id gp.PostID, start int64, count int) (comments []gp
 	return
 }
 
+//GetCommentCount returns the total number of comments for this post, trying the cache first (so it could be inaccurate)
 func (api *API) GetCommentCount(id gp.PostID) (count int) {
 	count, err := api.cache.GetCommentCount(id)
 	if err != nil {
@@ -252,6 +258,7 @@ func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, er
 	return api.db.PostCategories(post)
 }
 
+//GetLikes returns all the likes for a particular post.
 func (api *API) GetLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 	log.Println("GetLikes", post)
 	l, err := api.db.GetLikes(post)
@@ -279,6 +286,7 @@ func (api *API) likeCount(post gp.PostID) (count int, err error) {
 	return api.db.LikeCount(post)
 }
 
+//LikesAndCount retrieves both the likes and the total count of likes for a post.
 func (api *API) LikesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, err error) {
 	likes, err = api.GetLikes(post)
 	if err != nil {
@@ -288,6 +296,7 @@ func (api *API) LikesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, e
 	return
 }
 
+//CreateComment adds a comment to a post.
 func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
@@ -308,6 +317,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	return commID, err
 }
 
+//AddPostImage adds an image (by url) to a post.
 func (api *API) AddPostImage(postID gp.PostID, url string) (err error) {
 	return api.db.AddPostImage(postID, url)
 }
@@ -317,6 +327,7 @@ func (api *API) AddPostVideo(postID gp.PostID, URL string) (err error) {
 	return api.db.AddPostVideo(postID, URL)
 }
 
+//AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
 func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
@@ -350,6 +361,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 	}
 }
 
+//AddPostWithImage creates a post and adds an image in a single step (if the image is one that has been uploaded to gleepost.)
 func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostID, err error) {
 	postID, err = api.AddPost(userID, netID, text, attribs, tags...)
 	if err != nil {
@@ -367,7 +379,7 @@ func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 	return
 }
 
-//
+//TagPost adds these tags/categories to the post if they're not already.
 func (api *API) TagPost(post gp.PostID, tags ...string) (err error) {
 	//TODO: Only allow the post owner to tag
 	return api.tagPost(post, tags...)
@@ -378,6 +390,7 @@ func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
 	return api.db.TagPost(post, tags...)
 }
 
+//AddLike likes a post!
 func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 	//TODO: add like to redis
 	post, err := api.GetPost(postID)
@@ -402,6 +415,7 @@ func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 	}
 }
 
+//DelLike idempotently un-likes a post.
 func (api *API) DelLike(user gp.UserID, post gp.PostID) (err error) {
 	return api.db.RemoveLike(user, post)
 }
@@ -411,11 +425,12 @@ func (api *API) SetPostAttribs(post gp.PostID, attribs map[string]string) (err e
 	return api.db.SetPostAttribs(post, attribs)
 }
 
+//GetPostAttribs returns all the custom attributes of a post.
 func (api *API) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
 	return api.db.GetPostAttribs(post)
 }
 
-//Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
+//UserAttend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
 func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err error) {
@@ -458,6 +473,7 @@ func (api *API) deletePost(post gp.PostID) (err error) {
 	return api.db.DeletePost(post)
 }
 
+//UserGetEventAttendees returns all the attendees of a given event, or ENOTALLOWED if user isn't in its network.
 func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attendees []gp.User, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
@@ -472,6 +488,7 @@ func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attende
 	}
 }
 
+//UserGetEventPopularity returns popularity (an arbitrary score between 0 and 100), and the number of attendees. If user isn't in the same network as the event, it will return ENOTALLOWED instead.
 func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostID) (popularity int, attendees int, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//GetUserNetworks returns all networks this user belongs to, or an error if zhe belongs to none.
 func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.Group, err error) {
 	nets, err = api.db.GetUserNetworks(id, false)
 	if err != nil {
@@ -25,6 +26,7 @@ func (api *API) GetUserGroups(id gp.UserID) (groups []gp.Group, err error) {
 	return
 }
 
+//UserInNetwork returns true if user id is a member of network, false if not and err when there's a db problem.
 func (api *API) UserInNetwork(id gp.UserID, network gp.NetworkID) (in bool, err error) {
 	networks, err := api.db.GetUserNetworks(id, false)
 	if err != nil {
@@ -105,6 +107,7 @@ func (api *API) assignNetworks(user gp.UserID, email string) (networks int, err 
 	return
 }
 
+//UserGetNetwork returns the information about a network, if userID is a member of it; ENOTALLOWED otherwise.
 func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Group, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
@@ -188,6 +191,8 @@ func (api *API) UserLeaveGroup(userID gp.UserID, netID gp.NetworkID) (err error)
 	}
 }
 
+//UserInviteEmail sends a group invite from userID to email, or err if something went wrong.
+//If someone has already signed up with email, it just adds them to the group directly.
 func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email string) (err error) {
 	in, neterr := api.UserInNetwork(userID, netID)
 	isgroup, grouperr := api.isGroup(netID)
@@ -226,6 +231,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 	}
 }
 
+//UserIsNetworkOwner returns true if userID created netID, and err if the database is down.
 func (api *API) UserIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner bool, err error) {
 	creator, err := api.db.NetworkCreator(netID)
 	return (creator == userID), err
@@ -250,22 +256,27 @@ func (api *API) UserSetNetworkImage(userID gp.UserID, netID gp.NetworkID, url st
 	}
 }
 
+//InviteExists returns true if the email:invite pair is valid or err if the db is down.
 func (api *API) InviteExists(email, invite string) (exists bool, err error) {
 	return api.db.InviteExists(email, invite)
 }
 
+//AssignNetworksFromInvites finds all invites for this email address and resolves them (adds user to the groups involved)
 func (api *API) AssignNetworksFromInvites(user gp.UserID, email string) (err error) {
 	return api.db.AssignNetworksFromInvites(user, email)
 }
 
+//AssignNetworksFromFBInvites does the same as AssignNetworksFromInvites, but for a given facebook user id.
 func (api *API) AssignNetworksFromFBInvites(user gp.UserID, facebook uint64) (err error) {
 	return api.db.AssignNetworksFromFBInvites(user, facebook)
 }
 
+//AcceptAllInvites sets all invites to this email as "accepted" (they should not be valid any more)
 func (api *API) AcceptAllInvites(email string) (err error) {
 	return api.db.AcceptAllInvites(email)
 }
 
+//AcceptAllFBInvites does the same as AcceptAllInvites, but for a facebook user.
 func (api *API) AcceptAllFBInvites(facebook uint64) (err error) {
 	return api.db.AcceptAllFBInvites(facebook)
 }

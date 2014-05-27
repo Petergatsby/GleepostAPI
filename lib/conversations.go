@@ -8,6 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//ENOTALLOWED is returned when a user attempts an action that they shouldn't.
 var ENOTALLOWED = gp.APIerror{Reason: "You're not allowed to do that!"}
 
 func (api *API) terminateConversation(convID gp.ConversationID) (err error) {
@@ -42,6 +43,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 	return
 }
 
+//CreateConversation generates a new conversation involving initiator and participants. If live is true, it will generate a conversation which expires after api.Config.Expiry seconds.
 func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, live bool) (conversation gp.Conversation, err error) {
 	var expiry *gp.Expiry
 	if live {
@@ -165,11 +167,13 @@ func (api *API) CanContact(initiator gp.UserID, recipient gp.UserID) (contactabl
 	}
 }
 
+//NewConversationEvent publishes an event to all listening participants to let them know they have a new conversation.
 func (api *API) NewConversationEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
 	go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.ID), conversation, chans)
 }
 
+//EndConversationEvent publishes an event to all listening participants to let them know the conversation is terminated.
 func (api *API) EndConversationEvent(conversation gp.ConversationID) {
 	conv, err := api.getConversation(conversation)
 	if err != nil {
@@ -180,11 +184,13 @@ func (api *API) EndConversationEvent(conversation gp.ConversationID) {
 	go api.cache.PublishEvent("ended-conversation", ConversationURI(conversation), conv, chans)
 }
 
+//ConversationChangedEvent publishes an event to all listening participants that this conversation has changed in some way, typically because its expiry has been removed.
 func (api *API) ConversationChangedEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
 	go api.cache.PublishEvent("changed-conversation", ConversationURI(conversation.ID), conversation, chans)
 }
 
+//AwaitOneMessage waits up to 60 seconds for an event to arrive and returns it, or if none arrive it will return "{}"
 func (api *API) AwaitOneMessage(userID gp.UserID) (resp []byte) {
 	c := api.GetMessageChan(userID)
 	select {
@@ -195,6 +201,7 @@ func (api *API) AwaitOneMessage(userID gp.UserID) (resp []byte) {
 	}
 }
 
+//GetMessageChan returns the event channel for this user
 func (api *API) GetMessageChan(userID gp.UserID) (c chan []byte) {
 	return api.cache.MessageChan(userID)
 }
@@ -221,6 +228,7 @@ func (api *API) getConversation(convID gp.ConversationID) (conversation gp.Conve
 	return api.db.GetConversation(convID, api.Config.ConversationPageSize)
 }
 
+//GetMessage retrieves the message msgID from the cache if available.
 func (api *API) GetMessage(msgID gp.MessageID) (message gp.Message, err error) {
 	message, err = api.cache.GetMessage(msgID)
 	return message, err
@@ -264,10 +272,12 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	return
 }
 
+//ConversationURI returns the URI of this conversation relative to the API root.
 func ConversationURI(convID gp.ConversationID) (uri string) {
 	return fmt.Sprintf("/conversations/%d", convID)
 }
 
+//ConversationChannelKeys returns all of the message channel keys for these users (typically used to publish messages to all participants of a conversation)
 func ConversationChannelKeys(participants []gp.User) (keys []string) {
 	for _, u := range participants {
 		keys = append(keys, fmt.Sprintf("c:%d", u.ID))
@@ -275,6 +285,7 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 	return keys
 }
 
+//UserCanViewConversation returns true if userID is a participant of convID
 func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.ConversationID) (viewable bool) {
 	participants := api.GetParticipants(convID)
 	for _, u := range participants {
@@ -293,6 +304,7 @@ func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, 
 	return conv, &ENOTALLOWED
 }
 
+//GetFullConversation returns a full conversation containing up to count messages.
 func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.ID = convID
 	conv.LastActivity, err = api.ConversationLastActivity(convID)
@@ -314,10 +326,12 @@ func (api *API) readStatus(convID gp.ConversationID) (read []gp.Read, err error)
 	return api.db.GetReadStatus(convID)
 }
 
+//ConversationLastActivity returns the modification time (ie, creation  or last-message) for this conversation.
 func (api *API) ConversationLastActivity(convID gp.ConversationID) (t time.Time, err error) {
 	return api.db.ConversationActivity(convID)
 }
 
+//GetParticipants returns all participants of this conversation.
 func (api *API) GetParticipants(convID gp.ConversationID) []gp.User {
 	participants, err := api.cache.GetParticipants(convID)
 	if err != nil {
@@ -349,6 +363,7 @@ func (api *API) getMessages(convID gp.ConversationID, index int64, sel string, c
 	return
 }
 
+//FillMessageCache copies a bunch of messages from db to cache.
 func (api *API) FillMessageCache(convID gp.ConversationID) (err error) {
 	messages, err := api.db.GetMessages(convID, 0, "start", api.Config.Redis.MessageCache)
 	if err != nil {
@@ -365,6 +380,7 @@ func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conv
 	return
 }
 
+//GetLastMessage returns the most recent message in this conversation.
 func (api *API) GetLastMessage(id gp.ConversationID) (message gp.Message, err error) {
 	message, err = api.cache.GetLastMessage(id)
 	if err != nil {
@@ -377,6 +393,7 @@ func (api *API) GetLastMessage(id gp.ConversationID) (message gp.Message, err er
 	return
 }
 
+//Expiry returns this conversation's Expiry. Not sure what it will do if you try it on a non-expiring conversation.
 func (api *API) Expiry(convID gp.ConversationID) (expiry gp.Expiry, err error) {
 	expiry, err = api.cache.ConversationExpiry(convID)
 	if err != nil {
@@ -405,7 +422,7 @@ func (api *API) deleteExpiry(convID gp.ConversationID) (err error) {
 	return
 }
 
-//UnExpireBetweenUsers should fetch all of users[0] conversations, find the ones which contain
+//UnExpireBetween should fetch all of users[0] conversations, find the ones which contain
 //exactly the same participants as users and delete its expiry(if it exists).
 func (api *API) UnExpireBetween(users []gp.UserID) (err error) {
 	if len(users) < 2 {
@@ -457,14 +474,17 @@ func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 	return
 }
 
+//UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations.
 func (api *API) UnreadMessageCount(user gp.UserID) (count int, err error) {
 	return api.db.UnreadMessageCount(user)
 }
 
+//TotalLiveConversations returns the number of non-expired conversations this user has.
 func (api *API) TotalLiveConversations(user gp.UserID) (count int, err error) {
 	return api.db.TotalLiveConversations(user)
 }
 
+//EndOldConversations checks every 30 seconds for conversations which are past their expiry and ends any it finds.
 func (api *API) EndOldConversations() {
 	t := time.Tick(time.Duration(30) * time.Second)
 	for {

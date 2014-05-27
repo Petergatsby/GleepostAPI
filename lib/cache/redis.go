@@ -15,7 +15,7 @@ import (
 		General
 ********************************************************************/
 
-//A Cache represents a redis cache configuration + pool of connections to operate against.
+//Cache represents a redis cache configuration + pool of connections to operate against.
 type Cache struct {
 	pool   *redis.Pool
 	config gp.RedisConfig
@@ -157,6 +157,7 @@ func (c *Cache) SetReadStatus(convID gp.ConversationID, read []gp.Read) {
 	}
 }
 
+//GetMessages returns this conversation's messages, in a manner specified by sel; "before" specifies messages earler than index, "after" specifies messages newer than index, and "start" returns messages that are after the start-th in a chronological order (ie, pagination starting from oldest)
 func (c *Cache) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -269,7 +270,8 @@ func (c *Cache) AddMessagesFromDB(convID gp.ConversationID, db db.DB) (err error
 		Posts
 ********************************************************************/
 
-func (c *Cache) AddPosts(net gp.NetworkID, posts []gp.Post) (err error) {
+//AddPosts adds all the posts to this network.
+func (c *Cache) addPosts(net gp.NetworkID, posts []gp.Post) (err error) {
 	for _, post := range posts {
 		go c.AddPost(post)
 		err = c.AddPostToNetwork(post, net)
@@ -280,6 +282,7 @@ func (c *Cache) AddPosts(net gp.NetworkID, posts []gp.Post) (err error) {
 	return
 }
 
+//AddPost adds a post into the cache but doesn't record its membership in a network.
 func (c *Cache) AddPost(post gp.Post) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -288,6 +291,7 @@ func (c *Cache) AddPost(post gp.Post) {
 	conn.Flush()
 }
 
+//AddPostToNetwork records that this post is in network.
 func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkID) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -301,6 +305,7 @@ func (c *Cache) AddPostToNetwork(post gp.Post, network gp.NetworkID) (err error)
 	return nil
 }
 
+//GetPost fetches the core details of a post from the cache, or returns an error if it's not in the cache (maybe)
 func (c *Cache) GetPost(postID gp.PostID) (post gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -323,8 +328,9 @@ func (c *Cache) GetPost(postID gp.PostID) (post gp.PostCore, err error) {
 	return post, nil
 }
 
+//GetPosts returns posts in this network in a manner mirroring db.NewGetPosts.
 //TODO: Return posts which don't embed a user
-func (c *Cache) GetPosts(id gp.NetworkID, mode int, index int64, count int) (posts []gp.PostCore, err error) {
+func (c *Cache) getPosts(id gp.NetworkID, mode int, index int64, count int) (posts []gp.PostCore, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 
@@ -386,7 +392,8 @@ func (c *Cache) GetPosts(id gp.NetworkID, mode int, index int64, count int) (pos
 	return
 }
 
-func (c *Cache) AddPostsFromDB(netID gp.NetworkID, db *db.DB) {
+//AddPostsFromDB refills an empty cache from the database.
+func (c *Cache) addPostsFromDB(netID gp.NetworkID, db *db.DB) {
 	posts, err := db.GetPosts(netID, 1, 0, c.config.PostCache, "")
 	if err != nil {
 		log.Println(err)
@@ -406,6 +413,7 @@ func (c *Cache) AddPostsFromDB(netID gp.NetworkID, db *db.DB) {
 		Conversations
 ********************************************************************/
 
+//UpdateConversationLists bumps this ConversationID up to the top of each participant's conversation list.
 func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -420,7 +428,7 @@ func (c *Cache) UpdateConversationLists(participants []gp.User, id gp.Conversati
 	conn.Flush()
 }
 
-func (c *Cache) GetConversationMessageCount(convID gp.ConversationID) (count int, err error) {
+func (c *Cache) getConversationMessageCount(convID gp.ConversationID) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)
@@ -441,6 +449,7 @@ func (c *Cache) SetConversationParticipants(convID gp.ConversationID, participan
 	conn.Flush()
 }
 
+//GetParticipants returns this conversation's participants.
 //TODO: Return []gp.UserId.
 func (c *Cache) GetParticipants(convID gp.ConversationID) (participants []gp.User, err error) {
 	conn := c.pool.Get()
@@ -469,7 +478,7 @@ func (c *Cache) GetParticipants(convID gp.ConversationID) (participants []gp.Use
 }
 
 //TODO: return []gp.ConversationId.
-func (c *Cache) GetConversations(id gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+func (c *Cache) getConversations(id gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:conversations", id)
@@ -534,6 +543,7 @@ func (c *Cache) GetRead(convID gp.ConversationID) (read []gp.Read, err error) {
 	return
 }
 
+//ConversationExpiry returns the Expiry of this conversation, or an error if it's missing from the cache.
 func (c *Cache) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -547,6 +557,7 @@ func (c *Cache) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, 
 	return
 }
 
+//SetConversationExpiry records this conversation's expiry in the cache (NB: expiry meaning "conversation end time" not cache-expiry).
 func (c *Cache) SetConversationExpiry(convID gp.ConversationID, expiry gp.Expiry) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -555,6 +566,8 @@ func (c *Cache) SetConversationExpiry(convID gp.ConversationID, expiry gp.Expiry
 	conn.Flush()
 }
 
+//DelConversationExpiry removes an expiry (ie, it will now no longer end).
+//TODO: think of something better than a cache miss
 func (c *Cache) DelConversationExpiry(convID gp.ConversationID) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -563,6 +576,7 @@ func (c *Cache) DelConversationExpiry(convID gp.ConversationID) {
 	conn.Flush()
 }
 
+//AddConversation records this conversation and its participants (but not its messages) in the cache
 func (c *Cache) AddConversation(conv gp.Conversation) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -579,6 +593,7 @@ func (c *Cache) AddConversation(conv gp.Conversation) {
 	conn.Flush()
 }
 
+//TerminateConversation marks a conversation as ended in the cache.
 func (c *Cache) TerminateConversation(convID gp.ConversationID) (err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -598,6 +613,7 @@ func (c *Cache) TerminateConversation(convID gp.ConversationID) (err error) {
 		Comments
 ********************************************************************/
 
+//GetCommentCount returns the total number of comments on this post.
 func (c *Cache) GetCommentCount(id gp.PostID) (count int, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -609,6 +625,7 @@ func (c *Cache) GetCommentCount(id gp.PostID) (count int, err error) {
 	return count, nil
 }
 
+//AddComment places this comment in the cache.
 func (c *Cache) AddComment(id gp.PostID, comment gp.Comment) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -619,6 +636,7 @@ func (c *Cache) AddComment(id gp.PostID, comment gp.Comment) {
 	conn.Flush()
 }
 
+//AddAllCommentsFromDB pulls the most recent cache.config.CommentCache comments from the database.
 func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
 	comments, err := db.GetComments(postID, 0, c.config.CommentCache)
 	if err != nil {
@@ -635,6 +653,7 @@ func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
 	}
 }
 
+//GetComments returns the comments on this post, ordered from oldest to newest, starting from start.
 func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -664,6 +683,7 @@ func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments 
 	return
 }
 
+//GetComment - a particular comment in the cache.
 func (c *Cache) GetComment(commentID gp.CommentID) (comment gp.Comment, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -690,6 +710,7 @@ func (c *Cache) GetComment(commentID gp.CommentID) (comment gp.Comment, err erro
 		Users
 ********************************************************************/
 
+//SetUser - cache a copy of this user.
 func (c *Cache) SetUser(user gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -698,6 +719,7 @@ func (c *Cache) SetUser(user gp.User) {
 	conn.Flush()
 }
 
+//GetUser - retrieve a cached User, or a redis.Error if they're not in the cache.
 func (c *Cache) GetUser(id gp.UserID) (user gp.User, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -719,6 +741,7 @@ func (c *Cache) GetUser(id gp.UserID) (user gp.User, err error) {
 	return user, nil
 }
 
+//SetProfileImage records your avatar in the cache.
 func (c *Cache) SetProfileImage(id gp.UserID, url string) {
 	conn := c.pool.Get()
 	defer conn.Close()

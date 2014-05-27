@@ -19,6 +19,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/push"
 )
 
+//API contains all the configuration and sub-modules the Gleepost API requires to function.
 type API struct {
 	cache  *cache.Cache
 	db     *db.DB
@@ -28,6 +29,7 @@ type API struct {
 	push   *push.Pusher
 }
 
+//New creates an API from a gp.Config
 func New(conf gp.Config) (api *API) {
 	api = new(API)
 	api.cache = cache.New(conf.Redis)
@@ -39,7 +41,10 @@ func New(conf gp.Config) (api *API) {
 	return
 }
 
+//You'll get this when your password is too week (ie, less than 5 chars at the moment)
 var ETOOWEAK = gp.APIerror{Reason: "Password too weak!"}
+
+//EBADREC means you tried to recover your password with an invalid or missing password reset token.
 var EBADREC = gp.APIerror{Reason: "Bad password recovery token."}
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -49,6 +54,8 @@ const inviteCampaignAndroid = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0
 Top-level functions
 ********************************************************************/
 
+//RandomString generates a long, random string (currently hex encoded, for some unknown reason.)
+//TODO: base64 url-encode instead.
 func RandomString() (random string, err error) {
 	hash := sha256.New()
 	randombuf := make([]byte, 32) //Number pulled out of my... ahem.
@@ -91,6 +98,7 @@ func checkPassStrength(pass string) (err error) {
 	return nil
 }
 
+//ValidateToken returns true if this id:token pair is valid (or if LoginOverride) and false otherwise (or if there's a db error).
 func (api *API) ValidateToken(id gp.UserID, token string) bool {
 	//If the api.db is down, this will fail for everyone who doesn't have a api.cached
 	//token, and so no new requests will be sent.
@@ -104,6 +112,7 @@ func (api *API) ValidateToken(id gp.UserID, token string) bool {
 	}
 }
 
+//ValidatePass returns the id of the user with this email:pass pair, or err if the comparison is not valid.
 func (api *API) ValidatePass(email string, pass string) (id gp.UserID, err error) {
 	passBytes := []byte(pass)
 	hash, id, err := api.db.GetHash(email)
@@ -117,6 +126,7 @@ func (api *API) ValidatePass(email string, pass string) (id gp.UserID, err error
 	return id, nil
 }
 
+//CreateAndStoreToken issues an access token for this user.
 func (api *API) CreateAndStoreToken(id gp.UserID) (gp.Token, error) {
 	token := createToken(id)
 	err := api.db.AddToken(token)
@@ -127,6 +137,7 @@ func (api *API) CreateAndStoreToken(id gp.UserID) (gp.Token, error) {
 	return token, nil
 }
 
+//GetUser returns the User with this ID. It hits the cache first, so some details may be out of date.
 func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
 	/* Hits the api.cache then the api.db
 	only I'm not 100% confident yet with what
@@ -142,6 +153,7 @@ func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
 	return
 }
 
+//GetProfile returns the Profile (extended info) for the user with this ID.
 func (api *API) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	user, err = api.db.GetProfile(id)
 	if err != nil {
@@ -155,6 +167,7 @@ func (api *API) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	return
 }
 
+//ValidateEmail returns true if this email (a) looks vaguely well-formed and (b) belongs to a domain who is allowed to sign up.
 func (api *API) ValidateEmail(email string) (validates bool, err error) {
 	if !looksLikeEmail(email) {
 		return false, nil
@@ -227,6 +240,7 @@ func (api *API) createUser(user string, pass string, email string) (userID gp.Us
 	return
 }
 
+//GenerateAndSendVerification generates a random string and sends it embedded in a link to the user.
 //TODO: this might end up using user input directly in an email. Sanitize!
 func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email string) (err error) {
 	random, err := RandomString()
@@ -241,6 +255,7 @@ func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email
 	return
 }
 
+//GetContacts returns all contacts (incl. those who have not yet accepted) for this user.
 func (api *API) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
 	return api.db.GetContacts(user)
 }
@@ -273,6 +288,7 @@ func (api *API) UserHasPosted(user gp.UserID, perspective gp.UserID) (posted boo
 	return false, nil
 }
 
+//AddContact sends a contact request from adder to addee.
 func (api *API) AddContact(adder gp.UserID, addee gp.UserID) (contact gp.Contact, err error) {
 	user, err := api.GetUser(addee)
 	if err != nil {
@@ -295,10 +311,12 @@ func (api *API) AddContact(adder gp.UserID, addee gp.UserID) (contact gp.Contact
 	return
 }
 
+//ContactRequestExists returns true if adder has previously added addee (whether they have accepted or not).
 func (api *API) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists bool, err error) {
 	return api.db.ContactRequestExists(adder, addee)
 }
 
+//AcceptContact marks this request as accepted - these users are now contacts.
 func (api *API) AcceptContact(user gp.UserID, toAccept gp.UserID) (contact gp.Contact, err error) {
 	err = api.db.UpdateContact(user, toAccept)
 	if err != nil {
@@ -315,6 +333,7 @@ func (api *API) AcceptContact(user gp.UserID, toAccept gp.UserID) (contact gp.Co
 	return
 }
 
+//AddDevice records this user's device for the purpose of sending them push notifications.
 func (api *API) AddDevice(user gp.UserID, deviceType string, deviceID string) (device gp.Device, err error) {
 	err = api.db.AddDevice(user, deviceType, deviceID)
 	if err != nil {
@@ -326,14 +345,17 @@ func (api *API) AddDevice(user gp.UserID, deviceType string, deviceID string) (d
 	return
 }
 
+//GetDevices returns all this user's associated devices.
 func (api *API) GetDevices(user gp.UserID) (devices []gp.Device, err error) {
 	return api.db.GetDevices(user)
 }
 
+//DeleteDevice removes this user's device (they are no longer able to receive push notifications)
 func (api *API) DeleteDevice(user gp.UserID, deviceID string) (err error) {
 	return api.db.DeleteDevice(user, deviceID)
 }
 
+//SetProfileImage updates this user's profile image to the new url
 func (api *API) SetProfileImage(id gp.UserID, url string) (err error) {
 	err = api.db.SetProfileImage(id, url)
 	if err == nil {
@@ -342,6 +364,7 @@ func (api *API) SetProfileImage(id gp.UserID, url string) (err error) {
 	return
 }
 
+//SetBusyStatus records whether you are busy or not.
 func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
 	err = api.db.SetBusyStatus(id, busy)
 	if err == nil {
@@ -350,6 +373,7 @@ func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
 	return
 }
 
+//BusyStatus returns true if this user is busy.
 func (api *API) BusyStatus(id gp.UserID) (busy bool, err error) {
 	busy, err = api.db.BusyStatus(id)
 	return
@@ -368,6 +392,7 @@ func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notificati
 	return api.db.GetUserNotifications(id, includeSeen)
 }
 
+//MarkNotificationsSeen marks all notifications up to upTo seen for this user.
 func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationID) (err error) {
 	return api.db.MarkNotificationsSeen(id, upTo)
 }
@@ -382,6 +407,7 @@ func (api *API) createNotification(ntype string, by gp.UserID, recipient gp.User
 	return
 }
 
+//NotificationChannelKey returns the channel used for this user's notifications.
 func NotificationChannelKey(id gp.UserID) (channel string) {
 	return fmt.Sprintf("n:%d", id)
 }
@@ -440,6 +466,7 @@ func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, tok
 	return
 }
 
+//GetEmail returns this user's email address.
 func (api *API) GetEmail(id gp.UserID) (email string, err error) {
 	return api.db.GetEmail(id)
 }
@@ -503,14 +530,17 @@ func (api *API) Verify(token string) (err error) {
 	return
 }
 
+//SetUserName updates this user's name.
 func (api *API) SetUserName(id gp.UserID, firstName, lastName string) (err error) {
 	return api.db.SetUserName(id, firstName, lastName)
 }
 
+//UserWithEmail returns the userID this email is associated with, or err if there isn't one.
 func (api *API) UserWithEmail(email string) (id gp.UserID, err error) {
 	return api.db.UserWithEmail(email)
 }
 
+//ChangePass updates a user's password, or gives a bcrypt error if the oldPass isn't valid.
 func (api *API) ChangePass(userID gp.UserID, oldPass string, newPass string) (err error) {
 	passBytes := []byte(oldPass)
 	hash, err := api.db.GetHashByID(userID)
@@ -529,6 +559,7 @@ func (api *API) ChangePass(userID gp.UserID, oldPass string, newPass string) (er
 	return
 }
 
+//RequestReset sends a random reset token to this email address. If it doesn't correspond to an existing user, returns an error.
 func (api *API) RequestReset(email string) (err error) {
 	userID, err := api.UserWithEmail(email)
 	if err != nil {
@@ -550,6 +581,7 @@ func (api *API) RequestReset(email string) (err error) {
 	return
 }
 
+//ResetPass takes a reset token and a password and (if the reset token is valid) updates the password.
 func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err error) {
 	exists, err := api.db.CheckPasswordRecovery(userID, token)
 	if err != nil {
@@ -567,19 +599,24 @@ func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err e
 	return
 }
 
+//IsVerified returns true if this user has verified their email, and probably err if this user doesn't exist?
 func (api *API) IsVerified(userID gp.UserID) (verified bool, err error) {
 	return api.db.IsVerified(userID)
 }
 
+//GetLiveConversations returns all the live conversations (there should only be 3 or less) for this user.
+//(A live conversation is one which has not ended and has an expiry in the future)
 func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.ConversationSmall, err error) {
 	return api.db.GetLiveConversations(userID)
 }
 
+//DeviceFeedback is called in response to APNS feedback; it records that a device token was no longer valid at this time and deletes it if it hasn't been re-registered since.
 func (api *API) DeviceFeedback(deviceID string, timestamp uint32) (err error) {
 	t := time.Unix(int64(timestamp), 0)
 	return api.db.Feedback(deviceID, t)
 }
 
+//IsAdmin returns true if tis user is a member of the Admin network specified in the config.
 func (api *API) IsAdmin(user gp.UserID) (admin bool) {
 	in, err := api.UserInNetwork(user, gp.NetworkID(api.Config.Admins))
 	if err == nil && in {
