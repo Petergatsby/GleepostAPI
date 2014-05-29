@@ -704,7 +704,7 @@ required parameters:
 id=[user-id]
 token=[token]
 
-One of:
+One or more of:
 users=[other-user-id],[other-user-id],[other-user-id]
 
 fbusers=[facebook-id],[facebook-id],[facebook-id]

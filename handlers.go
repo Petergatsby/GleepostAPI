@@ -1674,24 +1674,48 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 				fbusers = append(fbusers, fbuser)
 			}
 		}
-		switch {
-		case len(users) > 0:
+		var added = false
+		if len(users) > 0 {
+			added = true
 			_, err = api.UserAddUsersToGroup(userID, users, netID)
-		case len(fbusers) > 0:
-			_, err = api.UserAddFBUsersToGroup(userID, fbusers, netID)
-		case len(r.FormValue("email")) > 5:
-			err = api.UserInviteEmail(userID, netID, r.FormValue("email"))
-		default:
-			jsonResponse(w, gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}, 400)
-			return
-		}
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				jsonResponse(w, e, 403)
-			} else {
-				jsonErr(w, err, 500)
+			if err != nil {
+				e, ok := err.(*gp.APIerror)
+				if ok && *e == lib.ENOTALLOWED {
+					jsonResponse(w, e, 403)
+				} else {
+					jsonErr(w, err, 500)
+				}
+				return
 			}
+		}
+		if len(fbusers) > 0 {
+			added = true
+			_, err = api.UserAddFBUsersToGroup(userID, fbusers, netID)
+			if err != nil {
+				e, ok := err.(*gp.APIerror)
+				if ok && *e == lib.ENOTALLOWED {
+					jsonResponse(w, e, 403)
+				} else {
+					jsonErr(w, err, 500)
+				}
+				return
+			}
+		}
+		if len(r.FormValue("email")) > 5 {
+			added = true
+			err = api.UserInviteEmail(userID, netID, r.FormValue("email"))
+			if err != nil {
+				e, ok := err.(*gp.APIerror)
+				if ok && *e == lib.ENOTALLOWED {
+					jsonResponse(w, e, 403)
+				} else {
+					jsonErr(w, err, 500)
+				}
+				return
+			}
+		}
+		if !added {
+			jsonResponse(w, gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}, 400)
 			return
 		}
 		w.WriteHeader(204)
