@@ -317,10 +317,16 @@ type Video struct {
 	//uploaded marks whether this is just a local copy or refers to properly hosted files
 	Uploaded bool     `json:"-"`
 	ID       VideoID  `json:"id"`
-	MP4      string   `json:"mp4"`
-	WebM     string   `json:"webm"`
+	MP4      string   `json:"mp4,omitempty"`
+	WebM     string   `json:"webm,omitempty"`
 	Thumbs   []string `json:"thumbnails,omitempty"`
 }
 
 //VideoID is a reference to an uploaded video.
 type VideoID uint64
+
+//UploadStatus represents the status of an uploaded video.
+type UploadStatus struct {
+	Status string `json:"status"`
+	Video
+}

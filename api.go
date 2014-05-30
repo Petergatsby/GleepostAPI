@@ -131,6 +131,7 @@ func main() {
 	base.HandleFunc("/devices/{id}/", deleteDevice)
 	base.HandleFunc("/devices", postDevice)
 	base.HandleFunc("/upload", uploadHandler)
+	base.HandleFunc("/upload/{id}", getUpload)
 	base.HandleFunc("/profile/profile_image", profileImageHandler)
 	base.HandleFunc("/profile/name", changeNameHandler)
 	base.HandleFunc("/profile/change_pass", changePassHandler)

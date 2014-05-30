@@ -1040,6 +1040,30 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getUpload(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		_id, err := strconv.ParseUint(vars["id"], 10, 64)
+		if err != nil {
+			_id = 0
+		}
+		videoID := gp.VideoID(_id)
+		upload, err := api.GetUploadStatus(userID, videoID)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		jsonResponse(w, upload, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
 func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {

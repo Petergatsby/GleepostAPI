@@ -102,3 +102,9 @@ func (api *API) userAddUpload(id gp.UserID, url string) (err error) {
 func (api *API) UserUploadExists(id gp.UserID, url string) (exists bool, err error) {
 	return api.db.UploadExists(id, url)
 }
+
+//GetUploadStatus returns the current status of this upload.
+//That's one of "uploaded", "transcode", "transfer", "done".
+func (api *API) GetUploadStatus(user gp.UserID, upload gp.VideoID) (UploadStatus gp.UploadStatus, err error) {
+	return api.db.GetUploadStatus(user, upload)
+}

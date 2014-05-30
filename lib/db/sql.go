@@ -165,9 +165,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["contactSelect"] = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
 	sqlStmt["contactUpdate"] = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
 	sqlStmt["contactExists"] = "SELECT COUNT(*) FROM contacts WHERE adder = ? AND addee = ?"
-	//Upload
-	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
-	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
 	//Notification
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
 	//Like
@@ -906,20 +903,6 @@ func (db *DB) UpdateContact(user gp.UserID, contact gp.UserID) (err error) {
 
 func (db *DB) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists bool, err error) {
 	err = db.stmt["contactExists"].QueryRow(adder, addee).Scan(&exists)
-	return
-}
-
-/********************************************************************
-		Upload
-********************************************************************/
-
-func (db *DB) AddUpload(user gp.UserID, url string) (err error) {
-	_, err = db.stmt["userUpload"].Exec(user, url)
-	return
-}
-
-func (db *DB) UploadExists(user gp.UserID, url string) (exists bool, err error) {
-	err = db.stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
 	return
 }
 
