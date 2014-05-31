@@ -108,3 +108,10 @@ func (api *API) UserUploadExists(id gp.UserID, url string) (exists bool, err err
 func (api *API) GetUploadStatus(user gp.UserID, upload gp.VideoID) (UploadStatus gp.UploadStatus, err error) {
 	return api.db.GetUploadStatus(user, upload)
 }
+
+//SetUploadStatus records the current status of this upload.
+//Status must be one of "uploaded", "transcode", "transfer", "done".
+//If provided, urls[0] will be its mp4 format and urls[1] its webm..
+func (api *API) SetUploadStatus(user gp.UserID, upload gp.VideoID, status string, urls ...string) (id gp.VideoID, err error) {
+	return api.db.SetUploadStatus(user, upload, status, urls...)
+}
