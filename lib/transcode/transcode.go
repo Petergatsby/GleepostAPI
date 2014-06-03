@@ -44,7 +44,7 @@ func HandleVideoUpload(file multipart.File, header multipart.FileHeader) (ID gp.
 	case strings.HasSuffix(header.Filename, ".webm"):
 		ext = ".webm"
 	default:
-		return ID, errors.New("Unsupported video type.")
+		return ID, errors.New("unsupported video type")
 	}
 	name, err := TransientStoreFile(file, ext)
 	if err != nil {
