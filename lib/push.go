@@ -405,7 +405,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device 
 			log.Println(err)
 			return
 		}
-		data = map[string]interface{}{"type": "GROUP", "adder": n.By.ID, "group-id": n.Group, "group-name": group.Name, "for": recipient}
+		data = map[string]interface{}{"type": "GROUP", "adder": n.By.Name, "group-id": n.Group, "group-name": group.Name, "for": recipient}
 		CollapseKey = "You've been added to a group"
 	case gp.Notification:
 		switch {
