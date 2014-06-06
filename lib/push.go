@@ -421,10 +421,10 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device 
 	case gp.PostNotification:
 		switch {
 		case n.Type == "liked" && newPush:
-			data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient}
+			data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient, "post-id": n.Post}
 			CollapseKey = "Someone liked your post."
 		case n.Type == "commented" && newPush:
-			data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient}
+			data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient, "post-id": n.Post}
 			CollapseKey = "Someone commented on your post."
 		default:
 			unknown = true
