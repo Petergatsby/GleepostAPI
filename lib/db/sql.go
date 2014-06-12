@@ -58,31 +58,6 @@ func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
 func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt = make(map[string]string)
 	stmt = make(map[string]*sql.Stmt)
-	//User
-	sqlStmt["createUser"] = "INSERT INTO users(name, password, email) VALUES (?,?,?)"
-	sqlStmt["setName"] = "UPDATE users SET firstname = ?, lastname = ? where id = ?"
-	sqlStmt["userSelect"] = "SELECT id, name, avatar, firstname FROM users WHERE id=?"
-	sqlStmt["profileSelect"] = "SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?"
-	sqlStmt["passSelect"] = "SELECT id, password FROM users WHERE email = ?"
-	sqlStmt["hashById"] = "SELECT password FROM users WHERE id = ?"
-	sqlStmt["passUpdate"] = "UPDATE users SET password = ? WHERE id = ?"
-	sqlStmt["setAvatar"] = "UPDATE users SET avatar = ? WHERE id = ?"
-	sqlStmt["setBusy"] = "UPDATE users SET busy = ? WHERE id = ?"
-	sqlStmt["getBusy"] = "SELECT busy FROM users WHERE id = ?"
-	sqlStmt["idFromFacebook"] = "SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL"
-	sqlStmt["fbInsert"] = "INSERT INTO facebook (fb_id, email) VALUES (?, ?)"
-	sqlStmt["selectFBemail"] = "SELECT email FROM facebook WHERE fb_id = ?"
-	sqlStmt["fbUserByEmail"] = "SELECT fb_id FROM facebook WHERE email = ?"
-	sqlStmt["fbInsertVerification"] = "REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)"
-	sqlStmt["insertVerification"] = "REPLACE INTO `verification` (user_id, token) VALUES (?, ?)"
-	sqlStmt["verificationExists"] = "SELECT user_id FROM verification WHERE token = ?"
-	sqlStmt["verify"] = "UPDATE users SET verified = 1 WHERE id = ?"
-	sqlStmt["userIsVerified"] = "SELECT verified FROM users WHERE id = ?"
-	sqlStmt["emailSelect"] = "SELECT email FROM users WHERE id = ?"
-	sqlStmt["userWithEmail"] = "SELECT id FROM users WHERE email = ?"
-	sqlStmt["addPasswordRecovery"] = "REPLACE INTO password_recovery (token, user) VALUES (?, ?)"
-	sqlStmt["checkPasswordRecovery"] = "SELECT count(*) FROM password_recovery WHERE user = ? and token = ?"
-	sqlStmt["deletePasswordRecovery"] = "DELETE FROM password_recovery WHERE user = ? and token = ?"
 	//Conversation
 	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
 	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
@@ -193,8 +168,13 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		User
 ********************************************************************/
 
+//RegisterUser creates a user with a username (todo:remove), a password hash and an email address.
+//They'll be created in an unverified state, and without a full name (which needs to be set separately).
 func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserID, error) {
-	s := db.stmt["createUser"]
+	s, err := db.prepare("INSERT INTO users(name, password, email) VALUES (?,?,?)")
+	if err != nil {
+		return 0, err
+	}
 	res, err := s.Exec(user, hash, email)
 	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
 		return 0, gp.APIerror{Reason: "Username or email address already taken"}
@@ -206,30 +186,53 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserID, e
 	}
 }
 
+//SetUserName sets a user's real name.
 func (db *DB) SetUserName(id gp.UserID, firstName, lastName string) (err error) {
-	_, err = db.stmt["setName"].Exec(firstName, lastName, id)
+	s, err := db.prepare("UPDATE users SET firstname = ?, lastname = ? where id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(firstName, lastName, id)
 	return
 }
 
+//GetHash returns this user's password hash (by username).
 func (db *DB) GetHash(user string) (hash []byte, id gp.UserID, err error) {
-	s := db.stmt["passSelect"]
+	s, err := db.prepare("SELECT id, password FROM users WHERE email = ?")
+	if err != nil {
+		return
+	}
 	err = s.QueryRow(user).Scan(&id, &hash)
 	return
 }
 
+//GetHashByID returns this user's password hash.
 func (db *DB) GetHashByID(id gp.UserID) (hash []byte, err error) {
-	err = db.stmt["hashById"].QueryRow(id).Scan(&hash)
+	s, err := db.prepare("SELECT password FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&hash)
 	return
 }
 
+//PassUpdate replaces this user's password hash with a new one.
 func (db *DB) PassUpdate(id gp.UserID, newHash []byte) (err error) {
-	_, err = db.stmt["passUpdate"].Exec(newHash, id)
+	s, err := db.prepare("UPDATE users SET password = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(newHash, id)
 	return
 }
 
+//GetUser returns a gp.User with User.Name set to their firstname if available (username if not).
 func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 	var av, firstName sql.NullString
-	s := db.stmt["userSelect"]
+	s, err := db.prepare("SELECT id, name, avatar, firstname FROM users WHERE id=?")
+	if err != nil {
+		return
+	}
 	err = s.QueryRow(id).Scan(&user.ID, &user.Name, &av, &firstName)
 	log.Println("DB hit: db.GetUser id(user.Name, user.Id, user.Avatar)")
 	if err != nil {
@@ -250,7 +253,10 @@ func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	var av, desc, firstName, lastName sql.NullString
-	s := db.stmt["profileSelect"]
+	s, err := db.prepare("SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
 	err = s.QueryRow(id).Scan(&user.Name, &desc, &av, &firstName, &lastName)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if err != nil {
@@ -275,77 +281,149 @@ func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	return
 }
 
+//SetProfileImage updates this user's avatar to url.
 func (db *DB) SetProfileImage(id gp.UserID, url string) (err error) {
-	_, err = db.stmt["setAvatar"].Exec(url, id)
+	s, err := db.prepare("UPDATE users SET avatar = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(url, id)
 	return
 }
 
+//SetBusyStatus records whether this user is busy or not.
 func (db *DB) SetBusyStatus(id gp.UserID, busy bool) (err error) {
-	_, err = db.stmt["setBusy"].Exec(busy, id)
+	s, err := db.prepare("UPDATE users SET busy = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(busy, id)
 	return
 }
 
+//BusyStatus returns this user's busy status.
 func (db *DB) BusyStatus(id gp.UserID) (busy bool, err error) {
-	err = db.stmt["getBusy"].QueryRow(id).Scan(&busy)
+	s, err := db.prepare("SELECT busy FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&busy)
 	return
 }
 
+//UserIDFromFB gets the gleepost user who has fbid associated, or an error if there is none.
 func (db *DB) UserIDFromFB(fbid uint64) (id gp.UserID, err error) {
-	err = db.stmt["idFromFacebook"].QueryRow(fbid).Scan(&id)
+	s, err := db.prepare("SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(fbid).Scan(&id)
 	return
 }
 
 //TODO: return ENOSUCHUSER instead.
 
+//SetVerificationToken records a (hopefully random!) verification token for this user.
 func (db *DB) SetVerificationToken(id gp.UserID, token string) (err error) {
-	_, err = db.stmt["insertVerification"].Exec(id, token)
+	s, err := db.prepare("REPLACE INTO `verification` (user_id, token) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(id, token)
 	return
 }
 
+//VerificationTokenExists returns the user who this verification token belongs to, or an error if there isn't one.
 func (db *DB) VerificationTokenExists(token string) (id gp.UserID, err error) {
-	err = db.stmt["verificationExists"].QueryRow(token).Scan(&id)
+	s, err := db.prepare("SELECT user_id FROM verification WHERE token = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(token).Scan(&id)
 	return
 }
 
+//Verify marks a user as verified.
 func (db *DB) Verify(id gp.UserID) (err error) {
-	_, err = db.stmt["verify"].Exec(id)
+	s, err := db.prepare("UPDATE users SET verified = 1 WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(id)
 	return
 }
 
+//IsVerified returns true if this user is verified.
 func (db *DB) IsVerified(user gp.UserID) (verified bool, err error) {
-	err = db.stmt["userIsVerified"].QueryRow(user).Scan(&verified)
+	s, err := db.prepare("SELECT verified FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user).Scan(&verified)
 	return
 }
 
+//GetEmail returns this user's email address.
 func (db *DB) GetEmail(id gp.UserID) (email string, err error) {
-	err = db.stmt["emailSelect"].QueryRow(id).Scan(&email)
+	s, err := db.prepare("SELECT email FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&email)
 	return
 }
 
+//UserWithEmail returns the user whose email this is, or an error if they don't exist.
 func (db *DB) UserWithEmail(email string) (id gp.UserID, err error) {
-	err = db.stmt["userWithEmail"].QueryRow(email).Scan(&id)
+	s, err := db.prepare("SELECT id FROM users WHERE email = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(email).Scan(&id)
 	return
 }
 
+//CreateFBUser records the existence of this (fbid:email) pair; when the user is verified it will be converted to a full gleepost user.
 func (db *DB) CreateFBUser(fbID uint64, email string) (err error) {
-	_, err = db.stmt["fbInsert"].Exec(fbID, email)
+	s, err := db.prepare("INSERT INTO facebook (fb_id, email) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(fbID, email)
 	return
 }
 
+//FBUserEmail returns this facebook user's email address.
 func (db *DB) FBUserEmail(fbid uint64) (email string, err error) {
-	err = db.stmt["selectFBemail"].QueryRow(fbid).Scan(&email)
+	s, err := db.prepare("SELECT email FROM facebook WHERE fb_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(fbid).Scan(&email)
 	return
 }
 
+//FBUserWithEmail returns the facebook id we've seen associated with this email, or error if none exists.
 func (db *DB) FBUserWithEmail(email string) (fbid uint64, err error) {
-	err = db.stmt["fbUserByEmail"].QueryRow(email).Scan(&fbid)
-	return
-}
-func (db *DB) CreateFBVerification(fbid uint64, token string) (err error) {
-	_, err = db.stmt["fbInsertVerification"].Exec(fbid, token)
+	s, err := db.prepare("SELECT fb_id FROM facebook WHERE email = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(email).Scan(&fbid)
 	return
 }
 
+//CreateFBVerification records a (hopefully random!) verification token for this facebook user.
+func (db *DB) CreateFBVerification(fbid uint64, token string) (err error) {
+	s, err := db.prepare("REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(fbid, token)
+	return
+}
+
+//FBVerificationExists returns the user this verification token is for, or an error if there is none.
 func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 	s, err := db.prepare("SELECT fb_id FROM facebook_verification WHERE token = ?")
 	if err != nil {
@@ -355,6 +433,8 @@ func (db *DB) FBVerificationExists(token string) (fbid uint64, err error) {
 	return
 }
 
+//FBSetGPUser records the association of this facebook user with this gleepost user.
+//After this, the user should be able to log in with this facebook account.
 func (db *DB) FBSetGPUser(fbid uint64, userID gp.UserID) (err error) {
 	fbSetGPUser := "REPLACE INTO facebook (user_id, fb_id) VALUES (?, ?)"
 	stmt, err := db.prepare(fbSetGPUser)
@@ -366,18 +446,33 @@ func (db *DB) FBSetGPUser(fbid uint64, userID gp.UserID) (err error) {
 	return
 }
 
+//AddPasswordRecovery records a password recovery token for this user.
 func (db *DB) AddPasswordRecovery(userID gp.UserID, token string) (err error) {
-	_, err = db.stmt["addPasswordRecovery"].Exec(token, userID)
+	s, err := db.prepare("REPLACE INTO password_recovery (token, user) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(token, userID)
 	return
 }
 
+//CheckPasswordRecovery returns true if this password recovery user:token pair exists.
 func (db *DB) CheckPasswordRecovery(userID gp.UserID, token string) (exists bool, err error) {
-	err = db.stmt["checkPasswordRecovery"].QueryRow(userID, token).Scan(&exists)
+	s, err := db.prepare("SELECT count(*) FROM password_recovery WHERE user = ? and token = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, token).Scan(&exists)
 	return
 }
 
+//DeletePasswordRecovery removes this password recovery token so it can't be used again.
 func (db *DB) DeletePasswordRecovery(userID gp.UserID, token string) (err error) {
-	_, err = db.stmt["deletePasswordRecovery"].Exec(userID, token)
+	s, err := db.prepare("DELETE FROM password_recovery WHERE user = ? and token = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userID, token)
 	return
 }
 
