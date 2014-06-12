@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -17,7 +17,8 @@ const (
 )
 
 var (
-	sqlStmt map[string]string
+	sqlStmt           map[string]string
+	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
 )
 
 type DB struct {
@@ -176,9 +177,12 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserID, e
 		return 0, err
 	}
 	res, err := s.Exec(user, hash, email)
-	if err != nil && strings.HasPrefix(err.Error(), "Error 1062") { //Note to self:There must be a better way?
-		return 0, gp.APIerror{Reason: "Username or email address already taken"}
-	} else if err != nil {
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok {
+			if err.Number == 1062 {
+				return 0, UserAlreadyExists
+			}
+		}
 		return 0, err
 	} else {
 		id, _ := res.LastInsertId()
