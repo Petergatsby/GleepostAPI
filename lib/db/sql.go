@@ -4,7 +4,6 @@ package db
 import (
 	"database/sql"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -75,14 +74,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?"
 	sqlStmt["setPostAttribs"] = "REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)"
 	sqlStmt["getPostAttribs"] = "SELECT attrib, value FROM post_attribs WHERE post_id=?"
-	//Notification
-	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
-	//Like
-	sqlStmt["addLike"] = "INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)"
-	sqlStmt["delLike"] = "DELETE FROM post_likes WHERE post_id = ? AND user_id = ?"
-	sqlStmt["likeSelect"] = "SELECT user_id, timestamp FROM post_likes WHERE post_id = ?"
-	sqlStmt["likeExists"] = "SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?"
-	sqlStmt["likeCount"] = "SELECT COUNT(*) FROM post_likes WHERE post_id = ?"
 	for k, str := range sqlStmt {
 		stmt[k], err = db.Prepare(str)
 		if err != nil {
@@ -1159,11 +1150,17 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 	return
 }
 
+//MarkNotificationsSeen records that this user has seen all their notifications.
 func (db *DB) MarkNotificationsSeen(user gp.UserID, upTo gp.NotificationID) (err error) {
-	_, err = db.stmt["notificationUpdate"].Exec(user, upTo)
+	s, err := db.prepare("UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, upTo)
 	return
 }
 
+//CreateNotification creates a notification ntype for recipient, "from" by, with a location which is interpreted as a post id if ntype is like/comment.
 //TODO: All this stuff should not be in the db layer.
 func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID, location uint64) (notification interface{}, err error) {
 	var res sql.Result
@@ -1219,24 +1216,33 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 	}
 }
 
+//CreateLike records that this user has liked this post. Acts idempotently.
 func (db *DB) CreateLike(user gp.UserID, post gp.PostID) (err error) {
-	_, err = db.stmt["addLike"].Exec(post, user)
-	// Suppress duplicate entry errors
+	s, err := db.prepare("REPLACE INTO post_likes (post_id, user_id) VALUES (?, ?)")
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "Error 1062") {
-			err = nil
-		}
+		return
 	}
+	_, err = s.Exec(post, user)
 	return
 }
 
+//RemoveLike un-likes a post.
 func (db *DB) RemoveLike(user gp.UserID, post gp.PostID) (err error) {
-	_, err = db.stmt["delLike"].Exec(post, user)
+	s, err := db.prepare("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post, user)
 	return
 }
 
+//GetLikes returns all this post's likes
 func (db *DB) GetLikes(post gp.PostID) (likes []gp.Like, err error) {
-	rows, err := db.stmt["likeSelect"].Query(post)
+	s, err := db.prepare("SELECT user_id, timestamp FROM post_likes WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
 	defer rows.Close()
 	if err != nil {
 		return
@@ -1257,13 +1263,23 @@ func (db *DB) GetLikes(post gp.PostID) (likes []gp.Like, err error) {
 	return
 }
 
+//HasLiked retuns true if this user has already liked this post.
 func (db *DB) HasLiked(user gp.UserID, post gp.PostID) (liked bool, err error) {
-	err = db.stmt["likeExists"].QueryRow(post, user).Scan(&liked)
+	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, user).Scan(&liked)
 	return
 }
 
+//LikeCount returns the number of likes this post has.
 func (db *DB) LikeCount(post gp.PostID) (count int, err error) {
-	err = db.stmt["likeCount"].QueryRow(post).Scan(&count)
+	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&count)
 	return
 }
 
@@ -1314,6 +1330,7 @@ func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 	return
 }
 
+//UnreadMessageCount returns the number of unread messages this user has.
 func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ?"
 	sParticipate, err := db.prepare(qParticipate)
@@ -1348,6 +1365,7 @@ func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 	return count, nil
 }
 
+//TotalLiveConversations returns the number of non-ended live conversations this user has.
 func (db *DB) TotalLiveConversations(user gp.UserID) (count int, err error) {
 	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
@@ -1388,6 +1406,7 @@ func (db *DB) TotalLiveConversations(user gp.UserID) (count int, err error) {
 	return len(conversations), nil
 }
 
+//PrunableConversations returns all the conversations whose expiry is in the past and yet haven't finished yet.
 func (db *DB) PrunableConversations() (conversations []gp.ConversationID, err error) {
 	q := "SELECT conversation_id FROM conversation_expirations WHERE expiry < NOW() AND ended = 0"
 	s, err := db.prepare(q)
