@@ -75,9 +75,6 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?"
 	sqlStmt["setPostAttribs"] = "REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)"
 	sqlStmt["getPostAttribs"] = "SELECT attrib, value FROM post_attribs WHERE post_id=?"
-	//Upload
-	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
-	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
 	//Notification
 	sqlStmt["notificationUpdate"] = "UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?"
 	//Like
@@ -1021,7 +1018,7 @@ func (db *DB) AddContact(adder gp.UserID, addee gp.UserID) (err error) {
 //GetContacts retrieves all the contacts for user.
 //TODO: This could return contacts which doesn't embed a user
 func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
-	s, err := "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
+	s, err := db.prepare("SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC")
 	if err != nil {
 		return
 	}
@@ -1065,7 +1062,7 @@ func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
 
 //UpdateContact marks this adder/addee pair as "accepted"
 func (db *DB) UpdateContact(user gp.UserID, contact gp.UserID) (err error) {
-	s, err := "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
+	s, err := db.prepare("UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?")
 	if err != nil {
 		return
 	}
@@ -1087,13 +1084,23 @@ func (db *DB) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists boo
 		Upload
 ********************************************************************/
 
+//AddUpload records that this user has uploaded this file.
 func (db *DB) AddUpload(user gp.UserID, url string) (err error) {
-	_, err = db.stmt["userUpload"].Exec(user, url)
+	s, err := db.prepare("INSERT INTO uploads (user_id, url) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, url)
 	return
 }
 
+//UploadExists returns true if this user has uploaded a file at this url.
 func (db *DB) UploadExists(user gp.UserID, url string) (exists bool, err error) {
-	err = db.stmt["uploadExists"].QueryRow(user, url).Scan(&exists)
+	s, err := db.prepare("SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user, url).Scan(&exists)
 	return
 }
 
