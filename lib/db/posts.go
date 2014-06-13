@@ -212,7 +212,10 @@ func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, in
 
 //AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
 func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (postID gp.PostID, err error) {
-	s := db.stmt["postInsert"]
+	s, err := db.prepare("INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)")
+	if err != nil {
+		return
+	}
 	res, err := s.Exec(userID, text, network)
 	if err != nil {
 		return 0, err
@@ -227,7 +230,15 @@ func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (post
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
 func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
-	s := db.stmt["liveSelect"]
+	q := "SELECT wall_posts.id, `by`, time, text " +
+		"FROM wall_posts " +
+		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
+		"WHERE deleted = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
+		"ORDER BY value ASC LIMIT 0, ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(netID, after.Unix(), count)
 	if err != nil {
 		return
@@ -347,7 +358,10 @@ func (db *DB) GetPostVideos(postID gp.PostID) (videos []string, err error) {
 
 //CreateComment adds a comment on this post.
 func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
-	s := db.stmt["commentInsert"]
+	s, err := db.prepare("INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
 	if res, err := s.Exec(postID, userID, text); err == nil {
 		cID, err := res.LastInsertId()
 		commID = gp.CommentID(cID)
@@ -358,7 +372,14 @@ func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (co
 
 //GetComments returns up to count comments for this post.
 func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
-	s := db.stmt["commentSelect"]
+	q := "SELECT id, `by`, text, `timestamp` " +
+		"FROM post_comments " +
+		"WHERE post_id = ? " +
+		"ORDER BY `timestamp` DESC LIMIT ?, ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(postID, start, count)
 	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
 	if err != nil {
@@ -386,8 +407,11 @@ func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []
 
 //GetCommentCount returns the total number of comments for this post.
 func (db *DB) GetCommentCount(id gp.PostID) (count int) {
-	s := db.stmt["commentCountSelect"]
-	err := s.QueryRow(id).Scan(&count)
+	s, err := db.prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&count)
 	if err != nil {
 		return 0
 	}
@@ -397,7 +421,10 @@ func (db *DB) GetCommentCount(id gp.PostID) (count int) {
 //GetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
 func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
-	s := db.stmt["postSelect"]
+	s, err := db.prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?")
+	if err != nil {
+		return
+	}
 	post.ID = postID
 	var by gp.UserID
 	var t string
@@ -426,7 +453,10 @@ func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
 //the onus is on the viewer of the attributes to look for just the ones which make sense,
 //and on the caller of this function to ensure that the values conform to a particular format.
 func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
-	s := db.stmt["setPostAttribs"]
+	s, err := db.prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
 	for attrib, value := range attribs {
 		//How could I be so foolish to store time strings rather than unix timestamps...
 		if attrib == "event-time" {
@@ -451,7 +481,10 @@ func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err err
 
 //GetPostAttribs returns a map of all attributes associated with post.
 func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
-	s := db.stmt["getPostAttribs"]
+	s, err := db.prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(post)
 	if err != nil {
 		return

@@ -16,7 +16,6 @@ const (
 )
 
 var (
-	sqlStmt           map[string]string
 	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
 )
 
@@ -34,10 +33,7 @@ func New(conf gp.MysqlConfig) (db *DB) {
 		log.Fatalf("Error opening database: %v", err)
 	}
 	db.database.SetMaxIdleConns(conf.MaxConns)
-	db.stmt, err = prepare(db.database)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db.stmt = make(map[string]*sql.Stmt)
 	return db
 }
 
@@ -52,35 +48,6 @@ func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
 		db.stmt[statement] = stmt
 	}
 	return
-}
-
-//why.png
-func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
-	sqlStmt = make(map[string]string)
-	stmt = make(map[string]*sql.Stmt)
-	//Post
-	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
-	sqlStmt["liveSelect"] = "SELECT wall_posts.id, `by`, time, text " +
-		"FROM wall_posts " +
-		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
-		"WHERE deleted = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
-		"ORDER BY value ASC LIMIT 0, ?"
-	sqlStmt["commentInsert"] = "INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)"
-	sqlStmt["commentSelect"] = "SELECT id, `by`, text, `timestamp` " +
-		"FROM post_comments " +
-		"WHERE post_id = ? " +
-		"ORDER BY `timestamp` DESC LIMIT ?, ?"
-	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
-	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?"
-	sqlStmt["setPostAttribs"] = "REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)"
-	sqlStmt["getPostAttribs"] = "SELECT attrib, value FROM post_attribs WHERE post_id=?"
-	for k, str := range sqlStmt {
-		stmt[k], err = db.Prepare(str)
-		if err != nil {
-			return
-		}
-	}
-	return stmt, nil
 }
 
 /********************************************************************
