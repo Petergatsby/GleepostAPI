@@ -1,4 +1,6 @@
-//db handles
+//Package db contains everything to do with accessing the database.
+//it's dependent on mysql-specific features (REPLACE INTO).
+//As well as a prepared statement cache which arose more or less accidentally, but which will be useful for stats later.
 package db
 
 import (
@@ -16,15 +18,18 @@ const (
 )
 
 var (
+	//UserAlreadyExists appens when creating an account with a dupe email address or username.
 	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
 )
 
+//DB contains the database configuration and so forth.
 type DB struct {
 	stmt     map[string]*sql.Stmt
 	database *sql.DB
 	config   gp.MysqlConfig
 }
 
+//New creates a DB; it connects an underlying sql.db and will fatalf if it can't.
 func New(conf gp.MysqlConfig) (db *DB) {
 	var err error
 	db = new(DB)
@@ -73,10 +78,9 @@ func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserID, e
 			}
 		}
 		return 0, err
-	} else {
-		id, _ := res.LastInsertId()
-		return gp.UserID(id), nil
 	}
+	id, _ := res.LastInsertId()
+	return gp.UserID(id), nil
 }
 
 //SetUserName sets a user's real name.
@@ -889,7 +893,7 @@ func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
 	return
 }
 
-//SetCategories accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
+//TagPost accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
 func (db *DB) TagPost(post gp.PostID, tags ...string) (err error) {
 	s, err := db.prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
 	if err != nil {
@@ -930,7 +934,7 @@ func (db *DB) PostCategories(post gp.PostID) (categories []gp.PostCategory, err 
 		Token
 ********************************************************************/
 
-//Token returns true if this user:token pair exists, false otherwise (or in the case of error)
+//TokenExists returns true if this user:token pair exists, false otherwise (or in the case of error)
 func (db *DB) TokenExists(id gp.UserID, token string) bool {
 	var expiry string
 	s, err := db.prepare("SELECT expiry FROM tokens WHERE user_id = ? AND token = ?")
