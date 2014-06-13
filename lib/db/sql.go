@@ -59,43 +59,6 @@ func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
 func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 	sqlStmt = make(map[string]string)
 	stmt = make(map[string]*sql.Stmt)
-	//Conversation
-	sqlStmt["conversationInsert"] = "INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())"
-	sqlStmt["conversationUpdate"] = "UPDATE conversations SET last_mod = NOW() WHERE id = ?"
-	sqlStmt["conversationSelect"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-		"FROM conversation_participants " +
-		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? AND ( " +
-		"conversation_expirations.ended IS NULL " +
-		"OR conversation_expirations.ended =0 " +
-		") " +
-		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
-	sqlStmt["conversationsAll"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-		"FROM conversation_participants " +
-		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
-		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
-	sqlStmt["conversationActivity"] = "SELECT last_mod FROM conversations WHERE id = ?"
-	sqlStmt["conversationExpiry"] = "SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?"
-	sqlStmt["conversationSetExpiry"] = "REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)"
-	sqlStmt["deleteExpiry"] = "DELETE FROM conversation_expirations WHERE conversation_id = ?"
-	sqlStmt["endConversation"] = "UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?"
-	sqlStmt["participantInsert"] = "INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)"
-	sqlStmt["participantSelect"] = "SELECT participant_id " +
-		"FROM conversation_participants " +
-		"JOIN users ON conversation_participants.participant_id = users.id " +
-		"WHERE conversation_id=?"
-	sqlStmt["liveConversations"] = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-		"FROM conversation_participants " +
-		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
-		"AND conversation_expirations.ended = 0 " +
-		"ORDER BY conversations.last_mod DESC  " +
-		"LIMIT 0 , 3"
-	sqlStmt["readStatus"] = "SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?"
 	//Post
 	sqlStmt["postInsert"] = "INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)"
 	sqlStmt["liveSelect"] = "SELECT wall_posts.id, `by`, time, text " +
@@ -110,37 +73,8 @@ func prepare(db *sql.DB) (stmt map[string]*sql.Stmt, err error) {
 		"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	sqlStmt["commentCountSelect"] = "SELECT COUNT(*) FROM post_comments WHERE post_id = ?"
 	sqlStmt["postSelect"] = "SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?"
-	sqlStmt["categoryAdd"] = "INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)"
-	sqlStmt["addCategoryWhereExists"] = "INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?"
-	sqlStmt["listCategories"] = "SELECT id, tag, name FROM categories WHERE 1"
-	sqlStmt["postCategories"] = "SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?"
 	sqlStmt["setPostAttribs"] = "REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)"
 	sqlStmt["getPostAttribs"] = "SELECT attrib, value FROM post_attribs WHERE post_id=?"
-	//Message
-	sqlStmt["messageInsert"] = "INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)"
-	sqlStmt["messageSelect"] = "SELECT id, `from`, text, `timestamp`" +
-		"FROM chat_messages " +
-		"WHERE conversation_id = ? " +
-		"ORDER BY `timestamp` DESC LIMIT ?, ?"
-	sqlStmt["messageSelectAfter"] = "SELECT id, `from`, text, `timestamp`" +
-		"FROM chat_messages " +
-		"WHERE conversation_id = ? AND id > ? " +
-		"ORDER BY `timestamp` DESC LIMIT ?"
-	sqlStmt["messageSelectBefore"] = "SELECT id, `from`, text, `timestamp`" +
-		"FROM chat_messages " +
-		"WHERE conversation_id = ? AND id < ? " +
-		"ORDER BY `timestamp` DESC LIMIT ?"
-	sqlStmt["messagesRead"] = "UPDATE conversation_participants " +
-		"SET last_read = ? " +
-		"WHERE `conversation_id` = ? AND `participant_id` = ?"
-	//Token
-	sqlStmt["tokenInsert"] = "INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)"
-	sqlStmt["tokenSelect"] = "SELECT expiry FROM tokens WHERE user_id = ? AND token = ?"
-	//Contact
-	sqlStmt["contactInsert"] = "INSERT INTO contacts (adder, addee) VALUES (?, ?)"
-	sqlStmt["contactSelect"] = "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
-	sqlStmt["contactUpdate"] = "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
-	sqlStmt["contactExists"] = "SELECT COUNT(*) FROM contacts WHERE adder = ? AND addee = ?"
 	//Upload
 	sqlStmt["userUpload"] = "INSERT INTO uploads (user_id, url) VALUES (?, ?)"
 	sqlStmt["uploadExists"] = "SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ?"
@@ -487,7 +421,18 @@ func (db *DB) DeletePasswordRecovery(userID gp.UserID, token string) (err error)
 //GetLiveConversations returns the three most recent unfinished live conversations for a given user.
 //TODO: retrieve conversation & expiry in a single query
 func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.ConversationSmall, err error) {
-	s := db.stmt["liveConversations"]
+	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? " +
+		"AND conversation_expirations.ended = 0 " +
+		"ORDER BY conversations.last_mod DESC  " +
+		"LIMIT 0 , 3"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(id)
 	if err != nil {
 		return conversations, err
@@ -515,8 +460,12 @@ func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.Conversatio
 	return conversations, nil
 }
 
+//CreateConversation generates a new conversation with these participants and an initiator id. Expiry is optional.
 func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
-	s := db.stmt["conversationInsert"]
+	s, err := db.prepare("INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())")
+	if err != nil {
+		return
+	}
 	r, _ := s.Exec(id)
 	cID, _ := r.LastInsertId()
 	conversation.ID = gp.ConversationID(cID)
@@ -524,9 +473,12 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 		return
 	}
 	log.Println("DB hit: createConversation (user.Name, user.Id)")
-	sta := db.stmt["participantInsert"]
+	s, err = db.prepare("INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)")
+	if err != nil {
+		return
+	}
 	for _, u := range participants {
-		_, err = sta.Exec(conversation.ID, u.ID)
+		_, err = s.Exec(conversation.ID, u.ID)
 		if err != nil {
 			return
 		}
@@ -540,6 +492,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 	return
 }
 
+//RandomPartners generates count users randomly (id ∉ participants).
 func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
 	q := "SELECT DISTINCT id, name, firstname, avatar " +
 		"FROM users " +
@@ -585,6 +538,7 @@ func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (par
 	return
 }
 
+//LiveCount returns the total number of conversations which are currently live for this user (ie, have an expiry, which is in the future, and are not ended.)
 func (db *DB) LiveCount(userID gp.UserID) (count int, err error) {
 	q := "SELECT COUNT( conversation_participants.conversation_id ) FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id WHERE participant_id = ? AND conversation_expirations.ended = 0 AND conversation_expirations.expiry > NOW( )"
 	stmt, err := db.prepare(q)
@@ -595,8 +549,12 @@ func (db *DB) LiveCount(userID gp.UserID) (count int, err error) {
 	return
 }
 
+//UpdateConversation marks this conversation as modified now.
 func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
-	s := db.stmt["conversationUpdate"]
+	s, err := db.prepare("UPDATE conversations SET last_mod = NOW() WHERE id = ?")
+	if err != nil {
+		return
+	}
 	_, err = s.Exec(id)
 	log.Println("DB hit: updateConversation convid ")
 	if err != nil {
@@ -605,12 +563,31 @@ func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
 	return err
 }
 
+//GetConversations returns this user's conversations; if all is false, it will omit live conversations.
 func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
 	var s *sql.Stmt
+	var q string
 	if all {
-		s = db.stmt["conversationsAll"]
+		q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+			"FROM conversation_participants " +
+			"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+			"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+			"WHERE participant_id = ? " +
+			"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	} else {
-		s = db.stmt["conversationSelect"]
+		q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+			"FROM conversation_participants " +
+			"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+			"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+			"WHERE participant_id = ? AND ( " +
+			"conversation_expirations.ended IS NULL " +
+			"OR conversation_expirations.ended =0 " +
+			") " +
+			"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
+	}
+	s, err = db.prepare(q)
+	if err != nil {
+		return
 	}
 	rows, err := s.Query(userID, start, count)
 	log.Println("DB hit: getConversations user_id, start (conversation.id)")
@@ -644,8 +621,12 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 	return conversations, nil
 }
 
+//ConversationActivity returns the time this conversation last changed.
 func (db *DB) ConversationActivity(convID gp.ConversationID) (t time.Time, err error) {
-	s := db.stmt["conversationActivity"]
+	s, err := db.prepare("SELECT last_mod FROM conversations WHERE id = ?")
+	if err != nil {
+		return
+	}
 	var tstring string
 	err = s.QueryRow(convID).Scan(&tstring)
 	if err != nil {
@@ -655,8 +636,12 @@ func (db *DB) ConversationActivity(convID gp.ConversationID) (t time.Time, err e
 	return
 }
 
+//ConversationExpiry returns this conversation's expiry, or an error if it doesn't have one.
 func (db *DB) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, err error) {
-	s := db.stmt["conversationExpiry"]
+	s, err := db.prepare("SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?")
+	if err != nil {
+		return
+	}
 	var t string
 	err = s.QueryRow(convID).Scan(&t, &expiry.Ended)
 	if err != nil {
@@ -666,18 +651,32 @@ func (db *DB) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, er
 	return
 }
 
+//DeleteConversationExpiry removes this conversation's expiry, effectively converting it to a regular conversation.
 func (db *DB) DeleteConversationExpiry(convID gp.ConversationID) (err error) {
-	_, err = db.stmt["deleteExpiry"].Exec(convID)
+	s, err := db.prepare("DELETE FROM conversation_expirations WHERE conversation_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(convID)
 	return
 }
 
+//TerminateConversation ends this conversation.
 func (db *DB) TerminateConversation(convID gp.ConversationID) (err error) {
-	_, err = db.stmt["endConversation"].Exec(convID)
+	s, err := db.prepare("UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(convID)
 	return
 }
 
+//ConversationSetExpiry updates this conversation's expiry to equal expiry.
 func (db *DB) ConversationSetExpiry(convID gp.ConversationID, expiry gp.Expiry) (err error) {
-	s := db.stmt["conversationSetExpiry"]
+	s, err := db.prepare("REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
 	_, err = s.Exec(convID, expiry.Time)
 	return
 }
@@ -702,6 +701,7 @@ func (db *DB) GetConversation(convID gp.ConversationID, count int) (conversation
 	return
 }
 
+//ConversationsToTerminate finds all of this user's live conversations except for the three with their expiries furthest in the future.
 func (db *DB) ConversationsToTerminate(id gp.UserID) (conversations []gp.ConversationID, err error) {
 	q := "SELECT conversation_participants.conversation_id " +
 		"FROM conversation_participants " +
@@ -733,7 +733,11 @@ func (db *DB) ConversationsToTerminate(id gp.UserID) (conversations []gp.Convers
 
 //GetReadStatus returns all the positions the participants in this conversation have read to. It omits participants who haven't read.
 func (db *DB) GetReadStatus(convID gp.ConversationID) (read []gp.Read, err error) {
-	rows, err := db.stmt["readStatus"].Query(convID)
+	s, err := db.prepare("SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(convID)
 	if err != nil {
 		return
 	}
@@ -753,15 +757,22 @@ func (db *DB) GetReadStatus(convID gp.ConversationID) (read []gp.Read, err error
 
 //GetParticipants returns all of the participants in conv.
 //TODO: Return an error when appropriate
-func (db *DB) GetParticipants(conv gp.ConversationID) []gp.User {
-	s := db.stmt["participantSelect"]
+func (db *DB) GetParticipants(conv gp.ConversationID) (participants []gp.User) {
+	q := "SELECT participant_id " +
+		"FROM conversation_participants " +
+		"JOIN users ON conversation_participants.participant_id = users.id " +
+		"WHERE conversation_id=?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(conv)
 	log.Println("DB hit: getParticipants convid (user.id)")
 	if err != nil {
 		log.Printf("Error getting participant: %v", err)
 	}
 	defer rows.Close()
-	participants := make([]gp.User, 0, 5)
+	participants = make([]gp.User, 0, 5)
 	for rows.Next() {
 		var id gp.UserID
 		err = rows.Scan(&id)
@@ -806,9 +817,13 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 		Message
 ********************************************************************/
 
+//AddMessage records this message in the database.
 func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string) (id gp.MessageID, err error) {
 	log.Printf("Adding message to db: %d, %d %s", convID, userID, text)
-	s := db.stmt["messageInsert"]
+	s, err := db.prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)")
+	if err != nil {
+		return
+	}
 	res, err := s.Exec(convID, userID, text)
 	if err != nil {
 		return 0, err
@@ -827,13 +842,27 @@ func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string
 //BUG(Patrick): Should return an error when sel isn't right!
 func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
 	var s *sql.Stmt
+	var q string
 	switch {
 	case sel == "after":
-		s = db.stmt["messageSelectAfter"]
+		q = "SELECT id, `from`, text, `timestamp`" +
+			"FROM chat_messages " +
+			"WHERE conversation_id = ? AND id > ? " +
+			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "before":
-		s = db.stmt["messageSelectBefore"]
+		q = "SELECT id, `from`, text, `timestamp`" +
+			"FROM chat_messages " +
+			"WHERE conversation_id = ? AND id < ? " +
+			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "start":
-		s = db.stmt["messageSelect"]
+		q = "SELECT id, `from`, text, `timestamp`" +
+			"FROM chat_messages " +
+			"WHERE conversation_id = ? " +
+			"ORDER BY `timestamp` DESC LIMIT ?, ?"
+	}
+	s, err = db.prepare(q)
+	if err != nil {
+		return
 	}
 	rows, err := s.Query(convID, index, count)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time)")
@@ -866,19 +895,33 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 //up to and including upTo and excluding messages sent by user id.
 //TODO: This won't generalize to >2 participants
 func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (err error) {
-	_, err = db.stmt["messagesRead"].Exec(upTo, convID, id)
+	s, err := db.prepare("UPDATE conversation_participants " +
+		"SET last_read = ? " +
+		"WHERE `conversation_id` = ? AND `participant_id` = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(upTo, convID, id)
 	return
 }
 
 //AddCategory marks the post id as a member of category.
 func (db *DB) AddCategory(id gp.PostID, category gp.CategoryID) (err error) {
-	_, err = db.stmt["categoryAdd"].Exec(id, category)
+	s, err := db.prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(id, category)
 	return
 }
 
 //CategoryList returns all existing categories.
 func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
-	rows, err := db.stmt["listCategories"].Query()
+	s, err := db.prepare("SELECT id, tag, name FROM categories WHERE 1")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
 	defer rows.Close()
 	for rows.Next() {
 		c := gp.PostCategory{}
@@ -893,8 +936,12 @@ func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
 
 //SetCategories accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
 func (db *DB) TagPost(post gp.PostID, tags ...string) (err error) {
+	s, err := db.prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
+	if err != nil {
+		return
+	}
 	for _, tag := range tags {
-		_, err = db.stmt["addCategoryWhereExists"].Exec(post, tag)
+		_, err = s.Exec(post, tag)
 		if err != nil {
 			return
 		}
@@ -904,7 +951,11 @@ func (db *DB) TagPost(post gp.PostID, tags ...string) (err error) {
 
 //PostCategories returns all the categories which post belongs to.
 func (db *DB) PostCategories(post gp.PostID) (categories []gp.PostCategory, err error) {
-	rows, err := db.stmt["postCategories"].Query(post)
+	s, err := db.prepare("SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
 	if err != nil {
 		return
 	}
@@ -924,12 +975,16 @@ func (db *DB) PostCategories(post gp.PostID) (categories []gp.PostCategory, err 
 		Token
 ********************************************************************/
 
+//Token returns true if this user:token pair exists, false otherwise (or in the case of error)
 func (db *DB) TokenExists(id gp.UserID, token string) bool {
 	var expiry string
-	s := db.stmt["tokenSelect"]
-	err := s.QueryRow(id, token).Scan(&expiry)
+	s, err := db.prepare("SELECT expiry FROM tokens WHERE user_id = ? AND token = ?")
 	if err != nil {
-		return (false)
+		return false
+	}
+	err = s.QueryRow(id, token).Scan(&expiry)
+	if err != nil {
+		return false
 	}
 	t, _ := time.Parse(mysqlTime, expiry)
 	if t.After(time.Now()) {
@@ -938,8 +993,12 @@ func (db *DB) TokenExists(id gp.UserID, token string) bool {
 	return (false)
 }
 
+//AddToken records this session token in the database.
 func (db *DB) AddToken(token gp.Token) (err error) {
-	s := db.stmt["tokenInsert"]
+	s, err := db.prepare("INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
 	_, err = s.Exec(token.UserID, token.Token, token.Expiry)
 	return
 }
@@ -948,9 +1007,13 @@ func (db *DB) AddToken(token gp.Token) (err error) {
 		Contact
 ********************************************************************/
 
+//AddContact records that adder has added addee as a contact.
 func (db *DB) AddContact(adder gp.UserID, addee gp.UserID) (err error) {
 	log.Println("DB hit: addContact")
-	s := db.stmt["contactInsert"]
+	s, err := db.prepare("INSERT INTO contacts (adder, addee) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
 	_, err = s.Exec(adder, addee)
 	return
 }
@@ -958,7 +1021,10 @@ func (db *DB) AddContact(adder gp.UserID, addee gp.UserID) (err error) {
 //GetContacts retrieves all the contacts for user.
 //TODO: This could return contacts which doesn't embed a user
 func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
-	s := db.stmt["contactSelect"]
+	s, err := "SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC"
+	if err != nil {
+		return
+	}
 	rows, err := s.Query(user, user)
 	log.Println("DB hit: db.GetContacts")
 	if err != nil {
@@ -997,14 +1063,23 @@ func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
 	return contacts, nil
 }
 
+//UpdateContact marks this adder/addee pair as "accepted"
 func (db *DB) UpdateContact(user gp.UserID, contact gp.UserID) (err error) {
-	s := db.stmt["contactUpdate"]
+	s, err := "UPDATE contacts SET confirmed = 1 WHERE addee = ? AND adder = ?"
+	if err != nil {
+		return
+	}
 	_, err = s.Exec(user, contact)
 	return
 }
 
+//ContactRequestExists returns true if this adder has already added addee.
 func (db *DB) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists bool, err error) {
-	err = db.stmt["contactExists"].QueryRow(adder, addee).Scan(&exists)
+	s, err := db.prepare("SELECT COUNT(*) FROM contacts WHERE adder = ? AND addee = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(adder, addee).Scan(&exists)
 	return
 }
 
