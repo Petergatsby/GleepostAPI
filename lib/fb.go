@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 	"time"
 
@@ -40,7 +41,7 @@ var FBAPIError = gp.APIerror{Reason: "Something went wrong with a facebook API c
 
 //FBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
 //ie, expired or for another app.
-func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error) {
+func (api *API) FBValidateToken(fbToken string, retries int) (token FacebookToken, err error) {
 	app := facebook.New(api.fb.config.AppID, api.fb.config.AppSecret)
 	appToken := app.AppAccessToken()
 	res, err := facebook.Get("/debug_token", facebook.Params{
@@ -48,7 +49,13 @@ func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error)
 		"input_token":  fbToken,
 	})
 	if err != nil {
-		log.Println(err)
+		if _, ok := err.(net.Error); ok && retries > 0 {
+			//Probably a transient connection error, we can go again.
+			<-time.After(3 * time.Second)
+			token, err = api.FBValidateToken(fbToken, retries-1)
+		} else {
+			log.Println("Couldn't retry:", err)
+		}
 		return
 	}
 	data := res["data"].(map[string]interface{})
@@ -85,7 +92,7 @@ func (api *API) FBValidateToken(fbToken string) (token FacebookToken, err error)
 //FacebookLogin takes a facebook access token supplied by a user and tries to issue a gleepost session token,
 // or an error if there isn't an associated gleepost user for this facebook account.
 func (api *API) FacebookLogin(fbToken string) (token gp.Token, err error) {
-	t, err := api.FBValidateToken(fbToken)
+	t, err := api.FBValidateToken(fbToken, 2)
 	if err != nil {
 		return
 	}
@@ -118,7 +125,7 @@ func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
 //If the invite is invalid or nonexistent, it issues a verification email
 //(the rest of the association will be handled upon verification in FBVerify.
 func (api *API) FacebookRegister(fbToken string, email string, invite string) (id gp.UserID, err error) {
-	t, err := api.FBValidateToken(fbToken)
+	t, err := api.FBValidateToken(fbToken, 3)
 	if err != nil {
 		return
 	}
