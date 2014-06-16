@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/huandu/facebook"
+	"github.com/draaglom/facebook"
 )
 
 //FacebookToken contains the parsed expiry, user and permission scopes of a facebook authentication token.
