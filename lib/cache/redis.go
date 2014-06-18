@@ -118,7 +118,7 @@ func (c *Cache) GetLastMessage(id gp.ConversationID) (message gp.Message, err er
 	return message, err
 }
 
-//AddMessages: Identical to addMessage, except it can do several messages at once.
+//AddMessages - Identical to addMessage, except it can do several messages at once.
 func (c *Cache) AddMessages(convID gp.ConversationID, messages []gp.Message) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -439,6 +439,7 @@ func (c *Cache) getConversationMessageCount(convID gp.ConversationID) (count int
 	return count, nil
 }
 
+//SetConversationParticipants records all of these users in a redis set at conversations:convID:participants
 func (c *Cache) SetConversationParticipants(convID gp.ConversationID, participants []gp.User) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -750,6 +751,7 @@ func (c *Cache) SetProfileImage(id gp.UserID, url string) {
 	conn.Flush()
 }
 
+//SetBusyStatus records if this user is busy or not.
 func (c *Cache) SetBusyStatus(id gp.UserID, busy bool) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -758,6 +760,7 @@ func (c *Cache) SetBusyStatus(id gp.UserID, busy bool) {
 	conn.Flush()
 }
 
+//UserPing marks this user as busy for the next timeout seconds.
 func (c *Cache) UserPing(id gp.UserID, timeout int) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -766,6 +769,8 @@ func (c *Cache) UserPing(id gp.UserID, timeout int) {
 	conn.Flush()
 }
 
+//UserIsOnline returns true if this user is online.
+//Should this use users:userID:busy??
 func (c *Cache) UserIsOnline(id gp.UserID) (online bool) {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -781,6 +786,7 @@ func (c *Cache) UserIsOnline(id gp.UserID) (online bool) {
 		Tokens
 ********************************************************************/
 
+//PutToken records this token in the cache until it expires.
 func (c *Cache) PutToken(token gp.Token) {
 	/* Set a session token in redis.
 		We use the token value as part of the redis key
@@ -794,6 +800,7 @@ func (c *Cache) PutToken(token gp.Token) {
 	conn.Flush()
 }
 
+//TokenExists returns true if this id:token pair exists.
 func (c *Cache) TokenExists(id gp.UserID, token string) bool {
 	conn := c.pool.Get()
 	defer conn.Close()
@@ -805,6 +812,7 @@ func (c *Cache) TokenExists(id gp.UserID, token string) bool {
 	return exists
 }
 
+//EventSubscribe subscribes to the channels in subscription, and returns them as a combined MsgQueue.
 func (c *Cache) EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	commands := make(chan gp.QueueCommand)
 	log.Println("Made a new command channel")
