@@ -49,11 +49,11 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		return
 	}
 	rows, err := s.Query(id)
-	defer rows.Close()
 	log.Println("DB hit: getUserNetworks userid (network.id, network.name, cover_img, desc, creator)")
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var network gp.Group
 		var img, desc sql.NullString

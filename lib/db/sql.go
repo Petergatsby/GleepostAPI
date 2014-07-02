@@ -729,6 +729,7 @@ func (db *DB) GetParticipants(conv gp.ConversationID) (participants []gp.User) {
 	log.Println("DB hit: getParticipants convid (user.id)")
 	if err != nil {
 		log.Printf("Error getting participant: %v", err)
+		return
 	}
 	defer rows.Close()
 	participants = make([]gp.User, 0, 5)
