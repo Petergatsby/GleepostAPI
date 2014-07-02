@@ -25,10 +25,9 @@ func randomFilename(extension string) string {
 		hash.Write(random)
 		digest := hex.EncodeToString(hash.Sum(nil))
 		return digest + extension
-	} else {
-		log.Println(err)
-		return ""
 	}
+	log.Println(err)
+	return ""
 }
 
 //HandleVideoUpload takes an uploaded multipart.File and hands it off for background processing.
