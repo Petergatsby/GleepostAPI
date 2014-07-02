@@ -60,6 +60,7 @@ func (api *API) UserAddUsersToGroup(adder gp.UserID, addees []gp.UserID, group g
 
 //UserAddUserToGroup adds addee to group iff adder is in group and group is not a university network (we don't want people to be able to get into universities they're not part of)
 //TODO: Check addee exists
+//TODO: Suppress re-add push notification.
 func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (err error) {
 	in, neterr := api.UserInNetwork(adder, group)
 	isgroup, grouperr := api.isGroup(group)

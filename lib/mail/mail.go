@@ -34,6 +34,7 @@ func toBytes(h mail.Header) []byte {
 		//Assuming that there will only ever be a single value for each header...
 		bytes = append(bytes, []byte(k+": "+v[0]+"\r\n")...)
 	}
+	bytes = append(bytes, []byte("\r\n")...)
 	return bytes
 }
 

@@ -28,7 +28,7 @@ func randomFilename(extension string) (string, error) {
 
 func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
 	var auth aws.Auth
-	auth.AccessKey, auth.SecretKey = api.Config.AWS.KeyId, api.Config.AWS.SecretKey
+	auth.AccessKey, auth.SecretKey = api.Config.AWS.KeyID, api.Config.AWS.SecretKey
 	//1911 == Stanford.
 	//TODO: Make the bucket a property of the university / group of universities
 	if network == 1911 {

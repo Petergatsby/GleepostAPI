@@ -1212,7 +1212,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		invite := r.FormValue("invite")
 		//Is this a valid facebook token for this app?
-		fbToken, err := api.FBValidateToken(_fbToken)
+		fbToken, err := api.FBValidateToken(_fbToken, 3)
 		if err != nil {
 			jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
 			return
@@ -1983,7 +1983,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	id, err := api.ValidatePass(email, pass)
 	_fbToken := r.FormValue("fbtoken")
 	//Is this a valid facebook token for this app?
-	fbToken, errtoken := api.FBValidateToken(_fbToken)
+	fbToken, errtoken := api.FBValidateToken(_fbToken, 3)
 	userID, autherr := authenticate(r)
 	switch {
 	case r.Method != "POST":
