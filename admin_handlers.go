@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -80,6 +81,42 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			w.WriteHeader(204)
+		} else {
+			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		}
+	}
+}
+
+func postDuplicate(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method != "POST":
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	default:
+		if api.IsAdmin(userID) {
+			_netID, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
+			if err != nil {
+				jsonResponse(w, MissingParameterNetwork, 400)
+				return
+			}
+			netID := gp.NetworkID(_netID)
+			posts := strings.Split(r.FormValue("posts"), ",")
+			var postIDs []gp.PostID
+			for _, p := range posts {
+				_postID, err := strconv.ParseUint(p, 10, 64)
+				if err == nil {
+					postID := gp.PostID(_postID)
+					postIDs = append(postIDs, postID)
+				}
+			}
+			dupes, err := api.DuplicatePosts(netID, true, postIDs...)
+			if err != nil {
+				jsonResponse(w, err, 500)
+				return
+			}
+			jsonResponse(w, dupes, 201)
 		} else {
 			jsonResponse(w, &lib.ENOTALLOWED, 403)
 		}

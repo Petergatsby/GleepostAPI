@@ -2,8 +2,11 @@ package lib
 
 import (
 	"errors"
+	"log"
 	"math/rand"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -28,10 +31,10 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 		}
 		names := strings.Split(user.FullName, " ")
 		lastName := ""
-		if len(names) > 0 {
+		if len(names) > 1 {
 			lastName = names[1]
 		}
-		email := string(rand.Uint32()) + "@gleepost.com"
+		email := strconv.FormatUint(uint64(rand.Uint32()), 10) + "@gleepost.com"
 		var userID gp.UserID
 		userID, err = api.CreateUserSpecial(user.Name, lastName, email, "TestingPass", true, into)
 		if err != nil {
@@ -48,9 +51,10 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 }
 
 //DuplicatePosts takes a bunch of posts and copies them into another network, ie for demos. It can also copy their owners.
-func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.PostID) (err error) {
+func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.PostID) (duplicates []gp.PostID, err error) {
 	if len(posts) == 0 {
-		return ErrNoPosts
+		err = ErrNoPosts
+		return
 	}
 	for _, p := range posts {
 		var post gp.Post
@@ -86,10 +90,43 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.Po
 		if len(post.Images) > 0 {
 			image = post.Images[0]
 		}
-		_, err = api.AddPostWithImage(userID, into, post.Text, attribs, image, tags...)
+		var id gp.PostID
+		id, err = api.AddPostWithImage(userID, into, post.Text, attribs, image, tags...)
 		if err != nil {
 			return
 		}
+		duplicates = append(duplicates, id)
 	}
 	return
+}
+
+//KeepPostsInFuture checks a list of posts every PollInterval and pushes them into the future if neccessary
+func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []gp.PostFuture) {
+	t := time.Tick(pollInterval)
+	for {
+		for _, future := range futures {
+			post, err := api.GetPost(future.Post)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			t, ok := post.Attribs["event-time"]
+			if ok {
+				eventTime, ok := t.(time.Time)
+				if ok {
+					if eventTime.Sub(time.Now()) > future.Future {
+						continue
+					}
+				}
+			}
+			newEventTime := time.Now().Add(future.Future)
+			attribs := make(map[string]string)
+			attribs["event-time"] = strconv.FormatInt(newEventTime.Unix(), 10)
+			err = api.db.SetPostAttribs(post.ID, attribs)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		<-t
+	}
 }

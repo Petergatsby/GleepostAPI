@@ -151,6 +151,7 @@ func main() {
 	base.HandleFunc("/search/users/{query}", searchUsers).Methods("GET")
 	base.HandleFunc("/admin/massmail", mm).Methods("POST")
 	base.HandleFunc("/admin/masspush", newVersionNotificationHandler).Methods("POST")
+	base.HandleFunc("/admin/posts/duplicate", postDuplicate).Methods("POST")
 	base.HandleFunc("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", postsStatsHandler).Methods("GET")
 	base.HandleFunc("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", individualPostStats).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")

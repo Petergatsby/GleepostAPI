@@ -69,6 +69,12 @@ func init() {
 	go api.FeedbackDaemon(60)
 	go api.EndOldConversations()
 	api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
+	var futures []gp.PostFuture
+	for _, f := range config.Futures {
+		futures = append(futures, f.ParseDuration())
+	}
+	go api.KeepPostsInFuture(30*time.Minute, futures)
+
 }
 
 //Note to self: validateToken should probably return an error at some point
