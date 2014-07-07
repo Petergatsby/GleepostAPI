@@ -122,3 +122,42 @@ func postDuplicate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func copyAttribs(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method != "POST":
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	default:
+		if api.IsAdmin(userID) {
+			from := strings.Split(r.FormValue("from"), ",")
+			var fromIDs []gp.PostID
+			for _, p := range from {
+				_postID, err := strconv.ParseUint(p, 10, 64)
+				if err == nil {
+					postID := gp.PostID(_postID)
+					fromIDs = append(fromIDs, postID)
+				}
+			}
+			to := strings.Split(r.FormValue("to"), ",")
+			var toIDs []gp.PostID
+			for _, p := range to {
+				_postID, err := strconv.ParseUint(p, 10, 64)
+				if err == nil {
+					postID := gp.PostID(_postID)
+					toIDs = append(toIDs, postID)
+				}
+			}
+			err := api.MultiCopyPostAttribs(fromIDs, toIDs)
+			if err != nil {
+				jsonResponse(w, err, 500)
+				return
+			}
+			w.WriteHeader(204)
+		} else {
+			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		}
+	}
+}
