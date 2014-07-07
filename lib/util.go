@@ -75,10 +75,14 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.Po
 		}
 		//Get attribs in a usable form
 		attribs := make(map[string]string)
-		for k, v := range post.Attribs {
-			s, ok := v.(string)
-			if ok {
-				attribs[k] = s
+		atts := make(map[string]interface{})
+		atts, err = api.GetPostAttribs(post.ID)
+		if err == nil {
+			for k, v := range atts {
+				s, ok := v.(string)
+				if ok {
+					attribs[k] = s
+				}
 			}
 		}
 		//Get tags in a usable form
@@ -129,4 +133,35 @@ func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []gp.PostF
 		}
 		<-t
 	}
+}
+
+//CopyPostAttribs sets `to`s attributes equal to `from`s
+func (api *API) CopyPostAttribs(from gp.PostID, to gp.PostID) (err error) {
+	atts, err := api.GetPostAttribs(from)
+	if err != nil {
+		return
+	}
+	attribs := make(map[string]string)
+	for k, v := range atts {
+		s, ok := v.(string)
+		if ok {
+			attribs[k] = s
+		}
+	}
+	err = api.SetPostAttribs(to, attribs)
+	return
+}
+
+//MultiCopyPostAttribs sets to[n]'s attributes equal to from[n].
+func (api *API) MultiCopyPostAttribs(from []gp.PostID, to []gp.PostID) (err error) {
+	if len(from) != len(to) {
+		return errors.New("from and to must be the same length")
+	}
+	for i := range from {
+		err = api.CopyPostAttribs(from[i], to[i])
+		if err != nil {
+			return
+		}
+	}
+	return
 }
