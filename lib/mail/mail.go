@@ -52,7 +52,7 @@ func (m *Mailer) Send(to string, subject string, body string) (err error) {
 //SendHTML - Send, but with HTML
 func (m *Mailer) SendHTML(to string, subject string, body string) (err error) {
 	header := m.NewHeader()
-	header["Content-Type"] = []string{"text/html; charset=\"UTF-8\"\r\n"}
+	header["Content-Type"] = []string{"text/html; charset=\"UTF-8\""}
 	header["To"] = []string{to}
 	header["Subject"] = []string{subject}
 	auth := smtp.PlainAuth("", m.config.User, m.config.Pass, m.config.Server)
