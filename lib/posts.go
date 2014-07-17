@@ -9,8 +9,11 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//EBADTIME is
+//EBADTIME happens when you don't provide a well-formed time when looking for live posts.
 var EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
+
+//CommentTooShort happens if you try to post an empty comment.
+var CommentTooShort = gp.APIerror{Reason: "Comment too short"}
 
 //GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
@@ -298,6 +301,10 @@ func (api *API) LikesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, e
 
 //CreateComment adds a comment to a post.
 func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
+	if len(text) == 0 {
+		err = CommentTooShort
+		return
+	}
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return

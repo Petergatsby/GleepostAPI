@@ -430,6 +430,12 @@ example responses:
 {"id":234}
 ```
 
+If you provide a zero-length text:
+(http 400)
+```json
+{"error":"Comment too short"}
+```
+
 ##POST /posts/[post-id]/images
 required parameters: id, token, url
 

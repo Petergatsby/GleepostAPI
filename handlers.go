@@ -704,7 +704,11 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("text")
 		commentID, err := api.CreateComment(postID, userID, text)
 		if err != nil {
-			jsonErr(w, err, 500)
+			if err == lib.CommentTooShort {
+				jsonErr(w, err, 400)
+			} else {
+				jsonErr(w, err, 500)
+			}
 		} else {
 			jsonResponse(w, &gp.Created{ID: uint64(commentID)}, 201)
 		}
