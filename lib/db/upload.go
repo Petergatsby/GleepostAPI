@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -49,7 +50,10 @@ func (db *DB) SetUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err 
 		thumb = uploadStatus.Thumbs[0]
 	}
 	res, err := s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb)
-	if uploadStatus.ID == 0 {
+	if err != nil {
+		log.Println(err)
+		return
+	} else if uploadStatus.ID == 0 {
 		_ID, _ := res.LastInsertId()
 		ID = gp.VideoID(_ID)
 	}
