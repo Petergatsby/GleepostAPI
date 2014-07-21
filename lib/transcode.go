@@ -1,4 +1,4 @@
-package trans
+package lib
 
 import (
 	"crypto/rand"
@@ -17,6 +17,18 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+var transcodeQueue chan gp.UploadStatus
+
+func init() {
+	transcodeQueue = make(chan gp.UploadStatus, 100)
+}
+
+func (api *API) process(vids chan gp.UploadStatus) {
+	for inProgress := range vids {
+		api.pipeline(inProgress)
+	}
+}
+
 func randomFilename(extension string) string {
 	hash := sha256.New()
 	random := make([]byte, 32) //Number pulled out of my... ahem.
@@ -30,39 +42,7 @@ func randomFilename(extension string) string {
 	return ""
 }
 
-//HandleVideoUpload takes an uploaded multipart.File and hands it off for background processing.
-//It returns an ID which you can then attach to a post.
-func HandleVideoUpload(file multipart.File, header multipart.FileHeader) (ID gp.VideoID, err error) {
-	//First we must copy the file to /tmp,
-	//because while ffmpeg _can_ operate on a stream directly,
-	//that throws away the video length.
-	var ext string
-	switch {
-	case strings.HasSuffix(header.Filename, ".mp4"):
-		ext = ".mp4"
-	case strings.HasSuffix(header.Filename, ".webm"):
-		ext = ".webm"
-	default:
-		return ID, errors.New("unsupported video type")
-	}
-	name, err := TransientStoreFile(file, ext)
-	if err != nil {
-		return
-	}
-	//Then we'll pass off the video for transcoding / thumbnail extraction
-	video := gp.Video{}
-	switch {
-	case ext == ".mp4":
-		video.MP4 = name
-	case ext == ".webm":
-		video.WebM = name
-	}
-	go pipeline(video)
-	return video.ID, nil
-
-}
-
-func pipeline(inProgress gp.Video) {
+func (api *API) pipeline(inProgress gp.UploadStatus) {
 	var err error
 	//Transcode mp4 to webm
 	if inProgress.MP4 != "" {
@@ -79,12 +59,10 @@ func pipeline(inProgress gp.Video) {
 		return
 	}
 	inProgress.Thumbs = append(inProgress.Thumbs, thumb)
-	//Work out which bucket to put it in
-
 	//Upload
-	uploaded, err := Upload(inProgress)
+	uploaded, err := api.Upload(inProgress)
 	//Mark as processed
-
+	api.SetUploadStatus(uploaded)
 	//Delete temp files
 	err = del(inProgress)
 }
@@ -100,7 +78,6 @@ func MP4ToWebM(in string) (output string, err error) {
 	if err != nil {
 		return
 	}
-
 	//hand back temp file?
 	return output, nil
 }
@@ -131,7 +108,8 @@ func TransientStoreFile(f multipart.File, ext string) (location string, err erro
 }
 
 //Upload sends all versions and thumbnails of a Video to the bucket b.
-func Upload(v gp.Video, b s3.Bucket) (uploaded gp.Video, err error) {
+func (api *API) Upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) {
+	b := api.getBucket(v.Owner)
 	v.MP4, err = upload(v.MP4, "video/mp4", b)
 	if err != nil {
 		return
@@ -154,7 +132,26 @@ func Upload(v gp.Video, b s3.Bucket) (uploaded gp.Video, err error) {
 	return v, nil
 }
 
-func upload(path, contentType string, b s3.Bucket) (url string, err error) {
+func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
+	networks, _ := api.GetUserNetworks(user)
+	var s *s3.S3
+	var bucket *s3.Bucket
+	switch {
+	case len(networks) > 0:
+		s = api.getS3(networks[0].ID)
+		if networks[0].ID == 1911 {
+			bucket = s.Bucket("gpcali")
+		} else {
+			bucket = s.Bucket("gpimg")
+		}
+	default:
+		s = api.getS3(1)
+		bucket = s.Bucket("gpimg")
+	}
+	return bucket
+}
+
+func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return
@@ -173,7 +170,7 @@ func upload(path, contentType string, b s3.Bucket) (url string, err error) {
 }
 
 //del removes all temp files associated with this video
-func del(v gp.Video) (err error) {
+func del(v gp.UploadStatus) (err error) {
 	err = os.Remove(v.MP4)
 	if err != nil {
 		return
@@ -189,4 +186,47 @@ func del(v gp.Video) (err error) {
 		}
 	}
 	return nil
+}
+
+//EnqueueVideo takes a user-uploaded video and enqueues it for processing.
+func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multipart.FileHeader) (inProgress gp.UploadStatus, err error) {
+	//First we must copy the file to /tmp,
+	//because while ffmpeg _can_ operate on a stream directly,
+	//that throws away the video length.
+	var ext string
+	switch {
+	case strings.HasSuffix(header.Filename, ".mp4"):
+		ext = ".mp4"
+	case strings.HasSuffix(header.Filename, ".webm"):
+		ext = ".webm"
+	default:
+		return inProgress, errors.New("unsupported video type")
+	}
+	name, err := TransientStoreFile(file, ext)
+	if err != nil {
+		return
+	}
+	//Then we'll pass off the video for transcoding / thumbnail extraction
+	video := gp.UploadStatus{}
+	switch {
+	case ext == ".mp4":
+		video.MP4 = name
+	case ext == ".webm":
+		video.WebM = name
+	}
+	video.Status = "uploaded"
+	id, err := api.SetUploadStatus(video)
+	if err != nil {
+		return video, err
+	} else {
+		video.ID = id
+		go api.enqueueVideo(video)
+		return video, nil
+	}
+}
+
+func (api *API) enqueueVideo(video gp.UploadStatus) {
+	api.SetUploadStatus(video)
+	transcodeQueue <- video
+	return
 }

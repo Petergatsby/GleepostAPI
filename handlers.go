@@ -1024,7 +1024,6 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1051,7 +1050,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUpload(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2099,5 +2097,51 @@ func putAttendees(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		getAttendees(w, r)
+	}
+}
+
+func postVideoUpload(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "POST":
+		file, header, err := r.FormFile("video")
+		if err != nil {
+			jsonErr(w, err, 400)
+			return
+		}
+		defer file.Close()
+		videoStatus, err := api.EnqueueVideo(userID, file, header)
+		if err != nil {
+			jsonErr(w, err, 400)
+		} else {
+			jsonResponse(w, videoStatus, 201)
+		}
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func getVideos(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		_id, err := strconv.ParseUint(vars["id"], 10, 64)
+		if err != nil {
+			_id = 0
+		}
+		videoID := gp.VideoID(_id)
+		upload, err := api.GetUploadStatus(userID, videoID)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		jsonResponse(w, upload, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }

@@ -30,22 +30,26 @@ func (db *DB) UploadExists(user gp.UserID, url string) (exists bool, err error) 
 	return
 }
 
-//SetUploadStatus records this upload's status ("uploaded", "transcode", "transfer", "done"). If provided, urls[0] is its mp4 format and urls[1] its webm.
-func (db *DB) SetUploadStatus(user gp.UserID, upload gp.VideoID, status string, urls ...string) (ID gp.VideoID, err error) {
+//SetUploadStatus records this upload's status ("uploaded", "transcode", "transfer", "done").
+func (db *DB) SetUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err error) {
 	var q string
 	var s *sql.Stmt
-	if upload == 0 {
+	if uploadStatus.ID == 0 {
 		q = "INSERT INTO uploads(user_id, type, status) VALUES(?, 'video', ?)"
 	} else {
-		q = "REPLACE INTO uploads(user_id, type, status, mp4_url, webm_url, url) VALUES (?, ?, ?, ?)"
-		ID = upload
+		q = "REPLACE INTO uploads(user_id, type, status, mp4_url, webm_url, url) VALUES (?, 'video', ?, ?, ?)"
+		ID = uploadStatus.ID
 	}
 	s, err = db.prepare(q)
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(user, status, urls[0], urls[1], urls[2])
-	if upload == 0 {
+	thumb := ""
+	if len(uploadStatus.Thumbs) > 0 {
+		thumb = uploadStatus.Thumbs[1]
+	}
+	res, err := s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb)
+	if uploadStatus.ID == 0 {
 		_ID, _ := res.LastInsertId()
 		ID = gp.VideoID(_ID)
 	}

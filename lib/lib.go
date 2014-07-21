@@ -38,6 +38,7 @@ func New(conf gp.Config) (api *API) {
 	api.fb = &FB{config: conf.Facebook}
 	api.mail = mail.New(conf.Email)
 	api.push = push.New(conf)
+	go api.process(transcodeQueue)
 	return
 }
 

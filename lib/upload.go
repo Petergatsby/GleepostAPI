@@ -1,10 +1,6 @@
 package lib
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"strings"
@@ -13,18 +9,6 @@ import (
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
 )
-
-func randomFilename(extension string) (string, error) {
-	hash := sha256.New()
-	random := make([]byte, 32) //Number pulled out of my... ahem.
-	_, err := io.ReadFull(rand.Reader, random)
-	if err == nil {
-		hash.Write(random)
-		digest := hex.EncodeToString(hash.Sum(nil))
-		return digest + extension, nil
-	}
-	return "", err
-}
 
 func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
 	var auth aws.Auth
@@ -45,25 +29,22 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 	var contenttype string
 	switch {
 	case strings.HasSuffix(header.Filename, ".jpg"):
-		filename, err = randomFilename(".jpg")
+		filename = randomFilename(".jpg")
 		contenttype = "image/jpeg"
 	case strings.HasSuffix(header.Filename, ".jpeg"):
-		filename, err = randomFilename(".jpg")
+		filename = randomFilename(".jpg")
 		contenttype = "image/jpeg"
 	case strings.HasSuffix(header.Filename, ".png"):
-		filename, err = randomFilename(".png")
+		filename = randomFilename(".png")
 		contenttype = "image/png"
 	case strings.HasSuffix(header.Filename, ".mp4"):
-		filename, err = randomFilename(".mp4")
+		filename = randomFilename(".mp4")
 		contenttype = "video/mp4"
 	case strings.HasSuffix(header.Filename, ".webm"):
-		filename, err = randomFilename(".webm")
+		filename = randomFilename(".webm")
 		contenttype = "video/webm"
 	default:
 		return "", gp.APIerror{Reason: "Unsupported file type"}
-	}
-	if err != nil {
-		return "", gp.APIerror{Reason: err.Error()}
 	}
 	//store on s3
 	networks, _ := api.GetUserNetworks(id)
@@ -112,6 +93,6 @@ func (api *API) GetUploadStatus(user gp.UserID, upload gp.VideoID) (UploadStatus
 //SetUploadStatus records the current status of this upload.
 //Status must be one of "uploaded", "transcode", "transfer", "done".
 //If provided, urls[0] will be its mp4 format and urls[1] its webm..
-func (api *API) SetUploadStatus(user gp.UserID, upload gp.VideoID, status string, urls ...string) (id gp.VideoID, err error) {
-	return api.db.SetUploadStatus(user, upload, status, urls...)
+func (api *API) SetUploadStatus(video gp.UploadStatus) (id gp.VideoID, err error) {
+	return api.db.SetUploadStatus(video)
 }

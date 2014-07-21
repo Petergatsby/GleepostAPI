@@ -393,6 +393,7 @@ type Video struct {
 	MP4      string   `json:"mp4,omitempty"`
 	WebM     string   `json:"webm,omitempty"`
 	Thumbs   []string `json:"thumbnails,omitempty"`
+	Owner    UserID   `json:"-"`
 }
 
 //VideoID is a reference to an uploaded video.
