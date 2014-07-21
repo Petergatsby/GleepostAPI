@@ -56,13 +56,13 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		whereClause := "WHERE deleted = 0 AND network_id = ? "
 		switch {
 		case orderMode == gp.OSTART:
-			orderClause = "ORDER BY time DESC LIMIT ?, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT ?, ?"
 		case orderMode == gp.OBEFORE:
 			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
 		case orderMode == gp.OAFTER:
 			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
 		default:
 			err = &EBADORDER
 			return
@@ -86,13 +86,13 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			") "
 		switch {
 		case orderMode == gp.OSTART:
-			orderClause = "ORDER BY time DESC LIMIT ?, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT ?, ?"
 		case orderMode == gp.OBEFORE:
 			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
 		case orderMode == gp.OAFTER:
 			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
 		default:
 			err = &EBADORDER
 			return
@@ -122,13 +122,13 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			" ) "
 		switch {
 		case orderMode == gp.OSTART:
-			orderClause = " ORDER BY time DESC LIMIT ?, ?"
+			orderClause = " ORDER BY time DESC, id DESC LIMIT ?, ?"
 		case orderMode == gp.OBEFORE:
 			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
 		case orderMode == gp.OAFTER:
 			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC LIMIT 0, ?"
+			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
 		default:
 			err = &EBADORDER
 			return

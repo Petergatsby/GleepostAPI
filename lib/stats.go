@@ -262,12 +262,21 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
 	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
-	text := fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
-	text += fmt.Sprintf("Of these, %d (%2.1f%%) verified their account\n", stats["verified"], 100*float64(stats["verified"])/float64(stats["signups"]))
-	text += fmt.Sprintf("Of these, %d (%2.1f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"])/float64(stats["verified"]))
-	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
-	for _, activity := range activities {
-		text += fmt.Sprintf("%s: %d (%2.1f%%)\n", activity, stats[activity], 100*float64(stats[activity])/float64(stats["verified"]))
+	var text string
+	if stats["signups"] > 0 {
+		text = fmt.Sprintf("Signups in this period: %d\n", stats["signups"])
+		if stats["verified"] > 0 {
+			text += fmt.Sprintf("Of these, %d (%2.1f%%) verified their account\n", stats["verified"], 100*float64(stats["verified"])/float64(stats["signups"]))
+			text += fmt.Sprintf("Of these, %d (%2.1f%%) activated their account (performed one of the following actions)\n", stats["activated"], 100*float64(stats["activated"])/float64(stats["verified"]))
+			activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
+			for _, activity := range activities {
+				text += fmt.Sprintf("%s: %d (%2.1f%%)\n", activity, stats[activity], 100*float64(stats[activity])/float64(stats["verified"]))
+			}
+		} else {
+			text += "Nobody verified their account.\n"
+		}
+	} else {
+		text = "There were no signups in this period :(\n"
 	}
 	users, err := api.db.GetNetworkUsers(gp.NetworkID(api.Config.Admins))
 	if err != nil {

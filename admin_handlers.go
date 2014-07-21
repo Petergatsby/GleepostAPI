@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -74,7 +75,82 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 			}
 			netID := gp.NetworkID(_netID)
 			verified, _ := strconv.ParseBool(r.FormValue("verified"))
-			err = api.CreateUserSpecial(r.FormValue("first"), r.FormValue("last"), r.FormValue("email"), r.FormValue("pass"), verified, netID)
+			_, err = api.CreateUserSpecial(r.FormValue("first"), r.FormValue("last"), r.FormValue("email"), r.FormValue("pass"), verified, netID)
+			if err != nil {
+				jsonResponse(w, err, 500)
+				return
+			}
+			w.WriteHeader(204)
+		} else {
+			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		}
+	}
+}
+
+func postDuplicate(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method != "POST":
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	default:
+		if api.IsAdmin(userID) {
+			_netID, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
+			if err != nil {
+				jsonResponse(w, MissingParameterNetwork, 400)
+				return
+			}
+			netID := gp.NetworkID(_netID)
+			posts := strings.Split(r.FormValue("posts"), ",")
+			var postIDs []gp.PostID
+			for _, p := range posts {
+				_postID, err := strconv.ParseUint(p, 10, 64)
+				if err == nil {
+					postID := gp.PostID(_postID)
+					postIDs = append(postIDs, postID)
+				}
+			}
+			dupes, err := api.DuplicatePosts(netID, true, postIDs...)
+			if err != nil {
+				jsonResponse(w, err, 500)
+				return
+			}
+			jsonResponse(w, dupes, 201)
+		} else {
+			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		}
+	}
+}
+
+func copyAttribs(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method != "POST":
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	default:
+		if api.IsAdmin(userID) {
+			from := strings.Split(r.FormValue("from"), ",")
+			var fromIDs []gp.PostID
+			for _, p := range from {
+				_postID, err := strconv.ParseUint(p, 10, 64)
+				if err == nil {
+					postID := gp.PostID(_postID)
+					fromIDs = append(fromIDs, postID)
+				}
+			}
+			to := strings.Split(r.FormValue("to"), ",")
+			var toIDs []gp.PostID
+			for _, p := range to {
+				_postID, err := strconv.ParseUint(p, 10, 64)
+				if err == nil {
+					postID := gp.PostID(_postID)
+					toIDs = append(toIDs, postID)
+				}
+			}
+			err := api.MultiCopyPostAttribs(fromIDs, toIDs)
 			if err != nil {
 				jsonResponse(w, err, 500)
 				return

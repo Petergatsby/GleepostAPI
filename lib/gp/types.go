@@ -2,6 +2,7 @@
 package gp
 
 import (
+	"log"
 	"time"
 )
 
@@ -266,6 +267,7 @@ type Config struct {
 	GCM                  GCMConfig
 	Email                EmailConfig
 	Facebook             FacebookConfig
+	Futures              []ConfigFuture
 }
 
 //Device is a particular (iOS|Android) device owned by a particular user.
@@ -400,4 +402,28 @@ type VideoID uint64
 type UploadStatus struct {
 	Status string `json:"status"`
 	Video
+}
+
+//PostFuture represents a commitment to keeping an event's event-time in the future by a specified duration.
+type PostFuture struct {
+	Post   PostID        `json:"id"`
+	Future time.Duration `json:"future"`
+}
+
+//ConfigFuture is PostFuture but without the duration because json can't unmarshal it apparently.
+type ConfigFuture struct {
+	Post   PostID `json:"id"`
+	Future string `json:"future"`
+}
+
+//ParseDuration converts a ConfigFuture into a PostFuture
+func (c ConfigFuture) ParseDuration() (pf PostFuture) {
+	pf.Post = c.Post
+	duration, err := time.ParseDuration(c.Future)
+	if err != nil {
+		log.Println("Error parsing duration:", err)
+		return
+	}
+	pf.Future = duration
+	return pf
 }
