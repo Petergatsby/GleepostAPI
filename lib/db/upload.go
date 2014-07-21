@@ -38,7 +38,7 @@ func (db *DB) SetUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err 
 	if uploadStatus.ID == 0 {
 		q = "INSERT INTO uploads(user_id, type, status) VALUES(?, 'video', ?)"
 	} else {
-		q = "REPLACE INTO uploads(user_id, type, status, mp4_url, webm_url, url) VALUES (?, 'video', ?, ?, ?)"
+		q = "REPLACE INTO uploads(user_id, type, status, mp4_url, webm_url, url, upload_id) VALUES (?, 'video', ?, ?, ?)"
 		ID = uploadStatus.ID
 	}
 	s, err = db.prepare(q)
@@ -53,7 +53,7 @@ func (db *DB) SetUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err 
 	if uploadStatus.ID == 0 {
 		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status)
 	} else {
-		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb)
+		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb, uploadStatus.ID)
 	}
 	if err != nil {
 		log.Println(err)
