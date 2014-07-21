@@ -46,7 +46,7 @@ func (db *DB) SetUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err 
 	}
 	thumb := ""
 	if len(uploadStatus.Thumbs) > 0 {
-		thumb = uploadStatus.Thumbs[1]
+		thumb = uploadStatus.Thumbs[0]
 	}
 	res, err := s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb)
 	if uploadStatus.ID == 0 {
