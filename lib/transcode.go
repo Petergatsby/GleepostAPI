@@ -224,6 +224,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 		video.WebM = name
 	}
 	video.Status = "uploaded"
+	video.Owner = user
 	id, err := api.SetUploadStatus(video)
 	if err != nil {
 		return video, err
