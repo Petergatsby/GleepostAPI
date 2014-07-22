@@ -67,6 +67,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	if err != nil {
 		log.Println("Upload error:", err)
 	}
+	log.Println("State after uploading:", uploaded)
 	//Mark as processed
 	api.SetUploadStatus(uploaded)
 	//Delete temp files
