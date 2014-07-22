@@ -43,6 +43,7 @@ func randomFilename(extension string) string {
 }
 
 func (api *API) pipeline(inProgress gp.UploadStatus) {
+	log.Println("Initial state:", inProgress)
 	var err error
 	//Transcode mp4 to webm
 	if inProgress.MP4 != "" {
@@ -52,6 +53,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 			return
 		}
 	}
+	log.Println("State after transcode to webM:", inProgress)
 	//Extract initial thumb
 	thumb, err := MP4Thumb(inProgress.MP4)
 	if err != nil {
@@ -59,12 +61,19 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 		return
 	}
 	inProgress.Thumbs = append(inProgress.Thumbs, thumb)
+	log.Println("State after extracting thumb:", inProgress)
 	//Upload
 	uploaded, err := api.Upload(inProgress)
+	if err != nil {
+		log.Println("Upload error:", err)
+	}
 	//Mark as processed
 	api.SetUploadStatus(uploaded)
 	//Delete temp files
 	err = del(inProgress)
+	if err != nil {
+		log.Println("Error cleaning up temp files:", err)
+	}
 }
 
 //MP4ToWebM converts an MP4 video to WebM, returning the path to the output video.
