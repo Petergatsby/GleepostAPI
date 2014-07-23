@@ -44,6 +44,8 @@ func randomFilename(extension string) string {
 
 func (api *API) pipeline(inProgress gp.UploadStatus) {
 	log.Println("Initial state:", inProgress)
+	inProgress.Status = "transcoding"
+	api.SetUploadStatus(inProgress)
 	var err error
 	//Transcode mp4 to webm
 	if inProgress.MP4 != "" {
@@ -63,12 +65,15 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	inProgress.Thumbs = append(inProgress.Thumbs, thumb)
 	log.Println("State after extracting thumb:", inProgress)
 	//Upload
+	inProgress.Status = "transferring"
+	api.SetUploadStatus(inProgress)
 	uploaded, err := api.Upload(inProgress)
 	if err != nil {
 		log.Println("Upload error:", err)
 	}
 	log.Println("State after uploading:", uploaded)
 	//Mark as processed
+	uploaded.Status = "ready"
 	id, err := api.SetUploadStatus(uploaded)
 	if err != nil {
 		log.Println(id, err)
