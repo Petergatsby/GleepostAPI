@@ -235,6 +235,8 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	} else {
 		video.ID = id
 		go api.enqueueVideo(video)
+		video.MP4 = ""
+		video.WebM = ""
 		return video, nil
 	}
 }
