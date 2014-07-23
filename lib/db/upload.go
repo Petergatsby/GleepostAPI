@@ -51,12 +51,17 @@ func (db *DB) SetUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err 
 		thumb = uploadStatus.Thumbs[0]
 	}
 	var res sql.Result
-	if uploadStatus.ID == 0 {
+	switch {
+	case uploadStatus.ID == 0:
+		//First time, create an ID
 		log.Println("UploadStatus.ID == 0")
 		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status)
-	} else {
-		log.Println("UploadStatus.ID != 0")
+	case uploadStatus.Uploaded == true:
+		//If it's done, record the urls of the files
 		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb, uploadStatus.ID)
+	default:
+		//Otherwise, just update the status.
+		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status, "", "", "", uploadStatus.ID)
 	}
 	if err != nil {
 		log.Println(err)
