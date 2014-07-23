@@ -1100,7 +1100,8 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 		}
 		notification.By, err = db.GetUser(by)
 		if err != nil {
-			return
+			log.Println(err)
+			continue
 		}
 		if location.Valid {
 			switch {
