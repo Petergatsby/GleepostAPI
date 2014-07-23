@@ -1075,9 +1075,9 @@ func (db *DB) UploadExists(user gp.UserID, url string) (exists bool, err error) 
 func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
 	var notificationSelect string
 	if !includeSeen {
-		notificationSelect = "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? AND seen = 0"
+		notificationSelect = "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? AND seen = 0 ORDER BY `id` DESC"
 	} else {
-		notificationSelect = "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? LIMIT 0, 20"
+		notificationSelect = "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? ORDER BY `id` DESC LIMIT 0, 20"
 	}
 	s, err := db.prepare(notificationSelect)
 	if err != nil {
