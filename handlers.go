@@ -2078,7 +2078,7 @@ func putAttendees(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postReport(w http.ResponseWriter, r *http.Request) {
+func postReports(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

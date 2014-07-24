@@ -7,6 +7,6 @@ func (db *DB) ReportPost(user gp.UserID, post gp.PostID, reason string) (err err
 	if err != nil {
 		return
 	}
-	_, err := s.Exec(user, post, reason)
+	_, err = s.Exec(user, post, reason)
 	return
 }
