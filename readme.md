@@ -107,6 +107,10 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /upload [[POST]](#post-upload)
 
+/video [[POST]](#post-video) 
+
+/video/[video-id] [[GET]](#get-videovideo-id)
+
 /profile/profile_image [[POST]](#post-profileprofile_image)
 
 /profile/name [[POST]](#post-profilename)
@@ -1169,6 +1173,33 @@ example responses:
 HTTP 201
 ```json
 {"url":"https://s3-eu-west-1.amazonaws.com/gpimg/3acd82c15dd0e698fc59c79e445a464553e57d338a6440601551c7fb28e45bf9.jpg"}
+```
+
+##POST /videos
+
+required parameters: id, token, video
+
+/video takes a single multipart/form-data encoded video and returns an id and a status ("uploaded").
+You can then check [its resource](#get-videosvideo-id) to discover when it is ready to be used.
+HTTP 201
+```json
+{"status":"uploaded", "id":2780}
+```
+
+##GET /videos/[video-id]
+/videos returns the status of this video - it will contain status "ready", a webm and mp4 url, and at least one thumbnail, when it is done processing.
+At this point it can be posted.
+(HTTP 200)
+```json
+{
+	status: "ready"
+	id: 2580
+	mp4: https://s3-us-west-1.amazonaws.com/gpcali/048de9a0ea633f53fc010428c09966996066f065c3b3396d782e1d2b1b37d260.mp4
+	webm: https://s3-us-west-1.amazonaws.com/gpcali/8a6a1896eb473f1d9138b9a4bbd73969cfda26b928c49702642004c87792f1e3.webm
+	thumbnails: [
+		https://s3-us-west-1.amazonaws.com/gpcali/234232a6aba24196c3228cc5c8efe191ad959f7783e4ade2a65e2b4e5644b9a0.jpg
+	]
+}
 ```
 
 ##POST /profile/profile_image
