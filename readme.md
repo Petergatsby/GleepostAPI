@@ -129,6 +129,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /search/users/[name] [[GET]](#get-searchusersname)
 
+/reports [[POST]](#post-reports)
+
 ###Statistics endpoints
 
 ####Stat endpoints are currently in development. This means they may change in any way at any time for any reason.
@@ -1426,6 +1428,13 @@ Example response: (HTTP 200)
 ```json
 [{"id":9, "name":"Steph", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"Steve", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
 ```
+
+##POST /reports
+required parameters: post
+optional parameters: reason
+
+Reports the given post ID to moderators, optionally with a reason.
+On success, will give an HTTP 204.
 
 ##GET /stats/users/[user-id]/posts/[stat-type]/[period]/[start]/[finish]
 required parameters: id, token
