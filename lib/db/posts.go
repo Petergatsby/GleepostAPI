@@ -331,7 +331,7 @@ func (db *DB) AddPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
 
 //GetPostVideos returns all the videos associated with postID
 func (db *DB) GetPostVideos(postID gp.PostID) (videos []gp.Video, err error) {
-	s, err := db.prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = `ready`")
+	s, err := db.prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = 'ready'")
 	if err != nil {
 		return
 	}
