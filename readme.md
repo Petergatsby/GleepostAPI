@@ -61,6 +61,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /posts/[post-id]/images [[POST]](#post-postspost-idimages)
 
+/posts/[post-id]/videos [[POST]](#post-postspost-idvideos)
+
 /posts/[post-id]/likes [[POST]](#post-postspost-idlikes)
 
 /posts/[post-id]/attendees [[GET]](#get-postspost-idattendees) [[PUT]](#put-postspost-idattendees)
@@ -452,6 +454,12 @@ example responses:
 ```json
 ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
 ```
+
+##POST /posts/[post-id]/videos
+required parameters: id, token, video
+
+This adds a video to this post (if you are the creator of the post) or 403 otherwise.
+
 
 ##POST /posts/[post-id]/likes
 required parameters: id, token, liked
