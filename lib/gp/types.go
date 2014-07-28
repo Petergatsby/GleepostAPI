@@ -119,7 +119,7 @@ type Post struct {
 	Time       time.Time              `json:"timestamp"`
 	Text       string                 `json:"text"`
 	Images     []string               `json:"images"`
-	Videos     []string               `json:"videos,omitempty"`
+	Videos     []Video                `json:"videos,omitempty"`
 	Categories []PostCategory         `json:"categories,omitempty"`
 	Attribs    map[string]interface{} `json:"attribs,omitempty"`
 	Popularity int                    `json:"popularity,omitempty"`
@@ -389,7 +389,7 @@ type Event struct {
 type Video struct {
 	//uploaded marks whether this is just a local copy or refers to properly hosted files
 	Uploaded bool     `json:"-"`
-	ID       VideoID  `json:"id"`
+	ID       VideoID  `json:"id,omitempty"`
 	MP4      string   `json:"mp4,omitempty"`
 	WebM     string   `json:"webm,omitempty"`
 	Thumbs   []string `json:"thumbnails,omitempty"`

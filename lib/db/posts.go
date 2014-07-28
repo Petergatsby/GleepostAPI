@@ -320,36 +320,43 @@ func (db *DB) AddPostImage(postID gp.PostID, url string) (err error) {
 }
 
 //AddPostVideo adds this video URL to a post.
-//TODO: merge with AddPostImage
-//TODO: handle multiple encodes
-//TODO: provide thumbnails
-func (db *DB) AddPostVideo(postID gp.PostID, URL string) (err error) {
-	s, err := db.prepare("INSERT INTO post_videos (post_id, url) VALUES (?, ?)")
+func (db *DB) AddPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
+	s, err := db.prepare("INSERT INTO post_videos (post_id, video_id) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(postID, URL)
+	_, err = s.Exec(postID, videoID)
 	return
 }
 
 //GetPostVideos returns all the videos associated with postID
-//TODO: Return a video object
-func (db *DB) GetPostVideos(postID gp.PostID) (videos []string, err error) {
-	s, err := db.prepare("SELECT url FROM post_videos WHERE post_id = ?")
+func (db *DB) GetPostVideos(postID gp.PostID) (videos []gp.Video, err error) {
+	s, err := db.prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = `ready`")
 	if err != nil {
 		return
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Println("DB hit: getImages postId(image)")
+	log.Println("DB hit: getVideos postId(image)")
 	if err != nil {
 		return
 	}
+	var thumb, mp4, webm sql.NullString
 	for rows.Next() {
-		var video string
-		err = rows.Scan(&video)
+		err = rows.Scan(&thumb, &mp4, &webm)
 		if err != nil {
+			log.Println(err)
 			return
+		}
+		video := gp.Video{}
+		if mp4.Valid {
+			video.MP4 = mp4.String
+		}
+		if webm.Valid {
+			video.WebM = webm.String
+		}
+		if thumb.Valid {
+			video.Thumbs = append(video.Thumbs, thumb.String)
 		}
 		videos = append(videos, video)
 	}

@@ -3,7 +3,6 @@ package lib
 import (
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -252,7 +251,7 @@ func (api *API) GetPostImages(postID gp.PostID) (images []string) {
 }
 
 //GetPostVideos returns all the videos attached to postID.
-func (api *API) GetPostVideos(postID gp.PostID) (videos []string) {
+func (api *API) GetPostVideos(postID gp.PostID) (videos []gp.Video) {
 	videos, _ = api.db.GetPostVideos(postID)
 	return
 }
@@ -330,8 +329,25 @@ func (api *API) AddPostImage(postID gp.PostID, url string) (err error) {
 }
 
 //AddPostVideo attaches a URL of a video file to a post.
-func (api *API) AddPostVideo(postID gp.PostID, URL string) (err error) {
-	return api.db.AddPostVideo(postID, URL)
+func (api *API) addPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
+	return api.db.AddPostVideo(postID, videoID)
+}
+
+//UserAddPostVideo attaches a video to a post, or errors if the user isn't allowed.
+func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
+	p, err := api.GetPost(postID)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(userID, p.Network)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		return &ENOTALLOWED
+	default:
+		return api.addPostVideo(postID, videoID)
+	}
 }
 
 //AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
@@ -376,11 +392,7 @@ func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 	}
 	exists, err := api.UserUploadExists(userID, image)
 	if exists && err == nil {
-		if strings.HasSuffix(image, ".mp4") || strings.HasSuffix(image, ".webm") {
-			err = api.AddPostVideo(postID, image)
-		} else {
-			err = api.AddPostImage(postID, image)
-		}
+		err = api.AddPostImage(postID, image)
 		return
 	}
 	return

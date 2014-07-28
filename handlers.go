@@ -772,18 +772,14 @@ func postVideos(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postID := gp.PostID(_id)
-		url := r.FormValue("url")
-		exists, err := api.UserUploadExists(userID, url)
-		if exists && err == nil {
-			err := api.AddPostVideo(postID, url)
-			if err != nil {
-				jsonErr(w, err, 500)
-			} else {
-				videos := api.GetPostVideos(postID)
-				jsonResponse(w, videos, 201)
-			}
+		_videoID, err := strconv.ParseUint(r.FormValue("video"), 10, 64)
+		videoID := gp.VideoID(_videoID)
+		err = api.UserAddPostVideo(userID, postID, videoID)
+		if err != nil {
+			jsonErr(w, err, 500)
 		} else {
-			jsonErr(w, NoSuchUpload, 400)
+			videos := api.GetPostVideos(postID)
+			jsonResponse(w, videos, 201)
 		}
 	}
 }
