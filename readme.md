@@ -281,7 +281,14 @@ example responses:
 				},
 			"timestamp":"2013-09-05T13:09:38Z"}
 		],
-		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	},
 	{
 		"id":1,
@@ -294,7 +301,14 @@ example responses:
 		"text":"Sailor Moon FTW!"
 		"comment_count":9,
 		"like_count":0,
-		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	}
 ]
 ```
@@ -379,7 +393,14 @@ example responses:
 			},
 		"timestamp":"2013-09-05T13:09:38Z"}
 		],
-	"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+	"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"],
+	"videos":[
+		{
+			"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+			"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+		}
+	]
 }
 
 ```
@@ -458,8 +479,18 @@ example responses:
 ##POST /posts/[post-id]/videos
 required parameters: id, token, video
 
-This adds a video to this post (if you are the creator of the post) or 403 otherwise.
+This adds a video to this post and returns a list of all this post's videos (although this is limited to one) or 403 f you aren't the post's creator..
 
+(HTTP 201)
+```
+[
+	{
+		"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+		"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+		"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+	}
+]
+```
 
 ##POST /posts/[post-id]/likes
 required parameters: id, token, liked
@@ -546,6 +577,13 @@ example responses:
 	"timestamp":"2014-01-31T09:43:28Z",
 	"text":"Event 1",
 	"images":null,
+	"videos":[
+		{
+			"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+			"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+		}
+	],
 	"attribs":{"event-time":"2014-02-05T12:47:59Z"},
 	"popularity":25,
 	"attendee_count":1,
@@ -558,6 +596,13 @@ example responses:
 	"timestamp":"2014-01-29T18:05:16Z",
 	"text":"New event after bug!",
 	"images":null,
+	"videos":[
+		{
+			"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+			"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+		}
+	],
 	"attribs":{"event-time":"2014-02-05T15:34:39Z"},
 	"popularity":100,
 	"attendee_count":5,
@@ -665,7 +710,14 @@ example responses:
 				},
 			"timestamp":"2013-09-05T13:09:38Z"}
 		],
-		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	},
 	{
 		"id":1,
@@ -678,7 +730,14 @@ example responses:
 		"text":"Sailor Moon FTW!"
 		"comment_count":9,
 		"like_count":0,
-		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	}
 ]
 ```
@@ -1030,7 +1089,14 @@ example responses:
 				},
 			"timestamp":"2013-09-05T13:09:38Z"}
 		],
-		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"]
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	},
 	{
 		"id":1,
@@ -1043,7 +1109,14 @@ example responses:
 		"text":"Sailor Moon FTW!"
 		"comment_count":9,
 		"like_count":0,
-		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"]
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	}
 ]
 
@@ -1330,8 +1403,42 @@ It functions identically to [/posts](#get-posts) but with one exception:
 - Posts also embed information about the group they were posted in.
 
 ```json
-[{"id":886,"by":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"},"timestamp":"2014-03-04T20:57:39Z","text":"","images":null,"network":{"id":5345, "name":"Super Cool Group", "description":"Pretty cool, no?", "url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", "creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}},
-"comment_count":0,"like_count":1}]
+[
+	{
+		"id":886,
+		"by":
+			{
+				"id":2491,
+				"name":"Patrick",
+				"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
+			},
+		"timestamp":"2014-03-04T20:57:39Z",
+		"text":"",
+		"images":null,
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		],
+		"network":
+			{
+				"id":5345,
+				"name":"Super Cool Group",
+				"description":"Pretty cool, no?",
+				"url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg",
+				 "creator":
+					{
+						"id":2491,
+						"name":"Patrick",
+						"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
+					}
+			},
+		"comment_count":0,
+		"like_count":1
+	}
+]
 ```
 
 ##DELETE /profile/networks/[network-id]
