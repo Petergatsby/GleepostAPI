@@ -344,7 +344,11 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			}
 			network = gp.NetworkID(_network)
 		}
+		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
+		videoID := gp.VideoID(_vID)
 		switch {
+		case videoID > 0:
+			postID, err = api.AddPostWithVideo(userID, network, text, attribs, videoID, ts...)
 		case len(url) > 5:
 			postID, err = api.AddPostWithImage(userID, network, text, attribs, url, ts...)
 		default:

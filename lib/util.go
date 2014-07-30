@@ -99,6 +99,9 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.Po
 		if err != nil {
 			return
 		}
+		if len(post.Videos) > 0 {
+			api.addPostVideo(id, post.Videos[0].ID)
+		}
 		duplicates = append(duplicates, id)
 	}
 	return

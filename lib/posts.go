@@ -393,7 +393,21 @@ func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 	exists, err := api.UserUploadExists(userID, image)
 	if exists && err == nil {
 		err = api.AddPostImage(postID, image)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//AddPostWithVideo creates a post and attaches a video in a single step.
+func (api *API) AddPostWithVideo(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, tags ...string) (postID gp.PostID, err error) {
+	postID, err = api.AddPost(userID, netID, text, attribs, tags...)
+	if err != nil {
 		return
+	}
+	if video > 0 {
+		err = api.addPostVideo(postID, video)
 	}
 	return
 }
