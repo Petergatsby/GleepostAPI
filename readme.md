@@ -109,9 +109,9 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /upload [[POST]](#post-upload)
 
-/video [[POST]](#post-video) 
+/videos [[POST]](#post-videos) 
 
-/video/[video-id] [[GET]](#get-videovideo-id)
+/videos/[video-id] [[GET]](#get-videosvideo-id)
 
 /profile/profile_image [[POST]](#post-profileprofile_image)
 
@@ -1264,6 +1264,8 @@ required parameters: id, token, video
 
 /video takes a single multipart/form-data encoded video and returns an id and a status ("uploaded").
 You can then check [its resource](#get-videosvideo-id) to discover when it is ready to be used.
+In addition, when the video has uploaded you will get a "video-ready" event if you have a websocket connection.
+
 HTTP 201
 ```json
 {"status":"uploaded", "id":2780}

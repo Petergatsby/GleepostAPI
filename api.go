@@ -133,8 +133,8 @@ func main() {
 	base.HandleFunc("/upload", uploadHandler)
 	base.HandleFunc("/upload/{id}", getUpload)
 
-	base.HandleFunc("/video", postVideoUpload).Methods("POST")
-	base.HandleFunc("/video/{id}", getVideos).Methods("GET")
+	base.HandleFunc("/videos", postVideoUpload).Methods("POST")
+	base.HandleFunc("/videos/{id}", getVideos).Methods("GET")
 
 	base.HandleFunc("/profile/profile_image", profileImageHandler)
 	base.HandleFunc("/profile/name", changeNameHandler)
