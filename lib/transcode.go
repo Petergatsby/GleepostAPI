@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
@@ -78,6 +79,8 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	if err != nil {
 		log.Println(id, err)
 	}
+	//Emit "Done" event
+	api.Cache.PublishEvent("video-ready", fmt.Sprintf("/videos/%d", uploaded.ID), uploaded, NotificationChannelKey(uploaded.Owner))
 	//Delete temp files
 	err = del(inProgress)
 	if err != nil {
