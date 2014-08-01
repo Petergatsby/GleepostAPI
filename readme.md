@@ -315,10 +315,11 @@ example responses:
 
 ##POST /posts
 required parameters: id, token, text
-optional parameters: url, tags 
+optional parameters: url, tags, video
 
 If set, url must be a url previously returned from [/upload](#post-upload).
 If the image url is invalid, the post will be created without an image. 
+If video contains a [valid video ID](#post-videos), the post will be created with a video.
 
 If set, tags must be a comma-delimited list of category "tags". Any of those tags which exist will be added to the post - any which do not exist are silently ignored.
 
