@@ -15,7 +15,7 @@ func init() {
 
 func TestCreateToken(t *testing.T) {
 	token := createToken(9)
-	if token.UserId != 9 {
+	if token.UserID != 9 {
 		t.Fail()
 	}
 	if len(token.Token) < 64 {
@@ -29,7 +29,7 @@ func TestCreateToken(t *testing.T) {
 func BenchmarkCreateToken(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		token := createToken(9)
-		if token.UserId != 9 {
+		if token.UserID != 9 {
 			b.Fail()
 		}
 		if len(token.Token) < 64 {
