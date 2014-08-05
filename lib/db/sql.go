@@ -563,6 +563,10 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
 		conv.Participants = db.GetParticipants(conv.ID)
+		//Drop all the weird one-participant conversations...
+		if len(conv.Participants) < 2 {
+			continue
+		}
 		LastMessage, err := db.GetLastMessage(conv.ID)
 		if err == nil {
 			conv.LastMessage = &LastMessage
