@@ -207,6 +207,7 @@ func (api *API) testEmail(email string, rules []gp.Rule) bool {
 //RegisterUser accepts a username, password, email address, firstname and lastname. It will return an error if user or email aren't unique, or if pass is too short.
 //If the optional "invite" is set and corresponds to email, it will skip the verification step.
 func (api *API) RegisterUser(user, pass, email, first, last, invite string) (newUser gp.NewUser, err error) {
+	email = normalizeEmail(email)
 	userID, err := api.createUser(user, pass, email)
 	if err != nil {
 		return
