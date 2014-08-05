@@ -83,6 +83,21 @@ func createToken(userID gp.UserID) gp.Token {
 	return (token)
 }
 
+func normalizeEmail(email string) string {
+	splitOnPlus := strings.Split(email, "+")
+	if len(splitOnPlus) > 1 {
+		splitOnAt := strings.Split(email, "@")
+		if len(splitOnAt) > 1 {
+			return splitOnPlus[0] + "@" + splitOnAt[1]
+		} else {
+			//Shouldn't happen if used in conjunction with looksLikeEmail
+			return email
+		}
+	} else {
+		return email
+	}
+}
+
 func looksLikeEmail(email string) bool {
 	rx := "<?\\S+@\\S+?>?"
 	regex, _ := regexp.Compile(rx)
