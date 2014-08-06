@@ -424,6 +424,7 @@ token=[token]
 optional parameters:
 start=[count]
 
+If you are not allowed to view this post, it will return 403.
 example responses:
 (http 200)
 ```json

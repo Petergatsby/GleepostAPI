@@ -61,7 +61,7 @@ func (api *API) getPostFull(postID gp.PostID) (post gp.PostFull, err error) {
 		return
 	}
 	post.CommentCount = api.GetCommentCount(postID)
-	post.Comments, err = api.GetComments(postID, 0, api.Config.CommentPageSize)
+	post.Comments, err = api.getComments(postID, 0, api.Config.CommentPageSize)
 	if err != nil {
 		return
 	}
@@ -225,14 +225,33 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	return
 }
 
-//GetComments returns comments for this post, chronologically ordered starting from the start-th.
-func (api *API) GetComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+//getComments returns comments for this post, chronologically ordered starting from the start-th.
+func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	comments, err = api.cache.GetComments(id, start, count)
 	if err != nil {
 		comments, err = api.db.GetComments(id, start, count)
 		go api.cache.AddAllCommentsFromDB(id, api.db)
 	}
 	return
+}
+
+//UserGetComments returns comments for this post, chronologically ordered starting from the start-th.
+//If you are unable to view this post, it will return ENOTALLOWED
+func (api *API) UserGetComments(user gp.UserID, id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	p, err := api.getPostFull(id)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(user, p.Network)
+	switch {
+	case err != nil:
+		return comments, err
+	case !in:
+		log.Printf("User %d not in %d\n", user, p.Network)
+		return comments, &ENOTALLOWED
+	default:
+		return api.getComments(id, start, count)
+	}
 }
 
 //GetCommentCount returns the total number of comments for this post, trying the cache first (so it could be inaccurate)
