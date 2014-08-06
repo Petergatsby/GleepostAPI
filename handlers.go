@@ -825,7 +825,7 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
-	_, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -833,7 +833,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		_otherID, _ := strconv.ParseUint(vars["id"], 10, 64)
 		otherID := gp.UserID(_otherID)
-		user, err := api.GetProfile(otherID)
+		user, err := api.UserGetProfile(userID, otherID)
 		if err != nil {
 			if err == gp.ENOSUCHUSER {
 				jsonErr(w, err, 404)
@@ -1091,7 +1091,7 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
-				user, err := api.GetProfile(userID)
+				user, err := api.UserGetProfile(userID, userID)
 				if err != nil {
 					jsonErr(w, err, 500)
 				}

@@ -170,8 +170,25 @@ func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
 }
 
 //GetProfile returns the Profile (extended info) for the user with this ID.
-func (api *API) GetProfile(id gp.UserID) (user gp.Profile, err error) {
-	user, err = api.db.GetProfile(id)
+func (api *API) UserGetProfile(userID, otherID gp.UserID) (user gp.Profile, err error) {
+	if userID == otherID {
+		return api.getProfile(otherID)
+	}
+	shared, e := api.HaveSharedNetwork(userID, otherID)
+	switch {
+	case e != nil:
+		fallthrough
+	case !shared:
+		err = &ENOTALLOWED
+	default:
+		return api.getProfile(otherID)
+	}
+	return
+}
+
+//getProfile returns the Profile (extended info) for the user with this ID.
+func (api *API) getProfile(otherID gp.UserID) (user gp.Profile, err error) {
+	user, err = api.db.GetProfile(otherID)
 	if err != nil {
 		return
 	}
