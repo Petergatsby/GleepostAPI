@@ -258,7 +258,7 @@ func (api *API) createUser(user string, pass string, email string) (userID gp.Us
 }
 
 //GenerateAndSendVerification generates a random string and sends it embedded in a link to the user.
-//TODO: this might end up using user input directly in an email. Sanitize!
+//It's probably safe to give it user input -- \r\n is stripped out.
 func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email string) (err error) {
 	random, err := RandomString()
 	if err != nil {
@@ -268,6 +268,8 @@ func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email
 	if err != nil {
 		return
 	}
+	user = strings.Replace(user, "\r", "", -1)
+	user = strings.Replace(user, "\n", "", -1)
 	err = api.issueVerificationEmail(email, user, random)
 	return
 }
