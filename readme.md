@@ -1031,6 +1031,8 @@ required parameters:
 id=[user-id]
 token=[token]
 
+You are only allowed to view a user's profile if they share a network with you. Attempting to access a profile resource of a user you share no networks with will result in a 403 error.
+
 example responses:
 ```json
 {
