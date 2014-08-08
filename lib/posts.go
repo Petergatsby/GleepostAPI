@@ -327,7 +327,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(user, post.Network)
+	in, err := api.UserInNetwork(userID, post.Network)
 	switch {
 	case err != nil:
 		return
@@ -351,8 +351,25 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	}
 }
 
-//AddPostImage adds an image (by url) to a post.
-func (api *API) AddPostImage(postID gp.PostID, url string) (err error) {
+//UserAddPostImage adds an image (by url) to a post.
+func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string) (err error) {
+	post, err := api.GetPost(postID)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(userID, post.Network)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		err = ENOTALLOWED
+		return
+	default:
+		return api.addPostImage(postID, url)
+	}
+}
+
+func (api *API) addPostImage(postID gp.PostID, url string) (err error) {
 	return api.db.AddPostImage(postID, url)
 }
 
@@ -420,7 +437,7 @@ func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 	}
 	exists, err := api.UserUploadExists(userID, image)
 	if exists && err == nil {
-		err = api.AddPostImage(postID, image)
+		err = api.addPostImage(postID, image)
 		if err != nil {
 			return
 		}

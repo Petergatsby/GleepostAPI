@@ -681,7 +681,7 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 		}
 		comments, err := api.UserGetComments(userID, postID, start, api.Config.CommentPageSize)
 		if err != nil {
-			if *err == lib.ENOTALLOWED {
+			if err == lib.ENOTALLOWED {
 				jsonErr(w, err, 403)
 			} else {
 				jsonErr(w, err, 500)
@@ -715,7 +715,7 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case err == lib.CommentTooShort:
 				jsonErr(w, err, 400)
-			case *err == lib.ENOTALLOWED:
+			case err == lib.ENOTALLOWED:
 				jsonErr(w, err, 403)
 			default:
 				jsonErr(w, err, 500)
@@ -761,9 +761,13 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 		url := r.FormValue("url")
 		exists, err := api.UserUploadExists(userID, url)
 		if exists && err == nil {
-			err := api.AddPostImage(postID, url)
+			err := api.UserAddPostImage(userID, postID, url)
 			if err != nil {
-				jsonErr(w, err, 500)
+				if err == lib.ENOTALLOWED {
+					jsonErr(w, err, 403)
+				} else {
+					jsonErr(w, err, 500)
+				}
 			} else {
 				images := api.GetPostImages(postID)
 				jsonResponse(w, images, 201)
@@ -845,7 +849,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case err == gp.ENOSUCHUSER:
 				jsonErr(w, err, 404)
-			case *err == lib.ENOTALLOWED:
+			case err == lib.ENOTALLOWED:
 				jsonErr(w, err, 403)
 			default:
 				jsonErr(w, err, 500)
