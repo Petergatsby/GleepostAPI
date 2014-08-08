@@ -681,7 +681,7 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 		}
 		comments, err := api.UserGetComments(userID, postID, start, api.Config.CommentPageSize)
 		if err != nil {
-			if err == lib.ENOTALLOWED {
+			if *err == lib.ENOTALLOWED {
 				jsonErr(w, err, 403)
 			} else {
 				jsonErr(w, err, 500)
@@ -712,9 +712,12 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("text")
 		commentID, err := api.CreateComment(postID, userID, text)
 		if err != nil {
-			if err == lib.CommentTooShort {
+			switch {
+			case err == lib.CommentTooShort:
 				jsonErr(w, err, 400)
-			} else {
+			case *err == lib.ENOTALLOWED:
+				jsonErr(w, err, 403)
+			default:
 				jsonErr(w, err, 500)
 			}
 		} else {
@@ -842,7 +845,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case err == gp.ENOSUCHUSER:
 				jsonErr(w, err, 404)
-			case err == lib.ENOTALLOWED:
+			case *err == lib.ENOTALLOWED:
 				jsonErr(w, err, 403)
 			default:
 				jsonErr(w, err, 500)
