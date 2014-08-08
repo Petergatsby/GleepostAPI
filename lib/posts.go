@@ -327,19 +327,28 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	if err != nil {
 		return
 	}
-	commID, err = api.db.CreateComment(postID, userID, text)
-	if err == nil {
-		user, e := api.GetUser(userID)
-		if e != nil {
-			return commID, e
+	in, err := api.UserInNetwork(user, post.Network)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		err = &ENOTALLOWED
+		return
+	default:
+		commID, err = api.db.CreateComment(postID, userID, text)
+		if err == nil {
+			user, e := api.GetUser(userID)
+			if e != nil {
+				return commID, e
+			}
+			comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
+			if userID != post.By.ID {
+				go api.createNotification("commented", userID, post.By.ID, uint64(postID))
+			}
+			go api.cache.AddComment(postID, comment)
 		}
-		comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
-		if userID != post.By.ID {
-			go api.createNotification("commented", userID, post.By.ID, uint64(postID))
-		}
-		go api.cache.AddComment(postID, comment)
+		return commID, err
 	}
-	return commID, err
 }
 
 //AddPostImage adds an image (by url) to a post.
