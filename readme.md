@@ -135,6 +135,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /search/users/[name] [[GET]](#get-searchusersname)
 
+/search/groups/[name] [[GET]](#get-searchgroupsname)
+
 /reports [[POST]](#post-reports)
 
 ###Statistics endpoints
@@ -1579,6 +1581,28 @@ If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "J
 Example response: (HTTP 200)
 ```json
 [{"id":9, "name":"Steph", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"Steve", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
+```
+
+##GET /search/groups/[name]
+required parameters: id, token, name
+
+Searches your network for groups matching [name].
+
+Example response:
+```json
+[
+	{
+		"id":5345, 
+		"name":"Even Cooler Group", 
+		"description":"Pretty cool, no?", 
+		"url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", 
+		"creator": {
+			"id":2491,
+			"name":"Patrick",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
+		}
+	}
+]
 ```
 
 ##POST /reports

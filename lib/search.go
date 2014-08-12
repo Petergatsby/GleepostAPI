@@ -29,3 +29,7 @@ func (api *API) UserSearchUsersInNetwork(user gp.UserID, first, last string, net
 		return api.db.SearchUsersInNetwork(first, last, netID)
 	}
 }
+
+func (api *API) SearchGroups(name string) (groups []gp.Group, err error) {
+	return api.db.SearchGroups(name)
+}
