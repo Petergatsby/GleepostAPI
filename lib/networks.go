@@ -134,7 +134,16 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc string) (network g
 	case !exists && len(url) > 0:
 		return network, &ENOTALLOWED
 	default:
-		network, err = api.db.CreateNetwork(name, url, desc, userID, true)
+		var networks []gp.Group
+		networks, err = api.GetUserNetworks(userID)
+		if err != nil {
+			return
+		}
+		var parent gp.NetworkID
+		if len(networks) > 0 {
+			parent = networks[0].ID
+		}
+		network, err = api.db.CreateNetwork(name, parent, url, desc, userID, true)
 		if err != nil {
 			return
 		}
