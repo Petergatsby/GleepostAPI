@@ -301,3 +301,14 @@ func (db *DB) UserAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.Netwo
 	_, err = s.Exec(user, fbuser, netID)
 	return
 }
+
+//SetNetworkParent records that this network is a sub-network of parent (at the moment just used for visibility).
+func (db *DB) SetNetworkParent(network, parent gp.NetworkID) (err error) {
+	q := "UPDATE network SET parent = ? WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(parent, network)
+	return
+}
