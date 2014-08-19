@@ -223,6 +223,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	default:
 		return inProgress, errors.New("unsupported video type")
 	}
+	log.Println("Storing the video in /tmp for now")
 	name, err := TransientStoreFile(file, ext)
 	if err != nil {
 		return
@@ -237,6 +238,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	}
 	video.Status = "uploaded"
 	video.Owner = user
+	log.Println("Recording upload status")
 	id, err := api.SetUploadStatus(video)
 	if err != nil {
 		return video, err
