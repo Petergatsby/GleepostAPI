@@ -108,7 +108,7 @@ func MP4ToWebM(in string) (output string, err error) {
 func MP4Thumb(in string) (output string, err error) {
 	output = "/tmp/" + randomFilename(".jpg")
 	log.Println("Extracting thumbnail")
-	cmd := exec.Command("ffmpeg", "-ss", "00:00:01", "-i", in, "-frames:v", "1", output)
+	cmd := exec.Command("ffmpeg", "-ss", "00:00:00", "-i", in, "-frames:v", "1", output)
 	err = cmd.Run()
 	return
 }
