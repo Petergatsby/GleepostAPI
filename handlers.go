@@ -1879,6 +1879,30 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func searchGroups(w http.ResponseWriter, r *http.Request) {
+	//TODO: UserSearchGroups (search groups within primary network)
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		query := vars["query"]
+		groups, err := api.UserSearchGroups(userID, query)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		if len(groups) == 0 {
+			jsonResponse(w, []string{}, 200)
+			return
+		}
+		jsonResponse(w, groups, 200)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
 //getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
 func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)

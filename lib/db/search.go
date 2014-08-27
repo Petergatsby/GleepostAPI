@@ -43,3 +43,45 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 	}
 	return
 }
+
+//SearchGroups searches for groups which are 'within' parent; it currently just matches %name%.
+func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups []gp.Group, err error) {
+	q := "SELECT id, name, cover_img, `desc`, creator " +
+		"FROM network " +
+		"WHERE user_group = 1 " +
+		"AND parent = ? " +
+		"AND name LIKE ?"
+	name = "%" + name + "%"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(parent, name)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	var img, desc sql.NullString
+	var creator sql.NullInt64
+	for rows.Next() {
+		group := gp.Group{}
+		err = rows.Scan(&group.ID, &group.Name, &img, &desc, &creator)
+		if err != nil {
+			return
+		}
+		if img.Valid {
+			group.Image = img.String
+		}
+		if creator.Valid {
+			u, err := db.GetUser(gp.UserID(creator.Int64))
+			if err == nil {
+				group.Creator = &u
+			}
+		}
+		if desc.Valid {
+			group.Desc = desc.String
+		}
+		groups = append(groups, group)
+	}
+	return
+}

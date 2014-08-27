@@ -154,6 +154,7 @@ func main() {
 	base.HandleFunc("/invite_message", inviteMessageHandler)
 	base.HandleFunc("/live", liveHandler)
 	base.HandleFunc("/search/users/{query}", searchUsers).Methods("GET")
+	base.HandleFunc("/search/groups/{query}", searchGroups).Methods("GET")
 	base.HandleFunc("/admin/massmail", mm).Methods("POST")
 	base.HandleFunc("/admin/masspush", newVersionNotificationHandler).Methods("POST")
 	base.HandleFunc("/admin/posts/duplicate", postDuplicate).Methods("POST")
