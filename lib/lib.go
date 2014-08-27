@@ -89,13 +89,11 @@ func normalizeEmail(email string) string {
 		splitOnAt := strings.Split(email, "@")
 		if len(splitOnAt) > 1 {
 			return splitOnPlus[0] + "@" + splitOnAt[1]
-		} else {
-			//Shouldn't happen if used in conjunction with looksLikeEmail
-			return email
 		}
-	} else {
+		//Shouldn't happen if used in conjunction with looksLikeEmail
 		return email
 	}
+	return email
 }
 
 func looksLikeEmail(email string) bool {
@@ -169,7 +167,7 @@ func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
 	return
 }
 
-//GetProfile returns the Profile (extended info) for the user with this ID.
+//UserGetProfile returns the Profile (extended info) for the user with this ID.
 func (api *API) UserGetProfile(userID, otherID gp.UserID) (user gp.Profile, err error) {
 	if userID == otherID {
 		return api.getProfile(otherID)

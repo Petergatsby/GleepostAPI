@@ -6,6 +6,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//ReportPost records that this user reported this post, with this (optional) reason.
 func (api *API) ReportPost(user gp.UserID, post gp.PostID, reason string) error {
 	p, err := api.getPostFull(post)
 	if err != nil {

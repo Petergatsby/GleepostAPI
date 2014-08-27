@@ -242,13 +242,12 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	id, err := api.SetUploadStatus(video)
 	if err != nil {
 		return video, err
-	} else {
-		video.ID = id
-		go api.enqueueVideo(video)
-		video.MP4 = ""
-		video.WebM = ""
-		return video, nil
 	}
+	video.ID = id
+	go api.enqueueVideo(video)
+	video.MP4 = ""
+	video.WebM = ""
+	return video, nil
 }
 
 func (api *API) enqueueVideo(video gp.UploadStatus) {
