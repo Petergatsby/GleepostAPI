@@ -30,6 +30,10 @@ func (api *API) UserSearchUsersInNetwork(user gp.UserID, first, last string, net
 	}
 }
 
-func (api *API) SearchGroups(name string) (groups []gp.Group, err error) {
-	return api.db.SearchGroups(name)
+func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups []gp.Group, err error) {
+	ns, err := api.GetUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.db.SearchGroups(ns[0].ID, name)
 }

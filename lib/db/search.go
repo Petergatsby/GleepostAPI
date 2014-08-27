@@ -44,17 +44,18 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 	return
 }
 
-func (db *DB) SearchGroups(name string) (groups []gp.Group, err error) {
+func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups []gp.Group, err error) {
 	q := "SELECT id, name, cover_img, `desc`, creator " +
 		"FROM network " +
 		"WHERE user_group = 1 " +
+		"AND parent = ? " +
 		"AND name LIKE ?"
 	name = "%" + name + "%"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(name)
+	rows, err := s.Query(parent, name)
 	if err != nil {
 		return
 	}

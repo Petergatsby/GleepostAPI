@@ -168,10 +168,3 @@ func (api *API) MultiCopyPostAttribs(from []gp.PostID, to []gp.PostID) (err erro
 	}
 	return
 }
-
-//SetAllNetworkParents iterates through all user-groups and sets their parent group to the main network (university) of their creator.
-func (api *API) SetAllNetworkParents() (err error) {
-	//Get all networks
-	//Identify each creator's primary network
-	//Set network parent.
-}

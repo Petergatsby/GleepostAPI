@@ -1881,14 +1881,14 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 
 func searchGroups(w http.ResponseWriter, r *http.Request) {
 	//TODO: UserSearchGroups (search groups within primary network)
-	_, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		vars := mux.Vars(r)
 		query := vars["query"]
-		groups, err := api.SearchGroups(query)
+		groups, err := api.UserSearchGroups(userID, query)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
