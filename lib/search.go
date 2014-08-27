@@ -30,6 +30,7 @@ func (api *API) UserSearchUsersInNetwork(user gp.UserID, first, last string, net
 	}
 }
 
+//UserSearchGroups searches all the groups in userID's university. It will error out if this user is not in at least one network.
 func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups []gp.Group, err error) {
 	ns, err := api.GetUserNetworks(userID)
 	if err != nil {

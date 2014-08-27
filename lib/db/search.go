@@ -44,6 +44,7 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 	return
 }
 
+//SearchGroups searches for groups which are 'within' parent; it currently just matches %name%.
 func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups []gp.Group, err error) {
 	q := "SELECT id, name, cover_img, `desc`, creator " +
 		"FROM network " +
