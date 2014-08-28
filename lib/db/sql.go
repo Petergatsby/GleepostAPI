@@ -1299,7 +1299,7 @@ func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 
 //UnreadMessageCount returns the number of unread messages this user has.
 func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
-	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ?"
+	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
 	sParticipate, err := db.prepare(qParticipate)
 	if err != nil {
 		return
