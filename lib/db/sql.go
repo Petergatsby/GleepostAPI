@@ -641,6 +641,16 @@ func (db *DB) TerminateConversation(convID gp.ConversationID) (err error) {
 	return
 }
 
+//DeleteConversation removes this conversation for this user.
+func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
+	s, err := db.prepare("UPDATE conversation_participants SET deleted = 1 WHERE participant_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userID, convID)
+	return
+}
+
 //ConversationSetExpiry updates this conversation's expiry to equal expiry.
 func (db *DB) ConversationSetExpiry(convID gp.ConversationID, expiry gp.Expiry) (err error) {
 	s, err := db.prepare("REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)")

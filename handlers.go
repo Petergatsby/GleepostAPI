@@ -550,7 +550,7 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
-	err = api.UserEndConversation(userID, convID)
+	err = api.UserDeleteConversation(userID, convID)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {

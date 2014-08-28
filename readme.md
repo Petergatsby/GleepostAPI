@@ -921,7 +921,7 @@ required parameters:
 id=[user-id]
 token=[token]
 
-This ends a live conversation. If you try this on a regular conversation, I don't know what will happen!
+This removes a conversation from your inbox. You will no longer be able to send messages to it, no longer receive notifications, and can no longer view it.
 
 If it is successful, it will respond with HTTP 204.
 

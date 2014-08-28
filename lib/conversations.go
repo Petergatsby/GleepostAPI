@@ -29,6 +29,18 @@ func (api *API) UserEndConversation(userID gp.UserID, convID gp.ConversationID) 
 	return &ENOTALLOWED
 }
 
+//UserDeleteConversation removes this conversation from the list; it also terminates it (if it's a live conversation).
+func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
+	if api.UserCanViewConversation(userID, convID) {
+		err = api.db.DeleteConversation(userID, convID)
+		if err != nil {
+			return
+		}
+		return api.terminateConversation(convID)
+	}
+	return &ENOTALLOWED
+}
+
 func (api *API) generatePartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
 	return api.db.RandomPartners(id, count, network)
 }
