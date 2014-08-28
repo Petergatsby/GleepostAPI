@@ -239,7 +239,7 @@ func (api *API) updateConversation(id gp.ConversationID) (err error) {
 	if err != nil {
 		return err
 	}
-	participants, err := api.db.GetParticipants(id, true)
+	participants, err := api.db.GetParticipants(id, false)
 	go api.cache.UpdateConversationLists(participants, id)
 	return nil
 }
@@ -336,7 +336,7 @@ func (api *API) ConversationLastActivity(convID gp.ConversationID) (t time.Time,
 	return api.db.ConversationActivity(convID)
 }
 
-//GetParticipants returns all participants of this conversation.
+//GetParticipants returns all participants of this conversation, or omits the `deleted` participants if includeDeleted is false.
 func (api *API) GetParticipants(convID gp.ConversationID, includeDeleted bool) []gp.User {
 	participants, err := api.db.GetParticipants(convID, includeDeleted)
 	if err != nil {

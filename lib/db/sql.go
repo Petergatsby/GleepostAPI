@@ -545,6 +545,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 			"conversation_expirations.ended IS NULL " +
 			"OR conversation_expirations.ended =0 " +
 			") " +
+			"AND deleted = 0 " +
 			"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	}
 	s, err = db.prepare(q)
