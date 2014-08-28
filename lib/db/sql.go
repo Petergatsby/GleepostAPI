@@ -405,7 +405,10 @@ func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.Conversatio
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants = db.GetParticipants(conv.ID)
+		conv.Participants, err = db.GetParticipants(conv.ID, true)
+		if err != nil {
+			return conversations, err
+		}
 		LastMessage, err := db.GetLastMessage(conv.ID)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -562,7 +565,10 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants = db.GetParticipants(conv.ID)
+		conv.Participants, err = db.GetParticipants(conv.ID, true)
+		if err != nil {
+			return conversations, err
+		}
 		//Drop all the weird one-participant conversations...
 		if len(conv.Participants) < 2 {
 			continue
@@ -651,7 +657,10 @@ func (db *DB) GetConversation(convID gp.ConversationID, count int) (conversation
 	if err != nil {
 		return
 	}
-	conversation.Participants = db.GetParticipants(convID)
+	conversation.Participants, err = db.GetParticipants(convID, true)
+	if err != nil {
+		return conversation, err
+	}
 	read, err := db.GetReadStatus(convID)
 	if err == nil {
 		conversation.Read = read
@@ -718,13 +727,15 @@ func (db *DB) GetReadStatus(convID gp.ConversationID) (read []gp.Read, err error
 	return
 }
 
-//GetParticipants returns all of the participants in conv.
-//TODO: Return an error when appropriate
-func (db *DB) GetParticipants(conv gp.ConversationID) (participants []gp.User) {
+//GetParticipants returns all of the participants in conv, or omits the ones who have deleted this conversation if includeDeleted is false.
+func (db *DB) GetParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.User, err error) {
 	q := "SELECT participant_id " +
 		"FROM conversation_participants " +
 		"JOIN users ON conversation_participants.participant_id = users.id " +
 		"WHERE conversation_id=?"
+	if !includeDeleted {
+		q += " AND deleted = 0"
+	}
 	s, err := db.prepare(q)
 	if err != nil {
 		return
@@ -745,7 +756,7 @@ func (db *DB) GetParticipants(conv gp.ConversationID) (participants []gp.User) {
 			participants = append(participants, user)
 		}
 	}
-	return (participants)
+	return participants, nil
 }
 
 //GetLastMessage retrieves the most recent message in conversation id.
@@ -1347,7 +1358,10 @@ func (db *DB) TotalLiveConversations(user gp.UserID) (count int, err error) {
 			return 0, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants = db.GetParticipants(conv.ID)
+		conv.Participants, err = db.GetParticipants(conv.ID, true)
+		if err != nil {
+			return 0, err
+		}
 		LastMessage, err := db.GetLastMessage(conv.ID)
 		if err == nil {
 			conv.LastMessage = &LastMessage
