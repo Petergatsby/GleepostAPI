@@ -652,6 +652,10 @@ name="Name of the group"
 optional:
 desc="Description of the group"
 url = uploaded image URL
+privacy = "public", "private" or "secret"
+
+if privacy is not provided, it will default to "private".
+
 This creates a new group named `name` and adds you as a member.
 
 If url is not valid, it will respond with a 403.
