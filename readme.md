@@ -95,7 +95,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /user/[user-id]/posts [[GET]](#get-useruser-idposts)
 
-/longpoll [[GET]](#get-longpoll)
+/longpoll [[GET]](#get-longpoll) (Deprecated: Prefer /ws)
 
 /ws [[GET]](#get-ws)
 
@@ -1137,6 +1137,10 @@ DEPRECATED, use [[/conversations]](#post-conversations)
 DEPRECATED, use [[/conversations]](#post-conversations)
 
 ##GET /longpoll
+
+DEPRECATED, use /ws
+
+
 required parameters:
 id=[user-id]
 token=[token]
