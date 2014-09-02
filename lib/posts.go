@@ -423,10 +423,28 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 				post := gp.Post{ID: postID, By: user, Text: text, Time: time.Now().UTC()}
 				go api.cache.AddPost(post)
 				go api.cache.AddPostToNetwork(post, netID)
+				creator, err := api.UserIsNetworkOwner(userID, netID)
+				if err == nil && creator {
+					go api.notifyGroupNewPost(userID, netID)
+				}
 			}
 		}
 		return
 	}
+}
+
+func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID) {
+	users, err := api.db.GetNetworkUsers(group)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, u := range users {
+		if u.ID != by {
+			api.createNotification("group_post", by, u.ID, uint64(group))
+		}
+	}
+	return
 }
 
 //AddPostWithImage creates a post and adds an image in a single step (if the image is one that has been uploaded to gleepost.)

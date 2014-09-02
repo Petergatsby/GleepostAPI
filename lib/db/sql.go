@@ -1136,6 +1136,8 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 		fallthrough
 	case ntype == "commented":
 		fallthrough
+	case ntype == "group_post":
+		fallthrough
 	case ntype == "added_group":
 		s, err = db.prepare(notificationInsertLocation)
 		if err != nil {
@@ -1163,6 +1165,8 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 	case ntype == "commented":
 		np := gp.PostNotification{Notification: n, Post: gp.PostID(location)}
 		return np, nil
+	case ntype == "group_post":
+		fallthrough
 	case ntype == "added_group":
 		ng := gp.GroupNotification{Notification: n, Group: gp.NetworkID(location)}
 		return ng, nil
