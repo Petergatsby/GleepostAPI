@@ -40,6 +40,13 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 		return
 	}
 	api.cache.MarkConversationSeen(id, convID, upTo)
+	conv, err := api.getConversation(convID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	chans := ConversationChannelKeys(conv.Participants)
+	go api.cache.PublishEvent("read", ConversationURI(convID), gp.Read{UserID: id, LastRead: upTo}, chans)
 	return
 }
 
