@@ -355,7 +355,7 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserID, device stri
 		d.LocArgs = []string{n.By.Name, group.Name}
 		pn.Set("group-id", group.ID)
 		switch {
-		case n.Type == "added_group":
+		case n.Type == "group_post":
 			d.LocKey = "group_post"
 		default:
 			d.LocKey = "GROUP"
