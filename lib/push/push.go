@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
 )
 
@@ -13,6 +13,7 @@ import (
 type Pusher struct {
 	APNSconfig gp.APNSConfig
 	GCMconfig  gp.GCMConfig
+	Connection *apns.Connection
 }
 
 //New constructs a Pusher from a Config
@@ -20,6 +21,23 @@ func New(conf gp.Config) (pusher *Pusher) {
 	pusher = new(Pusher)
 	pusher.APNSconfig = conf.APNS
 	pusher.GCMconfig = conf.GCM
+	url := "gateway.sandbox.push.apple.com:2195"
+	if pusher.APNSconfig.Production {
+		url = "gateway.push.apple.com:2195"
+	}
+	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
+	conn := apns.NewConnection(client)
+	pusher.Connection = conn
+	errs := pusher.Connection.Errors()
+	go func(c <-chan apns.BadPushNotification) {
+		for n := range c {
+			log.Println(n)
+		}
+	}(errs)
+	err := conn.Start()
+	if err != nil {
+		log.Println(err)
+	}
 	return
 }
 
@@ -35,18 +53,7 @@ func (pusher *Pusher) AndroidPush(msg *gcm.Message) (err error) {
 
 //IOSPush sends an apns notification to its recipient.
 func (pusher *Pusher) IOSPush(pn *apns.PushNotification) (err error) {
-	url := "gateway.sandbox.push.apple.com:2195"
-	if pusher.APNSconfig.Production {
-		url = "gateway.push.apple.com:2195"
-	}
-	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
-	resp := client.Send(pn)
-	if !resp.Success {
-		log.Println("Failed to send push notification to:", pn.DeviceToken)
-	}
-	if resp.Error != nil {
-		return resp.Error
-	}
+	pusher.Connection.Enqueue(pn)
 	return nil
 }
 

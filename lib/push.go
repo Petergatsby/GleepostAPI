@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/anachronistic/apns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
 )
 
