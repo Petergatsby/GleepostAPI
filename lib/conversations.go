@@ -121,7 +121,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID, li
 	}
 	participants = append(participants, user)
 	for _, id := range with {
-		canContact, e := api.CanContact(initiator, id)
+		canContact, e := api.HaveSharedNetwork(initiator, id)
 		if e != nil {
 			log.Println("Error determining contactability:", initiator, id, e)
 			return conversation, e
