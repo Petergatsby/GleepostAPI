@@ -1092,6 +1092,8 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 			case notification.Type == "commented":
 				np := gp.PostNotification{Notification: notification, Post: gp.PostID(location.Int64)}
 				notifications = append(notifications, np)
+			case notification.Type == "group_post":
+				fallthrough
 			case notification.Type == "added_group":
 				ng := gp.GroupNotification{Notification: notification, Group: gp.NetworkID(location.Int64)}
 				notifications = append(notifications, ng)
