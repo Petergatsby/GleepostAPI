@@ -346,7 +346,6 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserID, device stri
 	}
 	switch n := notification.(type) {
 	case gp.GroupNotification:
-		d.LocKey = "GROUP"
 		var group gp.Group
 		group, err = api.getNetwork(n.Group)
 		if err != nil {
@@ -355,6 +354,12 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserID, device stri
 		}
 		d.LocArgs = []string{n.By.Name, group.Name}
 		pn.Set("group-id", group.ID)
+		switch {
+		case n.Type == "added_group":
+			d.LocKey = "group_post"
+		default:
+			d.LocKey = "GROUP"
+		}
 	case gp.Notification:
 		switch {
 		case n.Type == "accepted_you":
