@@ -1558,6 +1558,7 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 		err = api.MarkAllConversationsSeen(userID)
 		if err != nil {
 			jsonResponse(w, err, 500)
+			return
 		}
 		w.WriteHeader(204)
 	default:

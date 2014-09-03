@@ -848,7 +848,8 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 		}
 		message.By, err = db.GetUser(by)
 		if err != nil {
-			return
+			log.Println("Error getting this message's sender:", err)
+			continue
 		}
 		messages = append(messages, message)
 	}
