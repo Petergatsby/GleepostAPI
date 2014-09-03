@@ -1516,6 +1516,17 @@ HTTP 200
 		}
 	},
 	{
+		"id":1525355,
+		"type":"group_post",
+		"network":1913,
+		"time":"2013-09-16T16:58:30.771905595Z",
+		"user": {
+			"id":2395,
+			"name":"testing_user",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+	},
+	{
 		"id":12
 		"type":"liked",
 		"post":5,
