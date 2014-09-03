@@ -30,7 +30,8 @@ func New(conf gp.Config) (pusher *Pusher) {
 	pusher.Connection = conn
 	errs := pusher.Connection.Errors()
 	go func(c <-chan apns.BadPushNotification) {
-		for n := range c {
+		for {
+			n := <-c
 			log.Println(n)
 		}
 	}(errs)
