@@ -233,3 +233,22 @@
     }
 }
 ```
+
+
+##Version update notification
+
+
+```json
+{
+	"aps":{
+		"alert":"[arbitrary message]",
+		"badge":12345,
+		"sound":"default"
+	},
+	"version":"1.2.3"
+}
+```
+
+Alert contains an arbitrary update message.
+Version is the new app version number.
+
