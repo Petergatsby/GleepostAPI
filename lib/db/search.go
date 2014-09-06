@@ -50,6 +50,7 @@ func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups []gp.Group,
 		"FROM network " +
 		"WHERE user_group = 1 " +
 		"AND parent = ? " +
+		"AND privacy != 'secret' " +
 		"AND name LIKE ?"
 	name = "%" + name + "%"
 	s, err := db.prepare(q)

@@ -1671,11 +1671,16 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		url := r.FormValue("url")
 		desc := r.FormValue("desc")
+		privacy := r.FormValue("privacy")
+		privacy = strings.ToLower(privacy)
+		if privacy != "public" && privacy != "private" && privacy != "secret" {
+			privacy = "private"
+		}
 		switch {
 		case len(name) == 0:
 			jsonResponse(w, missingParamErr("name"), 400)
 		default:
-			network, err := api.CreateGroup(userID, name, url, desc)
+			network, err := api.CreateGroup(userID, name, url, desc, privacy)
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {

@@ -126,7 +126,7 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 }
 
 //CreateGroup creates a group and adds the creator as a member.
-func (api *API) CreateGroup(userID gp.UserID, name, url, desc string) (network gp.Group, err error) {
+func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (network gp.Group, err error) {
 	exists, eupload := api.UserUploadExists(userID, url)
 	switch {
 	case eupload != nil:
@@ -143,7 +143,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc string) (network g
 		if len(networks) > 0 {
 			parent = networks[0].ID
 		}
-		network, err = api.db.CreateNetwork(name, parent, url, desc, userID, true)
+		network, err = api.db.CreateNetwork(name, parent, url, desc, userID, true, privacy)
 		if err != nil {
 			return
 		}
