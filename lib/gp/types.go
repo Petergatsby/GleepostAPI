@@ -71,6 +71,7 @@ type Group struct {
 	Image   string `json:"image,omitempty"`
 	Desc    string `json:"description,omitempty"`
 	Creator *User  `json:"creator,omitempty"`
+	Privacy string `json:"privacy,omitempty"`
 }
 
 //Message is independent of a conversation. If you need that, see RedisMessage.
