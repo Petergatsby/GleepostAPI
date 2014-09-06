@@ -37,7 +37,7 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
 func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.Group, err error) {
 	networkSelect := "SELECT user_network.network_id, network.name, " +
-		"network.cover_img, network.`desc`, network.creator " +
+		"network.cover_img, network.`desc`, network.creator, network.privacy " +
 		"FROM user_network " +
 		"INNER JOIN network ON user_network.network_id = network.id " +
 		"WHERE user_id = ?"
@@ -58,7 +58,8 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		var network gp.Group
 		var img, desc sql.NullString
 		var creator sql.NullInt64
-		err = rows.Scan(&network.ID, &network.Name, &img, &desc, &creator)
+		var privacy sql.NullString
+		err = rows.Scan(&network.ID, &network.Name, &img, &desc, &creator, &privacy)
 		if err != nil {
 			return
 		}
@@ -73,6 +74,9 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 			if err == nil {
 				network.Creator = &u
 			}
+		}
+		if privacy.Valid {
+			network.Privacy = privacy.String
 		}
 		networks = append(networks, network)
 	}
@@ -91,19 +95,18 @@ func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
 }
 
 //GetNetwork returns the network netId.
-//TODO: add extra details.
 func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
-	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group " +
+	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group, privacy " +
 		"FROM network " +
 		"WHERE network.id = ?"
 	s, err := db.prepare(networkSelect)
 	if err != nil {
 		return
 	}
-	var coverImg, desc sql.NullString
+	var coverImg, desc, privacy sql.NullString
 	var creator sql.NullInt64
 	var userGroup bool
-	err = s.QueryRow(netID).Scan(&network.Name, &coverImg, &desc, &creator, &userGroup)
+	err = s.QueryRow(netID).Scan(&network.Name, &coverImg, &desc, &creator, &userGroup, &privacy)
 	if err != nil {
 		return
 	}
@@ -120,17 +123,20 @@ func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 			network.Creator = &u
 		}
 	}
+	if privacy.Valid {
+		network.Privacy = privacy.String
+	}
 	return
 }
 
 //CreateNetwork creates a new network. usergroup indicates that the group is user-defined (created by a user rather than system-defined networks such as universities)
-func (db *DB) CreateNetwork(name string, parent gp.NetworkID, url, desc string, creator gp.UserID, usergroup bool) (group gp.Group, err error) {
-	networkInsert := "INSERT INTO network (name, parent, cover_img, `desc`, creator, user_group) VALUES (?, ?, ?, ?, ?, ?)"
+func (db *DB) CreateNetwork(name string, parent gp.NetworkID, url, desc string, creator gp.UserID, usergroup bool, privacy string) (group gp.Group, err error) {
+	networkInsert := "INSERT INTO network (name, parent, cover_img, `desc`, creator, user_group, privacy) VALUES (?, ?, ?, ?, ?, ?, ?)"
 	s, err := db.prepare(networkInsert)
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(name, parent, url, desc, creator, usergroup)
+	res, err := s.Exec(name, parent, url, desc, creator, usergroup, privacy)
 	if err != nil {
 		return
 	}
@@ -139,6 +145,7 @@ func (db *DB) CreateNetwork(name string, parent gp.NetworkID, url, desc string, 
 	group.Name = name
 	group.Image = url
 	group.Desc = desc
+	group.Privacy = privacy
 	u, err := db.GetUser(creator)
 	if err == nil {
 		group.Creator = &u
