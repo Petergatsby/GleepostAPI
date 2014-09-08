@@ -1050,6 +1050,8 @@ example responses:
 	"network": { "id":1, "name":"University of Leeds" },
 	"course":"Computer Science",
 	"full_name":"Patrick Molgaard"
+	"rsvp_count":234,
+	"group_count":567
 }
 ```
 
