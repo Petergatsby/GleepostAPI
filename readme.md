@@ -1050,6 +1050,8 @@ example responses:
 	"network": { "id":1, "name":"University of Leeds" },
 	"course":"Computer Science",
 	"full_name":"Patrick Molgaard"
+	"rsvp_count":234,
+	"group_count":567
 }
 ```
 
@@ -1406,7 +1408,20 @@ This returns a list of all (non-university) groups this user belongs to.
 
 Example response: (http 200)
 ```json
-[{"id":5345, "name":"Stanford Catan Club"}]
+[
+	{
+		"id":5345, 
+		"name":"Even Cooler Group", 
+		"description":"Pretty cool, no?", 
+		"url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", 
+		"creator": {
+			"id":2491,
+			"name":"Patrick",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
+		},
+		"privacy":"private"
+	}
+]
 ```
 
 ##GET /profile/networks/posts
@@ -1619,7 +1634,8 @@ Example response:
 			"id":2491,
 			"name":"Patrick",
 			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
-		}
+		},
+		"privacy":"private"
 	}
 ]
 ```

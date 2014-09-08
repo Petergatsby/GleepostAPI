@@ -46,10 +46,12 @@ type User struct {
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)
 type Profile struct {
 	User
-	Desc     string `json:"tagline"`
-	Network  Group  `json:"network"`
-	Course   string `json:"course"`
-	FullName string `json:"full_name"`
+	Desc       string `json:"tagline"`
+	Network    Group  `json:"network"`
+	Course     string `json:"course"`
+	FullName   string `json:"full_name"`
+	RSVPCount  int    `json:"rsvp_count,omitempty"`
+	GroupCount int    `json:"group_count,omitempty"`
 }
 
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.

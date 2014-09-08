@@ -170,7 +170,7 @@ func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
 //UserGetProfile returns the Profile (extended info) for the user with this ID.
 func (api *API) UserGetProfile(userID, otherID gp.UserID) (user gp.Profile, err error) {
 	if userID == otherID {
-		return api.getProfile(otherID)
+		return api.getProfile(userID, otherID)
 	}
 	shared, e := api.HaveSharedNetwork(userID, otherID)
 	switch {
@@ -179,13 +179,18 @@ func (api *API) UserGetProfile(userID, otherID gp.UserID) (user gp.Profile, err 
 	case !shared:
 		err = &ENOTALLOWED
 	default:
-		return api.getProfile(otherID)
+		return api.getProfile(userID, otherID)
 	}
 	return
 }
 
+//SubjectiveRSVPCount shows the number of events otherID has attended, from the perspective of the `perspective` user (ie, not counting those events perspective can't see...)
+func (api *API) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
+	return api.db.SubjectiveRSVPCount(perspective, otherID)
+}
+
 //getProfile returns the Profile (extended info) for the user with this ID.
-func (api *API) getProfile(otherID gp.UserID) (user gp.Profile, err error) {
+func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err error) {
 	user, err = api.db.GetProfile(otherID)
 	if err != nil {
 		return
@@ -194,6 +199,16 @@ func (api *API) getProfile(otherID gp.UserID) (user gp.Profile, err error) {
 	if err != nil {
 		return
 	}
+	rsvps, err := api.SubjectiveRSVPCount(perspective, otherID)
+	if err != nil {
+		return
+	}
+	user.RSVPCount = rsvps
+	groupCount, err := api.db.SubjectiveMembershipCount(perspective, otherID)
+	if err != nil {
+		return
+	}
+	user.GroupCount = groupCount
 	user.Network = nets[0]
 	return
 }
