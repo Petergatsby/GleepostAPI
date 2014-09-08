@@ -25,7 +25,7 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 	}
 	for _, u := range users {
 		var user gp.Profile
-		user, err = api.getProfile(u)
+		user, err = api.getProfile(u, u)
 		if err != nil {
 			return
 		}
