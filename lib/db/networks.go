@@ -83,6 +83,22 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 	return
 }
 
+//SubjectiveMembershipCount is the number of groups user belongs to, from the point of view of perspective.
+//That is: the public / private groups they're a part of, plus the secret groups that perspective is also in.
+func (db *DB) SubjectiveMembershipCount(perspective, user gp.UserID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM user_network JOIN network ON user_network.network_id = network.id "
+	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
+	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
+	q += "AND user_network.user_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(perspective, perspective, user).Scan(&count)
+	return
+
+}
+
 //SetNetwork idempotently makes userID a member of networkID
 func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
 	networkInsert := "REPLACE INTO user_network (user_id, network_id) VALUES (?, ?)"

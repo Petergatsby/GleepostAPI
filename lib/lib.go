@@ -204,6 +204,11 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.RSVPCount = rsvps
+	groupCount, err := api.db.SubjectiveMembershipCount(perspective, otherID)
+	if err != nil {
+		return
+	}
+	user.GroupCount = groupCount
 	user.Network = nets[0]
 	return
 }
