@@ -590,3 +590,14 @@ func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 	}
 	return
 }
+
+//UserPostCount returns this user's number of posts, from the other user's perspective (ie, only the posts in groups they share).
+func (db *DB) UserPostCount(perspective, user gp.UserID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?)"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user, perspective).Scan(&count)
+	return
+}
