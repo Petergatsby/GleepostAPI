@@ -1049,7 +1049,7 @@ example responses:
 	"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 	"network": { "id":1, "name":"University of Leeds" },
 	"course":"Computer Science",
-	"full_name":"Patrick Molgaard"
+	"full_name":"Patrick Molgaard",
 	"rsvp_count":234,
 	"group_count":567
 }
