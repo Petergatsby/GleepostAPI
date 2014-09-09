@@ -1419,7 +1419,7 @@ func (db *DB) PrunableConversations() (conversations []gp.ConversationID, err er
 //SubjectiveRSVPCount shows the number of events otherID has attended, from the perspective of the `perspective` user (ie, not counting those events perspective can't see...)
 func (db *DB) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
 	q := "SELECT COUNT(*) FROM event_attendees JOIN wall_posts ON event_attendees.post_id = wall_posts.id "
-	q += "WHERE wall_posts.network_id IN ( SELECT id FROM user_network WHERE user_network.user_id = ? ) "
+	q += "WHERE wall_posts.network_id IN ( SELECT network_id FROM user_network WHERE user_network.user_id = ? ) "
 	q += "AND event_attendees.user_id = ?"
 	s, err := db.prepare(q)
 	if err != nil {
