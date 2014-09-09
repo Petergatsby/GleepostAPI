@@ -52,6 +52,7 @@ type Profile struct {
 	FullName   string `json:"full_name"`
 	RSVPCount  int    `json:"rsvp_count,omitempty"`
 	GroupCount int    `json:"group_count,omitempty"`
+	PostCount  int    `json:"post_count,omitempty"`
 }
 
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.

@@ -209,6 +209,11 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.GroupCount = groupCount
+	postCount, err := api.db.UserPostCount(perspective, otherID)
+	if err != nil {
+		return
+	}
+	user.PostCount = postCount
 	user.Network = nets[0]
 	return
 }
