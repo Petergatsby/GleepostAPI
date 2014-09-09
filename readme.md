@@ -925,7 +925,7 @@ required parameters:
 id=[user-id]
 token=[token]
 
-This ends a live conversation. If you try this on a regular conversation, I don't know what will happen!
+This removes a conversation from your inbox. You will no longer be able to send messages to it, no longer receive notifications, and can no longer view it.
 
 If it is successful, it will respond with HTTP 204.
 
@@ -1049,7 +1049,7 @@ example responses:
 	"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 	"network": { "id":1, "name":"University of Leeds" },
 	"course":"Computer Science",
-	"full_name":"Patrick Molgaard"
+	"full_name":"Patrick Molgaard",
 	"rsvp_count":234,
 	"group_count":567
 }

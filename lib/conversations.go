@@ -29,6 +29,18 @@ func (api *API) UserEndConversation(userID gp.UserID, convID gp.ConversationID) 
 	return &ENOTALLOWED
 }
 
+//UserDeleteConversation removes this conversation from the list; it also terminates it (if it's a live conversation).
+func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
+	if api.UserCanViewConversation(userID, convID) {
+		err = api.db.DeleteConversation(userID, convID)
+		if err != nil {
+			return
+		}
+		return api.terminateConversation(convID)
+	}
+	return &ENOTALLOWED
+}
+
 func (api *API) generatePartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
 	return api.db.RandomPartners(id, count, network)
 }
@@ -246,7 +258,7 @@ func (api *API) updateConversation(id gp.ConversationID) (err error) {
 	if err != nil {
 		return err
 	}
-	participants := api.db.GetParticipants(id)
+	participants, err := api.db.GetParticipants(id, false)
 	go api.cache.UpdateConversationLists(participants, id)
 	return nil
 }
@@ -269,10 +281,15 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 		By:   user,
 		Text: text,
 		Time: time.Now().UTC()}
-	participants := api.db.GetParticipants(convID)
-	go api.cache.Publish(msg, participants, convID)
-	chans := ConversationChannelKeys(participants)
-	go api.cache.PublishEvent("message", ConversationURI(convID), msg, chans)
+	participants, err := api.db.GetParticipants(convID, false)
+	if err == nil {
+		//Note to self: What is the difference between Publish and PublishEvent?
+		go api.cache.Publish(msg, participants, convID)
+		chans := ConversationChannelKeys(participants)
+		go api.cache.PublishEvent("message", ConversationURI(convID), msg, chans)
+	} else {
+		log.Println("Error getting participants; didn't bradcast event to websockets")
+	}
 	go api.cache.AddMessage(msg, convID)
 	go api.updateConversation(convID)
 	go api.messagePush(msg, convID)
@@ -294,7 +311,7 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 
 //UserCanViewConversation returns true if userID is a participant of convID
 func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.ConversationID) (viewable bool) {
-	participants := api.GetParticipants(convID)
+	participants := api.GetParticipants(convID, false)
 	for _, u := range participants {
 		if userID == u.ID {
 			return true
@@ -318,7 +335,7 @@ func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count
 	if err != nil {
 		return
 	}
-	conv.Participants = api.GetParticipants(convID)
+	conv.Participants = api.GetParticipants(convID, true)
 	conv.Read, err = api.readStatus(convID)
 	if err != nil {
 		return
@@ -338,12 +355,11 @@ func (api *API) ConversationLastActivity(convID gp.ConversationID) (t time.Time,
 	return api.db.ConversationActivity(convID)
 }
 
-//GetParticipants returns all participants of this conversation.
-func (api *API) GetParticipants(convID gp.ConversationID) []gp.User {
-	participants, err := api.cache.GetParticipants(convID)
+//GetParticipants returns all participants of this conversation, or omits the `deleted` participants if includeDeleted is false.
+func (api *API) GetParticipants(convID gp.ConversationID, includeDeleted bool) []gp.User {
+	participants, err := api.db.GetParticipants(convID, includeDeleted)
 	if err != nil {
-		participants = api.db.GetParticipants(convID)
-		go api.cache.SetConversationParticipants(convID, participants)
+		log.Println(err)
 	}
 	return participants
 }
