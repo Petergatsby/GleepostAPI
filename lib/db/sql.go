@@ -405,7 +405,10 @@ func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.Conversatio
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants = db.GetParticipants(conv.ID)
+		conv.Participants, err = db.GetParticipants(conv.ID, true)
+		if err != nil {
+			return conversations, err
+		}
 		LastMessage, err := db.GetLastMessage(conv.ID)
 		if err == nil {
 			conv.LastMessage = &LastMessage
@@ -542,6 +545,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 			"conversation_expirations.ended IS NULL " +
 			"OR conversation_expirations.ended =0 " +
 			") " +
+			"AND deleted = 0 " +
 			"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	}
 	s, err = db.prepare(q)
@@ -562,7 +566,10 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants = db.GetParticipants(conv.ID)
+		conv.Participants, err = db.GetParticipants(conv.ID, true)
+		if err != nil {
+			return conversations, err
+		}
 		//Drop all the weird one-participant conversations...
 		if len(conv.Participants) < 2 {
 			continue
@@ -634,6 +641,16 @@ func (db *DB) TerminateConversation(convID gp.ConversationID) (err error) {
 	return
 }
 
+//DeleteConversation removes this conversation for this user.
+func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
+	s, err := db.prepare("UPDATE conversation_participants SET deleted = 1 WHERE participant_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userID, convID)
+	return
+}
+
 //ConversationSetExpiry updates this conversation's expiry to equal expiry.
 func (db *DB) ConversationSetExpiry(convID gp.ConversationID, expiry gp.Expiry) (err error) {
 	s, err := db.prepare("REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)")
@@ -651,7 +668,10 @@ func (db *DB) GetConversation(convID gp.ConversationID, count int) (conversation
 	if err != nil {
 		return
 	}
-	conversation.Participants = db.GetParticipants(convID)
+	conversation.Participants, err = db.GetParticipants(convID, true)
+	if err != nil {
+		return conversation, err
+	}
 	read, err := db.GetReadStatus(convID)
 	if err == nil {
 		conversation.Read = read
@@ -718,13 +738,15 @@ func (db *DB) GetReadStatus(convID gp.ConversationID) (read []gp.Read, err error
 	return
 }
 
-//GetParticipants returns all of the participants in conv.
-//TODO: Return an error when appropriate
-func (db *DB) GetParticipants(conv gp.ConversationID) (participants []gp.User) {
+//GetParticipants returns all of the participants in conv, or omits the ones who have deleted this conversation if includeDeleted is false.
+func (db *DB) GetParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.User, err error) {
 	q := "SELECT participant_id " +
 		"FROM conversation_participants " +
 		"JOIN users ON conversation_participants.participant_id = users.id " +
 		"WHERE conversation_id=?"
+	if !includeDeleted {
+		q += " AND deleted = 0"
+	}
 	s, err := db.prepare(q)
 	if err != nil {
 		return
@@ -745,7 +767,7 @@ func (db *DB) GetParticipants(conv gp.ConversationID) (participants []gp.User) {
 			participants = append(participants, user)
 		}
 	}
-	return (participants)
+	return participants, nil
 }
 
 //GetLastMessage retrieves the most recent message in conversation id.
@@ -1294,7 +1316,7 @@ func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 
 //UnreadMessageCount returns the number of unread messages this user has.
 func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
-	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ?"
+	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
 	sParticipate, err := db.prepare(qParticipate)
 	if err != nil {
 		return
@@ -1354,7 +1376,10 @@ func (db *DB) TotalLiveConversations(user gp.UserID) (count int, err error) {
 			return 0, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants = db.GetParticipants(conv.ID)
+		conv.Participants, err = db.GetParticipants(conv.ID, true)
+		if err != nil {
+			return 0, err
+		}
 		LastMessage, err := db.GetLastMessage(conv.ID)
 		if err == nil {
 			conv.LastMessage = &LastMessage
