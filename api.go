@@ -172,6 +172,8 @@ func main() {
 	base.Handle("/ws", websocket.Handler(jsonServer))
 
 	base.HandleFunc("/", optionsHandler).Methods("OPTIONS")
+	base.HandleFunc("/conversations/", optionsHandler).Methods("OPTIONS")
+	base.HandleFunc("/conversations/{id}/messages", optionsHandler).Methods("OPTIONS")
 	server := &http.Server{
 		Addr:    ":" + conf.Port,
 		Handler: r,
