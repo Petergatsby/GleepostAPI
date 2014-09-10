@@ -99,6 +99,7 @@ func authenticate(r *http.Request) (userID gp.UserID, err error) {
 
 func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	marshaled, err := json.Marshal(resp)
 	if err != nil {

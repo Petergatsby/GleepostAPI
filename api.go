@@ -61,6 +61,12 @@ func configInit() {
 	}()
 }
 
+func optionsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(200)
+}
+
 func ascii() {
 	out, err := exec.Command("git", "describe", "--tags").Output()
 	if err != nil {
@@ -165,6 +171,7 @@ func main() {
 	base.HandleFunc("/reports", postReports).Methods("POST")
 	base.Handle("/ws", websocket.Handler(jsonServer))
 
+	r.HandleFunc("/", optionsHandler).Methods("OPTIONS")
 	server := &http.Server{
 		Addr:    ":" + conf.Port,
 		Handler: r,
