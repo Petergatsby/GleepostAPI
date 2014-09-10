@@ -171,7 +171,7 @@ func main() {
 	base.HandleFunc("/reports", postReports).Methods("POST")
 	base.Handle("/ws", websocket.Handler(jsonServer))
 
-	r.HandleFunc("/", optionsHandler).Methods("OPTIONS")
+	base.HandleFunc("/", optionsHandler).Methods("OPTIONS")
 	server := &http.Server{
 		Addr:    ":" + conf.Port,
 		Handler: r,
