@@ -19,7 +19,7 @@ type Mailer struct {
 func (m *Mailer) NewHeader() mail.Header {
 	h := mail.Header{}
 	h["From"] = []string{m.config.FromHeader}
-	h["Date"] = []string{time.Now().Truncate(time.Second).UTC().String()}
+	h["Date"] = []string{time.Now().Format(time.RFC1123Z)}
 	return h
 }
 
