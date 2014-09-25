@@ -643,7 +643,7 @@ func (db *DB) TerminateConversation(convID gp.ConversationID) (err error) {
 
 //DeleteConversation removes this conversation for this user.
 func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
-	s, err := db.prepare("UPDATE conversation_participants SET deleted = 1 WHERE participant_id = ?")
+	s, err := db.prepare("UPDATE conversation_participants SET deleted = 1 WHERE participant_id = ? AND conversation_id = ?")
 	if err != nil {
 		return
 	}
