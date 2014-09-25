@@ -23,7 +23,7 @@ func (db *DB) AddUpload(user gp.UserID, url string) (err error) {
 
 //UploadExists checks that this user has uploaded this URL.
 func (db *DB) UploadExists(user gp.UserID, url string) (exists bool, err error) {
-	s, err := db.prepare("SELECT COUNT(*) FROM uploads WHERE user_id = ? AND url = ? LIMIT 1")
+	s, err := db.prepare("SELECT COUNT(*) > 0 FROM uploads WHERE user_id = ? AND url = ?")
 	if err != nil {
 		return
 	}
