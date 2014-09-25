@@ -272,6 +272,7 @@ type Config struct {
 	Email                EmailConfig
 	Facebook             FacebookConfig
 	Futures              []ConfigFuture
+	Statsd               string
 }
 
 //Device is a particular (iOS|Android) device owned by a particular user.

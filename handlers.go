@@ -138,6 +138,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	//Note to self: maybe check cache for user before trying to register
+	defer api.Time(time.Now(), "gleepost.auth.register")
 	pass := r.FormValue("pass")
 	email := r.FormValue("email")
 	first := r.FormValue("first")
@@ -195,6 +196,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		HTTP 400
 		{"error":"Bad username/password"}
 	*/
+	defer api.Time(time.Now(), "gleepost.auth.login")
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
 	id, err := api.ValidatePass(email, pass)
@@ -223,6 +225,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPosts(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -308,6 +311,7 @@ func ignored(key string) bool {
 }
 
 func postPosts(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -369,6 +373,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.live.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -390,6 +395,7 @@ func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getConversations(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.get")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -416,6 +422,7 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func postConversations(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.post")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -475,6 +482,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.*.get")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -501,6 +509,7 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.*.put")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -543,6 +552,7 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.*.delete")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -565,6 +575,7 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.*.messages")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -615,6 +626,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func postMessages(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.*.messages.post")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -638,6 +650,7 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func putMessages(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.*.messages.put")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -668,6 +681,7 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func getComments(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.comments.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -702,6 +716,7 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func postComments(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.comments.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -728,6 +743,7 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPost(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -751,6 +767,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func postImages(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.images.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -780,6 +797,7 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 }
 
 func postVideos(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.videos.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -801,6 +819,7 @@ func postVideos(w http.ResponseWriter, r *http.Request) {
 }
 
 func postLikes(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.likes.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -837,6 +856,7 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.users.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -862,6 +882,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserPosts(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.users.*.posts.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -937,6 +958,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
+		defer api.Time(time.Now(), "gleepost.contacts.get")
 		contacts, err := api.GetContacts(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -948,6 +970,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "POST":
+		defer api.Time(time.Now(), "gleepost.contacts.post")
 		_otherID, _ := strconv.ParseUint(r.FormValue("user"), 10, 64)
 		otherID := gp.UserID(_otherID)
 		contact, err := api.AddContact(userID, otherID)
@@ -970,6 +993,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
+		defer api.Time(time.Now(), "gleepost.contacts.*.put")
 		accepted, err := strconv.ParseBool(r.FormValue("accepted"))
 		if err != nil {
 			accepted = false
@@ -985,6 +1009,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, missingParamErr("accepted"), 400)
 		}
 	case r.Method == "DELETE":
+		defer api.Time(time.Now(), "gleepost.contacts.*.delete")
 		//Implement refusing requests
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
@@ -993,6 +1018,7 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func postDevice(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.devices.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1016,6 +1042,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteDevice(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.devices.delete")
 	w.Header().Set("Content-Type", "application/json")
 	log.Println("Delete device hit")
 	userID, err := authenticate(r)
@@ -1039,6 +1066,7 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.uploads.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1065,6 +1093,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUpload(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.uploads.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1088,6 +1117,7 @@ func getUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func profileImageHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.profile_image.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1124,6 +1154,7 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
+		defer api.Time(time.Now(), "gleepost.profile.busy.post")
 		status, err := strconv.ParseBool(r.FormValue("status"))
 		if err != nil {
 			jsonResponse(w, gp.APIerror{Reason: "Bad input"}, 400)
@@ -1135,6 +1166,7 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, &gp.BusyStatus{Busy: status}, 200)
 		}
 	case r.Method == "GET":
+		defer api.Time(time.Now(), "gleepost.profile.busy.get")
 		status, err := api.BusyStatus(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -1147,6 +1179,7 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func changePassHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.change_pass.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1167,6 +1200,7 @@ func changePassHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func changeNameHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.name.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1191,6 +1225,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
+		defer api.Time(time.Now(), "gleepost.notifications.put")
 		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 		if err != nil {
 			_upTo = 0
@@ -1213,6 +1248,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "GET":
+		defer api.Time(time.Now(), "gleepost.notifications.get")
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
 		notifications, err := api.GetUserNotifications(userID, includeSeen)
 		if err != nil {
@@ -1230,6 +1266,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.facebook.post")
 	if r.Method == "POST" {
 		_fbToken := r.FormValue("token")
 		email := r.FormValue("email")
@@ -1339,6 +1376,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.verify.post")
 	if r.Method == "POST" {
 		vars := mux.Vars(r)
 		err := api.Verify(vars["token"])
@@ -1386,6 +1424,7 @@ func jsonServer(ws *websocket.Conn) {
 }
 
 func requestResetHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.request_reset.post")
 	switch {
 	case r.Method == "POST":
 		email := r.FormValue("email")
@@ -1402,6 +1441,7 @@ func requestResetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resetPassHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.reset.post")
 	switch {
 	case r.Method == "POST":
 		vars := mux.Vars(r)
@@ -1425,6 +1465,7 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.resend_verification.post")
 	switch {
 	case r.Method == "POST":
 		email := r.FormValue("email")
@@ -1451,6 +1492,7 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.invite_message.get")
 	switch {
 	case r.Method == "GET":
 		resp := struct {
@@ -1463,6 +1505,7 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func liveHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.live..get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1505,6 +1548,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET":
 		//Implement
 	case r.Method == "POST":
+		defer api.Time(time.Now(), "gleepost.posts.*.attending.post")
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
 		err := api.UserAttend(post, userID, true)
@@ -1513,6 +1557,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(204)
 	case r.Method == "DELETE":
+		defer api.Time(time.Now(), "gleepost.posts.*.attending.delete")
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
 		err := api.UserAttend(post, userID, false)
@@ -1526,6 +1571,7 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func userAttending(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.attending.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1550,6 +1596,7 @@ func userAttending(w http.ResponseWriter, r *http.Request) {
 }
 
 func readAll(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.read_all.post")
 	log.Println("Someone hit readAll")
 	userID, err := authenticate(r)
 	switch {
@@ -1568,6 +1615,7 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func unread(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.users.*.conversations.unread.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1589,6 +1637,7 @@ func unread(w http.ResponseWriter, r *http.Request) {
 }
 
 func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.users.*.conversations.live.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1610,6 +1659,7 @@ func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.networks.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1635,6 +1685,7 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNetwork(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1664,6 +1715,7 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworks(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1699,6 +1751,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.users.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1778,6 +1831,7 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.users.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1814,6 +1868,7 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.networks.*.delete")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1842,6 +1897,7 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchUsers(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.search.users.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1887,6 +1943,7 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchGroups(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.search.groups.get")
 	//TODO: UserSearchGroups (search groups within primary network)
 	userID, err := authenticate(r)
 	switch {
@@ -1912,6 +1969,7 @@ func searchGroups(w http.ResponseWriter, r *http.Request) {
 
 //getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
 func getGroupPosts(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.posts.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -1968,6 +2026,7 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func putNetwork(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.put")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2008,6 +2067,7 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func deletePost(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.delete")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2031,6 +2091,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func facebookAssociate(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.facebook.post")
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
 	id, err := api.ValidatePass(email, pass)
@@ -2083,6 +2144,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAttendees(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.attendees.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2122,6 +2184,7 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 }
 
 func putAttendees(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.posts.*.attendees.put")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2146,6 +2209,7 @@ func putAttendees(w http.ResponseWriter, r *http.Request) {
 }
 
 func postVideoUpload(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.videos.put")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2172,6 +2236,7 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func getVideos(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.videos.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -2195,6 +2260,7 @@ func getVideos(w http.ResponseWriter, r *http.Request) {
 }
 
 func postReports(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.reports.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

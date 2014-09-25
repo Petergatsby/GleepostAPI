@@ -17,6 +17,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
 	"github.com/draaglom/GleepostAPI/lib/push"
+	"github.com/peterbourgon/g2s"
 )
 
 //API contains all the configuration and sub-modules the Gleepost API requires to function.
@@ -27,6 +28,7 @@ type API struct {
 	mail   *mail.Mailer
 	Config gp.Config
 	push   *push.Pusher
+	statsd g2s.Statter
 }
 
 //New creates an API from a gp.Config
@@ -38,8 +40,25 @@ func New(conf gp.Config) (api *API) {
 	api.fb = &FB{config: conf.Facebook}
 	api.mail = mail.New(conf.Email)
 	api.push = push.New(conf)
+	statsd, err := g2s.Dial("udp", api.Config.Statsd)
+	api.statsd = statsd
+	if err != nil {
+		log.Println(err)
+	}
 	go api.process(transcodeQueue)
 	return
+}
+
+func (api *API) Time(start time.Time, bucket string) {
+	duration := time.Since(start)
+	var ns string
+	if api.Config.DevelopmentMode {
+		ns = "dev."
+	} else {
+		ns = "prod."
+	}
+	bucket = ns + bucket
+	api.statsd.Timing(1.0, bucket, duration)
 }
 
 //You'll get this when your password is too week (ie, less than 5 chars at the moment)
