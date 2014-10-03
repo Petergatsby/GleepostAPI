@@ -1846,8 +1846,9 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		netID := gp.NetworkID(_netID)
 		_users := strings.Split(r.FormValue("users"), ",")
 		for _, u := range _users {
-			user, err := strconv.ParseUint(u, 10, 64)
+			_user, err := strconv.ParseUint(u, 10, 64)
 			if err == nil {
+				user := gp.UserID(_user)
 				err = api.UserChangeRole(userID, user, netID, "administrator")
 				if err != nil {
 					e, ok := err.(*gp.APIerror)
@@ -1924,6 +1925,27 @@ func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
+		vars := mux.Vars(r)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
+		if err != nil {
+			jsonErr(w, err, 400)
+			return
+		}
+		netID := gp.NetworkID(_netID)
+		//Can ignore the error, because api.UserChangeRole will complain if id 0 anyway.
+		_user, _ := strconv.ParseUint(vars["user"], 10, 64)
+		user := gp.UserID(_user)
+		err = api.UserChangeRole(userID, user, netID, "member")
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonErr(w, err, 500)
+			}
+			return
+		}
+		w.WriteHeader(204)
 	}
 }
 
