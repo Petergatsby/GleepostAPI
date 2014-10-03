@@ -335,3 +335,27 @@ func (db *DB) SetNetworkParent(network, parent gp.NetworkID) (err error) {
 	_, err = s.Exec(parent, network)
 	return
 }
+
+//UserRole gives this user's role:level in this network, or ENOSUCHUSER if the user isn't part of the network.
+func (db *DB) UserRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
+	q := "SELECT role, role_level FROM user_network WHERE user_id = ? AND network_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user, network).Scan(&role.Name, &role.Level)
+	if err != nil && err == sql.ErrNoRows {
+		err = gp.ENOSUCHUSER
+	}
+	return
+}
+
+func (db *DB) UserSetRole(user gp.UserID, network gp.NetworkID, role gp.Role) (err error) {
+	q := "UPDATE user_network SET role = ?, role_level = ? WHERE user_id = ? AND network_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(role.Name, role.Level, user, network)
+	return
+}

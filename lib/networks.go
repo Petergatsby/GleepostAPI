@@ -7,6 +7,14 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+var ENoRole = gp.APIerror{Reason: "Invalid role"}
+
+var levels = map[string]int{
+	"creator":       9,
+	"administrator": 8,
+	"member":        1,
+}
+
 //GetUserNetworks returns all networks this user belongs to, or an error if zhe belongs to none.
 func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.Group, err error) {
 	nets, err = api.db.GetUserNetworks(id, false)
@@ -56,6 +64,58 @@ func (api *API) UserAddUsersToGroup(adder gp.UserID, addees []gp.UserID, group g
 		}
 	}
 	return
+}
+
+//UserChangeRole marks recipient with a new role in this network, if actor is allowed to give it. Valid roles are currently "member" or "administrator".
+func (api *API) UserChangeRole(actor, recipient gp.UserID, network gp.NetworkID, role string) (err error) {
+	lev, ok := levels[role]
+	if !ok {
+		return ENoRole
+	}
+	//To start with, for simplicity: You can only add/remove roles less / equal to your own.
+	has, err := api.UserHasRole(actor, network, role)
+	switch {
+	case err != nil:
+		return
+	case !has:
+		return &ENOTALLOWED
+	default:
+		otherRole, err := api.userRole(recipient, network)
+		myRole, err2 := api.userRole(actor, network)
+		switch {
+		case err != nil || err2 != nil:
+			return &ENOTALLOWED
+		//You can't change the role of someone higher-level than you.
+		case otherRole.Level > myRole.Level:
+			return &ENOTALLOWED
+		default:
+			return api.db.UserSetRole(recipient, network, gp.Role{Name: role, Level: lev})
+		}
+	}
+}
+
+//UserHasRole returns true if this user has at least this role (or greater) in this group.
+func (api *API) UserHasRole(user gp.UserID, network gp.NetworkID, roleName string) (has bool, err error) {
+	lev, ok := levels[roleName]
+	if !ok {
+		return false, ENoRole
+	}
+	role, err := api.userRole(user, network)
+	if err != nil {
+		if err == gp.ENOSUCHUSER {
+			err = nil
+			return
+		}
+		return
+	}
+	if role.Level < lev {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (api *API) userRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
+	return api.db.UserRole(user, network)
 }
 
 //UserAddUserToGroup adds addee to group iff adder is in group and group is not a university network (we don't want people to be able to get into universities they're not part of)

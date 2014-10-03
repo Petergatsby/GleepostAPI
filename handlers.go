@@ -1830,6 +1830,36 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.admins.post")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
+		if err != nil {
+			jsonErr(w, err, 400)
+			return
+		}
+		netID := gp.NetworkID(_netID)
+		//Can ignore this err because UserChangeRole will complain if newAdminID == 0
+		_newAdminID, _ := strconv.ParseUint(vars["user"], 10, 64)
+		newAdminID := gp.UserID(_newAdminID)
+		err = api.UserChangeRole(userID, newAdminID, netID, "administrator")
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonErr(w, err, 500)
+			}
+			return
+		}
+	}
+}
+
 func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	defer api.Time(time.Now(), "gleepost.networks.*.users.get")
 	userID, err := authenticate(r)

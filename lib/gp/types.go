@@ -68,6 +68,12 @@ type Network struct {
 	Name string    `json:"name"`
 }
 
+//Role is a particular permissions level / name pair within a network.
+type Role struct {
+	Name  string `json:"name"`
+	Level int    `json:"level"`
+}
+
 //Group is a user-group. It's a network with a cover image, a description and maybe a creator.
 type Group struct {
 	Network
