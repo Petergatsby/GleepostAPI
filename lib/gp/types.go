@@ -55,6 +55,12 @@ type Profile struct {
 	PostCount  int    `json:"post_count,omitempty"`
 }
 
+//UserRole represents a user and their role within a particular network
+type UserRole struct {
+	User
+	Role `json:"role"`
+}
+
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.
 type Contact struct {
 	User

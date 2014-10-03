@@ -1857,6 +1857,61 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+		users, err := api.UserGetGroupAdmins(userID, netID)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonErr(w, err, 500)
+			}
+		}
+		if len(users) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+			return
+		}
+		jsonResponse(w, users, 200)
+	}
+}
+
+//Note to self: should probably consolidate this with getNetworkUsers.
+func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.admins.get")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
+		if err != nil {
+			jsonErr(w, err, 400)
+			return
+		}
+		netID := gp.NetworkID(_netID)
+		users, err := api.UserGetGroupAdmins(userID, netID)
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				jsonResponse(w, e, 403)
+			} else {
+				jsonErr(w, err, 500)
+			}
+		}
+		if len(users) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+			return
+		}
+		jsonResponse(w, users, 200)
+
 	}
 }
 

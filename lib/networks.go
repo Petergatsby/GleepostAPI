@@ -232,8 +232,24 @@ func (api *API) HaveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err er
 	return false, nil
 }
 
+//UserGetGroupAdmins returns all the admins of the group, or ENOTALLOWED if the requesting user isn't in that group.
+func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
+	in, errin := api.UserInNetwork(userID, netID)
+	group, errgroup := api.isGroup(netID)
+	switch {
+	case errin != nil:
+		return users, errin
+	case errgroup != nil:
+		return users, errgroup
+	case !in || !group:
+		return users, &ENOTALLOWED
+	default:
+		return api.db.GetNetworkAdmins(netID)
+	}
+}
+
 //UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
-func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users []gp.User, err error) {
+func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
 	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {
