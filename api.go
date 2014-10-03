@@ -108,6 +108,7 @@ func main() {
 	base.HandleFunc("/networks/{network:[0-9]+}/users", postNetworkUsers).Methods("POST")
 	base.HandleFunc("/networks/{network:[0-9]+}/users", getNetworkUsers).Methods("GET")
 	base.HandleFunc("/networks/{network:[0-9]+}/admins", postNetworkAdmins).Methods("POST")
+	base.HandleFunc("/networks/{network:[0-9]+}/admins", getNetworkAdmins).Methods("GET")
 	base.HandleFunc("/networks", postNetworks).Methods("POST")
 	base.HandleFunc("/posts", getPosts).Methods("GET")
 	base.HandleFunc("/posts", postPosts).Methods("POST")
