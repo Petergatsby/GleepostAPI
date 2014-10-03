@@ -1844,18 +1844,21 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		netID := gp.NetworkID(_netID)
-		//Can ignore this err because UserChangeRole will complain if newAdminID == 0
-		_newAdminID, _ := strconv.ParseUint(vars["user"], 10, 64)
-		newAdminID := gp.UserID(_newAdminID)
-		err = api.UserChangeRole(userID, newAdminID, netID, "administrator")
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				jsonResponse(w, e, 403)
-			} else {
-				jsonErr(w, err, 500)
+		_users := strings.Split(r.FormValue("users"), ",")
+		for _, u := range _users {
+			user, err := strconv.ParseUint(u, 10, 64)
+			if err == nil {
+				err = api.UserChangeRole(userID, user, netID, "administrator")
+				if err != nil {
+					e, ok := err.(*gp.APIerror)
+					if ok && *e == lib.ENOTALLOWED {
+						jsonResponse(w, e, 403)
+					} else {
+						jsonErr(w, err, 500)
+					}
+					return
+				}
 			}
-			return
 		}
 		users, err := api.UserGetGroupAdmins(userID, netID)
 		if err != nil {
@@ -1911,7 +1914,16 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, users, 200)
+	}
+}
 
+func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.networks.*.admins.*.get")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
 	}
 }
 
