@@ -77,6 +77,10 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /networks/[network-id]/users [[GET]](#get-networksnetwork-idusers) [[POST]](#post-networksnetwork-idusers)
 
+/networks/[network-id]/admins [[GET]](#get-networksnetwork-idadmins) [[POST]](#post-networksnetwork-idadmins)
+
+/networks/[network-id]/admins/[user-id] [[DELETE]](#delete-networksnetwork-idadminsuser-id)
+
 /live [[GET]](#get-live)
 
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
@@ -780,10 +784,10 @@ required parameters:
 id=[user-id]
 token=[token]
 
-A collection of all the users in this network, or 403 if you aren't a member of the network (or if it is a university network)
+A collection of all the users and their role (permissions) in this network, or 403 if you aren't a member of the network (or if it is a university network)
 Example response:
 ```json
-[{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
+[{"id":2395,"name":" Younes","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/73f2d43f3b58838712f40a0a0f9b39fc6d589661ef3eb44f395773c1f7817165.jpg","role":{"name":"administrator","level":8}},{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg","role":{"name":"creator","level":9}},{"id":2563,"name":"Auth","profile_image":"https://graph.facebook.com//picture?type=large","role":{"name":"member","level":1}}]
 ```
 
 ##POST /networks/[network-id/users
@@ -799,6 +803,49 @@ fbusers=[facebook-id],[facebook-id],[facebook-id]
 email=[other-user-email]
 
 Adds other users to this network, or records that they have been invited via facebook, or emails them an invite if they aren't on Gleepost. On success will return 204.
+
+##GET /networks/[network-id]/admins
+A collection of all the administrators of this network, or 403 if you are not a member.
+```json
+[
+	{
+		"id": 2395,
+		"name": "Younes",
+		"profile_image": "https://s3-eu-west-1.amazonaws.com/gpimg/73f2d43f3b58838712f40a0a0f9b39fc6d589661ef3eb44f395773c1f7817165.jpg",
+		"role": {
+			"name": "administrator",
+			"level": 8
+		}
+	}
+]
+```
+
+##POST /networks/[network-id]/admins
+Make group member(s) into admins.
+parameters:
+
+users=[user-id],[user-id],[user-id],...
+
+where each user-id is already a member of this network.
+
+Returns the updated admin list.
+```json
+[
+	{
+		"id": 2395,
+		"name": "Younes",
+		"profile_image": "https://s3-eu-west-1.amazonaws.com/gpimg/73f2d43f3b58838712f40a0a0f9b39fc6d589661ef3eb44f395773c1f7817165.jpg",
+		"role": {
+			"name": "administrator",
+			"level": 8
+		}
+	}
+]
+```
+
+##DELETE /networks/[network-id]/admins/[user-id]
+Delete administrative permissions for this user. You must be an administrator or group creator to use.
+If you are allowed to downgrade this user, the result will be 204.
 
 ##GET /conversations/live
 required parameters:
