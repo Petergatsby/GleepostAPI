@@ -208,6 +208,10 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 			return
 		}
 		err = api.db.SetNetwork(userID, network.ID)
+		if err != nil {
+			return
+		}
+		err = api.db.UserSetRole(userID, network.ID, gp.Role{Name: "creator", Level: 9})
 		return
 	}
 }
