@@ -11,6 +11,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func init() {
+	base.HandleFunc("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", postsStatsHandler).Methods("GET")
+	base.HandleFunc("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", individualPostStats).Methods("GET")
+}
+
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := authenticate(r)
 	switch {

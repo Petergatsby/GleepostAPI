@@ -10,6 +10,13 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+func init() {
+	base.HandleFunc("/admin/massmail", mm).Methods("POST")
+	base.HandleFunc("/admin/masspush", newVersionNotificationHandler).Methods("POST")
+	base.HandleFunc("/admin/posts/duplicate", postDuplicate).Methods("POST")
+	base.HandleFunc("/admin/posts/copy_attribs", copyAttribs).Methods("POST")
+}
+
 //MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
 //{"error":"Missing parameter: network"}
 var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
