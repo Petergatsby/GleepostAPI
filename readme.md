@@ -121,7 +121,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /profile/name [[POST]](#post-profilename)
 
-/profile/tagline [[POST]](#post-tagline)
+/profile/tagline [[POST]](#post-profiletagline)
 
 /profile/change_pass [[POST]](#post-profilechange_pass)
 
