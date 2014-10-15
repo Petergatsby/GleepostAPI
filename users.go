@@ -21,6 +21,7 @@ func init() {
 	//profile stuff
 	base.HandleFunc("/profile/profile_image", profileImageHandler)
 	base.HandleFunc("/profile/name", changeNameHandler)
+	base.HandleFunc("/profile/tagline", postProfileTagline).Methods("POST")
 	base.HandleFunc("/profile/change_pass", changePassHandler)
 	base.HandleFunc("/profile/busy", busyHandler)
 	base.HandleFunc("/profile/attending", userAttending)
@@ -315,5 +316,21 @@ func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, count, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func postProfileTagline(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.tagline.post")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		err = api.UserChangeTagline(userID, r.FormValue("tagline"))
+		if err != nil {
+			jsonResponse(w, &EBADINPUT, 400)
+			return
+		}
+		w.WriteHeader(204)
 	}
 }

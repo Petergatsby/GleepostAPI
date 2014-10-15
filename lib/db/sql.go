@@ -93,6 +93,16 @@ func (db *DB) SetUserName(id gp.UserID, firstName, lastName string) (err error) 
 	return
 }
 
+//UserChangeTagline sets this user's tagline (obviously enough)
+func (db *DB) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
+	s, err := db.prepare("UPDATE users SET desc = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(tagline, userID)
+	return
+}
+
 //GetHash returns this user's password hash (by username).
 func (db *DB) GetHash(user string) (hash []byte, id gp.UserID, err error) {
 	s, err := db.prepare("SELECT id, password FROM users WHERE email = ?")

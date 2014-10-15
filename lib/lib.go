@@ -586,6 +586,11 @@ func (api *API) SetUserName(id gp.UserID, firstName, lastName string) (err error
 	return api.db.SetUserName(id, firstName, lastName)
 }
 
+//UserChangeTagline sets this user's tagline (obviously enough...)
+func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
+	return api.db.UserChangeTagline(userID, tagline)
+}
+
 //UserWithEmail returns the userID this email is associated with, or err if there isn't one.
 func (api *API) UserWithEmail(email string) (id gp.UserID, err error) {
 	return api.db.UserWithEmail(email)

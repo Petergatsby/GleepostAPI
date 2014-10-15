@@ -121,6 +121,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /profile/name [[POST]](#post-profilename)
 
+/profile/tagline [[POST]](#post-tagline)
+
 /profile/change_pass [[POST]](#post-profilechange_pass)
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
@@ -1376,6 +1378,13 @@ HTTP 200
 required parameters: id, token, first, last
 
 /name allows the user to set their name if it is not set already.
+
+On success, it will return HTTP 204.
+
+##POST /profile/tagline
+required parameters: id, token, tagline
+
+/tagline allows the user to set their tagline.
 
 On success, it will return HTTP 204.
 
