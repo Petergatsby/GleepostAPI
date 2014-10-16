@@ -10,6 +10,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+//EBADINPUT = You didn't supply a name for your account
+var EBADINPUT = gp.APIerror{Reason: "Missing parameter: first / last"}
+
 func init() {
 	base.HandleFunc("/user/{id:[0-9]+}", getUser).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/", getUser).Methods("GET")

@@ -28,9 +28,6 @@ func init() {
 	base.HandleFunc("/", optionsHandler).Methods("OPTIONS")
 }
 
-//EBADINPUT = You didn't supply a name for your account
-var EBADINPUT = gp.APIerror{Reason: "Missing parameter: first / last"}
-
 //EUNSUPPORTED = 405
 var EUNSUPPORTED = gp.APIerror{Reason: "Method not supported"}
 
