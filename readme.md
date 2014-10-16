@@ -99,6 +99,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /user/[user-id]/posts [[GET]](#get-useruser-idposts)
 
+/user/[user-id]/networks [[GET]](#get-useruser-idnetworks)
+
 /longpoll [[GET]](#get-longpoll) (Deprecated: Prefer /ws)
 
 /ws [[GET]](#get-ws)
@@ -1182,6 +1184,28 @@ example responses:
 	}
 ]
 
+```
+
+##GET /user/[user-id]/networks
+Lists this user's groups - if you're allowed to see them. Or 403 otherwise.
+Secret groups are hidden.
+
+Example response: (http 200)
+```json
+[
+	{
+		"id":5345, 
+		"name":"Even Cooler Group", 
+		"description":"Pretty cool, no?", 
+		"url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", 
+		"creator": {
+			"id":2491,
+			"name":"Patrick",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
+		},
+		"privacy":"private"
+	}
+]
 ```
 
 ##POST /newconversation
