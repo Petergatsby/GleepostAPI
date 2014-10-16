@@ -331,7 +331,7 @@ func postProfileTagline(w http.ResponseWriter, r *http.Request) {
 	default:
 		err = api.UserChangeTagline(userID, r.FormValue("tagline"))
 		if err != nil {
-			jsonResponse(w, &EBADINPUT, 400)
+			jsonErr(w, err, 500)
 			return
 		}
 		w.WriteHeader(204)
