@@ -17,6 +17,7 @@ func init() {
 	base.HandleFunc("/user/{id:[0-9]+}", getUser).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/", getUser).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
+	base.HandleFunc("/user/{id:[0-9]+}/networks", getGroups).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/unread", unread)
 	base.HandleFunc("/user/{id:[0-9]+}/total_live", totalLiveConversations)
 	base.HandleFunc("/user/", postUsers)

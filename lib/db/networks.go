@@ -35,8 +35,9 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 }
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
-func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.Group, err error) {
-	networkSelect := "SELECT user_network.network_id, network.name, " +
+func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.GroupMembership, err error) {
+	networkSelect := "SELECT user_network.network_id, user_network.role, " +
+		"user_network.role_level, network.name, " +
 		"network.cover_img, network.`desc`, network.creator, network.privacy " +
 		"FROM user_network " +
 		"INNER JOIN network ON user_network.network_id = network.id " +
@@ -55,11 +56,12 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var network gp.Group
+		var network gp.GroupMembership
 		var img, desc sql.NullString
 		var creator sql.NullInt64
 		var privacy sql.NullString
-		err = rows.Scan(&network.ID, &network.Name, &img, &desc, &creator, &privacy)
+		var role gp.Role
+		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Name, &img, &desc, &creator, &privacy)
 		if err != nil {
 			return
 		}
@@ -97,6 +99,51 @@ func (db *DB) SubjectiveMembershipCount(perspective, user gp.UserID) (count int,
 	err = s.QueryRow(perspective, perspective, user).Scan(&count)
 	return
 
+}
+
+//SubjectiveMemberships returns all the groups this user is a member of, as far as perspective is concerned.
+func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+	q := "SELECT user_network.network_id, user_network.role, user_network.role_level, network.name, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id "
+	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
+	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
+	q += "AND user_network.user_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(perspective, perspective, user)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var network gp.GroupMembership
+		var img, desc sql.NullString
+		var creator sql.NullInt64
+		var privacy sql.NullString
+		var role gp.Role
+		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Name, &img, &desc, &creator, &privacy)
+		if err != nil {
+			return
+		}
+		if img.Valid {
+			network.Image = img.String
+		}
+		if desc.Valid {
+			network.Desc = desc.String
+		}
+		if creator.Valid {
+			u, err := db.GetUser(gp.UserID(creator.Int64))
+			if err == nil {
+				network.Creator = &u
+			}
+		}
+		if privacy.Valid {
+			network.Privacy = privacy.String
+		}
+		groups = append(groups, network)
+	}
+	return
 }
 
 //SetNetwork idempotently makes userID a member of networkID

@@ -35,7 +35,20 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		networks, err := api.GetUserGroups(userID)
+		var otherID gp.UserID
+		vars := mux.Vars(r)
+		_id, ok := vars["id"]
+		if !ok {
+			otherID = userID
+		} else {
+			id, err := strconv.ParseUint(_id, 10, 64)
+			if err != nil {
+				jsonErr(w, err, 400)
+				return
+			}
+			otherID = gp.UserID(id)
+		}
+		networks, err := api.UserGetUserGroups(userID, otherID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return

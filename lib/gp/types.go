@@ -46,13 +46,13 @@ type User struct {
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)
 type Profile struct {
 	User
-	Desc       string `json:"tagline"`
-	Network    Group  `json:"network"`
-	Course     string `json:"course"`
-	FullName   string `json:"full_name"`
-	RSVPCount  int    `json:"rsvp_count,omitempty"`
-	GroupCount int    `json:"group_count,omitempty"`
-	PostCount  int    `json:"post_count,omitempty"`
+	Desc       string          `json:"tagline"`
+	Network    GroupMembership `json:"network"`
+	Course     string          `json:"course"`
+	FullName   string          `json:"full_name"`
+	RSVPCount  int             `json:"rsvp_count,omitempty"`
+	GroupCount int             `json:"group_count,omitempty"`
+	PostCount  int             `json:"post_count,omitempty"`
 }
 
 //UserRole represents a user and their role within a particular network
@@ -87,6 +87,12 @@ type Group struct {
 	Desc    string `json:"description,omitempty"`
 	Creator *User  `json:"creator,omitempty"`
 	Privacy string `json:"privacy,omitempty"`
+}
+
+//GroupMembership is a group and a user's membership status in that group.
+type GroupMembership struct {
+	Group
+	Role `json:"role"`
 }
 
 //Message is independent of a conversation. If you need that, see RedisMessage.

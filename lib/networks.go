@@ -16,7 +16,7 @@ var levels = map[string]int{
 }
 
 //GetUserNetworks returns all networks this user belongs to, or an error if zhe belongs to none.
-func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.Group, err error) {
+func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err error) {
 	nets, err = api.db.GetUserNetworks(id, false)
 	if err != nil {
 		return
@@ -24,14 +24,26 @@ func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.Group, err error) {
 	if len(nets) == 0 {
 		return nets, gp.APIerror{Reason: "User has no networks!"}
 	}
-	api.cache.SetUserNetworks(id, nets...)
 	return
 }
 
 //GetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
-func (api *API) GetUserGroups(id gp.UserID) (groups []gp.Group, err error) {
-	groups, err = api.db.GetUserNetworks(id, true)
-	return
+func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+	switch {
+	case perspective == user:
+		groups, err = api.db.GetUserNetworks(user, true)
+		return
+	default:
+		shared, err := api.HaveSharedNetwork(perspective, user)
+		switch {
+		case err != nil:
+			return groups, err
+		case !shared:
+			return groups, &ENOTALLOWED
+		default:
+			return api.db.SubjectiveMemberships(perspective, user)
+		}
+	}
 }
 
 //UserInNetwork returns true if user id is a member of network, false if not and err when there's a db problem.
@@ -194,7 +206,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 	case !exists && len(url) > 0:
 		return network, &ENOTALLOWED
 	default:
-		var networks []gp.Group
+		var networks []gp.GroupMembership
 		networks, err = api.GetUserNetworks(userID)
 		if err != nil {
 			return
