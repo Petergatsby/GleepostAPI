@@ -60,8 +60,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		var img, desc sql.NullString
 		var creator sql.NullInt64
 		var privacy sql.NullString
-		var role gp.Role
-		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Name, &img, &desc, &creator, &privacy)
+		err = rows.Scan(&network.ID, &network.Role.Name, &network.Role.Level, &network.Name, &img, &desc, &creator, &privacy)
 		if err != nil {
 			return
 		}
@@ -121,8 +120,7 @@ func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups []gp.Gr
 		var img, desc sql.NullString
 		var creator sql.NullInt64
 		var privacy sql.NullString
-		var role gp.Role
-		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Name, &img, &desc, &creator, &privacy)
+		err = rows.Scan(&network.ID, &network.Role.Name, &network.Role.Level, &network.Name, &img, &desc, &creator, &privacy)
 		if err != nil {
 			return
 		}
