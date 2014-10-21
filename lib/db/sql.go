@@ -1324,6 +1324,12 @@ func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 	return
 }
 
+//UserAttending returns all the events this user is attending.
+func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
+	where := WhereClause{Mode: WATTENDS, User: user, Perspective: perspective, Category: category}
+	return db.NewGetPosts(where, mode, index, count)
+}
+
 //UnreadMessageCount returns the number of unread messages this user has.
 func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ? AND deleted = 0"

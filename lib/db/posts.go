@@ -19,6 +19,8 @@ const (
 	WUSER
 	//WGROUPS is posts in all groups this user belongs to.
 	WGROUPS
+	//WATTENDS is events this user has attended
+	WATTENDS
 )
 
 //EBADORDER means you tried to order a post query in an unexpected way.
@@ -44,6 +46,7 @@ type WhereClause struct {
 //WhereRows basically acts as a shitty ORM and returns a sql.Rows which can then be blindly iterated over by NewGetPosts.
 //This is an abomination which I'm too scared and have no time to touch, but it works. For now.
 //Let's just hope that you, dear reader, don't ever have to extend it.
+//Time to extend it, lol.
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
 	//Oh shit. I accidentally an ORM?
 	baseQuery := "SELECT wall_posts.id, `by`, time, text, network_id FROM wall_posts "
@@ -145,6 +148,39 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		} else {
 			rows, err = stmt.Query(w.User, index, count)
 		}
+	case w.Mode == WATTENDS:
+		attendClause := "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
+		whereClause := "WHERE deleted = 0 AND network_id IN ( " +
+			"SELECT network_id FROM user_network WHERE user_id = ? " +
+			") " +
+			"AND event_attendees.user_id = ? "
+		if len(w.Category) > 0 {
+			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
+
+		}
+		switch {
+		case orderMode == gp.OSTART:
+			orderClause = " ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
+		case orderMode == gp.OBEFORE:
+			whereClause += "AND wall_posts.id < ? "
+			orderClause = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
+		case orderMode == gp.OAFTER:
+			whereClause += "AND wall_posts.id > ? "
+			orderClause = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
+		default:
+			err = &EBADORDER
+			return
+		}
+		stmt, err = db.prepare(baseQuery + attendClause + whereClause + orderClause)
+		if err != nil {
+			return
+		}
+		if len(w.Category) > 0 {
+			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
+		} else {
+			rows, err = stmt.Query(w.User, w.Perspective, index, count)
+		}
+
 	default:
 		err = &EBADWHERE
 		return
