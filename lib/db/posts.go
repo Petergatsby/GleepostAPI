@@ -49,7 +49,7 @@ type WhereClause struct {
 //Time to extend it, lol.
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
 	//Oh shit. I accidentally an ORM?
-	baseQuery := "SELECT wall_posts.id, `by`, time, text, network_id FROM wall_posts "
+	baseQuery := "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
 	var orderClause string
 	var categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
 		"JOIN categories ON post_categories.category_id = categories.id "
