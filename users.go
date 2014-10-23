@@ -17,6 +17,7 @@ func init() {
 	base.HandleFunc("/user/{id:[0-9]+}", getUser).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/", getUser).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
+	base.HandleFunc("/user/{id:[0-9]+}/attending", getUserAttending).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/networks", getGroups).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/unread", unread)
 	base.HandleFunc("/user/{id:[0-9]+}/total_live", totalLiveConversations)
@@ -243,6 +244,60 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, notifications, 200)
 			}
 		}
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func getUserAttending(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.user.*.attending.get")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "GET":
+		vars := mux.Vars(r)
+		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+		otherID := gp.UserID(_id)
+		category := r.FormValue("filter")
+		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		if err != nil {
+			start = 0
+		}
+		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+		if err != nil {
+			before = 0
+		}
+		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		if err != nil {
+			after = 0
+		}
+		var mode int
+		var index int64
+		switch {
+		case after > 0:
+			mode = gp.OAFTER
+			index = after
+		case before > 0:
+			mode = gp.OBEFORE
+			index = before
+		default:
+			mode = gp.OSTART
+			index = start
+		}
+		events, err := api.UserEvents(userID, otherID, category, mode, index, 20)
+		if err != nil {
+			jsonResponse(w, err, 500)
+		}
+		if len(events) == 0 {
+			// this is an ugly hack. But I can't immediately
+			// think of a neater way to fix this
+			// (json.Marshal(empty slice) returns null rather than
+			// empty array ([]) which it obviously should
+			jsonResponse(w, []string{}, 200)
+			return
+		}
+		jsonResponse(w, events, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}

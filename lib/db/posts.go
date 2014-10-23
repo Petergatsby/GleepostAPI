@@ -19,6 +19,8 @@ const (
 	WUSER
 	//WGROUPS is posts in all groups this user belongs to.
 	WGROUPS
+	//WATTENDS is events this user has attended
+	WATTENDS
 )
 
 //EBADORDER means you tried to order a post query in an unexpected way.
@@ -44,33 +46,16 @@ type WhereClause struct {
 //WhereRows basically acts as a shitty ORM and returns a sql.Rows which can then be blindly iterated over by NewGetPosts.
 //This is an abomination which I'm too scared and have no time to touch, but it works. For now.
 //Let's just hope that you, dear reader, don't ever have to extend it.
+//Time to extend it, lol.
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
 	//Oh shit. I accidentally an ORM?
-	baseQuery := "SELECT wall_posts.id, `by`, time, text, network_id FROM wall_posts "
-	var orderClause string
-	var categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-		"JOIN categories ON post_categories.category_id = categories.id "
+	q := composePostQuery(w.Mode, orderMode, (len(w.Category) > 0))
+	log.Println("Composing:", w.Mode, orderMode)
 	var stmt *sql.Stmt
+	log.Println(q)
 	switch {
 	case w.Mode == WNETWORK:
-		whereClause := "WHERE deleted = 0 AND network_id = ? "
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = "ORDER BY time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
@@ -80,63 +65,17 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			rows, err = stmt.Query(w.Network, index, count)
 		}
 	case w.Mode == WUSER:
-		whereClause := "WHERE deleted = 0 AND `by` = ? " +
-			"AND network_id IN ( " +
-			"SELECT network_id FROM user_network WHERE user_id = ? " +
-			") "
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = "ORDER BY time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		log.Println("User networks query:", baseQuery+whereClause+orderClause)
-		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
 		if len(w.Category) > 0 {
 			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
-			log.Println("User networks query arguments:", w.User, w.Perspective, w.Category, index, count)
 		} else {
 			rows, err = stmt.Query(w.User, w.Perspective, index, count)
-			log.Println("User networks query arguments:", w.User, w.Perspective, index, count)
 		}
 	case w.Mode == WGROUPS:
-		whereClause := "WHERE deleted = 0 AND network_id IN ( " +
-			"SELECT network_id " +
-			"FROM user_network " +
-			"JOIN network ON user_network.network_id = network.id " +
-			"WHERE user_id = ? " +
-			"AND network.user_group = 1 " +
-			" ) "
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = " ORDER BY time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
@@ -145,11 +84,125 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		} else {
 			rows, err = stmt.Query(w.User, index, count)
 		}
+	case w.Mode == WATTENDS:
+		stmt, err = db.prepare(q)
+		if err != nil {
+			return
+		}
+		if len(w.Category) > 0 {
+			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
+			log.Println("Attendance query params:", w.User, w.Perspective, w.Category, index, count)
+		} else {
+			rows, err = stmt.Query(w.User, w.Perspective, index, count)
+			log.Println("Attendance query params:", w.User, w.Perspective, index, count)
+		}
+
 	default:
 		err = &EBADWHERE
 		return
 	}
 	return rows, err
+}
+
+func composePostQuery(whereMode int, orderMode int, filter bool) string {
+	var q string
+	//Base
+	baseQuery := "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
+	//Joins
+	categoryClause := "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+		"JOIN categories ON post_categories.category_id = categories.id "
+
+	attendClause := "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
+	//Wheres
+	notDeleted := "WHERE deleted = 0 "
+	category := "AND categories.tag = ? "
+
+	whereBefore := "AND wall_posts.id < ? "
+	whereAfter := "AND wall_posts.id > ? "
+
+	whereBeforeAtt := "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
+	whereAfterAtt := "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
+
+	byNetwork := "AND network_id = ? "
+	byPoster := "AND `by` = ? AND network_id IN ( " +
+		"SELECT network_id FROM user_network WHERE user_id = ? ) "
+	byUserGroups := "AND network_id IN ( " +
+		"SELECT network_id FROM user_network " +
+		"JOIN network ON user_network.network_id = network.id " +
+		"WHERE user_id = ? AND network.user_group = 1 ) "
+	byVisibleAttendance := "AND network_id IN ( " +
+		"SELECT network_id FROM user_network WHERE user_id = ? ) " +
+		"AND event_attendees.user_id = ? "
+
+	//Orders
+	orderLinear := "ORDER BY time DESC, id DESC LIMIT ?, ?"
+	orderChronological := "ORDER BY time DESC, id DESC LIMIT 0, ?"
+
+	orderLinearAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
+	orderChronologicalAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
+
+	if filter {
+		q = baseQuery + categoryClause + notDeleted
+	} else {
+		q = baseQuery + notDeleted
+	}
+	switch {
+	case whereMode == WNETWORK:
+		q += byNetwork
+		if filter {
+			q += category
+		}
+		switch {
+		case orderMode == gp.OSTART:
+			q += orderLinear
+		case orderMode == gp.OAFTER:
+			q += whereAfter + orderChronological
+		case orderMode == gp.OBEFORE:
+			q += whereBefore + orderChronological
+		}
+	case whereMode == WUSER:
+		q += byPoster
+		if filter {
+			q += category
+		}
+		switch {
+		case orderMode == gp.OSTART:
+			q += orderLinear
+		case orderMode == gp.OAFTER:
+			q += whereAfter + orderChronological
+		case orderMode == gp.OBEFORE:
+			q += whereBefore + orderChronological
+		}
+	case whereMode == WGROUPS:
+		q += byUserGroups
+		if filter {
+			q += category
+		}
+		switch {
+		case orderMode == gp.OSTART:
+			q += orderLinear
+		case orderMode == gp.OAFTER:
+			q += whereAfter + orderChronological
+		case orderMode == gp.OBEFORE:
+			q += whereBefore + orderChronological
+		}
+	case whereMode == WATTENDS:
+		q = baseQuery + attendClause
+		if filter {
+			q += categoryClause + notDeleted + byVisibleAttendance + category
+		} else {
+			q += notDeleted + byVisibleAttendance
+		}
+		switch {
+		case orderMode == gp.OSTART:
+			q += orderLinearAttend
+		case orderMode == gp.OAFTER:
+			q += whereAfterAtt + orderChronologicalAttend
+		case orderMode == gp.OBEFORE:
+			q += whereBeforeAtt + orderChronologicalAttend
+		}
+	}
+	return q
 }
 
 //NewGetPosts returns posts matching the WhereClause.
