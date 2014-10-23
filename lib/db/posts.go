@@ -48,34 +48,12 @@ type WhereClause struct {
 //Let's just hope that you, dear reader, don't ever have to extend it.
 //Time to extend it, lol.
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
+	//Oh shit. I accidentally an ORM?
 	q := composePostQuery(w.Mode, orderMode, (len(w.Category) > 0))
 	log.Println(q)
-	//Oh shit. I accidentally an ORM?
-	baseQuery := "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
-	var orderClause string
-	var categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-		"JOIN categories ON post_categories.category_id = categories.id "
-	var stmt *sql.Stmt
 	switch {
 	case w.Mode == WNETWORK:
-		whereClause := "WHERE deleted = 0 AND network_id = ? "
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = "ORDER BY time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
@@ -85,63 +63,17 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			rows, err = stmt.Query(w.Network, index, count)
 		}
 	case w.Mode == WUSER:
-		whereClause := "WHERE deleted = 0 AND `by` = ? " +
-			"AND network_id IN ( " +
-			"SELECT network_id FROM user_network WHERE user_id = ? " +
-			") "
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = "ORDER BY time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		log.Println("User networks query:", baseQuery+whereClause+orderClause)
-		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
 		if len(w.Category) > 0 {
 			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
-			log.Println("User networks query arguments:", w.User, w.Perspective, w.Category, index, count)
 		} else {
 			rows, err = stmt.Query(w.User, w.Perspective, index, count)
-			log.Println("User networks query arguments:", w.User, w.Perspective, index, count)
 		}
 	case w.Mode == WGROUPS:
-		whereClause := "WHERE deleted = 0 AND network_id IN ( " +
-			"SELECT network_id " +
-			"FROM user_network " +
-			"JOIN network ON user_network.network_id = network.id " +
-			"WHERE user_id = ? " +
-			"AND network.user_group = 1 " +
-			" ) "
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = " ORDER BY time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		stmt, err = db.prepare(baseQuery + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
@@ -151,28 +83,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			rows, err = stmt.Query(w.User, index, count)
 		}
 	case w.Mode == WATTENDS:
-		attendClause := "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
-		whereClause := "WHERE deleted = 0 AND network_id IN ( " +
-			"SELECT network_id FROM user_network WHERE user_id = ? " +
-			") " +
-			"AND event_attendees.user_id = ? "
-		if len(w.Category) > 0 {
-			whereClause = categoryClause + whereClause + "AND categories.tag = ? "
-		}
-		switch {
-		case orderMode == gp.OSTART:
-			orderClause = " ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
-		case orderMode == gp.OBEFORE:
-			whereClause += "AND wall_posts.id < ? "
-			orderClause = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
-		case orderMode == gp.OAFTER:
-			whereClause += "AND wall_posts.id > ? "
-			orderClause = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
-		default:
-			err = &EBADORDER
-			return
-		}
-		stmt, err = db.prepare(baseQuery + attendClause + whereClause + orderClause)
+		stmt, err = db.prepare(q)
 		if err != nil {
 			return
 		}
