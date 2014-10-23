@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -108,7 +109,7 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.Po
 }
 
 //KeepPostsInFuture checks a list of posts every PollInterval and pushes them into the future if neccessary
-func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []gp.PostFuture) {
+func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []conf.PostFuture) {
 	t := time.Tick(pollInterval)
 	for {
 		for _, future := range futures {

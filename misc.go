@@ -3,24 +3,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
-	"os/signal"
-	"sync"
-	"syscall"
+
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 var (
-	config     *gp.Config
-	configLock = new(sync.RWMutex)
-	api        *lib.API
+	api    *lib.API
+	config *conf.Config
 )
 
 func init() {
@@ -33,47 +29,6 @@ var EUNSUPPORTED = gp.APIerror{Reason: "Method not supported"}
 
 //ENOTFOUNT = 404
 var ENOTFOUND = gp.APIerror{Reason: "404 not found"}
-
-func loadConfig(fail bool) {
-	file, err := ioutil.ReadFile("conf.json")
-	if err != nil {
-		log.Println("Opening config failed: ", err)
-		if fail {
-			os.Exit(1)
-		}
-	}
-
-	c := new(gp.Config)
-	if err = json.Unmarshal(file, c); err != nil {
-		log.Println("Parsing config failed: ", err)
-		if fail {
-			os.Exit(1)
-		}
-	}
-	configLock.Lock()
-	config = c
-	configLock.Unlock()
-}
-
-//GetConfig returns a pointer to the current API configuration.
-func GetConfig() *gp.Config {
-	configLock.RLock()
-	defer configLock.RUnlock()
-	return config
-}
-
-func configInit() {
-	loadConfig(true)
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGUSR2)
-	go func() {
-		for {
-			<-s
-			loadConfig(false)
-			log.Println("Reloaded")
-		}
-	}()
-}
 
 func optionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
@@ -100,13 +55,12 @@ func missingParamErr(param string) *gp.APIerror {
 }
 
 func init() {
-	configInit()
-	config = GetConfig()
+	config = conf.GetConfig()
 	api = lib.New(*config)
 	go api.FeedbackDaemon(60)
 	go api.EndOldConversations()
 	api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
-	var futures []gp.PostFuture
+	var futures []conf.PostFuture
 	for _, f := range config.Futures {
 		futures = append(futures, f.ParseDuration())
 	}

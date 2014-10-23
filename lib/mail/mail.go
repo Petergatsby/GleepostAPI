@@ -7,12 +7,12 @@ import (
 	"net/smtp"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 )
 
 //Mailer is able to send email.
 type Mailer struct {
-	config gp.EmailConfig
+	config conf.EmailConfig
 }
 
 //NewHeader generates a Header with from and date pre-populated.
@@ -24,7 +24,7 @@ func (m *Mailer) NewHeader() mail.Header {
 }
 
 //New creates a Mailer.
-func New(config gp.EmailConfig) *Mailer {
+func New(config conf.EmailConfig) *Mailer {
 	return &Mailer{config: config}
 }
 

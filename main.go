@@ -7,6 +7,7 @@ import (
 
 	"runtime"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
@@ -19,7 +20,7 @@ var (
 func main() {
 	ascii()
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	conf := GetConfig()
+	conf := conf.GetConfig()
 
 	server := &http.Server{
 		Addr:    ":" + conf.Port,

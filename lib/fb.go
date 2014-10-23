@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/facebook"
 )
@@ -33,7 +34,7 @@ func debugToken(token string) {
 
 //FB contains the configuration specific to this facebook app.
 type FB struct {
-	config gp.FacebookConfig
+	config conf.FacebookConfig
 }
 
 //FBAPIError is a catchall error for anything that went wrong with a facebook reqest.

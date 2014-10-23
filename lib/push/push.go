@@ -4,20 +4,20 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
 )
 
 //Pusher is able to push notifications to iOS and android devices.
 type Pusher struct {
-	APNSconfig gp.APNSConfig
-	GCMconfig  gp.GCMConfig
+	APNSconfig conf.APNSConfig
+	GCMconfig  conf.GCMConfig
 	Connection *apns.Connection
 }
 
 //New constructs a Pusher from a Config
-func New(conf gp.Config) (pusher *Pusher) {
+func New(conf conf.Config) (pusher *Pusher) {
 	pusher = new(Pusher)
 	pusher.APNSconfig = conf.APNS
 	pusher.GCMconfig = conf.GCM

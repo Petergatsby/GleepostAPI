@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/garyburd/redigo/redis"
@@ -18,18 +19,18 @@ import (
 //Cache represents a redis cache configuration + pool of connections to operate against.
 type Cache struct {
 	pool   *redis.Pool
-	config gp.RedisConfig
+	config conf.RedisConfig
 }
 
 //New constructs a new Cache from config.
-func New(conf gp.RedisConfig) (cache *Cache) {
+func New(conf conf.RedisConfig) (cache *Cache) {
 	cache = new(Cache)
 	cache.config = conf
 	cache.pool = redis.NewPool(getDialer(conf), 100)
 	return
 }
 
-func getDialer(conf gp.RedisConfig) func() (redis.Conn, error) {
+func getDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 	f := func() (redis.Conn, error) {
 		conn, err := redis.Dial(conf.Proto, conf.Address)
 		return conn, err

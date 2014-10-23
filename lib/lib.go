@@ -13,6 +13,7 @@ import (
 
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
@@ -26,13 +27,13 @@ type API struct {
 	db     *db.DB
 	fb     *FB
 	mail   *mail.Mailer
-	Config gp.Config
+	Config conf.Config
 	push   *push.Pusher
 	statsd g2s.Statter
 }
 
 //New creates an API from a gp.Config
-func New(conf gp.Config) (api *API) {
+func New(conf conf.Config) (api *API) {
 	api = new(API)
 	api.cache = cache.New(conf.Redis)
 	api.db = db.New(conf.Mysql)

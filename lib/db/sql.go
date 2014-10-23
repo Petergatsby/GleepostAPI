@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/go-sql-driver/mysql"
 )
@@ -26,11 +27,11 @@ var (
 type DB struct {
 	stmt     map[string]*sql.Stmt
 	database *sql.DB
-	config   gp.MysqlConfig
+	config   conf.MysqlConfig
 }
 
 //New creates a DB; it connects an underlying sql.db and will fatalf if it can't.
-func New(conf gp.MysqlConfig) (db *DB) {
+func New(conf conf.MysqlConfig) (db *DB) {
 	var err error
 	db = new(DB)
 	db.database, err = sql.Open("mysql", conf.ConnectionString())
