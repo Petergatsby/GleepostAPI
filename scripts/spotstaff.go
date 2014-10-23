@@ -62,6 +62,9 @@ func lookUp(email string) (isStaff bool, err error) {
 		if strings.Contains(s.Text(), "Staff") {
 			isStaff = true
 		}
+		if strings.Contains(s.Text(), "Faculty") {
+			isStaff = true
+		}
 	})
 	return isStaff, nil
 }
