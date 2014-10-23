@@ -226,9 +226,14 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 	orderLinearAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
 	orderChronologicalAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
 
+	if filter {
+		q = baseQuery + categoryClause + notDeleted
+	} else {
+		q = baseQuery + notDeleted
+	}
 	switch {
 	case whereMode == WNETWORK:
-		q = baseQuery + categoryClause + notDeleted + byNetwork
+		q += byNetwork
 		if filter {
 			q += category
 		}
@@ -241,7 +246,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 			q += whereBefore + orderChronological
 		}
 	case whereMode == WUSER:
-		q = baseQuery + categoryClause + notDeleted + byPoster
+		q += byPoster
 		if filter {
 			q += category
 		}
@@ -254,7 +259,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 			q += whereBefore + orderChronological
 		}
 	case whereMode == WGROUPS:
-		q = baseQuery + categoryClause + notDeleted + byUserGroups
+		q += byUserGroups
 		if filter {
 			q += category
 		}
@@ -267,9 +272,11 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 			q += whereBefore + orderChronological
 		}
 	case whereMode == WATTENDS:
-		q = baseQuery + attendClause + categoryClause + notDeleted + byVisibleAttendance
+		q = baseQuery + attendClause
 		if filter {
-			q += category
+			q += categoryClause + notDeleted + byVisibleAttendance + category
+		} else {
+			q += notDeleted + byVisibleAttendance
 		}
 		switch {
 		case orderMode == gp.OSTART:
