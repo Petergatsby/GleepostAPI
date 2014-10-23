@@ -101,6 +101,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /user/[user-id]/networks [[GET]](#get-useruser-idnetworks)
 
+/user/[user-id]/attending [[GET]](#get-useruser-idattending)
+
 /longpoll [[GET]](#get-longpoll) (Deprecated: Prefer /ws)
 
 /ws [[GET]](#get-ws)
@@ -1208,6 +1210,71 @@ Example response: (http 200)
 			"name":"member",
 			"level":1
 		}
+	}
+]
+```
+
+##GET /user/[user-id]/attending
+Lists the events that this user is attending, most recently attended first. Only the events in groups / networks you can see.
+
+```json
+[
+	{
+		"id":2,
+		"by": {
+			"id":9,
+			"name":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"This is a cool post for cool people!",
+		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+		"attribs": {
+			"event-time":"2013-09-05T13:09:38Z"
+		},
+		"comment_count":4,
+		"like_count":5,
+		"likes":[{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"},
+			{"by": {
+				"id":545,
+				"name":"SomeoneElse"
+				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+				},
+			"timestamp":"2013-09-05T13:09:38Z"}
+		],
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
+	},
+	{
+		"id":1,
+		"by": {
+			"id":9,
+			"name":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"Sailor Moon FTW!"
+		"comment_count":9,
+		"like_count":0,
+		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"],
+		"videos":[
+			{
+				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+				"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+				"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+			}
+		]
 	}
 ]
 ```
