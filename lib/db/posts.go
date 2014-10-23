@@ -48,6 +48,8 @@ type WhereClause struct {
 //Let's just hope that you, dear reader, don't ever have to extend it.
 //Time to extend it, lol.
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
+	q := composePostQuery(w.Mode, orderMode, (len(w.Category) > 0))
+	log.Println(q)
 	//Oh shit. I accidentally an ORM?
 	baseQuery := "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
 	var orderClause string
@@ -188,6 +190,7 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 }
 
 func composePostQuery(whereMode int, orderMode int, filter bool) string {
+	var q string
 	//Base
 	baseQuery := "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
 	//Joins
@@ -225,7 +228,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 
 	switch {
 	case whereMode == WNETWORK:
-		q := baseQuery + categoryClause + notDeleted + byNetwork
+		q = baseQuery + categoryClause + notDeleted + byNetwork
 		if filter {
 			q += category
 		}
@@ -238,7 +241,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 			q += whereBefore + orderChronological
 		}
 	case whereMode == WUSER:
-		q := baseQuery + categoryClause + notDeleted + byPoster
+		q = baseQuery + categoryClause + notDeleted + byPoster
 		if filter {
 			q += category
 		}
@@ -251,7 +254,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 			q += whereBefore + orderChronological
 		}
 	case whereMode == WGROUPS:
-		q := baseQuery + categoryClause + notDeleted + byUserGroups
+		q = baseQuery + categoryClause + notDeleted + byUserGroups
 		if filter {
 			q += category
 		}
@@ -264,7 +267,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 			q += whereBefore + orderChronological
 		}
 	case whereMode == WATTENDS:
-		q := baseQuery + categoryClause + notDeleted + byVisibleAttendance
+		q = baseQuery + attendClause + categoryClause + notDeleted + byVisibleAttendance
 		if filter {
 			q += category
 		}
@@ -272,9 +275,9 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 		case orderMode == gp.OSTART:
 			q += orderLinearAttend
 		case orderMode == gp.OAFTER:
-			q += whereAfter + orderChronological
+			q += whereAfterAtt + orderChronologicalAttend
 		case orderMode == gp.OBEFORE:
-			q += whereBefore + orderChronological
+			q += whereBeforeAtt + orderChronologicalAttend
 		}
 	}
 	return q
