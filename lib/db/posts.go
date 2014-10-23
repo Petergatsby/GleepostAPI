@@ -50,6 +50,7 @@ type WhereClause struct {
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
 	//Oh shit. I accidentally an ORM?
 	q := composePostQuery(w.Mode, orderMode, (len(w.Category) > 0))
+	log.Println("Composing:", w.Mode, orderMode)
 	var stmt *sql.Stmt
 	log.Println(q)
 	switch {
@@ -90,8 +91,10 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		}
 		if len(w.Category) > 0 {
 			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
+			log.Println("Attendance query params:", w.User, w.Perspective, w.Category, index, count)
 		} else {
 			rows, err = stmt.Query(w.User, w.Perspective, index, count)
+			log.Println("Attendance query params:", w.User, w.Perspective, index, count)
 		}
 
 	default:
