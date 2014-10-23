@@ -50,6 +50,7 @@ type WhereClause struct {
 func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
 	//Oh shit. I accidentally an ORM?
 	q := composePostQuery(w.Mode, orderMode, (len(w.Category) > 0))
+	var stmt *sql.Stmt
 	log.Println(q)
 	switch {
 	case w.Mode == WNETWORK:
