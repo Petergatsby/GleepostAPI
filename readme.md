@@ -1217,6 +1217,8 @@ Example response: (http 200)
 ##GET /user/[user-id]/attending
 Lists the events that this user is attending, most recently attended first. Only the events in groups / networks you can see.
 
+Paginated in the same way as [posts](#get-posts).
+
 ```json
 [
 	{
