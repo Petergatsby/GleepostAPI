@@ -39,11 +39,11 @@ func main() {
 
 func lookUp(email string) (isStaff bool, err error) {
 	c := &http.Client{}
-	searchUrl := "https://stanfordwho.stanford.edu/SWApp/Search.do"
+	searchURL := "https://stanfordwho.stanford.edu/SWApp/Search.do"
 	params := url.Values{}
 	params.Set("search", email)
 	body := params.Encode()
-	r, err := http.NewRequest("POST", searchUrl, bytes.NewBufferString(body))
+	r, err := http.NewRequest("POST", searchURL, bytes.NewBufferString(body))
 	if err != nil {
 		return
 	}

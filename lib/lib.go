@@ -50,6 +50,7 @@ func New(conf conf.Config) (api *API) {
 	return
 }
 
+//Time reports the time for this stat to statsd. (use it with defer)
 func (api *API) Time(start time.Time, bucket string) {
 	duration := time.Since(start)
 	var ns string

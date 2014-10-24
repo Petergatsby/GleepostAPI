@@ -7,6 +7,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//ENoRole is given when you try to specify a role which doesn't exist.
 var ENoRole = gp.APIerror{Reason: "Invalid role"}
 
 var levels = map[string]int{
@@ -27,7 +28,7 @@ func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err er
 	return
 }
 
-//GetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
+//UserGetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
 func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
 	switch {
 	case perspective == user:

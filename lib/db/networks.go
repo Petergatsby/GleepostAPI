@@ -426,6 +426,7 @@ func (db *DB) UserRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err 
 	return
 }
 
+//UserSetRole sets this user's Role within this network.
 func (db *DB) UserSetRole(user gp.UserID, network gp.NetworkID, role gp.Role) (err error) {
 	q := "UPDATE user_network SET role = ?, role_level = ? WHERE user_id = ? AND network_id = ?"
 	s, err := db.prepare(q)
