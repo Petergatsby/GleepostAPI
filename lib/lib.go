@@ -53,14 +53,20 @@ func New(conf conf.Config) (api *API) {
 //Time reports the time for this stat to statsd. (use it with defer)
 func (api *API) Time(start time.Time, bucket string) {
 	duration := time.Since(start)
-	var ns string
-	if api.Config.DevelopmentMode {
-		ns = "dev."
-	} else {
-		ns = "prod."
-	}
-	bucket = ns + bucket
+	bucket = api.statsdPrefix() + bucket
 	api.statsd.Timing(1.0, bucket, duration)
+}
+
+func (api *API) statsdPrefix() string {
+	if api.Config.DevelopmentMode {
+		return "dev."
+	} else {
+		return "prod."
+	}
+}
+
+func (api *API) Count(count int, bucket string) {
+	api.statsd.Counter(1.0, api.statsdPrefix()+bucket, count)
 }
 
 //You'll get this when your password is too week (ie, less than 5 chars at the moment)

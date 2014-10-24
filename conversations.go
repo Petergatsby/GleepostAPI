@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,16 +40,20 @@ func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, "gleepost.conversations.live.get.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		conversations, err := api.GetLiveConversations(userID)
 		switch {
 		case err != nil:
+			go api.Count(1, "gleepost.conversations.live.get.500")
 			jsonErr(w, err, 500)
 			return
 		case len(conversations) == 0:
+			go api.Count(1, "gleepost.conversations.live.get.200")
 			jsonResponse(w, []string{}, 200)
 		default:
+			go api.Count(1, "gleepost.conversations.live.get.200")
 			jsonResponse(w, conversations, 200)
 		}
 	default:
@@ -70,8 +74,10 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 	}
 	conversations, err := api.GetConversations(userID, start, api.Config.ConversationPageSize)
 	if err != nil {
+		go api.Count(1, "gleepost.conversations.get.500")
 		jsonErr(w, err, 500)
 	} else {
+		go api.Count(1, "gleepost.conversations.get.200")
 		if len(conversations) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -88,6 +94,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	defer api.Time(time.Now(), "gleepost.conversations.post")
 	userID, err := authenticate(r)
 	if err != nil {
+		go api.Count(1, "gleepost.conversations.get.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
@@ -120,9 +127,11 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 		}
 		switch {
 		case len(userIds) < 1:
+			go api.Count(1, "gleepost.conversations.get.400")
 			jsonResponse(w, &ETOOFEW, 400)
 			return
 		case len(userIds) > 10:
+			go api.Count(1, "gleepost.conversations.get.400")
 			jsonResponse(w, &ETOOMANY, 400)
 			return
 		default:
@@ -133,26 +142,32 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == gp.ENOSUCHUSER {
+			go api.Count(1, "gleepost.conversations.get.400")
 			jsonResponse(w, e, 400)
 		} else if *e == lib.ENOTALLOWED {
+			go api.Count(1, "gleepost.conversations.get.403")
 			jsonResponse(w, e, 403)
 		} else {
+			go api.Count(1, "gleepost.conversations.get.500")
 			jsonErr(w, err, 500)
 		}
 	} else {
+		go api.Count(1, "gleepost.conversations.get.201")
 		jsonResponse(w, conversation, 201)
 	}
 }
 
 func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.*.get")
+	vars := mux.Vars(r)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	url := fmt.Sprintf("gleepost.conversations.%d.get", _convID)
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
-	vars := mux.Vars(r)
-	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
 	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
@@ -162,27 +177,33 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			go api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 		} else {
+			go api.Count(1, url+".500")
 			jsonErr(w, err, 500)
 		}
 		return
 	}
+	go api.Count(1, url+".200")
 	jsonResponse(w, conv, 200)
 }
 
 func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.*.put")
-	userID, err := authenticate(r)
-	if err != nil {
-		jsonResponse(w, &EBADTOKEN, 400)
-		return
-	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
+	url := fmt.Sprintf("gleepost.conversations.%d.put", convID)
+	defer api.Time(time.Now(), url)
+	userID, err := authenticate(r)
+	if err != nil {
+		go api.Count(1, url+".400")
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
 	expires, err := strconv.ParseBool(r.FormValue("expiry"))
 	if err != nil {
+		go api.Count(1, url+".400")
 		jsonErr(w, err, 400)
 		return
 	}
@@ -191,9 +212,11 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 				return
 			}
+			go api.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
@@ -202,51 +225,62 @@ func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
 				//This should never happen but just in case the UserDeleteExpiry block above is changed...
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 				return
 			}
+			go api.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
+		go api.Count(1, url+".200")
 		jsonResponse(w, conversation, 200)
 	} else {
+		go api.Count(1, url+".400")
 		jsonResponse(w, gp.APIerror{Reason: "Missing parameter:expiry"}, 400)
 	}
 }
 
 func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.*.delete")
-	userID, err := authenticate(r)
-	if err != nil {
-		jsonResponse(w, &EBADTOKEN, 400)
-		return
-	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
+	url := fmt.Sprintf("gleepost.conversations.%d.delete", convID)
+	defer api.Time(time.Now(), url)
+	userID, err := authenticate(r)
+	if err != nil {
+		go api.Count(1, url+".400")
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
 	err = api.UserDeleteConversation(userID, convID)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			go api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
 		}
+		go api.Count(1, url+".500")
 		jsonErr(w, err, 500)
 		return
 	}
+	go api.Count(1, url+".204")
 	w.WriteHeader(204)
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.*.messages")
-	userID, err := authenticate(r)
-	if err != nil {
-		jsonResponse(w, &EBADTOKEN, 400)
-		return
-	}
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
+	url := fmt.Sprintf("gleepost.conversations.%d.messages.get", convID)
+	defer api.Time(time.Now(), url)
+	userID, err := authenticate(r)
+	if err != nil {
+		go api.Count(1, url+".400")
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
 	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
 		start = 0
@@ -271,11 +305,14 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			go api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
 		}
+		go api.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
+		go api.Count(1, url+".200")
 		if len(messages) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -289,42 +326,45 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func postMessages(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.*.messages.post")
+	vars := mux.Vars(r)
+	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
+	convID := gp.ConversationID(_convID)
+	url := fmt.Sprintf("gleepost.conversations.%d.messages.post", convID)
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
-	vars := mux.Vars(r)
-	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
-	convID := gp.ConversationID(_convID)
 	text := r.FormValue("text")
 	messageID, err := api.AddMessage(convID, userID, text)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
 		}
+		go api.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
+		go api.Count(1, url+".201")
 		jsonResponse(w, &gp.Created{ID: uint64(messageID)}, 201)
 	}
 }
 
 func putMessages(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.*.messages.put")
+	vars := mux.Vars(r)
+	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
+	convID := gp.ConversationID(_convID)
+	url := fmt.Sprintf("gleepost.conversations.%d.messages.put", convID)
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
-	vars := mux.Vars(r)
-	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
-	if err != nil {
-		jsonErr(w, err, 400)
-	}
-	convID := gp.ConversationID(_convID)
 	_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 	if err != nil {
 		_upTo = 0
@@ -332,30 +372,35 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	upTo := gp.MessageID(_upTo)
 	err = api.MarkConversationSeen(userID, convID, upTo)
 	if err != nil {
+		go api.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
 		conversation, err := api.GetConversation(userID, convID)
 		if err != nil {
+			go api.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
+		go api.Count(1, url+".200")
 		jsonResponse(w, conversation, 200)
 	}
 }
 
 func readAll(w http.ResponseWriter, r *http.Request) {
 	defer api.Time(time.Now(), "gleepost.conversations.read_all.post")
-	log.Println("Someone hit readAll")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, "gleepost.conversations.read_all.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		err = api.MarkAllConversationsSeen(userID)
 		if err != nil {
+			go api.Count(1, "gleepost.conversations.read_all.post.500")
 			jsonResponse(w, err, 500)
 			return
 		}
+		go api.Count(1, "gleepost.conversations.read_all.post.204")
 		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

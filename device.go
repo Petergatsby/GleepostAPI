@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -19,6 +20,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, "gleepost.devices.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		deviceType := r.FormValue("type")
@@ -27,8 +29,10 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 		device, err := api.AddDevice(userID, deviceType, deviceID)
 		log.Println(device, err)
 		if err != nil {
+			go api.Count(1, "gleepost.devices.post.500")
 			jsonErr(w, err, 500)
 		} else {
+			go api.Count(1, "gleepost.devices.post.201")
 			jsonResponse(w, device, 201)
 		}
 	case r.Method == "GET":
@@ -39,21 +43,23 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteDevice(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.devices.delete")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.devices.%s.delete", vars["id"])
+	defer api.Time(time.Now(), url)
 	w.Header().Set("Content-Type", "application/json")
 	log.Println("Delete device hit")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
-		log.Println("Bad auth")
 	case r.Method == "DELETE":
-		vars := mux.Vars(r)
 		err := api.DeleteDevice(userID, vars["id"])
 		if err != nil {
+			go api.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
+		go api.Count(1, url+".204")
 		w.WriteHeader(204)
 		return
 	default:

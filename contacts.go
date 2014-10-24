@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,8 +26,10 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 		defer api.Time(time.Now(), "gleepost.contacts.get")
 		contacts, err := api.GetContacts(userID)
 		if err != nil {
+			go api.Count(1, "gleepost.contacts.get.500")
 			jsonErr(w, err, 500)
 		} else {
+			go api.Count(1, "gleepost.contacts.get.200")
 			if len(contacts) == 0 {
 				jsonResponse(w, []string{}, 200)
 			} else {
@@ -39,11 +42,14 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 		otherID := gp.UserID(_otherID)
 		contact, err := api.AddContact(userID, otherID)
 		if err != nil {
+			go api.Count(1, "gleepost.contacts.post.500")
 			jsonErr(w, err, 500)
 		} else {
+			go api.Count(1, "gleepost.contacts.post.201")
 			jsonResponse(w, contact, 201)
 		}
 	default:
+		go api.Count(1, "gleepost.contacts.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
@@ -57,7 +63,8 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
-		defer api.Time(time.Now(), "gleepost.contacts.*.put")
+		url := fmt.Sprintf("gleepost.contacts.%d.put", contactID)
+		defer api.Time(time.Now(), url)
 		accepted, err := strconv.ParseBool(r.FormValue("accepted"))
 		if err != nil {
 			accepted = false
@@ -65,11 +72,14 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 		if accepted {
 			contact, err := api.AcceptContact(userID, contactID)
 			if err != nil {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			} else {
+				go api.Count(1, url+".200")
 				jsonResponse(w, contact, 200)
 			}
 		} else {
+			go api.Count(1, url+".400")
 			jsonResponse(w, missingParamErr("accepted"), 400)
 		}
 	case r.Method == "DELETE":
