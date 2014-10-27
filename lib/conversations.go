@@ -73,7 +73,7 @@ func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, 
 		go api.cache.AddConversation(conversation)
 		go api.NewConversationEvent(conversation)
 		initiator, err := api.GetUser(initiator)
-		if err == nil {
+		if err == nil && live {
 			for _, u := range participants {
 				go api.newConversationPush(initiator, u.ID, conversation.ID)
 			}
