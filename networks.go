@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,7 +30,7 @@ func init() {
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.networks.get")
+	t := time.Now()
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -38,8 +39,10 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 		var otherID gp.UserID
 		vars := mux.Vars(r)
 		_id, ok := vars["id"]
+		var url string
 		if !ok {
 			otherID = userID
+			url = "gleepost.profile.networks.get"
 		} else {
 			id, err := strconv.ParseUint(_id, 10, 64)
 			if err != nil {
@@ -47,12 +50,16 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			otherID = gp.UserID(id)
+			url = fmt.Sprintf("gleepost.users.%d.networks.get", otherID)
 		}
+		defer api.Time(t, url)
 		networks, err := api.UserGetUserGroups(userID, otherID)
 		if err != nil {
+			go api.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
+		go api.Count(1, url+".200")
 		if len(networks) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -68,15 +75,18 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNetwork(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.get")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%s.get", vars["network"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 16)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -85,12 +95,15 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
+		go api.Count(1, url+".200")
 		jsonResponse(w, network, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
@@ -98,10 +111,12 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworks(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.post")
+	url := "gleepost.networks.post"
+	defer api.Time(time.Now(), urls)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		name := r.FormValue("name")
@@ -114,18 +129,22 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		}
 		switch {
 		case len(name) == 0:
+			go api.Count(1, url+".400")
 			jsonResponse(w, missingParamErr("name"), 400)
 		default:
 			network, err := api.CreateGroup(userID, name, url, desc, privacy)
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {
+					go api.Count(1, url+".403")
 					jsonResponse(w, e, 403)
 				} else {
+					go api.Count(1, url+".500")
 					jsonErr(w, err, 500)
 				}
 				return
 			}
+			go api.Count(1, url+".201")
 			jsonResponse(w, network, 201)
 		}
 	default:
@@ -134,15 +153,18 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.users.post")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%s.users.post", vars["network"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -170,8 +192,10 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {
+					go api.Count(1, url+".403")
 					jsonResponse(w, e, 403)
 				} else {
+					go api.Count(1, url+".500")
 					jsonErr(w, err, 500)
 				}
 				return
@@ -183,8 +207,10 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {
+					go api.Count(1, url+".403")
 					jsonResponse(w, e, 403)
 				} else {
+					go api.Count(1, url+".500")
 					jsonErr(w, err, 500)
 				}
 				return
@@ -196,17 +222,21 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
 				if ok && *e == lib.ENOTALLOWED {
+					go api.Count(1, url+".403")
 					jsonResponse(w, e, 403)
 				} else {
+					go api.Count(1, url+".500")
 					jsonErr(w, err, 500)
 				}
 				return
 			}
 		}
 		if !added {
+			go api.Count(1, url+".400")
 			jsonResponse(w, gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}, 400)
 			return
 		}
+		go api.Count(1, url+".204")
 		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
@@ -214,15 +244,17 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.admins.post")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%s.admins.post", vars["network"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -236,8 +268,10 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					e, ok := err.(*gp.APIerror)
 					if ok && *e == lib.ENOTALLOWED {
+						go api.Count(1, url+".403")
 						jsonResponse(w, e, 403)
 					} else {
+						go api.Count(1, url+".500")
 						jsonErr(w, err, 500)
 					}
 					return
@@ -248,11 +282,14 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
+		go api.Count(1, url+".200")
 		if len(users) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -267,15 +304,18 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 
 //Note to self: should probably consolidate this with getNetworkUsers.
 func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.admins.get")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%s.admins.get", vars["network"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -284,11 +324,14 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
+		go api.Count(1, url+".200")
 		if len(users) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -302,15 +345,18 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.admins.*.get")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%d.admins.%d.delete", vars["network"], vars["user"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -322,26 +368,32 @@ func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
+		go api.Count(1, url+".204")
 		w.WriteHeader(204)
 	}
 }
 
 func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.users.get")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%s.users.get", vars["network"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -350,11 +402,14 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
+		go api.Count(1, url+".200")
 		if len(users) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -371,10 +426,12 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 
 //getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
 func getGroupPosts(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.posts.get")
+	url := "gleepost.profile.networks.get"
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "GET":
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
@@ -407,12 +464,15 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
+		go api.Count(1, url+".200")
 		if len(posts) == 0 {
 			// this is an ugly hack. But I can't immediately
 			// think of a neater way to fix this
@@ -428,15 +488,18 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func putNetwork(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.networks.*.put")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.networks.%s.put", vars["network"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -446,8 +509,10 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
@@ -456,12 +521,15 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
+		go api.Count(1, url+".200")
 		jsonResponse(w, group, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
@@ -469,15 +537,18 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.networks.*.delete")
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.profile.networks.%s.delete", vars["networks"])
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "DELETE":
-		vars := mux.Vars(r)
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
+			go api.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -486,11 +557,14 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
+				go api.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
+		go api.Count(1, url+".204")
 		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
