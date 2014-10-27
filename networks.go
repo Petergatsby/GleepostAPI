@@ -112,7 +112,7 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 
 func postNetworks(w http.ResponseWriter, r *http.Request) {
 	url := "gleepost.networks.post"
-	defer api.Time(time.Now(), urls)
+	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
