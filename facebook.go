@@ -25,9 +25,11 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method != "POST":
 		log.Println(r)
+		go api.Count(1, "gleepost.profile.facebook.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err != nil:
 		if autherr != nil {
+			go api.Count(1, "gleepost.profile.facebook.post.400")
 			jsonResponse(w, gp.APIerror{Reason: "Bad email/password"}, 400)
 		} else {
 			//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
@@ -35,30 +37,37 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				//This isn't associated with a gleepost account
 				err = api.UserSetFB(userID, fbToken.FBUser)
+				go api.Count(1, "gleepost.profile.facebook.post.204")
 				w.WriteHeader(204)
 			} else {
 				if token.UserID == userID {
 					//The facebook account is already associated with this gleepost account
+					go api.Count(1, "gleepost.profile.facebook.post.204")
 					w.WriteHeader(204)
 				} else {
+					go api.Count(1, "gleepost.profile.facebook.post.400")
 					jsonResponse(w, gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}, 400)
 				}
 
 			}
 		}
 	case errtoken != nil:
+		go api.Count(1, "gleepost.profile.facebook.post.400")
 		jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
 	default:
 		token, err := api.FacebookLogin(_fbToken)
 		if err != nil {
 			//This isn't associated with a gleepost account
 			err = api.UserSetFB(id, fbToken.FBUser)
+			go api.Count(1, "gleepost.profile.facebook.post.204")
 			w.WriteHeader(204)
 		} else {
 			if token.UserID == id {
 				//The facebook account is already associated with this gleepost account
+				go api.Count(1, "gleepost.profile.facebook.post.204")
 				w.WriteHeader(204)
 			} else {
+				go api.Count(1, "gleepost.profile.facebook.post.400")
 				jsonResponse(w, gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}, 400)
 			}
 
@@ -75,6 +84,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		//Is this a valid facebook token for this app?
 		fbToken, err := api.FBValidateToken(_fbToken, 3)
 		if err != nil {
+			go api.Count(1, "gleepost.facebook.post.400")
 			jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
 			return
 		}
@@ -83,6 +93,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			//If there's an associated user, they're verified already so there's no need to check.
 			log.Println("Token: ", token)
+			go api.Count(1, "gleepost.facebook.post.201")
 			jsonResponse(w, token, 201)
 			return
 
@@ -103,15 +114,18 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				//There isn't already a user with this email address.
 				validates, err := api.ValidateEmail(email)
 				if !validates {
+					go api.Count(1, "gleepost.facebook.post.400")
 					jsonResponse(w, InvalidEmail, 400)
 					return
 				}
 				if err != nil {
+					go api.Count(1, "gleepost.facebook.post.500")
 					jsonErr(w, err, 500)
 					return
 				}
 				id, err := api.FacebookRegister(_fbToken, email, invite)
 				if err != nil {
+					go api.Count(1, "gleepost.facebook.post.500")
 					jsonErr(w, err, 500)
 					return
 				}
@@ -120,12 +134,15 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 					//Login
 					token, err := api.CreateAndStoreToken(id)
 					if err == nil {
+						go api.Count(1, "gleepost.facebook.post.200")
 						jsonResponse(w, token, 200)
 					} else {
+						go api.Count(1, "gleepost.facebook.post.500")
 						jsonErr(w, err, 500)
 					}
 					return
 				}
+				go api.Count(1, "gleepost.facebook.post.201")
 				log.Println("Should be unverified response")
 				jsonResponse(w, Status{"unverified", email}, 201)
 				return
@@ -137,20 +154,24 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				//Verify
 				id, err := api.FBSetVerified(email, fbToken.FBUser)
 				if err != nil {
+					go api.Count(1, "gleepost.facebook.post.500")
 					jsonErr(w, err, 500)
 					return
 				}
 				//Login
 				token, err := api.CreateAndStoreToken(id)
 				if err == nil {
+					go api.Count(1, "gleepost.facebook.post.200")
 					jsonResponse(w, token, 200)
 				} else {
+					go api.Count(1, "gleepost.facebook.post.500")
 					jsonErr(w, err, 500)
 				}
 				return
 			}
 			//otherwise, we must ask for a password
 			status := Status{"registered", email}
+			go api.Count(1, "gleepost.facebook.post.200")
 			jsonResponse(w, status, 200)
 			return
 		case len(email) > 3 && (err == nil && (storedEmail == email)):
@@ -162,13 +183,16 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			_, err := api.UserWithEmail(storedEmail)
 			if err != nil {
 				log.Println("Should be unverified response")
+				go api.Count(1, "gleepost.facebook.post.201")
 				jsonResponse(w, Status{"unverified", storedEmail}, 201)
 				return
 			}
 			status := Status{"registered", storedEmail}
+			go api.Count(1, "gleepost.facebook.post.200")
 			jsonResponse(w, status, 200)
 			return
 		case len(email) < 3 && (err != nil):
+			go api.Count(1, "gleepost.facebook.post.400")
 			jsonResponse(w, gp.APIerror{Reason: "Email required"}, 400)
 		}
 	} else {

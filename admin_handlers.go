@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -22,6 +23,7 @@ func init() {
 var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "admin.masspush")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -44,6 +46,7 @@ func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func mm(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "admin.massmail")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -67,6 +70,7 @@ func mm(w http.ResponseWriter, r *http.Request) {
 }
 
 func postUsers(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "users.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -95,6 +99,7 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func postDuplicate(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "admin.posts.duplicate")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -131,6 +136,7 @@ func postDuplicate(w http.ResponseWriter, r *http.Request) {
 }
 
 func copyAttribs(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "admin.posts.copy_attribs")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

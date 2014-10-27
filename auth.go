@@ -42,6 +42,7 @@ func init() {
 
 //Note to self: validateToken should probably return an error at some point
 func authenticate(r *http.Request) (userID gp.UserID, err error) {
+	defer api.Time(time.Now(), "gleepost.auth.authenticate")
 	id, _ := strconv.ParseUint(r.FormValue("id"), 10, 64)
 	userID = gp.UserID(id)
 	token := r.FormValue("token")
@@ -55,8 +56,10 @@ func authenticate(r *http.Request) (userID gp.UserID, err error) {
 	}
 	success := api.ValidateToken(userID, token)
 	if success {
+		go api.Count(1, "gleepost.auth.authenticate.fail")
 		return userID, nil
 	}
+	go api.Count(1, "gleepost.auth.authenticate.success")
 	return 0, &EBADTOKEN
 }
 
@@ -94,10 +97,12 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		validates, err := api.ValidateEmail(email)
 		if err != nil {
 			jsonErr(w, err, 500)
+			go api.Count(1, "gleepost.auth.register.500")
 			return
 		}
 		if !validates {
 			jsonResponse(w, InvalidEmail, 400)
+			go api.Count(1, "gleepost.auth.register.400")
 			return
 		}
 		rand, _ := lib.RandomString()
@@ -106,11 +111,14 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			_, ok := err.(gp.APIerror)
 			if ok { //Duplicate user/email or password too short
+				go api.Count(1, "gleepost.auth.register.400")
 				jsonResponse(w, err, 400)
 			} else {
+				go api.Count(1, "gleepost.auth.register.500")
 				jsonErr(w, err, 500)
 			}
 		} else {
+			go api.Count(1, "gleepost.auth.register.201")
 			jsonResponse(w, created, 201)
 		}
 	}
@@ -135,24 +143,30 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := api.ValidatePass(email, pass)
 	switch {
 	case r.Method != "POST":
+		go api.Count(1, "gleepost.auth.login.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case err == nil:
 		verified, err := api.IsVerified(id)
 		switch {
 		case err != nil:
+			go api.Count(1, "gleepost.auth.login.500")
 			jsonErr(w, err, 500)
 		case !verified:
 			resp := newStatus("unverified", email)
+			go api.Count(1, "gleepost.auth.login.403")
 			jsonResponse(w, resp, 403)
 		default:
 			token, err := api.CreateAndStoreToken(id)
 			if err == nil {
+				go api.Count(1, "gleepost.auth.login.200")
 				jsonResponse(w, token, 200)
 			} else {
+				go api.Count(1, "gleepost.auth.login.500")
 				jsonErr(w, err, 500)
 			}
 		}
 	default:
+		go api.Count(1, "gleepost.auth.login.400")
 		jsonResponse(w, BadLogin, 400)
 	}
 }
@@ -162,18 +176,22 @@ func changePassHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
+		go api.Count(1, "gleepost.profile.change_pass.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		oldPass := r.FormValue("old")
 		newPass := r.FormValue("new")
 		err := api.ChangePass(userID, oldPass, newPass)
 		if err != nil {
+			go api.Count(1, "gleepost.profile.change_pass.post.400")
 			//Assuming that most errors will be bad input for now
 			jsonErr(w, err, 400)
 			return
 		}
+		go api.Count(1, "gleepost.profile.change_pass.post.204")
 		w.WriteHeader(204)
 	default:
+		go api.Count(1, "gleepost.profile.change_pass.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
@@ -185,14 +203,17 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		err := api.Verify(vars["token"])
 		if err != nil {
 			log.Println(err)
+			go api.Count(1, "gleepost.verify.post.400")
 			jsonResponse(w, gp.APIerror{Reason: "Bad verification token"}, 400)
 			return
 		}
+		go api.Count(1, "gleepost.verify.post.200")
 		jsonResponse(w, struct {
 			Verified bool `json:"verified"`
 		}{true}, 200)
 		return
 	}
+	go api.Count(1, "gleepost.verify.post.405")
 	jsonResponse(w, &EUNSUPPORTED, 405)
 }
 
@@ -203,12 +224,15 @@ func requestResetHandler(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		err := api.RequestReset(email)
 		if err != nil {
+			go api.Count(1, "gleepost.profile.request_reset.post.400")
 			jsonErr(w, err, 400)
 			return
 		}
+		go api.Count(1, "gleepost.profile.request_reset.post.204")
 		w.WriteHeader(204)
 		return
 	default:
+		go api.Count(1, "gleepost.profile.request_reset.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
@@ -220,6 +244,7 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, err := strconv.ParseUint(vars["id"], 10, 64)
 		if err != nil {
+			go api.Count(1, "gleepost.profile.reset.post.400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -227,12 +252,15 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 		pass := r.FormValue("pass")
 		err = api.ResetPass(userID, vars["token"], pass)
 		if err != nil {
+			go api.Count(1, "gleepost.profile.reset.post.400")
 			jsonErr(w, err, 400)
 			return
 		}
+		go api.Count(1, "gleepost.profile.reset.post.204")
 		w.WriteHeader(204)
 		return
 	default:
+		go api.Count(1, "gleepost.profile.reset.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
@@ -246,6 +274,7 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fbid, err := api.FBUserWithEmail(email)
 			if err == nil {
+				go api.Count(1, "gleepost.resend_verification.post.400")
 				jsonErr(w, err, 400)
 				return
 			}
@@ -253,13 +282,16 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			user, err := api.GetUser(userID)
 			if err != nil {
+				go api.Count(1, "gleepost.resend_verification.post.500")
 				jsonErr(w, err, 500)
 				return
 			}
 			api.GenerateAndSendVerification(userID, user.Name, email)
 		}
+		go api.Count(1, "gleepost.resend_verification.post.204")
 		w.WriteHeader(204)
 	default:
+		go api.Count(1, "gleepost.resend_verification.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
