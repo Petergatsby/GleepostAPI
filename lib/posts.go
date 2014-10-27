@@ -548,7 +548,17 @@ func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err
 
 //UserEvents returns all the events that a user is attending.
 func (api *API) UserEvents(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
-	return api.db.UserAttending(perspective, user, category, mode, index, count)
+	events, err = api.db.UserAttending(perspective, user, category, mode, index, count)
+	if err != nil {
+		return
+	}
+	for i := range events {
+		processed, err := api.PostProcess(events[i])
+		if err == nil {
+			events[i] = processed
+		}
+	}
+	return
 }
 
 //UserAttends returns all event IDs that a user is attending.
