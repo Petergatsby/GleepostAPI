@@ -344,6 +344,7 @@ Event posts are strongly encouraged to set "event-time", which represents the ti
 Event posts may also set an "title", to be used as a heading.
 
 Optionally, you can set “location-name” and/or “location-gps” to specify where an event will be occurring.
+
 example responses:
 (http 200)
 ```json
