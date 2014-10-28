@@ -412,6 +412,17 @@ func (db *DB) SetNetworkParent(network, parent gp.NetworkID) (err error) {
 	return
 }
 
+//NetworkParent returns the ID of this network's parent, or zero if it has none.
+func (db *DB) NetworkParent(netID gp.NetworkID) (parent gp.NetworkID, err error) {
+	q := "SELECT parent FROM network WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netID).Scan(&parent)
+	return
+}
+
 //UserRole gives this user's role:level in this network, or ENOSUCHUSER if the user isn't part of the network.
 func (db *DB) UserRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
 	q := "SELECT role, role_level FROM user_network WHERE user_id = ? AND network_id = ?"

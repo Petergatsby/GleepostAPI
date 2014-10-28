@@ -138,6 +138,23 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 	in, neterr := api.UserInNetwork(adder, group)
 	isgroup, grouperr := api.isGroup(group)
 	switch {
+	case adder == addee:
+		canJoin, joinerr := api.UserCanJoin(adder, group)
+		switch {
+		case joinerr != nil:
+			return joinerr
+		case canJoin:
+			err = api.setNetwork(addee, group)
+			if err == nil {
+				e := api.createNotification("added_group", adder, addee, uint64(group))
+				if e != nil {
+					log.Println("Error creating notification:", e)
+				}
+			}
+			return
+		default:
+			return &ENOTALLOWED
+		}
 	case neterr != nil:
 		return neterr
 	case grouperr != nil:
@@ -154,6 +171,25 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 		}
 		return
 	}
+}
+
+func (api *API) UserCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
+	net, err := api.getNetwork(netID)
+	if err != nil {
+		return
+	}
+	parent, err := api.db.NetworkParent(netID)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(userID, parent)
+	if err != nil {
+		return
+	}
+	if net.Privacy == "public" && in {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (api *API) setNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {

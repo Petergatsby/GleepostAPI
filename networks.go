@@ -145,6 +145,8 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 }
 
 func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
+	//This is a mess.
+	//TODO: Consolidate the various AddUser* fns into one; return a composite error list.
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.users.post", vars["network"])
 	defer api.Time(time.Now(), url)
