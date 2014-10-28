@@ -325,6 +325,15 @@ type GroupNotification struct {
 	Group NetworkID `json:"network"`
 }
 
+type NotificationList []interface{}
+
+func (nl NotificationList) Marshal() ([]byte, error) {
+	if len(nl) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(nl)
+}
+
 //APIerror is a JSON-ified error.
 type APIerror struct {
 	Reason string `json:"error"`

@@ -1086,7 +1086,7 @@ func (db *DB) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists boo
 ********************************************************************/
 
 //GetUserNotifications returns all the notifications for a given user, optionally including the seen ones.
-func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
+func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications gp.NotificationList, err error) {
 	var notificationSelect string
 	if !includeSeen {
 		notificationSelect = "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? AND seen = 0 ORDER BY `id` DESC"

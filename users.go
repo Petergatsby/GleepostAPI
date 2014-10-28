@@ -216,11 +216,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
-				if len(notifications) == 0 {
-					jsonResponse(w, []string{}, 200)
-				} else {
-					jsonResponse(w, notifications, 200)
-				}
+				jsonResponse(w, notifications, 200)
 			}
 		}
 	case r.Method == "GET":
@@ -230,11 +226,7 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
-			if len(notifications) == 0 {
-				jsonResponse(w, []string{}, 200)
-			} else {
-				jsonResponse(w, notifications, 200)
-			}
+			jsonResponse(w, notifications, 200)
 		}
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

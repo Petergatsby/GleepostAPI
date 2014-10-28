@@ -447,7 +447,7 @@ func (api *API) userIsOnline(id gp.UserID) bool {
 }
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
-func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
+func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications gp.NotificationList, err error) {
 	return api.db.GetUserNotifications(id, includeSeen)
 }
 
