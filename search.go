@@ -68,10 +68,6 @@ func searchGroups(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 			return
 		}
-		if len(groups) == 0 {
-			jsonResponse(w, []string{}, 200)
-			return
-		}
 		jsonResponse(w, groups, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

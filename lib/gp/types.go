@@ -116,6 +116,15 @@ type Group struct {
 	Privacy string `json:"privacy,omitempty"`
 }
 
+type GroupList []Group
+
+func (gl GroupList) Marshal() ([]byte, error) {
+	if len(gl) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(gl)
+}
+
 //GroupMembership is a group and a user's membership status in that group.
 type GroupMembership struct {
 	Group
