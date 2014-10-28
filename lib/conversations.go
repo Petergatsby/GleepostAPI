@@ -398,7 +398,7 @@ func (api *API) FillMessageCache(convID gp.ConversationID) (err error) {
 }
 
 //GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.
-func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conversations gp.ConversationSmallList, err error) {
 	conversations, err = api.db.GetConversations(userID, start, count, false)
 	return
 }

@@ -75,15 +75,7 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 		jsonErr(w, err, 500)
 	} else {
 		go api.Count(1, "gleepost.conversations.get.200")
-		if len(conversations) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns "null" rather than
-			// empty array "[]" which it obviously should
-			jsonResponse(w, []string{}, 200)
-		} else {
-			jsonResponse(w, conversations, 200)
-		}
+		jsonResponse(w, conversations, 200)
 	}
 }
 

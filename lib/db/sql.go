@@ -537,7 +537,7 @@ func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
 }
 
 //GetConversations returns this user's conversations; if all is false, it will omit live conversations.
-func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
+func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations gp.ConversationSmallList, err error) {
 	var s *sql.Stmt
 	var q string
 	if all {
