@@ -56,10 +56,10 @@ func authenticate(r *http.Request) (userID gp.UserID, err error) {
 	}
 	success := api.ValidateToken(userID, token)
 	if success {
-		go api.Count(1, "gleepost.auth.authenticate.fail")
+		go api.Count(1, "gleepost.auth.authenticate.success")
 		return userID, nil
 	}
-	go api.Count(1, "gleepost.auth.authenticate.success")
+	go api.Count(1, "gleepost.auth.authenticate.fail")
 	return 0, &EBADTOKEN
 }
 
