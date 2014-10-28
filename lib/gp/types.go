@@ -219,6 +219,15 @@ type ConversationSmall struct {
 	LastMessage *Message `json:"mostRecentMessage,omitempty"`
 }
 
+type ConversationSmallList []ConversationSmall
+
+func (csl ConversationSmallList) Marshal() ([]byte, error) {
+	if len(csl) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(csl)
+}
+
 //ConversationAndMessages contains the messages in this conversation.
 type ConversationAndMessages struct {
 	Conversation

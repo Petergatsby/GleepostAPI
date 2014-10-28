@@ -49,9 +49,6 @@ func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
 			go api.Count(1, "gleepost.conversations.live.get.500")
 			jsonErr(w, err, 500)
 			return
-		case len(conversations) == 0:
-			go api.Count(1, "gleepost.conversations.live.get.200")
-			jsonResponse(w, []string{}, 200)
 		default:
 			go api.Count(1, "gleepost.conversations.live.get.200")
 			jsonResponse(w, conversations, 200)

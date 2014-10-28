@@ -390,7 +390,7 @@ func (db *DB) DeletePasswordRecovery(userID gp.UserID, token string) (err error)
 
 //GetLiveConversations returns the three most recent unfinished live conversations for a given user.
 //TODO: retrieve conversation & expiry in a single query
-func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.ConversationSmall, err error) {
+func (db *DB) GetLiveConversations(id gp.UserID) (conversations gp.ConversationSmallList, err error) {
 	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +

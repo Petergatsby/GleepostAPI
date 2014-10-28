@@ -30,11 +30,7 @@ func contactsHandler(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 		} else {
 			go api.Count(1, "gleepost.contacts.get.200")
-			if len(contacts) == 0 {
-				jsonResponse(w, []string{}, 200)
-			} else {
-				jsonResponse(w, contacts, 200)
-			}
+			jsonResponse(w, contacts, 200)
 		}
 	case r.Method == "POST":
 		defer api.Time(time.Now(), "gleepost.contacts.post")

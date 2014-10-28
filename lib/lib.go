@@ -670,7 +670,7 @@ func (api *API) IsVerified(userID gp.UserID) (verified bool, err error) {
 
 //GetLiveConversations returns all the live conversations (there should only be 3 or less) for this user.
 //(A live conversation is one which has not ended and has an expiry in the future)
-func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.ConversationSmall, err error) {
+func (api *API) GetLiveConversations(userID gp.UserID) (conversations gp.ConversationSmallList, err error) {
 	return api.db.GetLiveConversations(userID)
 }
 
