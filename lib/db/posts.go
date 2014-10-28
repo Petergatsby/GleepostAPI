@@ -333,7 +333,7 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 }
 
 //GetPosts finds posts in the network netId.
-func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
 	where := WhereClause{Mode: WNETWORK, Network: netID, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return

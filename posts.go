@@ -103,15 +103,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		if len(posts) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns null rather than
-			// empty array ([]) which it obviously should
-			jsonResponse(w, []string{}, 200)
-		} else {
-			jsonResponse(w, posts, 200)
-		}
+		jsonResponse(w, posts, 200)
 	}
 }
 

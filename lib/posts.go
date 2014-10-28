@@ -119,7 +119,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 }
 
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
-func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -131,7 +131,7 @@ func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode i
 	}
 }
 
-func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
 	posts, err = api.db.GetPosts(netID, mode, index, count, category)
 	if err != nil {
 		return
