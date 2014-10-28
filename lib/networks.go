@@ -266,7 +266,7 @@ func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users 
 }
 
 //UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
-func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
+func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users gp.UserRoleList, err error) {
 	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {

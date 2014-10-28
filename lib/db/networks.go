@@ -259,7 +259,7 @@ func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users gp.UserRoleList, err e
 }
 
 //GetNetworkUsers returns all the members of the group netId
-func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.UserRole, err error) {
+func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users gp.UserRoleList, err error) {
 	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
 	s, err := db.prepare(memberQuery)
 	if err != nil {
