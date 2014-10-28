@@ -601,7 +601,7 @@ func (db *DB) GetEventPopularity(post gp.PostID) (popularity int, attendees int,
 
 //UserGetGroupsPosts retrieves posts from this user's groups (non-university networks)
 //TODO: Verify shit doesn't break when a user has no user-groups
-func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
 	where := WhereClause{Mode: WGROUPS, User: user, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return

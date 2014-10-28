@@ -193,6 +193,15 @@ type PostSmall struct {
 	Likes        []LikeFull `json:"likes,omitempty"`
 }
 
+type PostSmallList []PostSmall
+
+func (psl PostSmallList) Marshal() ([]byte, error) {
+	if len(psl) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(psl)
+}
+
 //PostFull enhances a Post with comments and likes.
 type PostFull struct {
 	Post
