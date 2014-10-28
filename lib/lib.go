@@ -337,7 +337,7 @@ func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email
 }
 
 //GetContacts returns all contacts (incl. those who have not yet accepted) for this user.
-func (api *API) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
+func (api *API) GetContacts(user gp.UserID) (contacts gp.ContactList, err error) {
 	return api.db.GetContacts(user)
 }
 

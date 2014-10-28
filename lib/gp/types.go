@@ -1,7 +1,10 @@
 //Package gp contains the core datatypes in Gleepost.
 package gp
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 //UserID is self explanatory.
 type UserID uint64
@@ -63,6 +66,15 @@ type Contact struct {
 	User
 	YouConfirmed  bool `json:"you_confirmed"`
 	TheyConfirmed bool `json:"they_confirmed"`
+}
+
+type ContactList []Contact
+
+func (cl ContactList) Marshal() ([]byte, error) {
+	if len(cl) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(cl)
 }
 
 //Network is any grouping of users / posts - ie, a university or a user-created group.

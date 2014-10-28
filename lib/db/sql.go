@@ -1018,7 +1018,7 @@ func (db *DB) AddContact(adder gp.UserID, addee gp.UserID) (err error) {
 
 //GetContacts retrieves all the contacts for user.
 //TODO: This could return contacts which doesn't embed a user
-func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
+func (db *DB) GetContacts(user gp.UserID) (contacts gp.ContactList, err error) {
 	s, err := db.prepare("SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC")
 	if err != nil {
 		return
