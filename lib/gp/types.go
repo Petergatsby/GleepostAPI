@@ -43,6 +43,15 @@ type User struct {
 	Avatar string `json:"profile_image"`
 }
 
+type UserList []User
+
+func (ul UserList) Marshal() ([]byte, error) {
+	if len(ul) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(ul)
+}
+
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)
 type Profile struct {
 	User
