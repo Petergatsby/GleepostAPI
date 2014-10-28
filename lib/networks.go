@@ -29,7 +29,7 @@ func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err er
 }
 
 //UserGetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
-func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups gp.GroupMembershipList, err error) {
 	switch {
 	case perspective == user:
 		groups, err = api.db.GetUserNetworks(user, true)

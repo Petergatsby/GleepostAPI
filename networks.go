@@ -60,14 +60,6 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		go api.Count(1, url+".200")
-		if len(networks) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns null rather than
-			// empty array ([]) which it obviously should
-			jsonResponse(w, []string{}, 200)
-			return
-		}
 		jsonResponse(w, networks, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

@@ -35,7 +35,7 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 }
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
-func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.GroupMembership, err error) {
+func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks gp.GroupMembershipList, err error) {
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
 		"user_network.role_level, network.name, " +
 		"network.cover_img, network.`desc`, network.creator, network.privacy " +
@@ -101,7 +101,7 @@ func (db *DB) SubjectiveMembershipCount(perspective, user gp.UserID) (count int,
 }
 
 //SubjectiveMemberships returns all the groups this user is a member of, as far as perspective is concerned.
-func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups gp.GroupMembershipList, err error) {
 	q := "SELECT user_network.network_id, user_network.role, user_network.role_level, network.name, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id "
 	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
 	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "

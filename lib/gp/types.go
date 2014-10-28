@@ -104,6 +104,15 @@ type GroupMembership struct {
 	Role `json:"role"`
 }
 
+type GroupMembershipList []GroupMembership
+
+func (gml GroupMembershipList) Marshal() ([]byte, error) {
+	if len(gml) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(gml)
+}
+
 //Message is independent of a conversation. If you need that, see RedisMessage.
 //TODO: Combine them?
 type Message struct {
