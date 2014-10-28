@@ -104,7 +104,7 @@ func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts g
 }
 
 //GetUserPosts returns the count most recent posts by userId since post `after`.
-func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
 	posts, err = api.db.GetUserPosts(userID, perspective, mode, index, count, category)
 	if err != nil {
 		return

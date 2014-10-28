@@ -257,7 +257,7 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
 	where := WhereClause{Mode: WUSER, User: userID, Perspective: perspective, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
