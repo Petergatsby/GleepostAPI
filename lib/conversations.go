@@ -369,7 +369,7 @@ func (api *API) GetParticipants(convID gp.ConversationID, includeDeleted bool) [
 //start (returns messages starting from the index'th)
 //before (returns messages historically earlier than the one with id index)
 //after (returns messages newer than index)
-func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages gp.MessageList, err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.getMessages(convID, index, sel, count)
 	}

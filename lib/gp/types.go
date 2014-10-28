@@ -113,6 +113,15 @@ type Message struct {
 	Time time.Time `json:"timestamp"`
 }
 
+type MessageList []Message
+
+func (ml MessageList) Marshal() ([]byte, error) {
+	if len(ml) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(ml)
+}
+
 //Read represents the most recent message a user has seen in a particular conversation (it doesn't make much sense without that context).
 type Read struct {
 	UserID   UserID    `json:"user"`

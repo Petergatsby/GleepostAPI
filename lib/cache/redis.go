@@ -159,7 +159,7 @@ func (c *Cache) SetReadStatus(convID gp.ConversationID, read []gp.Read) {
 }
 
 //GetMessages returns this conversation's messages, in a manner specified by sel; "before" specifies messages earler than index, "after" specifies messages newer than index, and "start" returns messages that are after the start-th in a chronological order (ie, pagination starting from oldest)
-func (c *Cache) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (c *Cache) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages gp.MessageList, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)

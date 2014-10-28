@@ -837,7 +837,7 @@ func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string
 //exception.
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
-func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages gp.MessageList, err error) {
 	var s *sql.Stmt
 	var q string
 	switch {
