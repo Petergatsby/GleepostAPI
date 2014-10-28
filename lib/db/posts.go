@@ -206,7 +206,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 }
 
 //NewGetPosts returns posts matching the WhereClause.
-func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
+func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts gp.PostSmallList, err error) {
 	rows, err := db.WhereRows(where, orderMode, index, count)
 	if err != nil {
 		return

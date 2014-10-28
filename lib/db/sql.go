@@ -1326,7 +1326,7 @@ func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 }
 
 //UserAttending returns all the events this user is attending.
-func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
+func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events gp.PostSmallList, err error) {
 	where := WhereClause{Mode: WATTENDS, User: user, Perspective: perspective, Category: category}
 	return db.NewGetPosts(where, mode, index, count)
 }
