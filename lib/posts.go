@@ -562,7 +562,7 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 }
 
 //UserAttends returns all event IDs that a user is attending.
-func (api *API) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
+func (api *API) UserAttends(user gp.UserID) (events gp.PostIDList, err error) {
 	return api.db.UserAttends(user)
 }
 

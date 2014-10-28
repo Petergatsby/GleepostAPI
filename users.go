@@ -290,14 +290,6 @@ func userAttending(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}
-		if len(events) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns null rather than
-			// empty array ([]) which it obviously should
-			jsonResponse(w, []string{}, 200)
-			return
-		}
 		jsonResponse(w, events, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

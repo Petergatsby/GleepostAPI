@@ -1303,7 +1303,7 @@ func (db *DB) UnAttend(event gp.PostID, user gp.UserID) (err error) {
 }
 
 //UserAttends returns all the event IDs that a user is attending.
-func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
+func (db *DB) UserAttends(user gp.UserID) (events gp.PostIDList, err error) {
 	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {

@@ -18,6 +18,15 @@ type MessageID uint64
 //PostID uniquely identifies a post (which Events are a subset of).
 type PostID uint64
 
+type PostIDList []PostID
+
+func (pil PostIDList) Marshal() ([]byte, error) {
+	if len(pil) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(pil)
+}
+
 //CommentID identifies a comment on a post.
 type CommentID uint64
 
