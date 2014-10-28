@@ -353,14 +353,6 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, code)
 			return
 		}
-		if len(posts) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns null rather than
-			// empty array ([]) which it obviously should
-			jsonResponse(w, []string{}, 200)
-			return
-		}
 		jsonResponse(w, posts, 200)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

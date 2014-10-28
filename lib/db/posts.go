@@ -282,7 +282,7 @@ func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (post
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
-func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts gp.PostSmallList, err error) {
 	q := "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +

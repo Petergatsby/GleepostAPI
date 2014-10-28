@@ -70,7 +70,7 @@ func (api *API) getPostFull(postID gp.PostID) (post gp.PostFull, err error) {
 }
 
 //UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
-func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts gp.PostSmallList, err error) {
 	t, enotstringtime := time.Parse(after, time.RFC3339)
 	if enotstringtime != nil {
 		unix, enotunixtime := strconv.ParseInt(after, 10, 64)
@@ -89,7 +89,7 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 }
 
 //getLive returns the first count events happening after after, within network netId.
-func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts gp.PostSmallList, err error) {
 	posts, err = api.db.GetLive(netID, after, count)
 	if err != nil {
 		return
