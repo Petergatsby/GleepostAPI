@@ -145,12 +145,6 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 			return joinerr
 		case canJoin:
 			err = api.setNetwork(addee, group)
-			if err == nil {
-				e := api.createNotification("added_group", adder, addee, uint64(group))
-				if e != nil {
-					log.Println("Error creating notification:", e)
-				}
-			}
 			return
 		default:
 			return &ENOTALLOWED
