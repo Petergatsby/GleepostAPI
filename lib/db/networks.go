@@ -228,7 +228,7 @@ func (db *DB) IsGroup(netID gp.NetworkID) (group bool, err error) {
 }
 
 //GetNetworkAdmins returns all the administrators of the group netID
-func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
+func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users gp.UserRoleList, err error) {
 	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
 	s, err := db.prepare(memberQuery)
 	if err != nil {

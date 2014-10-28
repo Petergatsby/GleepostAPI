@@ -282,14 +282,6 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		go api.Count(1, url+".200")
-		if len(users) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns null rather than
-			// empty array ([]) which it obviously should
-			jsonResponse(w, []string{}, 200)
-			return
-		}
 		jsonResponse(w, users, 200)
 	}
 }
@@ -324,14 +316,6 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		go api.Count(1, url+".200")
-		if len(users) == 0 {
-			// this is an ugly hack. But I can't immediately
-			// think of a neater way to fix this
-			// (json.Marshal(empty slice) returns null rather than
-			// empty array ([]) which it obviously should
-			jsonResponse(w, []string{}, 200)
-			return
-		}
 		jsonResponse(w, users, 200)
 	}
 }

@@ -61,6 +61,15 @@ type UserRole struct {
 	Role `json:"role"`
 }
 
+type UserRoleList []UserRole
+
+func (userrolelist UserRoleList) Marshal() ([]byte, error) {
+	if len(userrolelist) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(userrolelist)
+}
+
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.
 type Contact struct {
 	User

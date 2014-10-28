@@ -250,7 +250,7 @@ func (api *API) HaveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err er
 }
 
 //UserGetGroupAdmins returns all the admins of the group, or ENOTALLOWED if the requesting user isn't in that group.
-func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
+func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users gp.UserRoleList, err error) {
 	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {
