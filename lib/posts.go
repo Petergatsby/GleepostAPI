@@ -226,7 +226,7 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 }
 
 //getComments returns comments for this post, chronologically ordered starting from the start-th.
-func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+func (api *API) getComments(id gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
 	comments, err = api.cache.GetComments(id, start, count)
 	if err != nil {
 		comments, err = api.db.GetComments(id, start, count)
@@ -237,7 +237,7 @@ func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp
 
 //UserGetComments returns comments for this post, chronologically ordered starting from the start-th.
 //If you are unable to view this post, it will return ENOTALLOWED
-func (api *API) UserGetComments(user gp.UserID, id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+func (api *API) UserGetComments(user gp.UserID, id gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
 	p, err := api.getPostFull(id)
 	if err != nil {
 		return

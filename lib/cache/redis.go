@@ -656,7 +656,7 @@ func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
 }
 
 //GetComments returns the comments on this post, ordered from oldest to newest, starting from start.
-func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", postID)

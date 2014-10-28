@@ -220,6 +220,15 @@ type Comment struct {
 	Text string    `json:"text"`
 }
 
+type CommentList []Comment
+
+func (cl CommentList) Marshal() ([]byte, error) {
+	if len(cl) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(cl)
+}
+
 //Like represents a user who has liked a post at a particular time.
 type Like struct {
 	UserID UserID

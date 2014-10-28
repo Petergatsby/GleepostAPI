@@ -431,7 +431,7 @@ func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (co
 }
 
 //GetComments returns up to count comments for this post.
-func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
 	q := "SELECT id, `by`, text, `timestamp` " +
 		"FROM post_comments " +
 		"WHERE post_id = ? " +

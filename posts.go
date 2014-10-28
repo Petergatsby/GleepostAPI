@@ -191,15 +191,7 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			}
 		} else {
-			if len(comments) == 0 {
-				// this is an ugly hack. But I can't immediately
-				// think of a neater way to fix this
-				// (json.Marshal(empty slice) returns "null" rather than
-				// empty array "[]" which it obviously should
-				jsonResponse(w, []string{}, 200)
-			} else {
-				jsonResponse(w, comments, 200)
-			}
+			jsonResponse(w, comments, 200)
 		}
 	}
 }
