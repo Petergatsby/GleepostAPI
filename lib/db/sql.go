@@ -1450,6 +1450,6 @@ func (db *DB) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (cou
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(otherID, perspective).Scan(&count)
+	err = s.QueryRow(perspective, otherID).Scan(&count)
 	return
 }
