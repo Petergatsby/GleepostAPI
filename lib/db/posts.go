@@ -90,11 +90,9 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 			return
 		}
 		if len(w.Category) > 0 {
-			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
-			log.Println("Attendance query params:", w.User, w.Perspective, w.Category, index, count)
+			rows, err = stmt.Query(w.Perspective, w.User, w.Category, index, count)
 		} else {
-			rows, err = stmt.Query(w.User, w.Perspective, index, count)
-			log.Println("Attendance query params:", w.User, w.Perspective, index, count)
+			rows, err = stmt.Query(w.Perspective, w.User, index, count)
 		}
 
 	default:
