@@ -42,10 +42,10 @@ func New(conf conf.Config) (api *API) {
 	api.mail = mail.New(conf.Email)
 	api.push = push.New(conf)
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
-	api.statsd = statsd
 	if err != nil {
-		log.Println(err)
+		log.Printf("Statsd failed: %s\nMake sure you have the right address in your conf.json\n", err)
 	}
+	api.statsd = statsd
 	go api.process(transcodeQueue)
 	return
 }
@@ -54,7 +54,9 @@ func New(conf conf.Config) (api *API) {
 func (api *API) Time(start time.Time, bucket string) {
 	duration := time.Since(start)
 	bucket = api.statsdPrefix() + bucket
-	api.statsd.Timing(1.0, bucket, duration)
+	if api.statsd != nil {
+		api.statsd.Timing(1.0, bucket, duration)
+	}
 }
 
 func (api *API) statsdPrefix() string {
@@ -66,7 +68,9 @@ func (api *API) statsdPrefix() string {
 }
 
 func (api *API) Count(count int, bucket string) {
-	api.statsd.Counter(1.0, api.statsdPrefix()+bucket, count)
+	if api.statsd != nil {
+		api.statsd.Counter(1.0, api.statsdPrefix()+bucket, count)
+	}
 }
 
 //You'll get this when your password is too week (ie, less than 5 chars at the moment)
