@@ -107,7 +107,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	} else {
 		idstring := r.FormValue("participants")
 		ids := strings.Split(idstring, ",")
-		userIds := make([]gp.UserID, 0, 10)
+		userIds := make([]gp.UserID, 0, 50)
 		for _, _id := range ids {
 			id, err := strconv.ParseUint(_id, 10, 64)
 			if err == nil {
@@ -119,7 +119,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 			go api.Count(1, "gleepost.conversations.get.400")
 			jsonResponse(w, &ETOOFEW, 400)
 			return
-		case len(userIds) > 10:
+		case len(userIds) > 50:
 			go api.Count(1, "gleepost.conversations.get.400")
 			jsonResponse(w, &ETOOMANY, 400)
 			return

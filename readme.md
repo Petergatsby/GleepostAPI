@@ -929,7 +929,7 @@ participant_count=[2 <= n <= 4], defaults to 2
 
 if random = false, you should provide:
 participants=[user_id],[user_id],[user_id],...
-(a comma-delimited list of user_ids to start a conversation with.
+(a comma-delimited list of up to 50 user_ids to start a conversation with.)
 
 example responses:
 (HTTP 200)
