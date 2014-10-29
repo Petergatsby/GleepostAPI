@@ -8,7 +8,8 @@ import (
 )
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
-func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (users gp.UserList, err error) {
+func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (users []gp.User, err error) {
+	users = make([]gp.User, 0)
 	search := "SELECT id, name, avatar, firstname " +
 		"FROM users JOIN user_network ON users.id = user_network.user_id " +
 		"WHERE network_id = ? " +
@@ -45,7 +46,8 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 }
 
 //SearchGroups searches for groups which are 'within' parent; it currently just matches %name%.
-func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups gp.GroupList, err error) {
+func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups []gp.Group, err error) {
+	groups = make([]gp.Group, 0)
 	q := "SELECT id, name, cover_img, `desc`, creator, privacy " +
 		"FROM network " +
 		"WHERE user_group = 1 " +

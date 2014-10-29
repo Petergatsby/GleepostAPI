@@ -1,10 +1,7 @@
 //Package gp contains the core datatypes in Gleepost.
 package gp
 
-import (
-	"encoding/json"
-	"time"
-)
+import "time"
 
 //UserID is self explanatory.
 type UserID uint64
@@ -17,15 +14,6 @@ type MessageID uint64
 
 //PostID uniquely identifies a post (which Events are a subset of).
 type PostID uint64
-
-type PostIDList []PostID
-
-func (pil PostIDList) Marshal() ([]byte, error) {
-	if len(pil) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(pil)
-}
 
 //CommentID identifies a comment on a post.
 type CommentID uint64
@@ -52,15 +40,6 @@ type User struct {
 	Avatar string `json:"profile_image"`
 }
 
-type UserList []User
-
-func (ul UserList) Marshal() ([]byte, error) {
-	if len(ul) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(ul)
-}
-
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)
 type Profile struct {
 	User
@@ -79,29 +58,11 @@ type UserRole struct {
 	Role `json:"role"`
 }
 
-type UserRoleList []UserRole
-
-func (userrolelist UserRoleList) Marshal() ([]byte, error) {
-	if len(userrolelist) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(userrolelist)
-}
-
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.
 type Contact struct {
 	User
 	YouConfirmed  bool `json:"you_confirmed"`
 	TheyConfirmed bool `json:"they_confirmed"`
-}
-
-type ContactList []Contact
-
-func (cl ContactList) Marshal() ([]byte, error) {
-	if len(cl) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(cl)
 }
 
 //Network is any grouping of users / posts - ie, a university or a user-created group.
@@ -125,28 +86,10 @@ type Group struct {
 	Privacy string `json:"privacy,omitempty"`
 }
 
-type GroupList []Group
-
-func (gl GroupList) Marshal() ([]byte, error) {
-	if len(gl) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(gl)
-}
-
 //GroupMembership is a group and a user's membership status in that group.
 type GroupMembership struct {
 	Group
 	Role `json:"role"`
-}
-
-type GroupMembershipList []GroupMembership
-
-func (gml GroupMembershipList) Marshal() ([]byte, error) {
-	if len(gml) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(gml)
 }
 
 //Message is independent of a conversation. If you need that, see RedisMessage.
@@ -156,15 +99,6 @@ type Message struct {
 	By   User      `json:"by"`
 	Text string    `json:"text"`
 	Time time.Time `json:"timestamp"`
-}
-
-type MessageList []Message
-
-func (ml MessageList) Marshal() ([]byte, error) {
-	if len(ml) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(ml)
 }
 
 //Read represents the most recent message a user has seen in a particular conversation (it doesn't make much sense without that context).
@@ -220,15 +154,6 @@ type PostSmall struct {
 	Likes        []LikeFull `json:"likes,omitempty"`
 }
 
-type PostSmallList []PostSmall
-
-func (psl PostSmallList) Marshal() ([]byte, error) {
-	if len(psl) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(psl)
-}
-
 //PostFull enhances a Post with comments and likes.
 type PostFull struct {
 	Post
@@ -245,15 +170,6 @@ type Comment struct {
 	By   User      `json:"by"`
 	Time time.Time `json:"timestamp"`
 	Text string    `json:"text"`
-}
-
-type CommentList []Comment
-
-func (cl CommentList) Marshal() ([]byte, error) {
-	if len(cl) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(cl)
 }
 
 //Like represents a user who has liked a post at a particular time.
@@ -291,15 +207,6 @@ type ConversationSmall struct {
 	LastMessage *Message `json:"mostRecentMessage,omitempty"`
 }
 
-type ConversationSmallList []ConversationSmall
-
-func (csl ConversationSmallList) Marshal() ([]byte, error) {
-	if len(csl) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(csl)
-}
-
 //ConversationAndMessages contains the messages in this conversation.
 type ConversationAndMessages struct {
 	Conversation
@@ -332,15 +239,6 @@ type PostNotification struct {
 type GroupNotification struct {
 	Notification
 	Group NetworkID `json:"network"`
-}
-
-type NotificationList []interface{}
-
-func (nl NotificationList) Marshal() ([]byte, error) {
-	if len(nl) == 0 {
-		return []byte("[]"), nil
-	}
-	return json.Marshal(nl)
 }
 
 //APIerror is a JSON-ified error.

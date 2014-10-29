@@ -35,7 +35,8 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 }
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
-func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks gp.GroupMembershipList, err error) {
+func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.GroupMembership, err error) {
+	networks = make([]gp.GroupMembership, 0)
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
 		"user_network.role_level, network.name, " +
 		"network.cover_img, network.`desc`, network.creator, network.privacy " +
@@ -101,7 +102,8 @@ func (db *DB) SubjectiveMembershipCount(perspective, user gp.UserID) (count int,
 }
 
 //SubjectiveMemberships returns all the groups this user is a member of, as far as perspective is concerned.
-func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups gp.GroupMembershipList, err error) {
+func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+	groups = make([]gp.GroupMembership, 0)
 	q := "SELECT user_network.network_id, user_network.role, user_network.role_level, network.name, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id "
 	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
 	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
@@ -228,7 +230,8 @@ func (db *DB) IsGroup(netID gp.NetworkID) (group bool, err error) {
 }
 
 //GetNetworkAdmins returns all the administrators of the group netID
-func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users gp.UserRoleList, err error) {
+func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
+	users = make([]gp.UserRole, 0)
 	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
 	s, err := db.prepare(memberQuery)
 	if err != nil {
@@ -259,7 +262,8 @@ func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users gp.UserRoleList, err e
 }
 
 //GetNetworkUsers returns all the members of the group netId
-func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users gp.UserRoleList, err error) {
+func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.UserRole, err error) {
+	users = make([]gp.UserRole, 0)
 	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
 	s, err := db.prepare(memberQuery)
 	if err != nil {

@@ -12,7 +12,8 @@ var ETOOSHORT = gp.APIerror{Reason: "Your query must be at least 2 characters lo
 
 //UserSearchUsersInNetwork returns all the users with names beginning with first, last in netId, or ENOTALLOWED if user isn't part of this network.
 //last may be omitted but first must be at least 2 characters.
-func (api *API) UserSearchUsersInNetwork(user gp.UserID, first, last string, netID gp.NetworkID) (users gp.UserList, err error) {
+func (api *API) UserSearchUsersInNetwork(user gp.UserID, first, last string, netID gp.NetworkID) (users []gp.User, err error) {
+	users = make([]gp.User, 0)
 	in, err := api.UserInNetwork(user, netID)
 	//I don't like the idea of people being able to look for eg. %a%
 	first = strings.Replace(first, "%", "", -1)
@@ -31,7 +32,8 @@ func (api *API) UserSearchUsersInNetwork(user gp.UserID, first, last string, net
 }
 
 //UserSearchGroups searches all the groups in userID's university. It will error out if this user is not in at least one network.
-func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups gp.GroupList, err error) {
+func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups []gp.Group, err error) {
+	groups = make([]gp.Group, 0)
 	ns, err := api.GetUserNetworks(userID)
 	if err != nil {
 		return

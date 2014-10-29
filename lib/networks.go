@@ -29,7 +29,8 @@ func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err er
 }
 
 //UserGetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
-func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups gp.GroupMembershipList, err error) {
+func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+	groups = make([]gp.GroupMembership, 0)
 	switch {
 	case perspective == user:
 		groups, err = api.db.GetUserNetworks(user, true)
@@ -280,7 +281,8 @@ func (api *API) HaveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err er
 }
 
 //UserGetGroupAdmins returns all the admins of the group, or ENOTALLOWED if the requesting user isn't in that group.
-func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users gp.UserRoleList, err error) {
+func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
+	users = make([]gp.UserRole, 0)
 	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {
@@ -296,7 +298,8 @@ func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users 
 }
 
 //UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
-func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users gp.UserRoleList, err error) {
+func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
+	users = make([]gp.UserRole, 0)
 	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {

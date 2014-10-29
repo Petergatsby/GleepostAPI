@@ -390,7 +390,8 @@ func (db *DB) DeletePasswordRecovery(userID gp.UserID, token string) (err error)
 
 //GetLiveConversations returns the three most recent unfinished live conversations for a given user.
 //TODO: retrieve conversation & expiry in a single query
-func (db *DB) GetLiveConversations(id gp.UserID) (conversations gp.ConversationSmallList, err error) {
+func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.ConversationSmall, err error) {
+	conversations = make([]gp.ConversationSmall, 0)
 	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
@@ -537,7 +538,8 @@ func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
 }
 
 //GetConversations returns this user's conversations; if all is false, it will omit live conversations.
-func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations gp.ConversationSmallList, err error) {
+func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
+	conversations = make([]gp.ConversationSmall, 0)
 	var s *sql.Stmt
 	var q string
 	if all {
@@ -837,7 +839,8 @@ func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string
 //exception.
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
-func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages gp.MessageList, err error) {
+func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+	messages = make([]gp.Message, 0)
 	var s *sql.Stmt
 	var q string
 	switch {
@@ -1018,7 +1021,8 @@ func (db *DB) AddContact(adder gp.UserID, addee gp.UserID) (err error) {
 
 //GetContacts retrieves all the contacts for user.
 //TODO: This could return contacts which doesn't embed a user
-func (db *DB) GetContacts(user gp.UserID) (contacts gp.ContactList, err error) {
+func (db *DB) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
+	contacts = make([]gp.Contact, 0)
 	s, err := db.prepare("SELECT adder, addee, confirmed FROM contacts WHERE adder = ? OR addee = ? ORDER BY time DESC")
 	if err != nil {
 		return
@@ -1086,7 +1090,8 @@ func (db *DB) ContactRequestExists(adder gp.UserID, addee gp.UserID) (exists boo
 ********************************************************************/
 
 //GetUserNotifications returns all the notifications for a given user, optionally including the seen ones.
-func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications gp.NotificationList, err error) {
+func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
+	notifications = make([]interface{}, 0)
 	var notificationSelect string
 	if !includeSeen {
 		notificationSelect = "SELECT id, type, time, `by`, location_id, seen FROM notifications WHERE recipient = ? AND seen = 0 ORDER BY `id` DESC"
@@ -1303,7 +1308,8 @@ func (db *DB) UnAttend(event gp.PostID, user gp.UserID) (err error) {
 }
 
 //UserAttends returns all the event IDs that a user is attending.
-func (db *DB) UserAttends(user gp.UserID) (events gp.PostIDList, err error) {
+func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
+	events = make([]gp.PostID, 0)
 	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
 	s, err := db.prepare(query)
 	if err != nil {
@@ -1326,7 +1332,8 @@ func (db *DB) UserAttends(user gp.UserID) (events gp.PostIDList, err error) {
 }
 
 //UserAttending returns all the events this user is attending.
-func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events gp.PostSmallList, err error) {
+func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
+	events = make([]gp.PostSmall, 0)
 	where := WhereClause{Mode: WATTENDS, User: user, Perspective: perspective, Category: category}
 	return db.NewGetPosts(where, mode, index, count)
 }

@@ -337,7 +337,7 @@ func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email
 }
 
 //GetContacts returns all contacts (incl. those who have not yet accepted) for this user.
-func (api *API) GetContacts(user gp.UserID) (contacts gp.ContactList, err error) {
+func (api *API) GetContacts(user gp.UserID) (contacts []gp.Contact, err error) {
 	return api.db.GetContacts(user)
 }
 
@@ -447,7 +447,7 @@ func (api *API) userIsOnline(id gp.UserID) bool {
 }
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
-func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications gp.NotificationList, err error) {
+func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []interface{}, err error) {
 	return api.db.GetUserNotifications(id, includeSeen)
 }
 
@@ -670,7 +670,7 @@ func (api *API) IsVerified(userID gp.UserID) (verified bool, err error) {
 
 //GetLiveConversations returns all the live conversations (there should only be 3 or less) for this user.
 //(A live conversation is one which has not ended and has an expiry in the future)
-func (api *API) GetLiveConversations(userID gp.UserID) (conversations gp.ConversationSmallList, err error) {
+func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.ConversationSmall, err error) {
 	return api.db.GetLiveConversations(userID)
 }
 

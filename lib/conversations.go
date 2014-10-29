@@ -369,7 +369,8 @@ func (api *API) GetParticipants(convID gp.ConversationID, includeDeleted bool) [
 //start (returns messages starting from the index'th)
 //before (returns messages historically earlier than the one with id index)
 //after (returns messages newer than index)
-func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages gp.MessageList, err error) {
+func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+	messages = make([]gp.Message, 0)
 	if api.UserCanViewConversation(userID, convID) {
 		return api.getMessages(convID, index, sel, count)
 	}
@@ -398,7 +399,7 @@ func (api *API) FillMessageCache(convID gp.ConversationID) (err error) {
 }
 
 //GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.
-func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conversations gp.ConversationSmallList, err error) {
+func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations, err = api.db.GetConversations(userID, start, count, false)
 	return
 }

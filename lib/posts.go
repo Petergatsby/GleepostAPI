@@ -70,7 +70,8 @@ func (api *API) getPostFull(postID gp.PostID) (post gp.PostFull, err error) {
 }
 
 //UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
-func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts gp.PostSmallList, err error) {
+func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	t, enotstringtime := time.Parse(after, time.RFC3339)
 	if enotstringtime != nil {
 		unix, enotunixtime := strconv.ParseInt(after, 10, 64)
@@ -89,7 +90,8 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts gp
 }
 
 //getLive returns the first count events happening after after, within network netId.
-func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts gp.PostSmallList, err error) {
+func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	posts, err = api.db.GetLive(netID, after, count)
 	if err != nil {
 		return
@@ -104,7 +106,8 @@ func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts g
 }
 
 //GetUserPosts returns the count most recent posts by userId since post `after`.
-func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	posts, err = api.db.GetUserPosts(userID, perspective, mode, index, count, category)
 	if err != nil {
 		return
@@ -119,7 +122,8 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 }
 
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
-func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -131,7 +135,8 @@ func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode i
 	}
 }
 
-func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	posts, err = api.db.GetPosts(netID, mode, index, count, category)
 	if err != nil {
 		return
@@ -148,7 +153,8 @@ func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, c
 }
 
 //UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
-func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	posts, err = api.db.UserGetGroupsPosts(user, mode, index, count, category)
 	if err != nil {
 		return
@@ -226,7 +232,8 @@ func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 }
 
 //getComments returns comments for this post, chronologically ordered starting from the start-th.
-func (api *API) getComments(id gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
+func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	comments = make([]gp.Comment, 0)
 	comments, err = api.cache.GetComments(id, start, count)
 	if err != nil {
 		comments, err = api.db.GetComments(id, start, count)
@@ -237,7 +244,8 @@ func (api *API) getComments(id gp.PostID, start int64, count int) (comments gp.C
 
 //UserGetComments returns comments for this post, chronologically ordered starting from the start-th.
 //If you are unable to view this post, it will return ENOTALLOWED
-func (api *API) UserGetComments(user gp.UserID, id gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
+func (api *API) UserGetComments(user gp.UserID, id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	comments = make([]gp.Comment, 0)
 	p, err := api.getPostFull(id)
 	if err != nil {
 		return
@@ -547,7 +555,8 @@ func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err
 }
 
 //UserEvents returns all the events that a user is attending.
-func (api *API) UserEvents(perspective, user gp.UserID, category string, mode int, index int64, count int) (events gp.PostSmallList, err error) {
+func (api *API) UserEvents(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
+	events = make([]gp.PostSmall, 0)
 	events, err = api.db.UserAttending(perspective, user, category, mode, index, count)
 	if err != nil {
 		return
@@ -562,7 +571,7 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 }
 
 //UserAttends returns all event IDs that a user is attending.
-func (api *API) UserAttends(user gp.UserID) (events gp.PostIDList, err error) {
+func (api *API) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 	return api.db.UserAttends(user)
 }
 

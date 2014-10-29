@@ -204,7 +204,8 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 }
 
 //NewGetPosts returns posts matching the WhereClause.
-func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts gp.PostSmallList, err error) {
+func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	rows, err := db.WhereRows(where, orderMode, index, count)
 	if err != nil {
 		return
@@ -255,7 +256,8 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	where := WhereClause{Mode: WUSER, User: userID, Perspective: perspective, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
@@ -280,7 +282,8 @@ func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (post
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
-func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts gp.PostSmallList, err error) {
+func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
@@ -331,7 +334,8 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts gp.
 }
 
 //GetPosts finds posts in the network netId.
-func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	where := WhereClause{Mode: WNETWORK, Network: netID, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return
@@ -429,7 +433,8 @@ func (db *DB) CreateComment(postID gp.PostID, userID gp.UserID, text string) (co
 }
 
 //GetComments returns up to count comments for this post.
-func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
+func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	comments = make([]gp.Comment, 0)
 	q := "SELECT id, `by`, text, `timestamp` " +
 		"FROM post_comments " +
 		"WHERE post_id = ? " +
@@ -599,7 +604,8 @@ func (db *DB) GetEventPopularity(post gp.PostID) (popularity int, attendees int,
 
 //UserGetGroupsPosts retrieves posts from this user's groups (non-university networks)
 //TODO: Verify shit doesn't break when a user has no user-groups
-func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts gp.PostSmallList, err error) {
+func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
 	where := WhereClause{Mode: WGROUPS, User: user, Category: category}
 	posts, err = db.NewGetPosts(where, mode, index, count)
 	return

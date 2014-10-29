@@ -159,7 +159,8 @@ func (c *Cache) SetReadStatus(convID gp.ConversationID, read []gp.Read) {
 }
 
 //GetMessages returns this conversation's messages, in a manner specified by sel; "before" specifies messages earler than index, "after" specifies messages newer than index, and "start" returns messages that are after the start-th in a chronological order (ie, pagination starting from oldest)
-func (c *Cache) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages gp.MessageList, err error) {
+func (c *Cache) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+	messages = make([]gp.Message, 0)
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("conversations:%d:messages", convID)
@@ -656,7 +657,8 @@ func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
 }
 
 //GetComments returns the comments on this post, ordered from oldest to newest, starting from start.
-func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments gp.CommentList, err error) {
+func (c *Cache) GetComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	comments = make([]gp.Comment, 0)
 	conn := c.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("posts:%d:comments", postID)
