@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -270,6 +271,7 @@ func getUserAttending(w http.ResponseWriter, r *http.Request) {
 			index = start
 		}
 		events, err := api.UserEvents(userID, otherID, category, mode, index, 20)
+		log.Println("Event parameters:", userID, otherID, category, mode, index, 20)
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}

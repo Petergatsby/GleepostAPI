@@ -1328,6 +1328,7 @@ func (db *DB) UserAttends(user gp.UserID) (events gp.PostIDList, err error) {
 //UserAttending returns all the events this user is attending.
 func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events gp.PostSmallList, err error) {
 	where := WhereClause{Mode: WATTENDS, User: user, Perspective: perspective, Category: category}
+	log.Println("Where:", where)
 	return db.NewGetPosts(where, mode, index, count)
 }
 
