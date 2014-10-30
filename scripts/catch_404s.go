@@ -32,7 +32,8 @@ func main() {
 		if err != nil {
 			return
 		}
-		resp, err = http.Get(url)
+		log.Println(url)
+		resp, err := http.Get(url)
 		if err != nil {
 			i++
 		}
