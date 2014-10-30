@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
