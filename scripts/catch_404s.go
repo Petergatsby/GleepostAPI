@@ -13,16 +13,16 @@ func main() {
 	conf := conf.GetConfig()
 	database, err := sql.Open("mysql", conf.Mysql.ConnectionString())
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 
 	urlsStmt, err := database.Prepare("SELECT url FROM post_images")
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	rows, err := urlsStmt.Query()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	defer rows.Close()
 	i := 0
