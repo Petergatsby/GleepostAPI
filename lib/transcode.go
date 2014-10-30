@@ -135,10 +135,12 @@ func (api *API) Upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) 
 	if err != nil {
 		return
 	}
+	v.MP4 = cloudfrontify(v.MP4)
 	v.WebM, err = upload(v.WebM, "video/webm", b)
 	if err != nil {
 		return
 	}
+	v.WebM = cloudfrontify(v.WebM)
 	var ts []string
 	var url string
 	for _, i := range v.Thumbs {
@@ -146,6 +148,7 @@ func (api *API) Upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) 
 		if err != nil {
 			return
 		}
+		url = cloudfrontify(url)
 		ts = append(ts, url)
 	}
 	v.Thumbs = ts

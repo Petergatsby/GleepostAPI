@@ -71,8 +71,20 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 	if err != nil {
 		return "", err
 	}
+	url = cloudfrontify(url)
 	err = api.userAddUpload(id, url)
 	return url, err
+}
+
+func cloudfrontify(url string) (cdnurl string) {
+	cloudfront := "http://d3itv2rmlfeij9.cloudfront.net/"
+	if strings.Contains(url, "gpcali") {
+		bits := strings.Split(url, "/")
+		final := bits[len(bits)-1]
+		return cloudfront + final
+	} else {
+		return url
+	}
 }
 
 func (api *API) userAddUpload(id gp.UserID, url string) (err error) {
