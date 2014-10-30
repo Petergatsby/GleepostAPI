@@ -43,7 +43,7 @@ func main() {
 		}
 		if resp.StatusCode == 403 {
 			fmt.Println(url)
-			err = fixStmt.Exec(url)
+			_, err = fixStmt.Exec(url)
 			if err != nil {
 				log.Println(err)
 			} else {
