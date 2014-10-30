@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
@@ -31,10 +32,11 @@ func main() {
 		if err != nil {
 			return
 		}
-		_, err = http.Get(url)
+		resp, err = http.Get(url)
 		if err != nil {
 			i++
 		}
+		log.Println(resp)
 
 	}
 	fmt.Println(i, "urls broke (should be 88)")
