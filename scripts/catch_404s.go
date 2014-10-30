@@ -21,6 +21,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fixStmt, err := database.Prepare("UPDATE post_images SET url = CONCAT('http://d2tc2ce3464r63.cloudfront.net/', SUBSTRING(url, 38)) WHERE url = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
 	rows, err := urlsStmt.Query()
 	if err != nil {
 		log.Fatal(err)
@@ -33,15 +37,20 @@ func main() {
 		if err != nil {
 			return
 		}
-		log.Println(url)
 		resp, err := http.Get(url)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if resp.StatusCode == 403 {
-			i++
 			fmt.Println(url)
+			err = fixStmt.Exec(url)
+			if err != nil {
+				log.Println(err)
+			} else {
+				i++
+			}
+
 		}
 	}
-	fmt.Println(i, "urls broke (should be 88)")
+	fmt.Println(i, "urls fixed (should be 88)")
 }
