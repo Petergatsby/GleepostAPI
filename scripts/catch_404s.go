@@ -36,10 +36,12 @@ func main() {
 		log.Println(url)
 		resp, err := http.Get(url)
 		if err != nil {
-			i++
+			log.Fatal(err)
 		}
-		log.Println(resp)
-
+		if resp.StatusCode == 403 {
+			i++
+			fmt.Println(url)
+		}
 	}
 	fmt.Println(i, "urls broke (should be 88)")
 }
