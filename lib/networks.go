@@ -168,6 +168,7 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 	}
 }
 
+//UserCanJoin returns true if the user is allowed to unilaterally join this network (ie, it is both "public" and a sub-network of one this user already belongs to.)
 func (api *API) UserCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
 	net, err := api.getNetwork(netID)
 	if err != nil {
