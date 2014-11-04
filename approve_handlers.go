@@ -9,18 +9,21 @@ func init() {
 	base.HandleFunc("/approve/access", permissionHandler).Methods("GET")
 }
 
-type permission struct {
-	ApproveAccess bool `json:"access"`
-	LevelChange   bool `json:"settings"`
-}
-
 func permissionHandler(w http.ResponseWriter, r *http.Request) {
 	defer api.Time(time.Now(), "approve.access.get")
-	_, err := authenticate(r)
+	userID, err := authenticate(r)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		jsonResponse(w, permission{ApproveAccess: true, LevelChange: false}, 200)
+		nets, err := api.GetUserNetworks(userID)
+		if err != nil {
+			jsonErr(w, err, 500)
+		}
+		access, err := api.ApproveAccess(userID, nets[0].ID)
+		if err != nil {
+			jsonErr(w, err, 500)
+		}
+		jsonResponse(w, access, 200)
 	}
 }

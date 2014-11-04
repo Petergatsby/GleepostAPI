@@ -58,6 +58,12 @@ type UserRole struct {
 	Role `json:"role"`
 }
 
+//ApprovePermission represents a user's ability to access the Approve app and
+type ApprovePermission struct {
+	ApproveAccess bool `json:"access"`
+	LevelChange   bool `json:"settings"`
+}
+
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.
 type Contact struct {
 	User
