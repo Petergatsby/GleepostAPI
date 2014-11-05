@@ -35,7 +35,7 @@ func (db *DB) ApproveAccess(userID gp.UserID, netID gp.NetworkID) (perm gp.Appro
 
 //ApproveLevel returns this network's current approval level.
 func (db *DB) ApproveLevel(netID gp.NetworkID) (level gp.ApproveLevel, err error) {
-	q := "SELECT approval_level, approved_categories FROM networks WHERE id = ?"
+	q := "SELECT approval_level, approved_categories FROM network WHERE id = ?"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
@@ -55,7 +55,7 @@ func (db *DB) ApproveLevel(netID gp.NetworkID) (level gp.ApproveLevel, err error
 
 //SetApproveLevel updates this network's approval level.
 func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
-	q := "UPDATE networks SET approval_level = ?, approved_categories = ? WHERE id = ?"
+	q := "UPDATE network SET approval_level = ?, approved_categories = ? WHERE id = ?"
 	var categories string
 	switch {
 	case level == 0:
