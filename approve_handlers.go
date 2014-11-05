@@ -19,10 +19,12 @@ func permissionHandler(w http.ResponseWriter, r *http.Request) {
 		nets, err := api.GetUserNetworks(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
+			return
 		}
 		access, err := api.ApproveAccess(userID, nets[0].ID)
 		if err != nil {
 			jsonErr(w, err, 500)
+			return
 		}
 		jsonResponse(w, access, 200)
 	}
