@@ -157,6 +157,10 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish] [[GET]](#get-statspostspost-idstat-typeperiodstartfinish)
 
+###Gleepost Approve endpoints
+
+/approve/access [[GET]](#get-approve-access)
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1856,4 +1860,12 @@ GET https://dev.gleepost.com/api/v1/stats/posts/2395/rsvps/week/2013-01-01T00:00
 	         ]
 	}
 }
+```
+
+##GET /approve/access
+
+Indicates whether you are allowed to access (a) Gleepost Approve in general (`access`) and (b) whether you are allowed to change the approval level (`settings`).
+
+```json
+{"access":true,"settings":false}
 ```
