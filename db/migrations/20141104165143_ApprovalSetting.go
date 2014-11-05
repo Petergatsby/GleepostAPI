@@ -22,7 +22,7 @@ func Down_20141104165143(txn *sql.Tx) {
 	if err != nil {
 		txn.Rollback()
 	}
-	_, err := txn.Query("ALTER TABLE network DROP COLUMN approved_categories")
+	_, err = txn.Query("ALTER TABLE network DROP COLUMN approved_categories")
 	if err != nil {
 		txn.Rollback()
 	}

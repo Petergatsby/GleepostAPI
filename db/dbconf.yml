@@ -1,3 +1,5 @@
 development:
         driver: mysql
         open: $DATABASE_URL 
+        import: github.com/go-sql-driver/mysql
+        dialect: mysql
