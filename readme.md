@@ -161,6 +161,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /approve/access [[GET]](#get-approve-access)
 
+/approve/level [[GET]](#get-approve-level) [[POST]](#post-approve-level)
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1869,3 +1871,28 @@ Indicates whether you are allowed to access (a) Gleepost Approve in general (`ac
 ```json
 {"access":true,"settings":false}
 ```
+
+##GET /approve/level
+`/approve/level` represents the current approval level of the app. A response will look like one of:
+```json
+{
+"level":0,
+"categories":[]
+}
+{
+"level":1,
+"categories":["parties"]
+}
+{
+"level":2,
+"categories":["events"]
+}
+{
+"level":3,
+"categories":["all"]
+}
+```
+
+##POST /approve/level
+
+If you are an administrator, you may POST `level` = `0..3` to this endpoint to change the approval level. Responds with the updated approval level in the same format as [GET /approve/level](#get-approve-level), or 403 if you are not allowed.
