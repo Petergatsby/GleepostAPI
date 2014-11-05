@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -30,4 +31,24 @@ func (db *DB) ApproveAccess(userID gp.UserID, netID gp.NetworkID) (perm gp.Appro
 		return perm, nil
 	}
 
+}
+
+//ApproveLevel returns this network's current approval level.
+func (db *DB) ApproveLevel(netID gp.NetworkID) (level gp.ApproveLevel, err error) {
+	q := "SELECT approval_level, approved_categories FROM networks WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var approvedCategories sql.NullString
+	err = s.QueryRow(netID).Scan(&level.Level, &approvedCategories)
+	if err != nil {
+		return
+	}
+	cats := []string{}
+	if approvedCategories.Valid {
+		cats = strings.Split(approvedCategories.String, ",")
+	}
+	level.Categories = cats
+	return level, nil
 }

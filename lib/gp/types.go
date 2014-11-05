@@ -64,6 +64,12 @@ type ApprovePermission struct {
 	LevelChange   bool `json:"settings"`
 }
 
+//ApproveLevel indicates the current approval level of this network.
+type ApproveLevel struct {
+	Level      int      `json:"level"`
+	Categories []string `json:"categories"`
+}
+
 //Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.
 type Contact struct {
 	User
