@@ -52,3 +52,27 @@ func (db *DB) ApproveLevel(netID gp.NetworkID) (level gp.ApproveLevel, err error
 	level.Categories = cats
 	return level, nil
 }
+
+//SetApproveLevel updates this network's approval level.
+func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
+	q := "UPDATE networks SET approval_level = ?, approved_categories = ? WHERE id = ?"
+	var categories string
+	switch {
+	case level == 0:
+		categories = ""
+	case level == 1:
+		categories = "parties"
+	case level == 2:
+		categories = "events"
+	case level == 3:
+		categories = "all"
+	default:
+		return gp.APIerror{Reason: "That's not a valid approve level"}
+	}
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(level, categories, netID)
+	return
+}
