@@ -1,10 +1,6 @@
 package lib
 
-import (
-	"log"
-
-	"github.com/draaglom/GleepostAPI/lib/gp"
-)
+import "github.com/draaglom/GleepostAPI/lib/gp"
 
 //NoSuchLevelErr happens when you try to set an approval level outside the range [0..3].
 var NoSuchLevelErr = gp.APIerror{Reason: "That's not a valid approval level"}
@@ -71,7 +67,6 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 				pending[i].ReviewHistory = history
 			}
 		}
-		log.Println("Network:", netID, "Pending:", len(pending))
 		return
 	}
 }
