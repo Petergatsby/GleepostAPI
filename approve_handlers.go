@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func init() {
@@ -13,6 +14,7 @@ func init() {
 	base.HandleFunc("/approve/level", getApproveSettings).Methods("GET")
 	base.HandleFunc("/approve/level", postApproveSettings).Methods("POST")
 	base.HandleFunc("/approve/pending", getApprovePending).Methods("GET")
+	base.HandleFunc("/approve/approved", postApproveApproved).Methods("POST")
 }
 
 func permissionHandler(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +106,28 @@ func getApprovePending(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case err == nil:
 			jsonResponse(w, pending, 200)
+		case err == &lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		default:
+			jsonErr(w, err, 500)
+		}
+	}
+}
+
+func postApproveApproved(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "approve.approved.post")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_postID, _ := strconv.ParseUint(r.FormValue("post"), 10, 64)
+		postID := gp.PostID(_postID)
+		reason := r.FormValue("reason")
+		err = api.ApprovePost(userID, postID, reason)
+		switch {
+		case err == nil:
+			w.WriteHeader(204)
 		case err == &lib.ENOTALLOWED:
 			jsonErr(w, err, 403)
 		default:

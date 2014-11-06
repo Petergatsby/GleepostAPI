@@ -70,3 +70,34 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 		return
 	}
 }
+
+func (api *API) isPendingVisible(userID gp.UserID, postID gp.PostID) (visible bool, err error) {
+	p, err := api.db.GetPost(postID)
+	if err != nil {
+		//Not sure what kinds of errors GetPost will give me, so we'll just say you can't see the post.
+		return false, nil
+	}
+	in, err := api.UserInNetwork(userID, p.Network)
+	switch {
+	case err != nil:
+		return
+	case !in:
+		return false, &ENOTALLOWED
+	default:
+		//Is the post still pending?
+		pending, _ := api.db.PendingStatus(postID)
+		if pending > 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+}
+
+//ApprovePost will mark this post approved if you are allowed to do so, or return ENOTALLOWED otherwise.
+func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
+	visible, err := api.isPendingVisible(userID, postID)
+	if !visible || err != nil {
+		return &ENOTALLOWED
+	}
+	return api.db.ApprovePost(userID, postID, reason)
+}

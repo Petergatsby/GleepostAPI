@@ -170,3 +170,25 @@ func (db *DB) ReviewHistory(postID gp.PostID) (history []gp.ReviewEvent, err err
 	}
 	return
 }
+
+//PendingStatus returns the current approval status of this post. 0 = approved, 1 = pending, 2 = rejected.
+func (db *DB) PendingStatus(postID gp.PostID) (pending int, err error) {
+	q := "SELECT pending FROM wall_posts WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(postID).Scan(&pending)
+	return
+}
+
+//ApprovePost marks this post as approved by this user.
+func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
+	q := "UPDATE wall_posts SET pending = 0 WHERE id = ?; INSERT INTO post_reviews (post_id, action, by, reason) VALUES (?, 'approved', ?, ?)"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, postID, userID, reason)
+	return
+}
