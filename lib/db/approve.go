@@ -199,5 +199,14 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 		return
 	}
 	_, err = s.Exec(postID)
+	if err != nil {
+		return
+	}
+	q3 := "UPDATE wall_posts SET time = NOW() WHERE id = ?"
+	s, err = db.prepare(q3)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec()
 	return
 }
