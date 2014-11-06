@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -74,5 +76,98 @@ func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
 		return
 	}
 	_, err = s.Exec(level, categories, netID)
+	return
+}
+
+//PendingPosts returns all the posts in this network which are awaiting review.
+func (db *DB) PendingPosts(netID gp.NetworkID) (pending []gp.PendingPost, err error) {
+	pending = make([]gp.PendingPost, 0)
+	//This query assumes pending = 1 and rejected = 2
+	q := "SELECT wall_posts.id, `by`, time, text " +
+		"FROM wall_posts " +
+		"JOIN post_reviews ON wall_posts.id = post_reviews.post_id " +
+		"WHERE deleted = 0 AND pending = 1 AND network_id = ? " +
+		"ORDER BY time DESC "
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(netID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PendingPost
+		var t string
+		var by gp.UserID
+		err = rows.Scan(&post.ID, &by, &t, &post.Text)
+		if err != nil {
+			return pending, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return pending, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			post.CommentCount = db.GetCommentCount(post.ID)
+			post.Images, err = db.GetPostImages(post.ID)
+			if err != nil {
+				return
+			}
+			post.Videos, err = db.GetPostVideos(post.ID)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.ID)
+			if err != nil {
+				return
+			}
+			pending = append(pending, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
+	return
+}
+
+//ReviewHistory returns all the review events on this post
+func (db *DB) ReviewHistory(postID gp.PostID) (history []gp.ReviewEvent, err error) {
+	history = make([]gp.ReviewEvent, 0)
+	q := "SELECT action, `by`, reason, `timestamp` FROM post_reviews WHERE post_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		event := gp.ReviewEvent{}
+		var by gp.UserID
+		var reason sql.NullString
+		var t string
+		err = rows.Scan(&event.Action, &by, &reason, &t)
+		if err != nil {
+			return
+		}
+		if reason.Valid {
+			event.Reason = reason.String
+		}
+		user, UsrErr := db.GetUser(by)
+		if UsrErr != nil {
+			return history, UsrErr
+		}
+		event.By = user
+		time, TimeErr := time.Parse(mysqlTime, t)
+		if TimeErr != nil {
+			return history, TimeErr
+		}
+		event.At = time
+		history = append(history, event)
+	}
 	return
 }

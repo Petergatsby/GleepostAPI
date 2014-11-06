@@ -42,3 +42,31 @@ func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int)
 	}
 
 }
+
+//GetNetworkPending returns all the posts which are pending review in this network.
+func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending []gp.PendingPost, err error) {
+	pending = make([]gp.PendingPost, 0)
+	access, err := api.db.ApproveAccess(userID, netID)
+	switch {
+	case err != nil:
+		return
+	case !access.ApproveAccess:
+		return pending, &ENOTALLOWED
+	default:
+		pending, err = api.db.PendingPosts(netID)
+		if err != nil {
+			return
+		}
+		for i := range pending {
+			processed, err := api.PostProcess(pending[i].PostSmall)
+			if err == nil {
+				pending[i].PostSmall = processed
+			}
+			history, err := api.db.ReviewHistory(pending[i].ID)
+			if err == nil {
+				pending[i].ReviewHistory = history
+			}
+		}
+		return
+	}
+}

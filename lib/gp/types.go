@@ -166,6 +166,21 @@ type PostSmall struct {
 	Likes        []LikeFull `json:"likes,omitempty"`
 }
 
+//PendingPost adds review data to a PostSmall
+type PendingPost struct {
+	PostSmall
+	ReviewHistory []ReviewEvent
+}
+
+//ReviewEvent records something that has happened to a post in review.
+type ReviewEvent struct {
+	PostID `json:"-"`
+	Action string    `json:"action"`
+	By     User      `json:"by"`
+	Reason string    `json:"reason,omitempty"`
+	At     time.Time `json:"at"`
+}
+
 //PostFull enhances a Post with comments and likes.
 type PostFull struct {
 	Post
