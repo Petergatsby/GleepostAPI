@@ -165,6 +165,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /approve/pending [[GET]](#get-approve-pending)
 
+/approve/approved [[POST]](#post-approve-approved)
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1929,3 +1931,13 @@ Most of the time review_history will be empty, but if a post has been rejected a
 	}
 ]
 ```
+
+##POST /approve/approved
+
+Marks this post as approved. 
+
+Parameters:
+`post` : id of post to approve
+`reason` : string description of why you approved the post. Optional.
+
+On success, returns 204
