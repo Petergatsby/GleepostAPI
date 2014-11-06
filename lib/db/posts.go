@@ -113,6 +113,7 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 	attendClause := "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
 	//Wheres
 	notDeleted := "WHERE deleted = 0 "
+	notPending := "AND pending = 0 "
 	category := "AND categories.tag = ? "
 
 	whereBefore := "AND wall_posts.id < ? "
@@ -140,9 +141,9 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 	orderChronologicalAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
 
 	if filter {
-		q = baseQuery + categoryClause + notDeleted
+		q = baseQuery + categoryClause + notDeleted + notPending
 	} else {
-		q = baseQuery + notDeleted
+		q = baseQuery + notDeleted + notPending
 	}
 	switch {
 	case whereMode == WNETWORK:
@@ -187,9 +188,9 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 	case whereMode == WATTENDS:
 		q = baseQuery + attendClause
 		if filter {
-			q += categoryClause + notDeleted + byVisibleAttendance + category
+			q += categoryClause + notDeleted + notPending + byVisibleAttendance + category
 		} else {
-			q += notDeleted + byVisibleAttendance
+			q += notDeleted + notPending + byVisibleAttendance
 		}
 		switch {
 		case orderMode == gp.OSTART:
