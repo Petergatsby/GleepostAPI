@@ -83,7 +83,7 @@ func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
 func (db *DB) PendingPosts(netID gp.NetworkID) (pending []gp.PendingPost, err error) {
 	pending = make([]gp.PendingPost, 0)
 	//This query assumes pending = 1 and rejected = 2
-	q := "SELECT wall_posts.id, `by`, time, text " +
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_reviews ON wall_posts.id = post_reviews.post_id " +
 		"WHERE deleted = 0 AND pending = 1 AND network_id = ? " +
