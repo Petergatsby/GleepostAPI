@@ -184,7 +184,7 @@ func (db *DB) PendingStatus(postID gp.PostID) (pending int, err error) {
 
 //ApprovePost marks this post as approved by this user.
 func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
-	q := "INSERT INTO post_reviews (post_id, action, by, reason) VALUES (?, 'approved', ?, ?)"
+	q := "INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'approved', ?, ?)"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
