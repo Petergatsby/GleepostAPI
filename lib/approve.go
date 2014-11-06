@@ -99,5 +99,10 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 	if !visible || err != nil {
 		return &ENOTALLOWED
 	}
+	p, _ := api.db.GetPost(postID)
+	access, _ := api.ApproveAccess(userID, p.Network)
+	if !access.ApproveAccess {
+		return &ENOTALLOWED
+	}
 	return api.db.ApprovePost(userID, postID, reason)
 }
