@@ -351,7 +351,11 @@ Event posts may also set an "title", to be used as a heading.
 
 Optionally, you can set “location-name” and/or “location-gps” to specify where an event will be occurring.
 
-example responses:
+If this post requires review before it is published, the response will contain `pending` = `true`.
+```json
+{"id":3, "pending":true}
+```
+Otherwise:
 (http 200)
 ```json
 {"id":3}
