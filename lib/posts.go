@@ -404,15 +404,33 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 }
 
 //AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
-func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, err error) {
+func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
 	case !in:
-		return postID, &ENOTALLOWED
+		return postID, false, &ENOTALLOWED
 	default:
-		postID, err = api.db.AddPost(userID, text, netID)
+		//If the post matches one of the filters for this network, we want to hide it for now
+		level, e := api.db.ApproveLevel(netID)
+		switch {
+		case e != nil:
+			return postID, false, e
+		case level.Level == 0:
+			//Do nothing
+		case level.Level == 3: //3 is "all"
+			pending = true
+		default:
+			for _, tag := range tags {
+				for _, filter := range level.Categories {
+					if tag == filter {
+						pending = true
+					}
+				}
+			}
+		}
+		postID, err = api.db.AddPost(userID, text, netID, pending)
 		if err == nil {
 			if len(tags) > 0 {
 				err = api.TagPost(postID, tags...)
@@ -432,7 +450,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 				go api.cache.AddPost(post)
 				go api.cache.AddPostToNetwork(post, netID)
 				creator, err := api.UserIsNetworkOwner(userID, netID)
-				if err == nil && creator {
+				if err == nil && creator && !pending {
 					go api.notifyGroupNewPost(userID, netID)
 				}
 			}
@@ -456,8 +474,8 @@ func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID) {
 }
 
 //AddPostWithImage creates a post and adds an image in a single step (if the image is one that has been uploaded to gleepost.)
-func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostID, err error) {
-	postID, err = api.AddPost(userID, netID, text, attribs, tags...)
+func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, image string, tags ...string) (postID gp.PostID, pending bool, err error) {
+	postID, pending, err = api.AddPost(userID, netID, text, attribs, tags...)
 	if err != nil {
 		return
 	}
@@ -472,8 +490,8 @@ func (api *API) AddPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 }
 
 //AddPostWithVideo creates a post and attaches a video in a single step.
-func (api *API) AddPostWithVideo(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, tags ...string) (postID gp.PostID, err error) {
-	postID, err = api.AddPost(userID, netID, text, attribs, tags...)
+func (api *API) AddPostWithVideo(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, tags ...string) (postID gp.PostID, pending bool, err error) {
+	postID, pending, err = api.AddPost(userID, netID, text, attribs, tags...)
 	if err != nil {
 		return
 	}

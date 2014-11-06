@@ -148,13 +148,14 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
 		videoID := gp.VideoID(_vID)
+		var pending bool
 		switch {
 		case videoID > 0:
-			postID, err = api.AddPostWithVideo(userID, network, text, attribs, videoID, ts...)
+			postID, pending, err = api.AddPostWithVideo(userID, network, text, attribs, videoID, ts...)
 		case len(url) > 5:
-			postID, err = api.AddPostWithImage(userID, network, text, attribs, url, ts...)
+			postID, pending, err = api.AddPostWithImage(userID, network, text, attribs, url, ts...)
 		default:
-			postID, err = api.AddPost(userID, network, text, attribs, ts...)
+			postID, pending, err = api.AddPost(userID, network, text, attribs, ts...)
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
@@ -164,7 +165,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			}
 		} else {
-			jsonResponse(w, &gp.Created{ID: uint64(postID)}, 201)
+			jsonResponse(w, &gp.CreatedPost{ID: postID, Pending: pending}, 201)
 		}
 	}
 }

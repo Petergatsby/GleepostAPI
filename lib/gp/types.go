@@ -263,6 +263,12 @@ type Created struct {
 	ID uint64 `json:"id"`
 }
 
+//CreatedPost indicates the ID of a post that's been created, and optionally if it is pending or not.
+type CreatedPost struct {
+	ID      PostID `json:"id"`
+	Pending bool   `json:"pending,omitempty"`
+}
+
 //NewUser represents the status of a user as part of the registration process.
 type NewUser struct {
 	ID     UserID `json:"id"`

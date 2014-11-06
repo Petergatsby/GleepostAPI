@@ -264,12 +264,12 @@ func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, in
 }
 
 //AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
-func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID) (postID gp.PostID, err error) {
-	s, err := db.prepare("INSERT INTO wall_posts(`by`, `text`, network_id) VALUES (?,?,?)")
+func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID, pending bool) (postID gp.PostID, err error) {
+	s, err := db.prepare("INSERT INTO wall_posts(`by`, `text`, network_id, pending) VALUES (?,?,?,?)")
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(userID, text, network)
+	res, err := s.Exec(userID, text, network, pending)
 	if err != nil {
 		return 0, err
 	}
