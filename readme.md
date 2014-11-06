@@ -1900,3 +1900,15 @@ Indicates whether you are allowed to access (a) Gleepost Approve in general (`ac
 ##POST /approve/level
 
 If you are an administrator, you may POST `level` = `0..3` to this endpoint to change the approval level. Responds with the updated approval level in the same format as [GET /approve/level](#get-approve-level), or 403 if you are not allowed.
+
+##GET /approve/pending
+
+Returns all the posts that are currently pending review in your university network, or 403 if you aren't allowed to see them.
+
+These follow exactly the same format as [regular posts](#get-posts) but they are enhanced with an additional `review_history` parameter, which records the events which have happened to this post in the review process.
+
+Most of the time review_history will be empty, but if a post has been rejected and then resubmitted that will be shown here.
+
+```json
+
+```

@@ -169,7 +169,7 @@ type PostSmall struct {
 //PendingPost adds review data to a PostSmall
 type PendingPost struct {
 	PostSmall
-	ReviewHistory []ReviewEvent
+	ReviewHistory []ReviewEvent `json:"review_history"`
 }
 
 //ReviewEvent records something that has happened to a post in review.
