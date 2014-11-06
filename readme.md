@@ -163,6 +163,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /approve/level [[GET]](#get-approve-level) [[POST]](#post-approve-level)
 
+/approve/pending [[GET]](#get-approve-pending)
+
 ##POST /register
 required parameters: first, last, pass, email
 
