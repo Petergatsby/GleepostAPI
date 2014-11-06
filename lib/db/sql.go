@@ -1444,7 +1444,7 @@ func (db *DB) PrunableConversations() (conversations []gp.ConversationID, err er
 func (db *DB) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
 	q := "SELECT COUNT(*) FROM event_attendees JOIN wall_posts ON event_attendees.post_id = wall_posts.id "
 	q += "WHERE wall_posts.network_id IN ( SELECT network_id FROM user_network WHERE user_network.user_id = ? ) "
-	q += "AND wall_posts.deleted = 0 "
+	q += "AND wall_posts.deleted = 0 AND wall_posts.pending = 0 "
 	q += "AND event_attendees.user_id = ?"
 	s, err := db.prepare(q)
 	if err != nil {

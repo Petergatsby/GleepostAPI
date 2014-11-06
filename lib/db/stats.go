@@ -30,7 +30,7 @@ func (db *DB) CommentsForUserBetween(user gp.UserID, start time.Time, finish tim
 
 //PostsForUserBetween returns the number of posts a user has made in this interval.
 func (db *DB) PostsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := db.prepare("SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND `time` > ? AND `time` < ?")
+	s, err := db.prepare("SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND `time` > ? AND `time` < ? AND pending = 0 AND deleted = 0")
 	if err != nil {
 		return
 	}
@@ -98,7 +98,7 @@ func (db *DB) UsersActivityInCohort(activity string, start time.Time, finish tim
 	case activity == "commented":
 		s, err = db.prepare("SELECT DISTINCT `by` FROM post_comments WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	case activity == "posted":
-		s, err = db.prepare("SELECT DISTINCT `by` FROM wall_posts WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
+		s, err = db.prepare("SELECT DISTINCT `by` FROM wall_posts WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?) AND deleted = 0")
 	case activity == "attended":
 		s, err = db.prepare("SELECT DISTINCT `user_id` FROM event_attendees WHERE `user_id` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	case activity == "initiated":

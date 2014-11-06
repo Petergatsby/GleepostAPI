@@ -288,7 +288,7 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 	q := "SELECT wall_posts.id, `by`, time, text " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
-		"WHERE deleted = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
+		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
 		"ORDER BY value ASC LIMIT 0, ?"
 	s, err := db.prepare(q)
 	if err != nil {
@@ -653,7 +653,7 @@ func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 func (db *DB) UserPostCount(perspective, user gp.UserID) (count int, err error) {
 	q := "SELECT COUNT(*) FROM wall_posts "
 	q += "WHERE `by` = ? "
-	q += "AND deleted = 0 "
+	q += "AND deleted = 0 AND pending = 0 "
 	q += "AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?)"
 	s, err := db.prepare(q)
 	if err != nil {
