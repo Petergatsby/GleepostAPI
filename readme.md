@@ -1910,5 +1910,20 @@ These follow exactly the same format as [regular posts](#get-posts) but they are
 Most of the time review_history will be empty, but if a post has been rejected and then resubmitted that will be shown here.
 
 ```json
-
+[
+	{
+	"id": 1976,
+	"by": {
+		"id": 2783,
+		"name": "Amy",
+		"profile_image": "https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+	},
+	"timestamp": "2014-11-06T21:29:02Z",
+	"text": "This post should be pending",
+	"images": null,
+	"comment_count": 0,
+	"like_count": 0,
+	"review_history": [ ]
+	}
+]
 ```
