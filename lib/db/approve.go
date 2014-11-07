@@ -341,10 +341,11 @@ func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PendingPost,
 func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PendingPost, err error) {
 	pending = make([]gp.PendingPost, 0)
 	//This query assumes pending = 1 and rejected = 2
-	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+	q := "SELECT DISTINCT wall_posts.id, wall_posts.`by`, time, text " +
 		"FROM wall_posts " +
+		"LEFT JOIN post_reviews ON wall_posts.id = post_reviews.post_id " +
 		"WHERE deleted = 0 AND pending > 0 AND wall_posts.`by` = ? " +
-		"ORDER BY time DESC "
+		"ORDER BY CASE WHEN post_reviews.timestamp IS NULL THEN wall_posts.time ELSE post_reviews.timestamp END DESC "
 	s, err := db.prepare(q)
 	if err != nil {
 		return
