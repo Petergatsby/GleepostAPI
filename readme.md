@@ -165,7 +165,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /approve/pending [[GET]](#get-approve-pending)
 
-/approve/approved [[POST]](#post-approve-approved)
+/approve/approved [[POST]](#post-approve-approved) [[GET]](#get-approve-approved)
 
 ##POST /register
 required parameters: first, last, pass, email
@@ -1941,3 +1941,38 @@ Parameters:
 `reason` : string description of why you approved the post. Optional.
 
 On success, returns 204
+
+##GET /approve/approved
+
+Displays the history of approved posts. Posts which were approved more recently are displayed at the top.
+The `review_history` property contains all the events which happened to this post while it was in revew.
+
+HTTP 200:
+```json
+[
+	{
+		"id":1976,
+		"by":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"timestamp":"2014-11-06T21:29:02Z",
+		"text":"This post should be pending",
+		"images":null,
+		"comment_count":0,
+		"like_count":0,
+		"review_history":[
+			{
+				"action":"approved",
+				"by":{
+					"id":2783,
+					"name":"Amy",
+					"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+				},
+				"at":"2014-11-06T23:36:24Z"
+			}
+		]
+	}
+]
+```
