@@ -32,6 +32,8 @@ func init() {
 	base.HandleFunc("/profile/attending", userAttending)
 	//notifications
 	base.HandleFunc("/notifications", notificationHandler)
+	//Approval
+	base.HandleFunc("/profile/pending", pendingPosts).Methods("GET")
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
@@ -359,5 +361,21 @@ func postProfileTagline(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(204)
+	}
+}
+
+func pendingPosts(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.profile.pending.get")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		pending, err := api.PendingPosts(userID)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		jsonResponse(w, pending, 200)
 	}
 }

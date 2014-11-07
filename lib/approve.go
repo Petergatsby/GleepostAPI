@@ -176,3 +176,23 @@ func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID) (reject
 		return
 	}
 }
+
+//PendingPosts returns this user's pending posts.
+func (api *API) PendingPosts(userID gp.UserID) (pending []gp.PendingPost, err error) {
+	pending = make([]gp.PendingPost, 0)
+	pending, err = api.db.UserPendingPosts(userID)
+	if err != nil {
+		return
+	}
+	for i := range pending {
+		processed, err := api.PostProcess(pending[i].PostSmall)
+		if err == nil {
+			pending[i].PostSmall = processed
+		}
+		history, err := api.db.ReviewHistory(pending[i].ID)
+		if err == nil {
+			pending[i].ReviewHistory = history
+		}
+	}
+	return
+}

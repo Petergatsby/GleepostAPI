@@ -336,3 +336,56 @@ func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PendingPost,
 	return
 
 }
+
+//UserPendingPosts returns all this user's pending posts.
+func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PendingPost, err error) {
+	pending = make([]gp.PendingPost, 0)
+	//This query assumes pending = 1 and rejected = 2
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+		"FROM wall_posts " +
+		"WHERE deleted = 0 AND pending > 0 AND wall_posts.`by` = ? " +
+		"ORDER BY time DESC "
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(userID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PendingPost
+		var t string
+		var by gp.UserID
+		err = rows.Scan(&post.ID, &by, &t, &post.Text)
+		if err != nil {
+			return pending, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return pending, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			post.CommentCount = db.GetCommentCount(post.ID)
+			post.Images, err = db.GetPostImages(post.ID)
+			if err != nil {
+				return
+			}
+			post.Videos, err = db.GetPostVideos(post.ID)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.ID)
+			if err != nil {
+				return
+			}
+			pending = append(pending, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
+	return
+
+}
