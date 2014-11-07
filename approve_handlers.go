@@ -16,6 +16,7 @@ func init() {
 	base.HandleFunc("/approve/pending", getApprovePending).Methods("GET")
 	base.HandleFunc("/approve/approved", postApproveApproved).Methods("POST")
 	base.HandleFunc("/approve/approved", getApproveApproved).Methods("GET")
+	base.HandleFunc("/approve/rejected", postApproveRejected).Methods("POST")
 }
 
 func permissionHandler(w http.ResponseWriter, r *http.Request) {
@@ -159,5 +160,27 @@ func getApproveApproved(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 		}
 
+	}
+}
+
+func postApproveRejected(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "approve.rejected.post")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_postID, _ := strconv.ParseUint(r.FormValue("post"), 10, 64)
+		postID := gp.PostID(_postID)
+		reason := r.FormValue("reason")
+		err = api.RejectPost(userID, postID, reason)
+		switch {
+		case err == nil:
+			w.WriteHeader(204)
+		case err == &lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		default:
+			jsonErr(w, err, 500)
+		}
 	}
 }

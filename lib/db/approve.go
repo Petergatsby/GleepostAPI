@@ -212,6 +212,7 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 	return
 }
 
+//GetNetworkApproved returns the 20 most recent approved posts in this network.
 func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PendingPost, err error) {
 	approved = make([]gp.PendingPost, 0)
 	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
@@ -260,5 +261,25 @@ func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PendingPost,
 			log.Println("Bad post: ", post)
 		}
 	}
+	return
+}
+
+//RejectPost marks this post as 'rejected'.
+func (db *DB) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
+	q := "INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'rejected', ?, ?)"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, userID, reason)
+	if err != nil {
+		return
+	}
+	q = "UPDATE wall_posts SET pending = 3 WHERE id = ?"
+	s, err = db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID)
 	return
 }

@@ -134,3 +134,17 @@ func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID) (approv
 		return
 	}
 }
+
+//RejectPost marks this post as rejected (if you're allowed) or ENOTALLOWED otherwise.
+func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
+	visible, err := api.isPendingVisible(userID, postID)
+	if !visible || err != nil {
+		return &ENOTALLOWED
+	}
+	p, _ := api.db.GetPost(postID)
+	access, _ := api.ApproveAccess(userID, p.Network)
+	if !access.ApproveAccess {
+		return &ENOTALLOWED
+	}
+	return api.db.RejectPost(userID, postID, reason)
+}
