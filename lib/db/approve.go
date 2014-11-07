@@ -275,7 +275,7 @@ func (db *DB) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err
 	if err != nil {
 		return
 	}
-	q = "UPDATE wall_posts SET pending = 3 WHERE id = ?"
+	q = "UPDATE wall_posts SET pending = 2 WHERE id = ?"
 	s, err = db.prepare(q)
 	if err != nil {
 		return
