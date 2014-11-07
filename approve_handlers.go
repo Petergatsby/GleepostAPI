@@ -17,6 +17,7 @@ func init() {
 	base.HandleFunc("/approve/approved", postApproveApproved).Methods("POST")
 	base.HandleFunc("/approve/approved", getApproveApproved).Methods("GET")
 	base.HandleFunc("/approve/rejected", postApproveRejected).Methods("POST")
+	base.HandleFunc("/approve/rejected", getApproveRejected).Methods("GET")
 }
 
 func permissionHandler(w http.ResponseWriter, r *http.Request) {
