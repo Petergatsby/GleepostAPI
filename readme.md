@@ -159,15 +159,15 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 ###Gleepost Approve endpoints
 
-/approve/access [[GET]](#get-approve-access)
+/approve/access [[GET]](#get-approveaccess)
 
-/approve/level [[GET]](#get-approve-level) [[POST]](#post-approve-level)
+/approve/level [[GET]](#get-approvelevel) [[POST]](#post-approvelevel)
 
-/approve/pending [[GET]](#get-approve-pending)
+/approve/pending [[GET]](#get-approvepending)
 
-/approve/approved [[POST]](#post-approve-approved) [[GET]](#get-approve-approved)
+/approve/approved [[POST]](#post-approveapproved) [[GET]](#get-approveapproved)
 
-/approve/rejected [[POST]](#post-approve-rejected) 
+/approve/rejected [[POST]](#post-approverejected) 
 
 ##POST /register
 required parameters: first, last, pass, email
