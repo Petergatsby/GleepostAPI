@@ -1988,3 +1988,40 @@ Parameters:
 `reason` : string description of why you rejected the post. Optional.
 
 On success, returns 204.
+
+##GET /approve/rejected
+
+Displays the history of rejected posts. Most recently rejected first.
+
+The `review_history` property contains all the events which happened to this post while it was in revew.
+
+HTTP 200:
+```json
+[
+	{
+		"id":1976,
+		"by":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"timestamp":"2014-11-06T21:29:02Z",
+		"text":"This post should be pending",
+		"images":null,
+		"comment_count":0,
+		"like_count":0,
+		"review_history":[
+			{
+				"action":"rejected",
+				"by":{
+					"id":2783,
+					"name":"Amy",
+					"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+				},
+				"at":"2014-11-06T23:36:24Z",
+				"reason":"That shit's offensive yo"
+			}
+		]
+	}
+]
+```
