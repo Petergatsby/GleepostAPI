@@ -184,3 +184,27 @@ func postApproveRejected(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func getApproveRejected(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "approve.rejected.get")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		nets, err := api.GetUserNetworks(userID)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		rejected, err := api.GetNetworkRejected(userID, nets[0].ID)
+		switch {
+		case err == nil:
+			jsonResponse(w, rejected, 200)
+		case err == &lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		default:
+			jsonErr(w, err, 500)
+		}
+	}
+}

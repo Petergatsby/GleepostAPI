@@ -283,3 +283,56 @@ func (db *DB) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err
 	_, err = s.Exec(postID)
 	return
 }
+
+//GetNetworkRejected returns the posts in this network which have been rejected.
+func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PendingPost, err error) {
+	rejected = make([]gp.PendingPost, 0)
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
+		"WHERE wall_posts.deleted = 0 AND pending = 2 AND post_reviews.action = 'rejected' " +
+		"AND network_id = ? " +
+		"ORDER BY post_reviews.timestamp DESC LIMIT 0, 20"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(netID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PendingPost
+		var t string
+		var by gp.UserID
+		err = rows.Scan(&post.ID, &by, &t, &post.Text)
+		if err != nil {
+			return rejected, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return rejected, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			post.CommentCount = db.GetCommentCount(post.ID)
+			post.Images, err = db.GetPostImages(post.ID)
+			if err != nil {
+				return
+			}
+			post.Videos, err = db.GetPostVideos(post.ID)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.ID)
+			if err != nil {
+				return
+			}
+			rejected = append(rejected, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
+	return
+
+}

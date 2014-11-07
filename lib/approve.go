@@ -148,3 +148,31 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 	}
 	return api.db.RejectPost(userID, postID, reason)
 }
+
+//GetNetworkRejected returns the list of rejected posts in this network.
+func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID) (rejected []gp.PendingPost, err error) {
+	rejected = make([]gp.PendingPost, 0)
+	access, err := api.ApproveAccess(userID, netID)
+	switch {
+	case err != nil:
+		return
+	case !access.ApproveAccess:
+		return rejected, &ENOTALLOWED
+	default:
+		rejected, err = api.db.GetNetworkRejected(netID)
+		if err != nil {
+			return
+		}
+		for i := range rejected {
+			processed, err := api.PostProcess(rejected[i].PostSmall)
+			if err == nil {
+				rejected[i].PostSmall = processed
+			}
+			history, err := api.db.ReviewHistory(rejected[i].ID)
+			if err == nil {
+				rejected[i].ReviewHistory = history
+			}
+		}
+		return
+	}
+}
