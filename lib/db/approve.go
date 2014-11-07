@@ -184,6 +184,7 @@ func (db *DB) PendingStatus(postID gp.PostID) (pending int, err error) {
 
 //ApprovePost marks this post as approved by this user.
 func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
+	//Should be one transaction...
 	q := "INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'approved', ?, ?)"
 	s, err := db.prepare(q)
 	if err != nil {
@@ -208,5 +209,56 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 		return
 	}
 	_, err = s.Exec()
+	return
+}
+
+func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PendingPost, err error) {
+	approved = make([]gp.PendingPost, 0)
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
+		"WHERE wall_posts.deleted = 0 AND pending = 0 AND post_reviews.action = 'approved' " +
+		"AND network_id = ? " +
+		"ORDER BY post_reviews.timestamp DESC LIMIT 0, 20"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(netID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PendingPost
+		var t string
+		var by gp.UserID
+		err = rows.Scan(&post.ID, &by, &t, &post.Text)
+		if err != nil {
+			return approved, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return approved, err
+		}
+		post.By, err = db.GetUser(by)
+		if err == nil {
+			post.CommentCount = db.GetCommentCount(post.ID)
+			post.Images, err = db.GetPostImages(post.ID)
+			if err != nil {
+				return
+			}
+			post.Videos, err = db.GetPostVideos(post.ID)
+			if err != nil {
+				return
+			}
+			post.LikeCount, err = db.LikeCount(post.ID)
+			if err != nil {
+				return
+			}
+			approved = append(approved, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
 	return
 }

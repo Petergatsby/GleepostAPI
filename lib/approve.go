@@ -106,3 +106,31 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 	}
 	return api.db.ApprovePost(userID, postID, reason)
 }
+
+//GetNetworkApproved returns the list of approved posts in this network.
+func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID) (approved []gp.PendingPost, err error) {
+	approved = make([]gp.PendingPost, 0)
+	access, err := api.ApproveAccess(userID, netID)
+	switch {
+	case err != nil:
+		return
+	case !access.ApproveAccess:
+		return approved, &ENOTALLOWED
+	default:
+		approved, err = api.db.GetNetworkApproved(netID)
+		if err != nil {
+			return
+		}
+		for i := range approved {
+			processed, err := api.PostProcess(approved[i].PostSmall)
+			if err == nil {
+				approved[i].PostSmall = processed
+			}
+			history, err := api.db.ReviewHistory(approved[i].ID)
+			if err == nil {
+				approved[i].ReviewHistory = history
+			}
+		}
+		return
+	}
+}

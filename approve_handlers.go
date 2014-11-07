@@ -15,6 +15,7 @@ func init() {
 	base.HandleFunc("/approve/level", postApproveSettings).Methods("POST")
 	base.HandleFunc("/approve/pending", getApprovePending).Methods("GET")
 	base.HandleFunc("/approve/approved", postApproveApproved).Methods("POST")
+	base.HandleFunc("/approve/approved", getApproveApproved).Methods("GET")
 }
 
 func permissionHandler(w http.ResponseWriter, r *http.Request) {
@@ -133,5 +134,30 @@ func postApproveApproved(w http.ResponseWriter, r *http.Request) {
 		default:
 			jsonErr(w, err, 500)
 		}
+	}
+}
+
+func getApproveApproved(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "approve.approved.get")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		nets, err := api.GetUserNetworks(userID)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		approved, err := api.GetNetworkApproved(userID, nets[0].ID)
+		switch {
+		case err == nil:
+			jsonResponse(w, approved, 200)
+		case err == &lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		default:
+			jsonErr(w, err, 500)
+		}
+
 	}
 }
