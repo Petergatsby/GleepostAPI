@@ -167,6 +167,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /approve/approved [[POST]](#post-approve-approved) [[GET]](#get-approve-approved)
 
+/approve/rejected [[POST]](#post-approve-rejected) 
+
 ##POST /register
 required parameters: first, last, pass, email
 
@@ -1976,3 +1978,13 @@ HTTP 200:
 	}
 ]
 ```
+
+##POST /approve/rejected
+
+Marks this post as rejected.
+
+Parameters:
+`post` : id of post to reject
+`reason` : string description of why you rejected the post. Optional.
+
+On success, returns 204.
