@@ -135,6 +135,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /profile/attending [[GET]](#get-profileattending)
 
+/profile/pending [[GET]](#get-profilepending)
+
 /profile/networks [[GET]](#get-profilenetworks)
 
 /profile/networks/posts [[GET]](#get-profilenetworksposts)
@@ -1571,6 +1573,42 @@ Example response: (http 200)
 [1,5,764,34,345]
 ```
 
+##GET /profile/pending
+
+Displays all your current pending (not yet on the campus wall) posts.
+Not sure what this is? See [/approve/pending](#get-approvepending) and related handlers.
+
+HTTP 200:
+```json
+[
+	{
+		"id":1976,
+		"by":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"timestamp":"2014-11-06T21:29:02Z",
+		"text":"This post should be pending",
+		"images":null,
+		"comment_count":0,
+		"like_count":0,
+		"review_history":[
+			{
+				"action":"rejected",
+				"by":{
+					"id":2783,
+					"name":"Amy",
+					"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+				},
+				"at":"2014-11-06T23:36:24Z",
+				"reason":"That shit's offensive yo"
+			}
+		]
+	}
+]
+```
+
 ##GET /profile/networks
 required parameters:
 id=[user-id]
@@ -2025,3 +2063,4 @@ HTTP 200:
 	}
 ]
 ```
+
