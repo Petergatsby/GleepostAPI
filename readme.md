@@ -167,7 +167,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /approve/approved [[POST]](#post-approveapproved) [[GET]](#get-approveapproved)
 
-/approve/rejected [[POST]](#post-approverejected) 
+/approve/rejected [[POST]](#post-approverejected) [[GET]](#get-approverejected)
 
 ##POST /register
 required parameters: first, last, pass, email
