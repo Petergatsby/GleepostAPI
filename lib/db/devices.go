@@ -29,7 +29,7 @@ func (db *DB) GetDevices(user gp.UserID, application string) (devices []gp.Devic
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(user)
+	rows, err := s.Query(user, application)
 	if err != nil {
 		return
 	}
