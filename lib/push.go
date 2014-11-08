@@ -25,7 +25,7 @@ func (api *API) notify(user gp.UserID) {
 			pn := apns.NewPushNotification()
 			pn.DeviceToken = device.ID
 			pn.AddPayload(payload)
-			err := api.push.IOSPush(pn)
+			err := api.pushers["gleepost"].IOSPush(pn)
 			if err != nil {
 				log.Println(err)
 			}
@@ -145,7 +145,7 @@ func (api *API) iosBadge(device string, badge int) (err error) {
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
-	err = api.push.IOSPush(pn)
+	err = api.pushers["gleepost"].IOSPush(pn)
 	return
 }
 
@@ -157,7 +157,7 @@ func (api *API) androidNotification(device string, count int, user gp.UserID) (e
 	msg := gcm.NewMessage(data, device)
 	msg.CollapseKey = "New Notification"
 
-	err = api.push.AndroidPush(msg)
+	err = api.pushers["gleepost"].AndroidPush(msg)
 	return
 }
 
@@ -188,7 +188,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("conv", convID)
-	err = api.push.IOSPush(pn)
+	err = api.pushers["gleepost"].IOSPush(pn)
 	return
 }
 
@@ -201,28 +201,7 @@ func (api *API) androidPushMessage(device string, message gp.Message, convID gp.
 	}
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
-	return api.push.AndroidPush(msg)
-}
-
-//CheckFeedbackService receives any bad device tokens from APNS and deletes the device.
-func (api *API) CheckFeedbackService() {
-	url := "feedback.sandbox.push.apple.com:2196"
-	if api.Config.APNS.Production {
-		url = "feedback.push.apple.com:2196"
-	}
-	client := apns.NewClient(url, api.Config.APNS.CertFile, api.Config.APNS.KeyFile)
-	log.Println("Connected to feedback service", url)
-	go client.ListenForFeedback()
-	for {
-		select {
-		case resp := <-apns.FeedbackChannel:
-			log.Println("Bad device:", resp.DeviceToken, resp.Timestamp)
-			api.DeviceFeedback(resp.DeviceToken, resp.Timestamp)
-		case <-apns.ShutdownChannel:
-			log.Println("feedback service ended")
-			return
-		}
-	}
+	return api.pushers["gleepost"].AndroidPush(msg)
 }
 
 //FeedbackDaemon checks the APNS feedback service every frequency seconds.
@@ -231,7 +210,9 @@ func (api *API) FeedbackDaemon(frequency int) {
 	c := time.Tick(duration)
 	for {
 		<-c
-		go api.CheckFeedbackService()
+		for _, psh := range api.pushers {
+			go psh.CheckFeedbackService(api.DeviceFeedback)
+		}
 	}
 }
 
@@ -257,7 +238,7 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("conv", conv)
-	err = api.push.IOSPush(pn)
+	err = api.pushers["gleepost"].IOSPush(pn)
 	return
 }
 
@@ -266,7 +247,7 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	msg.CollapseKey = "You have a new conversation!"
-	return api.push.AndroidPush(msg)
+	return api.pushers["gleepost"].AndroidPush(msg)
 }
 
 //MassNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
@@ -312,7 +293,7 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 	pn.DeviceToken = device.ID
 	pn.AddPayload(payload)
 	pn.Set("version", version)
-	err = api.push.IOSPush(pn)
+	err = api.pushers["gleepost"].IOSPush(pn)
 	return
 }
 
@@ -473,7 +454,7 @@ func (api *API) Push(notification interface{}, recipient gp.UserID) {
 			if err != nil {
 				log.Println("Error generating push notification:", err)
 			}
-			err = api.push.IOSPush(pn)
+			err = api.pushers["gleepost"].IOSPush(pn)
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
@@ -484,7 +465,7 @@ func (api *API) Push(notification interface{}, recipient gp.UserID) {
 			if err != nil {
 				log.Println("Error generating push notification:", err)
 			}
-			err = api.push.AndroidPush(pn)
+			err = api.pushers["gleepost"].AndroidPush(pn)
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {

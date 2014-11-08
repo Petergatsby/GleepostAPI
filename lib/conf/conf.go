@@ -137,12 +137,18 @@ type Config struct {
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig
-	APNS                 APNSConfig
-	GCM                  GCMConfig
+	Pushers              []PusherConfig
 	Email                EmailConfig
 	Facebook             FacebookConfig
 	Futures              []ConfigFuture
 	Statsd               string
+}
+
+//PusherConfig represents the configuration for sending push notifications to a particular app.
+type PusherConfig struct {
+	AppName string
+	APNS    APNSConfig
+	GCM     GCMConfig
 }
 
 //PostFuture represents a commitment to keeping an event's event-time in the future by a specified duration.
