@@ -1403,9 +1403,13 @@ HTTP 200
 ```
 
 ##POST /devices
-required parameters: id, token, type, device_id
+required parameters: `type`, `device_id`
+
+optional parameters: `application` 
 
 Type should be "android" or "ios"
+
+`application` defaluts to "gleepost"; gleepost approve users should specify "approve".
 
 This registers the push notification id "device_id" for the current user
 
