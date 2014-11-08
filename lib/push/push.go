@@ -20,12 +20,12 @@ type Pusher struct {
 type Feedbacker func(string, uint32) error
 
 //CheckFeedbackService receives any bad device tokens from APNS and processes the result with f.
-func (psh Pusher) CheckFeedbackService(f Feedbacker) {
+func (pusher Pusher) CheckFeedbackService(f Feedbacker) {
 	url := "feedback.sandbox.push.apple.com:2196"
-	if psh.APNSconfig.Production {
+	if pusher.APNSconfig.Production {
 		url = "feedback.push.apple.com:2196"
 	}
-	client := apns.NewClient(url, psh.APNSconfig.CertFile, psh.APNSconfig.KeyFile)
+	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
 	log.Println("Connected to feedback service", url)
 	go client.ListenForFeedback()
 	for {
