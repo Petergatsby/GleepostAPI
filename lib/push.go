@@ -16,7 +16,7 @@ func (api *API) notify(user gp.UserID) {
 	payload.Badge = 1337
 	payload.Sound = "default"
 
-	devices, err := api.GetDevices(user)
+	devices, err := api.GetDevices(user, "gleepost")
 	if err != nil {
 		log.Println(err)
 	}
@@ -46,7 +46,7 @@ func (api *API) notificationPush(user gp.UserID) {
 	}
 	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, badge, unread)
 
-	devices, err := api.GetDevices(user)
+	devices, err := api.GetDevices(user, "gleepost")
 	if err != nil {
 		log.Println(err)
 	}
@@ -74,7 +74,7 @@ func (api *API) notificationPush(user gp.UserID) {
 
 func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.ConversationID) (err error) {
 	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.ID)
-	devices, e := api.GetDevices(other)
+	devices, e := api.GetDevices(other, "gleepost")
 	if e != nil {
 		log.Println(e)
 		return
@@ -109,7 +109,7 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	for _, user := range recipients {
 		if user.ID != message.By.ID {
 			log.Println("Trying to send a push notification to", user.Name)
-			devices, err := api.GetDevices(user.ID)
+			devices, err := api.GetDevices(user.ID, "gleepost")
 			if err != nil {
 				log.Println(err)
 			}
@@ -460,7 +460,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device 
 
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (api *API) Push(notification interface{}, recipient gp.UserID) {
-	devices, err := api.GetDevices(recipient)
+	devices, err := api.GetDevices(recipient, "gleepost")
 	if err != nil {
 		log.Println(err)
 		return

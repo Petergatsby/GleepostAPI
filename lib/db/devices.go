@@ -14,18 +14,18 @@ import (
 ********************************************************************/
 
 //AddDevice idempotently records user's ios or android device id for pushing notifications to.
-func (db *DB) AddDevice(user gp.UserID, deviceType string, deviceID string) (err error) {
-	s, err := db.prepare("REPLACE INTO devices (user_id, device_type, device_id) VALUES (?, ?, ?)")
+func (db *DB) AddDevice(user gp.UserID, deviceType string, deviceID string, application string) (err error) {
+	s, err := db.prepare("REPLACE INTO devices (user_id, device_type, device_id, application) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(user, deviceType, deviceID)
+	_, err = s.Exec(user, deviceType, deviceID, application)
 	return
 }
 
 //GetDevices returns all a user's devices.
-func (db *DB) GetDevices(user gp.UserID) (devices []gp.Device, err error) {
-	s, err := db.prepare("SELECT user_id, device_type, device_id FROM devices WHERE user_id = ?")
+func (db *DB) GetDevices(user gp.UserID, application string) (devices []gp.Device, err error) {
+	s, err := db.prepare("SELECT user_id, device_type, device_id FROM devices WHERE user_id = ? AND application = ?")
 	if err != nil {
 		return
 	}

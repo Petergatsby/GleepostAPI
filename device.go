@@ -26,7 +26,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 		deviceType := r.FormValue("type")
 		deviceID := r.FormValue("device_id")
 		log.Println("Device:", deviceType, deviceID)
-		device, err := api.AddDevice(userID, deviceType, deviceID)
+		device, err := api.AddDevice(userID, deviceType, deviceID, "gleepost")
 		log.Println(device, err)
 		if err != nil {
 			go api.Count(1, "gleepost.devices.post.500")
