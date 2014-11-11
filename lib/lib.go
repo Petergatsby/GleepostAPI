@@ -23,13 +23,13 @@ import (
 
 //API contains all the configuration and sub-modules the Gleepost API requires to function.
 type API struct {
-	cache  *cache.Cache
-	db     *db.DB
-	fb     *FB
-	mail   *mail.Mailer
-	Config conf.Config
-	push   *push.Pusher
-	statsd g2s.Statter
+	cache   *cache.Cache
+	db      *db.DB
+	fb      *FB
+	mail    *mail.Mailer
+	Config  conf.Config
+	pushers map[string]*push.Pusher
+	statsd  g2s.Statter
 }
 
 //New creates an API from a gp.Config
@@ -40,7 +40,10 @@ func New(conf conf.Config) (api *API) {
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.mail = mail.New(conf.Email)
-	api.push = push.New(conf)
+	api.pushers = make(map[string]*push.Pusher)
+	for _, psh := range conf.Pushers {
+		api.pushers[psh.AppName] = push.New(psh)
+	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {
 		log.Printf("Statsd failed: %s\nMake sure you have the right address in your conf.json\n", err)

@@ -16,8 +16,32 @@ type Pusher struct {
 	Connection *apns.Connection
 }
 
+//Feedbacker is a function which processes APNS feedback.
+type Feedbacker func(string, uint32) error
+
+//CheckFeedbackService receives any bad device tokens from APNS and processes the result with f.
+func (pusher Pusher) CheckFeedbackService(f Feedbacker) {
+	url := "feedback.sandbox.push.apple.com:2196"
+	if pusher.APNSconfig.Production {
+		url = "feedback.push.apple.com:2196"
+	}
+	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
+	log.Println("Connected to feedback service", url)
+	go client.ListenForFeedback()
+	for {
+		select {
+		case resp := <-apns.FeedbackChannel:
+			log.Println("Bad device:", resp.DeviceToken, resp.Timestamp)
+			f(resp.DeviceToken, resp.Timestamp)
+		case <-apns.ShutdownChannel:
+			log.Println("feedback service ended")
+			return
+		}
+	}
+}
+
 //New constructs a Pusher from a Config
-func New(conf conf.Config) (pusher *Pusher) {
+func New(conf conf.PusherConfig) (pusher *Pusher) {
 	pusher = new(Pusher)
 	pusher.APNSconfig = conf.APNS
 	pusher.GCMconfig = conf.GCM
