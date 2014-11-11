@@ -21,6 +21,7 @@ var (
 
 func init() {
 	base.HandleFunc("/invite_message", inviteMessageHandler)
+	base.HandleFunc("/contact_form", contactFormHandler).Methods("POST")
 	base.HandleFunc("/", optionsHandler).Methods("OPTIONS")
 }
 
@@ -102,4 +103,13 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
+}
+
+func contactFormHandler(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.contact_form.post")
+	err := api.ContactFormRequest(r.FormValue("name"), r.FormValue("college"), r.FormValue("email"), r.FormValue("phoneNo"))
+	if err != nil {
+		jsonErr(w, err, 500)
+	}
+	w.WriteHeader(204)
 }

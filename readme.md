@@ -47,6 +47,8 @@ These endpoints are accessible to the world.
 
 /resend_verification [[POST]](#post-resend_verification)
 
+/contact_form [[POST]](#post-contact_form)
+
 ###Authenticated endpoints:
 These endpoints require authentication to access.
 You must send an <id, token> pair with a request, which you can generate with /login or /fblogin
@@ -1816,6 +1818,14 @@ required parameters: email
 Resend a verification email.
 
 If successful, will respond with HTTP 204.
+
+##POST /contact_form
+
+Required parameters: `name`, `college`, `email`, `phoneNo` 
+
+This records someone reaching out for contact via the form on gleepost.com.
+
+On success, 204.
 
 ##GET /search/users/[name]
 required parameters: id, token, name
