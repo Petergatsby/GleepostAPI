@@ -244,7 +244,7 @@ func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PostSmall, e
 func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PostSmall, err error) {
 	pending = make([]gp.PostSmall, 0)
 	//This query assumes pending = 1 and rejected = 2
-	q := "SELECT DISTINCT wall_posts.id, wall_posts.`by`, time, text " +
+	q := "SELECT DISTINCT wall_posts.id, wall_posts.`by`, time, text, network_id " +
 		"FROM wall_posts " +
 		"LEFT JOIN post_reviews ON wall_posts.id = post_reviews.post_id " +
 		"WHERE deleted = 0 AND pending > 0 AND wall_posts.`by` = ? " +
