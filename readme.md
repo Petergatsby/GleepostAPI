@@ -1775,6 +1775,18 @@ HTTP 200
 			"name":"testing_user",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		}
+	},
+	{
+		"id":3006,
+		"type":"approved_post",
+		"post":12345,
+		"time":"2014-11-12T22:51:35Z",
+		"user":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"seen":false
 	}
 ] 
 
