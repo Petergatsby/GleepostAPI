@@ -34,6 +34,7 @@ func (db *DB) ApproveAccess(userID gp.UserID, netID gp.NetworkID) (perm gp.Appro
 
 }
 
+//NoSuchGroup is returned when a lookup of a group's master-group fails.
 var NoSuchGroup = gp.APIerror{Reason: "No such group"}
 
 //MasterGroup returns the id of the group which administrates this network, or NoSuchGroup if there is none.
