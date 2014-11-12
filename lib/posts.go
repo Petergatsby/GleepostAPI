@@ -422,6 +422,8 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 		case level.Level == 3: //3 is "all"
 			pending = true
 		default:
+			log.Println(level.Categories)
+			log.Println(tags)
 			for _, tag := range tags {
 				for _, filter := range level.Categories {
 					if tag == filter {
