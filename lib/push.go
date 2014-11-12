@@ -366,6 +366,11 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserID, device stri
 			d.LocArgs = []string{n.By.Name}
 			pn.Set("commenter-id", n.By.ID)
 			pn.Set("post-id", n.Post)
+		case n.Type == "approved_post" && newPush:
+			d.LocKey = "approved_post"
+			d.LocArgs = []string{n.By.Name}
+			pn.Set("approver-id", n.By.ID)
+			pn.Set("post-id", n.Post)
 		default:
 			alert = false
 		}

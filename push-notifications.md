@@ -252,3 +252,22 @@
 Alert contains an arbitrary update message.
 Version is the new app version number.
 
+##Someone approved your post
+
+(iOS)
+
+```json
+{
+    "aps":{
+         "alert":{
+             "loc-key":"approved_post",
+             "loc-args":["Patrick"],
+         },
+         "badge":12345,
+         "sound":"default"
+     },
+     "approver-id":6789,
+     "post-id":12345
+}
+
+```
