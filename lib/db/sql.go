@@ -1179,6 +1179,8 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 		fallthrough
 	case ntype == "group_post":
 		fallthrough
+	case ntype == "approved_post":
+		fallthrough
 	case ntype == "added_group":
 		s, err = db.prepare(notificationInsertLocation)
 		if err != nil {
@@ -1202,6 +1204,8 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 	n.ID = gp.NotificationID(id)
 	switch {
 	case ntype == "liked":
+		fallthrough
+	case ntype == "approved_post":
 		fallthrough
 	case ntype == "commented":
 		np := gp.PostNotification{Notification: n, Post: gp.PostID(location)}

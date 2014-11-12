@@ -1,6 +1,11 @@
 package lib
 
-import "github.com/draaglom/GleepostAPI/lib/gp"
+import (
+	"log"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/apns"
+)
 
 //NoSuchLevelErr happens when you try to set an approval level outside the range [0..3].
 var NoSuchLevelErr = gp.APIerror{Reason: "That's not a valid approval level"}
@@ -53,24 +58,28 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 	case !access.ApproveAccess:
 		return pending, &ENOTALLOWED
 	default:
-		_pending, err := api.db.PendingPosts(netID)
-		if err != nil {
-			return pending, err
-		}
-
-		for i := range _pending {
-			pending = append(pending, gp.PendingPost{PostSmall: _pending[i]})
-			processed, err := api.PostProcess(pending[i].PostSmall)
-			if err == nil {
-				pending[i].PostSmall = processed
-			}
-			history, err := api.db.ReviewHistory(pending[i].ID)
-			if err == nil {
-				pending[i].ReviewHistory = history
-			}
-		}
-		return pending, nil
+		return api.getNetworkPending(netID)
 	}
+}
+
+func (api *API) getNetworkPending(netID gp.NetworkID) (pending []gp.PendingPost, err error) {
+	_pending, err := api.db.PendingPosts(netID)
+	if err != nil {
+		return pending, err
+	}
+
+	for i := range _pending {
+		pending = append(pending, gp.PendingPost{PostSmall: _pending[i]})
+		processed, err := api.PostProcess(pending[i].PostSmall)
+		if err == nil {
+			pending[i].PostSmall = processed
+		}
+		history, err := api.db.ReviewHistory(pending[i].ID)
+		if err == nil {
+			pending[i].ReviewHistory = history
+		}
+	}
+	return pending, nil
 }
 
 func (api *API) isPendingVisible(userID gp.UserID, postID gp.PostID) (visible bool, err error) {
@@ -106,7 +115,15 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 	if !access.ApproveAccess {
 		return &ENOTALLOWED
 	}
-	return api.db.ApprovePost(userID, postID, reason)
+	err = api.db.ApprovePost(userID, postID, reason)
+	if err == nil {
+		//Notify user their post has been approved
+		api.createNotification("approved_post", userID, p.By.ID, uint64(postID))
+		//Silently reduce badge count for app users
+		//nb: just using p.Network won't work if we eventually want to eg. approve posts in public groups
+		api.silentSetApproveBadgeCount(p.Network)
+	}
+	return
 }
 
 //GetNetworkApproved returns the list of approved posts in this network.
@@ -200,4 +217,49 @@ func (api *API) PendingPosts(userID gp.UserID) (pending []gp.PendingPost, err er
 		}
 	}
 	return
+}
+
+func (api *API) silentSetApproveBadgeCount(netID gp.NetworkID) {
+	posts, err := api.getNetworkPending(netID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	badge := len(posts)
+	users, err := api.approveUsers(netID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, u := range users {
+		devices, err := api.GetDevices(u.ID, "approve")
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		for _, d := range devices {
+			switch {
+			case d.Type == "ios":
+				payload := apns.NewPayload()
+				payload.Badge = badge
+				pn := apns.NewPushNotification()
+				pn.DeviceToken = d.ID
+				pn.AddPayload(payload)
+				err := api.pushers["approve"].IOSPush(pn)
+				if err != nil {
+					log.Println(err)
+				}
+			default:
+				//We only support iOS so far.
+			}
+		}
+	}
+}
+
+func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error) {
+	master, err := api.db.MasterGroup(netID)
+	if err != nil {
+		return
+	}
+	return api.db.GetNetworkUsers(master)
 }

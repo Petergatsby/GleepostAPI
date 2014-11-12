@@ -34,6 +34,22 @@ func (db *DB) ApproveAccess(userID gp.UserID, netID gp.NetworkID) (perm gp.Appro
 
 }
 
+var NoSuchGroup = gp.APIerror{Reason: "No such group"}
+
+//MasterGroup returns the id of the group which administrates this network, or NoSuchGroup if there is none.
+func (db *DB) MasterGroup(netID gp.NetworkID) (master gp.NetworkID, err error) {
+	q := "SELECT master_group FROM network WHERE id = ? AND MASTER NOT NULL"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netID).Scan(&master)
+	if err == sql.ErrNoRows {
+		err = NoSuchGroup
+	}
+	return
+}
+
 //ApproveLevel returns this network's current approval level.
 func (db *DB) ApproveLevel(netID gp.NetworkID) (level gp.ApproveLevel, err error) {
 	q := "SELECT approval_level, approved_categories FROM network WHERE id = ?"
