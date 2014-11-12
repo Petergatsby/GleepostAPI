@@ -1128,6 +1128,8 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 			switch {
 			case notification.Type == "liked":
 				fallthrough
+			case notification.Type == "approved_post":
+				fallthrough
 			case notification.Type == "commented":
 				np := gp.PostNotification{Notification: notification, Post: gp.PostID(location.Int64)}
 				notifications = append(notifications, np)
