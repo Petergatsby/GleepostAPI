@@ -53,11 +53,13 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 	case !access.ApproveAccess:
 		return pending, &ENOTALLOWED
 	default:
-		pending, err = api.db.PendingPosts(netID)
+		_pending, err := api.db.PendingPosts(netID)
 		if err != nil {
-			return
+			return pending, err
 		}
-		for i := range pending {
+
+		for i := range _pending {
+			pending = append(pending, gp.PendingPost{PostSmall: _pending[i]})
 			processed, err := api.PostProcess(pending[i].PostSmall)
 			if err == nil {
 				pending[i].PostSmall = processed
@@ -67,7 +69,7 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 				pending[i].ReviewHistory = history
 			}
 		}
-		return
+		return pending, nil
 	}
 }
 
@@ -117,11 +119,12 @@ func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID) (approv
 	case !access.ApproveAccess:
 		return approved, &ENOTALLOWED
 	default:
-		approved, err = api.db.GetNetworkApproved(netID)
+		_approved, err := api.db.GetNetworkApproved(netID)
 		if err != nil {
-			return
+			return approved, err
 		}
-		for i := range approved {
+		for i := range _approved {
+			approved = append(approved, gp.PendingPost{PostSmall: _approved[i]})
 			processed, err := api.PostProcess(approved[i].PostSmall)
 			if err == nil {
 				approved[i].PostSmall = processed
@@ -131,7 +134,7 @@ func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID) (approv
 				approved[i].ReviewHistory = history
 			}
 		}
-		return
+		return approved, nil
 	}
 }
 
@@ -159,11 +162,12 @@ func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID) (reject
 	case !access.ApproveAccess:
 		return rejected, &ENOTALLOWED
 	default:
-		rejected, err = api.db.GetNetworkRejected(netID)
+		_rejected, err := api.db.GetNetworkRejected(netID)
 		if err != nil {
-			return
+			return rejected, err
 		}
-		for i := range rejected {
+		for i := range _rejected {
+			rejected = append(rejected, gp.PendingPost{PostSmall: _rejected[i]})
 			processed, err := api.PostProcess(rejected[i].PostSmall)
 			if err == nil {
 				rejected[i].PostSmall = processed
@@ -173,18 +177,19 @@ func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID) (reject
 				rejected[i].ReviewHistory = history
 			}
 		}
-		return
+		return rejected, nil
 	}
 }
 
 //PendingPosts returns this user's pending posts.
 func (api *API) PendingPosts(userID gp.UserID) (pending []gp.PendingPost, err error) {
 	pending = make([]gp.PendingPost, 0)
-	pending, err = api.db.UserPendingPosts(userID)
+	_pending, err := api.db.UserPendingPosts(userID)
 	if err != nil {
-		return
+		return pending, err
 	}
-	for i := range pending {
+	for i := range _pending {
+		pending = append(pending, gp.PendingPost{PostSmall: _pending[i]})
 		processed, err := api.PostProcess(pending[i].PostSmall)
 		if err == nil {
 			pending[i].PostSmall = processed

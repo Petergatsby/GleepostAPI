@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"log"
 	"strings"
 	"time"
 
@@ -80,10 +79,10 @@ func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
 }
 
 //PendingPosts returns all the posts in this network which are awaiting review.
-func (db *DB) PendingPosts(netID gp.NetworkID) (pending []gp.PendingPost, err error) {
-	pending = make([]gp.PendingPost, 0)
+func (db *DB) PendingPosts(netID gp.NetworkID) (pending []gp.PostSmall, err error) {
+	pending = make([]gp.PostSmall, 0)
 	//This query assumes pending = 1 and rejected = 2
-	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text, network_id " +
 		"FROM wall_posts " +
 		"WHERE deleted = 0 AND pending = 1 AND network_id = ? " +
 		"ORDER BY time DESC "
@@ -96,39 +95,7 @@ func (db *DB) PendingPosts(netID gp.NetworkID) (pending []gp.PendingPost, err er
 		return
 	}
 	defer rows.Close()
-	for rows.Next() {
-		var post gp.PendingPost
-		var t string
-		var by gp.UserID
-		err = rows.Scan(&post.ID, &by, &t, &post.Text)
-		if err != nil {
-			return pending, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return pending, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.ID)
-			post.Images, err = db.GetPostImages(post.ID)
-			if err != nil {
-				return
-			}
-			post.Videos, err = db.GetPostVideos(post.ID)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.ID)
-			if err != nil {
-				return
-			}
-			pending = append(pending, post)
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
-	return
+	return db.scanPostRows(rows, WhereClause{})
 }
 
 //ReviewHistory returns all the review events on this post
@@ -213,8 +180,8 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 }
 
 //GetNetworkApproved returns the 20 most recent approved posts in this network.
-func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PendingPost, err error) {
-	approved = make([]gp.PendingPost, 0)
+func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PostSmall, err error) {
+	approved = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
 		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
 		"WHERE wall_posts.deleted = 0 AND pending = 0 AND post_reviews.action = 'approved' " +
@@ -229,39 +196,7 @@ func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PendingPost,
 		return
 	}
 	defer rows.Close()
-	for rows.Next() {
-		var post gp.PendingPost
-		var t string
-		var by gp.UserID
-		err = rows.Scan(&post.ID, &by, &t, &post.Text)
-		if err != nil {
-			return approved, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return approved, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.ID)
-			post.Images, err = db.GetPostImages(post.ID)
-			if err != nil {
-				return
-			}
-			post.Videos, err = db.GetPostVideos(post.ID)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.ID)
-			if err != nil {
-				return
-			}
-			approved = append(approved, post)
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
-	return
+	return db.scanPostRows(rows, WhereClause{})
 }
 
 //RejectPost marks this post as 'rejected'.
@@ -285,8 +220,8 @@ func (db *DB) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err
 }
 
 //GetNetworkRejected returns the posts in this network which have been rejected.
-func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PendingPost, err error) {
-	rejected = make([]gp.PendingPost, 0)
+func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PostSmall, err error) {
+	rejected = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
 		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
 		"WHERE wall_posts.deleted = 0 AND pending = 2 AND post_reviews.action = 'rejected' " +
@@ -301,45 +236,13 @@ func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PendingPost,
 		return
 	}
 	defer rows.Close()
-	for rows.Next() {
-		var post gp.PendingPost
-		var t string
-		var by gp.UserID
-		err = rows.Scan(&post.ID, &by, &t, &post.Text)
-		if err != nil {
-			return rejected, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return rejected, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.ID)
-			post.Images, err = db.GetPostImages(post.ID)
-			if err != nil {
-				return
-			}
-			post.Videos, err = db.GetPostVideos(post.ID)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.ID)
-			if err != nil {
-				return
-			}
-			rejected = append(rejected, post)
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
-	return
+	return db.scanPostRows(rows, WhereClause{})
 
 }
 
 //UserPendingPosts returns all this user's pending posts.
-func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PendingPost, err error) {
-	pending = make([]gp.PendingPost, 0)
+func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PostSmall, err error) {
+	pending = make([]gp.PostSmall, 0)
 	//This query assumes pending = 1 and rejected = 2
 	q := "SELECT DISTINCT wall_posts.id, wall_posts.`by`, time, text " +
 		"FROM wall_posts " +
@@ -355,38 +258,5 @@ func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PendingPost, err 
 		return
 	}
 	defer rows.Close()
-	for rows.Next() {
-		var post gp.PendingPost
-		var t string
-		var by gp.UserID
-		err = rows.Scan(&post.ID, &by, &t, &post.Text)
-		if err != nil {
-			return pending, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return pending, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.ID)
-			post.Images, err = db.GetPostImages(post.ID)
-			if err != nil {
-				return
-			}
-			post.Videos, err = db.GetPostVideos(post.ID)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.ID)
-			if err != nil {
-				return
-			}
-			pending = append(pending, post)
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
-	return
-
+	return db.scanPostRows(rows, WhereClause{})
 }

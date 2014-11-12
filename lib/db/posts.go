@@ -204,14 +204,8 @@ func composePostQuery(whereMode int, orderMode int, filter bool) string {
 	return q
 }
 
-//NewGetPosts returns posts matching the WhereClause.
-func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
+func (db *DB) scanPostRows(rows *sql.Rows, where WhereClause) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	rows, err := db.WhereRows(where, orderMode, index, count)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
 	for rows.Next() {
 		log.Println("Post!")
 		var post gp.PostSmall
@@ -253,7 +247,18 @@ func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count i
 			log.Println("Bad post: ", post)
 		}
 	}
-	return posts, nil
+	return
+}
+
+//NewGetPosts returns posts matching the WhereClause.
+func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	rows, err := db.WhereRows(where, orderMode, index, count)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	return db.scanPostRows(rows, where)
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
@@ -285,7 +290,7 @@ func (db *DB) AddPost(userID gp.UserID, text string, network gp.NetworkID, pendi
 //GetLive returns a list of events whose event time is after "after", ordered by time.
 func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	q := "SELECT wall_posts.id, `by`, time, text " +
+	q := "SELECT wall_posts.id, `by`, time, text, network_id " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
 		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
@@ -299,39 +304,8 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 		return
 	}
 	defer rows.Close()
-	for rows.Next() {
-		var post gp.PostSmall
-		var t string
-		var by gp.UserID
-		err = rows.Scan(&post.ID, &by, &t, &post.Text)
-		if err != nil {
-			return posts, err
-		}
-		post.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return posts, err
-		}
-		post.By, err = db.GetUser(by)
-		if err == nil {
-			post.CommentCount = db.GetCommentCount(post.ID)
-			post.Images, err = db.GetPostImages(post.ID)
-			if err != nil {
-				return
-			}
-			post.Videos, err = db.GetPostVideos(post.ID)
-			if err != nil {
-				return
-			}
-			post.LikeCount, err = db.LikeCount(post.ID)
-			if err != nil {
-				return
-			}
-			posts = append(posts, post)
-		} else {
-			log.Println("Bad post: ", post)
-		}
-	}
-	return
+	//The second argument is meaningless and should be removed.
+	return db.scanPostRows(rows, WhereClause{})
 }
 
 //GetPosts finds posts in the network netId.
