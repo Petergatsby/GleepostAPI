@@ -32,9 +32,9 @@ const (
 
 	attendClause = "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
 	//Wheres
-	notDeleted = "WHERE deleted = 0 "
-	notPending = "AND pending = 0 "
-	category   = "AND categories.tag = ? "
+	notDeleted    = "WHERE deleted = 0 "
+	notPending    = "AND pending = 0 "
+	whereCategory = "AND categories.tag = ? "
 
 	whereBefore = "AND wall_posts.id < ? "
 	whereAfter  = "AND wall_posts.id > ? "
@@ -79,120 +79,6 @@ type WhereClause struct {
 	User        gp.UserID
 	Perspective gp.UserID
 	Category    string
-}
-
-//WhereRows basically acts as a shitty ORM and returns a sql.Rows which can then be blindly iterated over by NewGetPosts.
-//This is an abomination which I'm too scared and have no time to touch, but it works. For now.
-//Let's just hope that you, dear reader, don't ever have to extend it.
-//Time to extend it, lol.
-func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (rows *sql.Rows, err error) {
-	//Oh shit. I accidentally an ORM?
-	q := composePostQuery(w.Mode, orderMode, (len(w.Category) > 0))
-	log.Println("Composing:", w.Mode, orderMode)
-	var stmt *sql.Stmt
-	log.Println(q)
-	switch {
-	case w.Mode == WNETWORK:
-		stmt, err = db.prepare(q)
-		if err != nil {
-			return
-		}
-		if len(w.Category) > 0 {
-			rows, err = stmt.Query(w.Network, w.Category, index, count)
-		} else {
-			rows, err = stmt.Query(w.Network, index, count)
-		}
-	case w.Mode == WUSER:
-		stmt, err = db.prepare(q)
-		if err != nil {
-			return
-		}
-		if len(w.Category) > 0 {
-			rows, err = stmt.Query(w.User, w.Perspective, w.Category, index, count)
-		} else {
-			rows, err = stmt.Query(w.User, w.Perspective, index, count)
-		}
-	case w.Mode == WGROUPS:
-		stmt, err = db.prepare(q)
-		if err != nil {
-			return
-		}
-		if len(w.Category) > 0 {
-			rows, err = stmt.Query(w.User, w.Category, index, count)
-		} else {
-			rows, err = stmt.Query(w.User, index, count)
-		}
-	default:
-		err = &EBADWHERE
-		return
-	}
-	return rows, err
-}
-
-func composePostQuery(whereMode int, orderMode int, filter bool) string {
-	var q string
-	if filter {
-		q = baseQuery + categoryClause + notDeleted + notPending
-	} else {
-		q = baseQuery + notDeleted + notPending
-	}
-	switch {
-	case whereMode == WNETWORK:
-		q += byNetwork
-		if filter {
-			q += category
-		}
-		switch {
-		case orderMode == gp.OSTART:
-			q += orderLinear
-		case orderMode == gp.OAFTER:
-			q += whereAfter + orderChronological
-		case orderMode == gp.OBEFORE:
-			q += whereBefore + orderChronological
-		}
-	case whereMode == WUSER:
-		q += byPoster
-		if filter {
-			q += category
-		}
-		switch {
-		case orderMode == gp.OSTART:
-			q += orderLinear
-		case orderMode == gp.OAFTER:
-			q += whereAfter + orderChronological
-		case orderMode == gp.OBEFORE:
-			q += whereBefore + orderChronological
-		}
-	case whereMode == WGROUPS:
-		q += byUserGroups
-		if filter {
-			q += category
-		}
-		switch {
-		case orderMode == gp.OSTART:
-			q += orderLinear
-		case orderMode == gp.OAFTER:
-			q += whereAfter + orderChronological
-		case orderMode == gp.OBEFORE:
-			q += whereBefore + orderChronological
-		}
-	case whereMode == WATTENDS:
-		q = baseQuery + attendClause
-		if filter {
-			q += categoryClause + notDeleted + notPending + byVisibleAttendance + category
-		} else {
-			q += notDeleted + notPending + byVisibleAttendance
-		}
-		switch {
-		case orderMode == gp.OSTART:
-			q += orderLinearAttend
-		case orderMode == gp.OAFTER:
-			q += whereAfterAtt + orderChronologicalAttend
-		case orderMode == gp.OBEFORE:
-			q += whereBeforeAtt + orderChronologicalAttend
-		}
-	}
-	return q
 }
 
 func (db *DB) scanPostRows(rows *sql.Rows, where WhereClause) (posts []gp.PostSmall, err error) {
@@ -241,23 +127,38 @@ func (db *DB) scanPostRows(rows *sql.Rows, where WhereClause) (posts []gp.PostSm
 	return
 }
 
-//NewGetPosts returns posts matching the WhereClause.
-func (db *DB) NewGetPosts(where WhereClause, orderMode int, index int64, count int) (posts []gp.PostSmall, err error) {
+//GetUserPosts returns the most recent count posts by userId after the post with id after.
+func (db *DB) GetUserPosts(userID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	rows, err := db.WhereRows(where, orderMode, index, count)
+	var q string
+	if len(category) > 0 {
+		q = baseQuery + categoryClause + notDeleted + notPending + byPoster + category
+	} else {
+		q = baseQuery + notDeleted + notPending + byPoster
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinear
+	case mode == gp.OAFTER:
+		q += whereAfter + orderChronological
+	case mode == gp.OBEFORE:
+		q += whereBefore + orderChronological
+	}
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(userID, perspective, category, index, count)
+	} else {
+		rows, err = s.Query(userID, perspective, index, count)
+	}
 	if err != nil {
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, where)
-}
-
-//GetUserPosts returns the most recent count posts by userId after the post with id after.
-func (db *DB) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	posts = make([]gp.PostSmall, 0)
-	where := WhereClause{Mode: WUSER, User: userID, Perspective: perspective, Category: category}
-	posts, err = db.NewGetPosts(where, mode, index, count)
-	return
+	return db.scanPostRows(rows, WhereClause{Mode: WUSER})
 }
 
 //AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
@@ -302,9 +203,35 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 //GetPosts finds posts in the network netId.
 func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	where := WhereClause{Mode: WNETWORK, Network: netID, Category: category}
-	posts, err = db.NewGetPosts(where, mode, index, count)
-	return
+	var q string
+	if len(category) > 0 {
+		q = baseQuery + categoryClause + notDeleted + notPending + byNetwork + category
+	} else {
+		q = baseQuery + notDeleted + notPending + byNetwork
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinear
+	case mode == gp.OAFTER:
+		q += whereAfter + orderChronological
+	case mode == gp.OBEFORE:
+		q += whereBefore + orderChronological
+	}
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(netID, category, index, count)
+	} else {
+		rows, err = s.Query(netID, index, count)
+	}
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	return db.scanPostRows(rows, WhereClause{})
 }
 
 //GetPostImages returns all the images associated with postID.
@@ -572,9 +499,35 @@ func (db *DB) GetEventPopularity(post gp.PostID) (popularity int, attendees int,
 //TODO: Verify shit doesn't break when a user has no user-groups
 func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	where := WhereClause{Mode: WGROUPS, User: user, Category: category}
-	posts, err = db.NewGetPosts(where, mode, index, count)
-	return
+	var q string
+	if len(category) > 0 {
+		q = baseQuery + categoryClause + notDeleted + notPending + byUserGroups + whereCategory
+	} else {
+		q = baseQuery + notDeleted + notPending + byUserGroups
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinear
+	case mode == gp.OAFTER:
+		q += whereAfter + orderChronological
+	case mode == gp.OBEFORE:
+		q += whereBefore + orderChronological
+	}
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(user, category, index, count)
+	} else {
+		rows, err = s.Query(user, index, count)
+	}
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	return db.scanPostRows(rows, WhereClause{Mode: WGROUPS})
 }
 
 //DeletePost marks a post as deleted in the database.
