@@ -191,7 +191,7 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 	if err != nil {
 		return
 	}
-	_, err = s.Exec()
+	_, err = s.Exec(postID)
 	return
 }
 
