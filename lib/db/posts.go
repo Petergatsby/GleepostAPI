@@ -636,3 +636,10 @@ func (db *DB) UserPostCount(perspective, user gp.UserID) (count int, err error) 
 	err = s.QueryRow(user, perspective).Scan(&count)
 	return
 }
+
+//UserAttending returns all the events this user is attending.
+func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
+	events = make([]gp.PostSmall, 0)
+	where := WhereClause{Mode: WATTENDS, User: user, Perspective: perspective, Category: category}
+	return db.NewGetPosts(where, mode, index, count)
+}
