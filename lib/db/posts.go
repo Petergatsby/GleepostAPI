@@ -64,24 +64,7 @@ const (
 //EBADORDER means you tried to order a post query in an unexpected way.
 var EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
 
-//EBADWHERE means you tried to filter posts in an unexpected way.
-var EBADWHERE = gp.APIerror{Reason: "Bad WhereClause!"}
-
-//WhereClause specifies how we're looking for posts.
-//Mode may be one of WNETWORk, WUSER, WGROUPS.
-//Network specifies which network we're looking at if using WNETWORK
-//User specifies the user we're looking at if using WUSER
-//Perspective is the user whose perspective we're looking from when using WUSER or WGROUPS
-//Category optionally restricts posts just to this one category.
-type WhereClause struct {
-	Mode        int
-	Network     gp.NetworkID
-	User        gp.UserID
-	Perspective gp.UserID
-	Category    string
-}
-
-func (db *DB) scanPostRows(rows *sql.Rows, where WhereClause) (posts []gp.PostSmall, err error) {
+func (db *DB) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	for rows.Next() {
 		log.Println("Post!")
@@ -111,7 +94,7 @@ func (db *DB) scanPostRows(rows *sql.Rows, where WhereClause) (posts []gp.PostSm
 			if err != nil {
 				return
 			}
-			if where.Mode == WGROUPS || where.Mode == WUSER {
+			if expandNetworks {
 				net, err := db.GetNetwork(post.Network)
 				if err == nil {
 					post.Group = &net
@@ -158,7 +141,7 @@ func (db *DB) GetUserPosts(userID, perspective gp.UserID, mode int, index int64,
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{Mode: WUSER})
+	return db.scanPostRows(rows, true)
 }
 
 //AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
@@ -197,7 +180,7 @@ func (db *DB) GetLive(netID gp.NetworkID, after time.Time, count int) (posts []g
 	}
 	defer rows.Close()
 	//The second argument is meaningless and should be removed.
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 }
 
 //GetPosts finds posts in the network netId.
@@ -231,7 +214,7 @@ func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, cat
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 }
 
 //GetPostImages returns all the images associated with postID.
@@ -527,7 +510,7 @@ func (db *DB) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count in
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{Mode: WGROUPS})
+	return db.scanPostRows(rows, true)
 }
 
 //DeletePost marks a post as deleted in the database.
@@ -612,5 +595,5 @@ func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode i
 	if err != nil {
 		return
 	}
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 }

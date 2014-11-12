@@ -95,7 +95,7 @@ func (db *DB) PendingPosts(netID gp.NetworkID) (pending []gp.PostSmall, err erro
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 }
 
 //ReviewHistory returns all the review events on this post
@@ -196,7 +196,7 @@ func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PostSmall, e
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 }
 
 //RejectPost marks this post as 'rejected'.
@@ -236,7 +236,7 @@ func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PostSmall, e
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 
 }
 
@@ -258,5 +258,5 @@ func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PostSmall, err er
 		return
 	}
 	defer rows.Close()
-	return db.scanPostRows(rows, WhereClause{})
+	return db.scanPostRows(rows, false)
 }
