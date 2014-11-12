@@ -1943,11 +1943,11 @@ Indicates whether you are allowed to access (a) Gleepost Approve in general (`ac
 }
 {
 "level":1,
-"categories":["parties"]
+"categories":["party"]
 }
 {
 "level":2,
-"categories":["events"]
+"categories":["event"]
 }
 {
 "level":3,

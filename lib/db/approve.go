@@ -62,9 +62,9 @@ func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
 	case level == 0:
 		categories = ""
 	case level == 1:
-		categories = "parties"
+		categories = "party"
 	case level == 2:
-		categories = "events"
+		categories = "event"
 	case level == 3:
 		categories = "all"
 	default:
