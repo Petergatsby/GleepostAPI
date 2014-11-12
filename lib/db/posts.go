@@ -23,6 +23,44 @@ const (
 	WATTENDS
 )
 
+const (
+	//Base
+	baseQuery = "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
+	//Joins
+	categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+		"JOIN categories ON post_categories.category_id = categories.id "
+
+	attendClause = "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
+	//Wheres
+	notDeleted = "WHERE deleted = 0 "
+	notPending = "AND pending = 0 "
+	category   = "AND categories.tag = ? "
+
+	whereBefore = "AND wall_posts.id < ? "
+	whereAfter  = "AND wall_posts.id > ? "
+
+	whereBeforeAtt = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
+	whereAfterAtt  = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
+
+	byNetwork = "AND network_id = ? "
+	byPoster  = "AND `by` = ? AND network_id IN ( " +
+		"SELECT network_id FROM user_network WHERE user_id = ? ) "
+	byUserGroups = "AND network_id IN ( " +
+		"SELECT network_id FROM user_network " +
+		"JOIN network ON user_network.network_id = network.id " +
+		"WHERE user_id = ? AND network.user_group = 1 ) "
+	byVisibleAttendance = "AND network_id IN ( " +
+		"SELECT network_id FROM user_network WHERE user_id = ? ) " +
+		"AND event_attendees.user_id = ? "
+
+	//Orders
+	orderLinear        = "ORDER BY time DESC, id DESC LIMIT ?, ?"
+	orderChronological = "ORDER BY time DESC, id DESC LIMIT 0, ?"
+
+	orderLinearAttend        = "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
+	orderChronologicalAttend = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
+)
+
 //EBADORDER means you tried to order a post query in an unexpected way.
 var EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
 
@@ -84,17 +122,6 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 		} else {
 			rows, err = stmt.Query(w.User, index, count)
 		}
-	case w.Mode == WATTENDS:
-		stmt, err = db.prepare(q)
-		if err != nil {
-			return
-		}
-		if len(w.Category) > 0 {
-			rows, err = stmt.Query(w.Perspective, w.User, w.Category, index, count)
-		} else {
-			rows, err = stmt.Query(w.Perspective, w.User, index, count)
-		}
-
 	default:
 		err = &EBADWHERE
 		return
@@ -104,42 +131,6 @@ func (db *DB) WhereRows(w WhereClause, orderMode int, index int64, count int) (r
 
 func composePostQuery(whereMode int, orderMode int, filter bool) string {
 	var q string
-	//Base
-	baseQuery := "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
-	//Joins
-	categoryClause := "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
-		"JOIN categories ON post_categories.category_id = categories.id "
-
-	attendClause := "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
-	//Wheres
-	notDeleted := "WHERE deleted = 0 "
-	notPending := "AND pending = 0 "
-	category := "AND categories.tag = ? "
-
-	whereBefore := "AND wall_posts.id < ? "
-	whereAfter := "AND wall_posts.id > ? "
-
-	whereBeforeAtt := "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
-	whereAfterAtt := "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
-
-	byNetwork := "AND network_id = ? "
-	byPoster := "AND `by` = ? AND network_id IN ( " +
-		"SELECT network_id FROM user_network WHERE user_id = ? ) "
-	byUserGroups := "AND network_id IN ( " +
-		"SELECT network_id FROM user_network " +
-		"JOIN network ON user_network.network_id = network.id " +
-		"WHERE user_id = ? AND network.user_group = 1 ) "
-	byVisibleAttendance := "AND network_id IN ( " +
-		"SELECT network_id FROM user_network WHERE user_id = ? ) " +
-		"AND event_attendees.user_id = ? "
-
-	//Orders
-	orderLinear := "ORDER BY time DESC, id DESC LIMIT ?, ?"
-	orderChronological := "ORDER BY time DESC, id DESC LIMIT 0, ?"
-
-	orderLinearAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
-	orderChronologicalAttend := "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
-
 	if filter {
 		q = baseQuery + categoryClause + notDeleted + notPending
 	} else {
@@ -640,6 +631,33 @@ func (db *DB) UserPostCount(perspective, user gp.UserID) (count int, err error) 
 //UserAttending returns all the events this user is attending.
 func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
 	events = make([]gp.PostSmall, 0)
-	where := WhereClause{Mode: WATTENDS, User: user, Perspective: perspective, Category: category}
-	return db.NewGetPosts(where, mode, index, count)
+	q := baseQuery + attendClause
+	if len(category) > 0 {
+		q += categoryClause + notDeleted + notPending + byVisibleAttendance + category
+	} else {
+		q += notDeleted + notPending + byVisibleAttendance
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinearAttend
+	case mode == gp.OAFTER:
+		q += whereAfterAtt + orderChronologicalAttend
+	case mode == gp.OBEFORE:
+		q += whereBeforeAtt + orderChronologicalAttend
+	}
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(perspective, user, category, index, count)
+
+	} else {
+		rows, err = s.Query(perspective, user, index, count)
+	}
+	if err != nil {
+		return
+	}
+	return db.scanPostRows(rows, WhereClause{})
 }
