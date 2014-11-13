@@ -108,10 +108,10 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 	defer api.Time(time.Now(), "gleepost.contact_form.post")
 	err := api.ContactFormRequest(r.FormValue("name"), r.FormValue("college"), r.FormValue("email"), r.FormValue("phoneNo"))
-	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if err != nil {
 		jsonErr(w, err, 500)
 	}
-	w.WriteHeader(204)
+	jsonResponse(w, struct {
+		Success bool `json:"success"`
+	}{Success: true}, 200)
 }
