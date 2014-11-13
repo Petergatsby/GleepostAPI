@@ -166,7 +166,11 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 	if !access.ApproveAccess {
 		return &ENOTALLOWED
 	}
-	return api.db.RejectPost(userID, postID, reason)
+	err = api.db.RejectPost(userID, postID, reason)
+	if err == nil {
+		api.silentSetApproveBadgeCount(p.Network)
+	}
+	return
 }
 
 //GetNetworkRejected returns the list of rejected posts in this network.
