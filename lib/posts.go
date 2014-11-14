@@ -454,6 +454,11 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 					go api.notifyGroupNewPost(userID, netID)
 				}
 			}
+			if pending {
+				//Send out "There are posts to review" notification.
+				//For now we'll just badge...
+				api.silentSetApproveBadgeCount(netID)
+			}
 		}
 		return
 	}
