@@ -972,6 +972,16 @@ func (db *DB) PostCategories(post gp.PostID) (categories []gp.PostCategory, err 
 	return
 }
 
+//ClearCategories removes all this post's categories.
+func (db *DB) ClearCategories(post gp.PostID) (err error) {
+	s, err := db.prepare("DELETE FROM categories WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post)
+	return
+}
+
 /********************************************************************
 		Token
 ********************************************************************/

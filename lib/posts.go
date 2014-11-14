@@ -674,7 +674,14 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 		}
 		if len(tags) > 0 {
 			//Delete and re-set the categories
-
+			err = api.db.ClearCategories(postID)
+			if err != nil {
+				return
+			}
+			err = api.TagPost(postID, tags...)
+			if err != nil {
+				return
+			}
 		}
 	}
 	//If pending=2, pending=1
