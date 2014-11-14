@@ -14,6 +14,9 @@ var EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
 //CommentTooShort happens if you try to post an empty comment.
 var CommentTooShort = gp.APIerror{Reason: "Comment too short"}
 
+//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
+var NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
+
 //GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
 	return api.db.GetPost(postID)
@@ -365,11 +368,18 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 	if err != nil {
 		return
 	}
+	exists, err := api.UserUploadExists(userID, url)
+	if !exists || err != nil {
+		return NoSuchUpload
+	}
 	in, err := api.UserInNetwork(userID, post.Network)
 	switch {
 	case err != nil:
 		return
 	case !in:
+		err = ENOTALLOWED
+		return
+	case post.By.ID != userID:
 		err = ENOTALLOWED
 		return
 	default:
@@ -631,8 +641,21 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 			}
 		}
 		//Set attribs
+		if len(attribs) > 0 {
+			err = api.SetPostAttribs(postID, attribs)
+			if err != nil {
+				return
+			}
+		}
 		if len(url) > 0 {
-			//Set new image
+			err = api.clearPostImages(postID)
+			if err != nil {
+				return
+			}
+			err = api.UserAddPostImage(userID, postID, url)
+			if err != nil {
+				return
+			}
 		}
 		if videoID > 0 {
 			//Set new video
@@ -690,4 +713,8 @@ func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 
 func (api *API) changePostText(postID gp.PostID, text string) (err error) {
 	return api.db.ChangePostText(postID, text)
+}
+
+func (api *API) clearPostImages(postID gp.PostID) (err error) {
+	return api.db.ClearPostImages(postID)
 }

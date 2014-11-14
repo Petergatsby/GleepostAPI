@@ -301,21 +301,19 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postID := gp.PostID(_id)
 		url := r.FormValue("url")
-		exists, err := api.UserUploadExists(userID, url)
-		if exists && err == nil {
-			err := api.UserAddPostImage(userID, postID, url)
-			if err != nil {
-				if err == lib.ENOTALLOWED {
-					jsonErr(w, err, 403)
-				} else {
-					jsonErr(w, err, 500)
-				}
-			} else {
-				images := api.GetPostImages(postID)
-				jsonResponse(w, images, 201)
+		err := api.UserAddPostImage(userID, postID, url)
+		if err != nil {
+			switch {
+			case err == lib.ENOTALLOWED:
+				jsonErr(w, err, 403)
+			case err == lib.NoSuchUpload:
+				jsonErr(w, err, 400)
+			default:
+				jsonErr(w, err, 500)
 			}
 		} else {
-			jsonErr(w, NoSuchUpload, 400)
+			images := api.GetPostImages(postID)
+			jsonResponse(w, images, 201)
 		}
 	}
 }
