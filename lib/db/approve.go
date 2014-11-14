@@ -199,7 +199,7 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 //GetNetworkApproved returns the 20 most recent approved posts in this network.
 func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PostSmall, err error) {
 	approved = make([]gp.PostSmall, 0)
-	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text, network_id " +
 		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
 		"WHERE wall_posts.deleted = 0 AND pending = 0 AND post_reviews.action = 'approved' " +
 		"AND network_id = ? " +
@@ -239,7 +239,7 @@ func (db *DB) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err
 //GetNetworkRejected returns the posts in this network which have been rejected.
 func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PostSmall, err error) {
 	rejected = make([]gp.PostSmall, 0)
-	q := "SELECT wall_posts.id, wall_posts.`by`, time, text " +
+	q := "SELECT wall_posts.id, wall_posts.`by`, time, text, network_id " +
 		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
 		"WHERE wall_posts.deleted = 0 AND pending = 2 AND post_reviews.action = 'rejected' " +
 		"AND network_id = ? " +
