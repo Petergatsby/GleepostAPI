@@ -260,6 +260,16 @@ func (db *DB) ClearPostImages(postID gp.PostID) (err error) {
 	return
 }
 
+//ClearPostVideos deletes all videos from this post.
+func (db *DB) ClearPostVideos(postID gp.PostID) (err error) {
+	s, err := db.prepare("DELETE FROM post_videos WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID)
+	return
+}
+
 //AddPostVideo adds this video URL to a post.
 func (db *DB) AddPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
 	s, err := db.prepare("INSERT INTO post_videos (post_id, video_id) VALUES (?, ?)")

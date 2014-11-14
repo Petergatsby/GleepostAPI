@@ -413,6 +413,10 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 	}
 }
 
+func (api *API) clearPostVideos(postID gp.PostID) (err error) {
+	return api.db.ClearPostVideos(postID)
+}
+
 //AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
 func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.UserInNetwork(userID, netID)
@@ -658,7 +662,15 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 			}
 		}
 		if videoID > 0 {
+			err = api.clearPostVideos(postID)
+			if err != nil {
+				return
+			}
 			//Set new video
+			err = api.UserAddPostVideo(userID, postID, videoID)
+			if err != nil {
+				return
+			}
 		}
 		if len(tags) > 0 {
 			//Delete and re-set the categories
