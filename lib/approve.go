@@ -2,6 +2,7 @@ package lib
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/apns"
@@ -266,4 +267,47 @@ func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error
 		return
 	}
 	return api.db.GetNetworkUsers(master)
+}
+
+func (api *API) postsToApproveNotification(netID gp.NetworkID) {
+	posts, err := api.getNetworkPending(netID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	badge := len(posts)
+	users, err := api.approveUsers(netID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, u := range users {
+		devices, err := api.GetDevices(u.ID, "approve")
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		for _, d := range devices {
+			switch {
+			case d.Type == "ios":
+				payload := apns.NewPayload()
+				alert := apns.NewAlertDictionary()
+				alert.ActionLocKey = "Review"
+				alert.LocKey = "to_review"
+				alert.LocArgs = []string{strconv.Itoa(badge)}
+				payload.Badge = badge
+				payload.Alert = alert
+				payload.Sound = "default"
+				pn := apns.NewPushNotification()
+				pn.DeviceToken = d.ID
+				pn.AddPayload(payload)
+				err := api.pushers["approve"].IOSPush(pn)
+				if err != nil {
+					log.Println(err)
+				}
+			default:
+				//We only support iOS so far.
+			}
+		}
+	}
 }
