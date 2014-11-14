@@ -615,6 +615,48 @@ func (api *API) deletePost(post gp.PostID) (err error) {
 	return api.db.DeletePost(post)
 }
 
+//UserEditPost updates this post with entirely new information. Any fields which aren't set are unchanged.
+func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, attribs map[string]string, url string, videoID gp.VideoID, tags ...string) (post gp.PostFull, err error) {
+	editable, err := api.canEdit(userID, postID)
+	switch {
+	case err != nil:
+		return
+	case !editable:
+		return post, &ENOTALLOWED
+	default:
+		if len(text) > 0 {
+			err = api.changePostText(postID, text)
+			if err != nil {
+				return
+			}
+		}
+		//Set attribs
+		if len(url) > 0 {
+			//Set new image
+		}
+		if videoID > 0 {
+			//Set new video
+		}
+		if len(tags) > 0 {
+			//Delete and re-set the categories
+
+		}
+	}
+	//If pending=2, pending=1
+	return api.getPostFull(postID)
+}
+
+func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err error) {
+	post, err := api.GetPost(postID)
+	if err != nil {
+		return
+	}
+	if post.By.ID == userID {
+		return true, nil
+	}
+	return false, nil
+}
+
 //UserGetEventAttendees returns all the attendees of a given event, or ENOTALLOWED if user isn't in its network.
 func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attendees []gp.User, err error) {
 	post, err := api.GetPost(postID)
@@ -644,4 +686,8 @@ func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 	default:
 		return api.db.GetEventPopularity(postID)
 	}
+}
+
+func (api *API) changePostText(postID gp.PostID, text string) (err error) {
+	return api.db.ChangePostText(postID, text)
 }

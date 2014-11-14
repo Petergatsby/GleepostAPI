@@ -597,3 +597,14 @@ func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode i
 	}
 	return db.scanPostRows(rows, false)
 }
+
+//ChangePostText sets this post's text.
+func (db *DB) ChangePostText(postID gp.PostID, text string) (err error) {
+	q := "UPDATE wall_posts SET text = ? WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(text, postID)
+	return
+}

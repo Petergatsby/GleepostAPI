@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ func init() {
 	base.HandleFunc("/posts/{id:[0-9]+}/comments", postComments).Methods("POST")
 	base.HandleFunc("/posts/{id:[0-9]+}", getPost).Methods("GET")
 	base.HandleFunc("/posts/{id:[0-9]+}/", getPost).Methods("GET")
+	base.HandleFunc("/posts/{id:[0-9]+}", putPost).Methods("PUT")
+	base.HandleFunc("/posts/{id:[0-9]+}/", putPost).Methods("PUT")
 	base.HandleFunc("/posts/{id:[0-9]+}/", deletePost).Methods("DELETE")
 	base.HandleFunc("/posts/{id:[0-9]+}", deletePost).Methods("DELETE")
 	base.HandleFunc("/posts/{id:[0-9]+}/images", postImages).Methods("POST")
@@ -30,7 +33,7 @@ func init() {
 }
 
 func ignored(key string) bool {
-	keys := []string{"id", "token", "text", "url", "tags", "popularity"}
+	keys := []string{"id", "token", "text", "url", "tags", "popularity", "video"}
 	for _, v := range keys {
 		if key == v {
 			return true
@@ -246,6 +249,45 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, post, 200)
 	}
+}
+
+func putPost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.posts.%s.put", vars["id"])
+	defer api.Time(time.Now(), url)
+	userID, err := authenticate(r)
+	if err != nil {
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	}
+	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
+	postID := gp.PostID(_id)
+	text := r.FormValue("text")
+	imgurl := r.FormValue("url")
+	tags := r.FormValue("tags")
+	var ts []string
+	if len(tags) > 1 {
+		ts = strings.Split(tags, ",")
+	}
+	_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
+	videoID := gp.VideoID(_vID)
+	attribs := make(map[string]string)
+	for k, v := range r.Form {
+		if !ignored(k) {
+			attribs[k] = strings.Join(v, "")
+		}
+	}
+	updatedPost, err := api.UserEditPost(userID, postID, text, attribs, imgurl, videoID, ts...)
+	if err != nil {
+		e, ok := err.(*gp.APIerror)
+		if ok && *e == lib.ENOTALLOWED {
+			jsonResponse(w, e, 403)
+		} else {
+			jsonErr(w, err, 500)
+		}
+		return
+	}
+	jsonResponse(w, updatedPost, 200)
 }
 
 func postImages(w http.ResponseWriter, r *http.Request) {
