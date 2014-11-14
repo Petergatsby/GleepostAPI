@@ -1841,7 +1841,10 @@ Required parameters: `name`, `college`, `email`, `phoneNo`
 
 This records someone reaching out for contact via the form on gleepost.com.
 
-On success, 204.
+On success, 200.
+```json
+{"success":true}
+```
 
 ##GET /search/users/[name]
 required parameters: id, token, name

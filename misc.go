@@ -111,5 +111,7 @@ func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonErr(w, err, 500)
 	}
-	w.WriteHeader(204)
+	jsonResponse(w, struct {
+		Success bool `json:"success"`
+	}{Success: true}, 200)
 }
