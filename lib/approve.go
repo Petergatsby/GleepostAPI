@@ -64,6 +64,7 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 }
 
 func (api *API) getNetworkPending(netID gp.NetworkID) (pending []gp.PendingPost, err error) {
+	pending = make([]gp.PendingPost, 0)
 	_pending, err := api.db.PendingPosts(netID)
 	if err != nil {
 		return pending, err
