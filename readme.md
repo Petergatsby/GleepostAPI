@@ -59,7 +59,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /posts/[post-id]/comments [[GET]](#get-postspost-idcomments) [[POST]](#post-postspost-idcomments)
 
-/posts/[post-id] [[GET]](#get-postspost-id) [[DELETE]](#delete-postspost-id)
+/posts/[post-id] [[GET]](#get-postspost-id) [[PUT]](#put-postspost-id)  [[DELETE]](#delete-postspost-id)
 
 /posts/[post-id]/images [[POST]](#post-postspost-idimages)
 
@@ -438,6 +438,87 @@ example responses:
 	]
 }
 
+```
+
+##PUT /posts/[post-id]
+optional parameters:
+`text` : replaces the body of the post
+
+`url` : replaces the post image
+
+`video` : replaces the post video
+
+`tags` : replaces the post categories
+
+`reason` : describe the changes you made
+
+Any other parameters are used as attribs, just as in post creation.
+Providing an attrib you already gave will over-write it; there is currently no way to delete an existing attrib.
+
+Any parameters of the post you do not provide will remain the same.
+
+Returns the updated post in the same format as [GET](#get-postspost-id).
+On success, will be 200:
+```json
+{
+	"id":2,
+	"by": {
+		"id":9,
+		"name":"Patrick",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+	"timestamp":"2013-09-05T13:09:38Z",
+	"text":"This is a cool post for cool people!",
+	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
+	"attribs": {
+		"event-time":"2013-09-05T13:09:38Z"
+	},
+	"comment_count":4,
+	"like_count":5,
+	"popularity":25,
+	"attendee_count":1,
+	"comments": [{
+		"id":51341,
+		"by": {
+			"id":9,
+			"name":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		},
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"I concur."
+	},
+	{
+		"id":4362346,
+		"by": {
+			"id":545,
+			"name":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		},
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"Have you ever / ever felt like this? / How strange things happen / like you're going round the twist?"
+	}],
+	"likes":[{"by": {
+			"id":545,
+			"name":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+			},
+		"timestamp":"2013-09-05T13:09:38Z"},
+		{"by": {
+			"id":545,
+			"name":"SomeoneElse"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+			},
+		"timestamp":"2013-09-05T13:09:38Z"}
+		],
+	"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg", "https://gleepost.com/uploads/3cdcbfbb3646709450d0fb25132ba681.jpg"],
+	"videos":[
+		{
+			"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
+			"webm":"https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm",
+			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
+		}
+	]
+}
 ```
 
 ##DELETE /posts/[post-id]
