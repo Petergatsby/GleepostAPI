@@ -630,7 +630,7 @@ func (api *API) deletePost(post gp.PostID) (err error) {
 }
 
 //UserEditPost updates this post with entirely new information. Any fields which aren't set are unchanged.
-func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, attribs map[string]string, url string, videoID gp.VideoID, tags ...string) (post gp.PostFull, err error) {
+func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, attribs map[string]string, url string, videoID gp.VideoID, reason string, tags ...string) (post gp.PostFull, err error) {
 	editable, err := api.canEdit(userID, postID)
 	switch {
 	case err != nil:
@@ -684,8 +684,15 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 			}
 		}
 	}
-	//If pending=2, pending=1
-	return api.getPostFull(postID)
+	post, err = api.getPostFull(postID)
+	if err != nil {
+		return
+	}
+	err = api.maybeResubmitPost(userID, postID, post.Network, reason)
+	if err != nil {
+		return
+	}
+	return post, nil
 }
 
 func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err error) {

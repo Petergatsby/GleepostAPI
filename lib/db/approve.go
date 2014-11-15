@@ -236,6 +236,24 @@ func (db *DB) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (err
 	return
 }
 
+//ResubmitPost marks this post as 'pending' again.
+func (db *DB) ResubmitPost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
+	s, err := db.prepare("INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'edited', ?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, userID, reason)
+	if err != nil {
+		return
+	}
+	s, err = db.prepare("UPDATE wall_posts SET pending = 1 WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID)
+	return
+}
+
 //GetNetworkRejected returns the posts in this network which have been rejected.
 func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PostSmall, err error) {
 	rejected = make([]gp.PostSmall, 0)

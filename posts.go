@@ -263,6 +263,7 @@ func putPost(w http.ResponseWriter, r *http.Request) {
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	postID := gp.PostID(_id)
 	text := r.FormValue("text")
+	reason := r.FormValue("reason")
 	imgurl := r.FormValue("url")
 	tags := r.FormValue("tags")
 	var ts []string
@@ -277,7 +278,7 @@ func putPost(w http.ResponseWriter, r *http.Request) {
 			attribs[k] = strings.Join(v, "")
 		}
 	}
-	updatedPost, err := api.UserEditPost(userID, postID, text, attribs, imgurl, videoID, ts...)
+	updatedPost, err := api.UserEditPost(userID, postID, text, attribs, imgurl, videoID, reason, ts...)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {

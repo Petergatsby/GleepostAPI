@@ -276,6 +276,9 @@ func (api *API) postsToApproveNotification(netID gp.NetworkID) {
 		return
 	}
 	badge := len(posts)
+	if badge == 0 {
+		return
+	}
 	users, err := api.approveUsers(netID)
 	if err != nil {
 		log.Println(err)
@@ -310,4 +313,20 @@ func (api *API) postsToApproveNotification(netID gp.NetworkID) {
 			}
 		}
 	}
+}
+
+func (api *API) maybeResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.NetworkID, reason string) (err error) {
+	//if !pending, do nothing
+	// if pending and no longer in a filtered category, unmark-as-pending
+	// otherwise, resubmit
+	return api.ResubmitPost(userID, postID, netID, reason)
+}
+
+//ResubmitPost puts the post back in the approval queue to be reviewed again.
+func (api *API) ResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.NetworkID, reason string) (err error) {
+	err = api.db.ResubmitPost(userID, postID, reason)
+	if err == nil {
+		api.postsToApproveNotification(netID)
+	}
+	return
 }
