@@ -83,7 +83,6 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 			return
 		}
 		t = time.Unix(unix, 0)
-
 	}
 	networks, err := api.GetUserNetworks(userID)
 	if err != nil {
@@ -417,6 +416,28 @@ func (api *API) clearPostVideos(postID gp.PostID) (err error) {
 	return api.db.ClearPostVideos(postID)
 }
 
+func (api *API) needsReview(netID gp.NetworkID, categories ...string) (needsReview bool, err error) {
+	level, e := api.db.ApproveLevel(netID)
+	switch {
+	case e != nil:
+		return false, e
+	case level.Level == 0:
+		return false, nil
+	case level.Level == 3: //3 is "all"
+		return true, nil
+	default:
+		for _, tag := range categories {
+			for _, filter := range level.Categories {
+				if tag == filter {
+					return true, nil
+				}
+			}
+		}
+		return false, nil
+	}
+
+}
+
 //AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
 func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.UserInNetwork(userID, netID)
@@ -427,23 +448,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 		return postID, false, &ENOTALLOWED
 	default:
 		//If the post matches one of the filters for this network, we want to hide it for now
-		level, e := api.db.ApproveLevel(netID)
-		switch {
-		case e != nil:
-			return postID, false, e
-		case level.Level == 0:
-			//Do nothing
-		case level.Level == 3: //3 is "all"
-			pending = true
-		default:
-			for _, tag := range tags {
-				for _, filter := range level.Categories {
-					if tag == filter {
-						pending = true
-					}
-				}
-			}
-		}
+		pending, err = api.needsReview(netID, tags...)
 		postID, err = api.db.AddPost(userID, text, netID, pending)
 		if err == nil {
 			if len(tags) > 0 {

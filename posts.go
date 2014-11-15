@@ -521,6 +521,5 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 			Attendees     []gp.User `json:"attendees,omitempty"`
 		}{Popularity: popularity, AttendeeCount: attendeeCount, Attendees: attendees}
 		jsonResponse(w, resp, 200)
-
 	}
 }

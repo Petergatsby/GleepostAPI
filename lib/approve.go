@@ -316,9 +316,14 @@ func (api *API) postsToApproveNotification(netID gp.NetworkID) {
 }
 
 func (api *API) maybeResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.NetworkID, reason string) (err error) {
+	pending, err := api.db.PendingStatus(postID)
+	if err != nil {
+		return
+	}
 	//if !pending, do nothing
-	// if pending and no longer in a filtered category, unmark-as-pending
-	// otherwise, resubmit
+	if pending == 0 {
+		return
+	}
 	return api.ResubmitPost(userID, postID, netID, reason)
 }
 
