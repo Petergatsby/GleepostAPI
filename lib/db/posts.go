@@ -107,7 +107,7 @@ func (db *DB) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.Post
 			log.Println("Bad post: ", post)
 		}
 	}
-	return
+	return posts, nil
 }
 
 //GetUserPosts returns the most recent count posts by userId after the post with id after.
