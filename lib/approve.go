@@ -41,7 +41,7 @@ func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int)
 		default:
 			err = api.db.SetApproveLevel(netID, level)
 			if err == nil {
-				//Notifications, etc.
+				go api.approvalChangePush(netID, userID, level)
 			}
 		}
 		return
