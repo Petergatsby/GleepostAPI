@@ -9,9 +9,6 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-/********************************************************************
-		Post
-********************************************************************/
 const (
 	//WNETWORK is posts in this network.
 	WNETWORK = iota
@@ -626,5 +623,210 @@ func (db *DB) ChangePostText(postID gp.PostID, text string) (err error) {
 		return
 	}
 	_, err = s.Exec(text, postID)
+	return
+}
+
+//AddCategory marks the post id as a member of category.
+func (db *DB) AddCategory(id gp.PostID, category gp.CategoryID) (err error) {
+	s, err := db.prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(id, category)
+	return
+}
+
+//CategoryList returns all existing categories.
+func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
+	s, err := db.prepare("SELECT id, tag, name FROM categories WHERE 1")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	defer rows.Close()
+	for rows.Next() {
+		c := gp.PostCategory{}
+		err = rows.Scan(&c.ID, &c.Tag, &c.Name)
+		if err != nil {
+			return
+		}
+		categories = append(categories, c)
+	}
+	return
+}
+
+//TagPost accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
+func (db *DB) TagPost(post gp.PostID, tags ...string) (err error) {
+	s, err := db.prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
+	if err != nil {
+		return
+	}
+	for _, tag := range tags {
+		_, err = s.Exec(post, tag)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//PostCategories returns all the categories which post belongs to.
+func (db *DB) PostCategories(post gp.PostID) (categories []gp.PostCategory, err error) {
+	s, err := db.prepare("SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		c := gp.PostCategory{}
+		err = rows.Scan(&c.ID, &c.Tag, &c.Name)
+		if err != nil {
+			return
+		}
+		categories = append(categories, c)
+	}
+	return
+}
+
+//ClearCategories removes all this post's categories.
+func (db *DB) ClearCategories(post gp.PostID) (err error) {
+	s, err := db.prepare("DELETE FROM categories WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post)
+	return
+}
+
+//CreateLike records that this user has liked this post. Acts idempotently.
+func (db *DB) CreateLike(user gp.UserID, post gp.PostID) (err error) {
+	s, err := db.prepare("REPLACE INTO post_likes (post_id, user_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post, user)
+	return
+}
+
+//RemoveLike un-likes a post.
+func (db *DB) RemoveLike(user gp.UserID, post gp.PostID) (err error) {
+	s, err := db.prepare("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post, user)
+	return
+}
+
+//GetLikes returns all this post's likes
+func (db *DB) GetLikes(post gp.PostID) (likes []gp.Like, err error) {
+	s, err := db.prepare("SELECT user_id, timestamp FROM post_likes WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	defer rows.Close()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var t string
+		var like gp.Like
+		err = rows.Scan(&like.UserID, &t)
+		if err != nil {
+			return
+		}
+		like.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return
+		}
+		likes = append(likes, like)
+	}
+	return
+}
+
+//HasLiked retuns true if this user has already liked this post.
+func (db *DB) HasLiked(user gp.UserID, post gp.PostID) (liked bool, err error) {
+	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, user).Scan(&liked)
+	return
+}
+
+//LikeCount returns the number of likes this post has.
+func (db *DB) LikeCount(post gp.PostID) (count int, err error) {
+	s, err := db.prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&count)
+	return
+}
+
+//Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
+//The results are undefined for a post which isn't an event.
+//(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
+func (db *DB) Attend(event gp.PostID, user gp.UserID) (err error) {
+	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(event, user)
+	return
+}
+
+//UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
+func (db *DB) UnAttend(event gp.PostID, user gp.UserID) (err error) {
+	query := "DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(event, user)
+	return
+}
+
+//UserAttends returns all the event IDs that a user is attending.
+func (db *DB) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
+	events = make([]gp.PostID, 0)
+	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
+	s, err := db.prepare(query)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(user)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PostID
+		err = rows.Scan(&post)
+		if err != nil {
+			return
+		}
+		events = append(events, post)
+	}
+	return
+}
+
+//SubjectiveRSVPCount shows the number of events otherID has attended, from the perspective of the `perspective` user (ie, not counting those events perspective can't see...)
+func (db *DB) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM event_attendees JOIN wall_posts ON event_attendees.post_id = wall_posts.id "
+	q += "WHERE wall_posts.network_id IN ( SELECT network_id FROM user_network WHERE user_network.user_id = ? ) "
+	q += "AND wall_posts.deleted = 0 AND wall_posts.pending = 0 "
+	q += "AND event_attendees.user_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(perspective, otherID).Scan(&count)
 	return
 }
