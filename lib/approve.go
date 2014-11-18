@@ -170,6 +170,7 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 	}
 	err = api.db.RejectPost(userID, postID, reason)
 	if err == nil {
+		api.createNotification("rejected_post", userID, p.By.ID, uint64(postID))
 		api.silentSetApproveBadgeCount(p.Network)
 	}
 	return

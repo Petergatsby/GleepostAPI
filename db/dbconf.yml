@@ -3,3 +3,9 @@ development:
         open: $DATABASE_URL 
         import: github.com/go-sql-driver/mysql
         dialect: mysql
+
+production:
+        driver: mysql
+        open: $PROD_URL
+        import: github.com/go-sql-driver/mysql
+        dialect: mysql

@@ -271,3 +271,22 @@ Version is the new app version number.
 }
 
 ```
+
+##Someone rejected your post
+
+(iOS)
+
+```json
+{
+    "aps":{
+         "alert":{
+             "loc-key":"rejected_post",
+             "loc-args":["Patrick"],
+         },
+         "badge":12345,
+         "sound":"default"
+     },
+     "rejecter-id":6789,
+     "post-id":12345
+}
+```

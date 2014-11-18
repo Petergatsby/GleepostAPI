@@ -1140,6 +1140,8 @@ func (db *DB) GetUserNotifications(id gp.UserID, includeSeen bool) (notification
 				fallthrough
 			case notification.Type == "approved_post":
 				fallthrough
+			case notification.Type == "rejected_post":
+				fallthrough
 			case notification.Type == "commented":
 				np := gp.PostNotification{Notification: notification, Post: gp.PostID(location.Int64)}
 				notifications = append(notifications, np)
@@ -1193,6 +1195,8 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 		fallthrough
 	case ntype == "approved_post":
 		fallthrough
+	case ntype == "rejected_post":
+		fallthrough
 	case ntype == "added_group":
 		s, err = db.prepare(notificationInsertLocation)
 		if err != nil {
@@ -1218,6 +1222,8 @@ func (db *DB) CreateNotification(ntype string, by gp.UserID, recipient gp.UserID
 	case ntype == "liked":
 		fallthrough
 	case ntype == "approved_post":
+		fallthrough
+	case ntype == "rejected_post":
 		fallthrough
 	case ntype == "commented":
 		np := gp.PostNotification{Notification: n, Post: gp.PostID(location)}
