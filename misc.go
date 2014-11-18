@@ -60,7 +60,9 @@ func init() {
 	api = lib.New(*config)
 	go api.FeedbackDaemon(60)
 	go api.EndOldConversations()
-	api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
+	if !config.DevelopmentMode {
+		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
+	}
 	var futures []conf.PostFuture
 	for _, f := range config.Futures {
 		futures = append(futures, f.ParseDuration())
