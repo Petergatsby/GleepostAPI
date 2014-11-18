@@ -129,7 +129,7 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 }
 
 //GetNetworkApproved returns the list of approved posts in this network.
-func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID) (approved []gp.PendingPost, err error) {
+func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int) (approved []gp.PendingPost, err error) {
 	approved = make([]gp.PendingPost, 0)
 	access, err := api.ApproveAccess(userID, netID)
 	switch {
@@ -138,7 +138,7 @@ func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID) (approv
 	case !access.ApproveAccess:
 		return approved, &ENOTALLOWED
 	default:
-		_approved, err := api.db.GetNetworkApproved(netID)
+		_approved, err := api.db.GetNetworkApproved(netID, mode, index, count)
 		if err != nil {
 			return approved, err
 		}
@@ -177,7 +177,7 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 }
 
 //GetNetworkRejected returns the list of rejected posts in this network.
-func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID) (rejected []gp.PendingPost, err error) {
+func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int) (rejected []gp.PendingPost, err error) {
 	rejected = make([]gp.PendingPost, 0)
 	access, err := api.ApproveAccess(userID, netID)
 	switch {
@@ -186,7 +186,7 @@ func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID) (reject
 	case !access.ApproveAccess:
 		return rejected, &ENOTALLOWED
 	default:
-		_rejected, err := api.db.GetNetworkRejected(netID)
+		_rejected, err := api.db.GetNetworkRejected(netID, mode, index, count)
 		if err != nil {
 			return rejected, err
 		}

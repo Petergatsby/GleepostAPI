@@ -197,18 +197,27 @@ func (db *DB) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (er
 }
 
 //GetNetworkApproved returns the 20 most recent approved posts in this network.
-func (db *DB) GetNetworkApproved(netID gp.NetworkID) (approved []gp.PostSmall, err error) {
+func (db *DB) GetNetworkApproved(netID gp.NetworkID, mode int, index int64, count int) (approved []gp.PostSmall, err error) {
 	approved = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, wall_posts.`by`, time, text, network_id " +
 		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
 		"WHERE wall_posts.deleted = 0 AND pending = 0 AND post_reviews.action = 'approved' " +
-		"AND network_id = ? " +
-		"ORDER BY post_reviews.timestamp DESC LIMIT 0, 20"
+		"AND network_id = ? "
+	switch {
+	case mode == gp.OSTART:
+		q += "ORDER BY post_reviews.timestamp DESC LIMIT ?, ?"
+	case mode == gp.OAFTER:
+		q += "AND wall_posts.time > (SELECT time FROM wall_posts WHERE post_id = ?) " +
+			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
+	case mode == gp.OBEFORE:
+		q += "AND wall_posts.time < (SELECT time FROM wall_posts WHERE post_id = ?) " +
+			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
+	}
 	s, err := db.prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(netID)
+	rows, err := s.Query(netID, index, count)
 	if err != nil {
 		return
 	}
@@ -255,13 +264,22 @@ func (db *DB) ResubmitPost(userID gp.UserID, postID gp.PostID, reason string) (e
 }
 
 //GetNetworkRejected returns the posts in this network which have been rejected.
-func (db *DB) GetNetworkRejected(netID gp.NetworkID) (rejected []gp.PostSmall, err error) {
+func (db *DB) GetNetworkRejected(netID gp.NetworkID, mode int, index int64, count int) (rejected []gp.PostSmall, err error) {
 	rejected = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, wall_posts.`by`, time, text, network_id " +
 		"FROM wall_posts JOIN post_reviews ON post_reviews.post_id = wall_posts.id " +
 		"WHERE wall_posts.deleted = 0 AND pending = 2 AND post_reviews.action = 'rejected' " +
-		"AND network_id = ? " +
-		"ORDER BY post_reviews.timestamp DESC LIMIT 0, 20"
+		"AND network_id = ? "
+	switch {
+	case mode == gp.OSTART:
+		q += "ORDER BY post_reviews.timestamp DESC LIMIT ?, ?"
+	case mode == gp.OAFTER:
+		q += "AND wall_posts.time > (SELECT time FROM wall_posts WHERE post_id = ?) " +
+			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
+	case mode == gp.OBEFORE:
+		q += "AND wall_posts.time < (SELECT time FROM wall_posts WHERE post_id = ?) " +
+			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
+	}
 	s, err := db.prepare(q)
 	if err != nil {
 		return

@@ -2106,6 +2106,14 @@ On success, returns 204
 
 ##GET /approve/approved
 
+optional parameters:
+
+`start`
+`before`
+`after`
+
+For pagination, see [/posts](#get-posts)
+
 Displays the history of approved posts. Posts which were approved more recently are displayed at the top.
 The `review_history` property contains all the events which happened to this post while it was in revew.
 
@@ -2150,6 +2158,14 @@ Parameters:
 On success, returns 204.
 
 ##GET /approve/rejected
+
+optional parameters:
+
+`start`
+`before`
+`after`
+
+For pagination, see [/posts](#get-posts)
 
 Displays the history of rejected posts. Most recently rejected first.
 
