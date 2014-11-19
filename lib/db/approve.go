@@ -284,7 +284,7 @@ func (db *DB) GetNetworkRejected(netID gp.NetworkID, mode int, index int64, coun
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(netID)
+	rows, err := s.Query(netID, index, count)
 	if err != nil {
 		return
 	}
