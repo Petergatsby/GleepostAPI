@@ -55,11 +55,11 @@ func (db *DB) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
 //GetUser returns this user, or ENOSUCHUSER if they don't exist.
 func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 	var av sql.NullString
-	s, err := db.prepare("SELECT id, avatar, firstname FROM users WHERE id=?")
+	s, err := db.prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name)
+	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
 	log.Println("DB hit: db.GetUser id(user.Name, user.Id, user.Avatar)")
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -76,11 +76,11 @@ func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	var av, desc, lastName sql.NullString
-	s, err := db.prepare("SELECT `desc`, avatar, firstname, lastname FROM users WHERE id = ?")
+	s, err := db.prepare("SELECT `desc`, avatar, firstname, lastname, official FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName)
+	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if err != nil {
 		if err == sql.ErrNoRows {

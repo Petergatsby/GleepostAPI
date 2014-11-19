@@ -35,9 +35,10 @@ const (
 
 //User is the basic user representation, containing their unique ID, their name and their profile image.
 type User struct {
-	ID     UserID `json:"id"`
-	Name   string `json:"name"`
-	Avatar string `json:"profile_image"`
+	ID       UserID `json:"id"`
+	Name     string `json:"name"`
+	Avatar   string `json:"profile_image"`
+	Official bool   `json:"official,omitempty"`
 }
 
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)

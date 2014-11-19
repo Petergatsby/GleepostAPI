@@ -10,7 +10,7 @@ import (
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
 func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (users []gp.User, err error) {
 	users = make([]gp.User, 0)
-	search := "SELECT id, avatar, firstname " +
+	search := "SELECT id, avatar, firstname, official " +
 		"FROM users JOIN user_network ON users.id = user_network.user_id " +
 		"WHERE network_id = ? " +
 		"AND firstname LIKE ? " +
@@ -30,7 +30,7 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 	for rows.Next() {
 		var av sql.NullString
 		var user gp.User
-		err = rows.Scan(&user.ID, &av, &user.Name)
+		err = rows.Scan(&user.ID, &av, &user.Name, &user.Official)
 		if err != nil {
 			return
 		}
