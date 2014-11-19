@@ -6,7 +6,7 @@ At the moment, this is a receive-only stream of "events".
 
 An event looks like this:
 
-```
+```json
 {
 	"type":"message",
 	"location":"/conversations/67",
@@ -23,7 +23,7 @@ An event type will be one of: [message](#message) [read](#read) [new-conversatio
 ###Message
 An event with type "message" is the replacement for a long-poll message. It contains a location (the URI of the conversation it is in) and the data payload is the same message object you find in /conversations/[id]/messages.
 
-```
+```json
 {
 	"type":"message",
 	"location":"/conversations/67",
@@ -44,7 +44,7 @@ An event with type "read" is triggered every time someone marks a message as see
 
 ###New conversation
 An event with type "new-conversation" is triggered every time you are placed in a new conversation. It contains a location (the URI of the conversation) and the data payload is the conversation object.
-```
+```json
 {
 	"type":"new-conversation",
 	"location":"/conversations/1595",
@@ -54,7 +54,7 @@ An event with type "new-conversation" is triggered every time you are placed in 
 
 ###Ended conversation
 An event with type "ended-conversation" is triggered every time a conversation you participate in is terminated. It contains a location (the URI of the conversation) and the data payload is the conversation object.
-```
+```json
 {
 	"type":"ended-conversation",
 	"location":"/conversations/1595",
@@ -65,7 +65,7 @@ An event with type "ended-conversation" is triggered every time a conversation y
 ###Changed conversation
 An event with type "changed-conversation" is triggered when a conversation is converted from "live" to "regular".
 It contains the URI of the affected conversation and a representation of the new conversation.
-```
+```json
 {
 	"type":"changed-conversation",
 	"location":"/conversations/1595",
@@ -75,8 +75,8 @@ It contains the URI of the affected conversation and a representation of the new
 
 ###Notification
 An event with type "notification" is triggered every time you recieve a new notification. Its location is simply "/notifications" (see note). It contains a notification object.
-```
- {
+```json
+{
 	"type":"notification",
 	"location":"/notifications",
 	"data":{"id":596,"type":"added_you","time":"2013-12-16T14:33:40.260990792Z","user":{"id":2395,"username":"TestingUser","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/5c780da1230506100f037abf88d74d88cb0556510c49af40c95ee02e0a35ad57.png"}}
