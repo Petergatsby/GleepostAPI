@@ -27,7 +27,7 @@ func Up_20141118154734(txn *sql.Tx) {
 
 // Down is executed when this migration is rolled back
 func Down_20141118154734(txn *sql.Tx) {
-	_, err := txn.Query("ALTER TABLE users ADD name VARCHAR(255) NOT NULL BEFORE password")
+	_, err := txn.Query("ALTER TABLE users ADD name VARCHAR(255) NOT NULL DEFAULT 'unknown_user' BEFORE password")
 	if err != nil {
 		return
 	}

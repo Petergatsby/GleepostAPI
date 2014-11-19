@@ -1547,10 +1547,10 @@ At this point it can be posted.
 (HTTP 200)
 ```json
 {
-	"status": "ready"
-	"id": 2580
-	"mp4": "https://s3-us-west-1.amazonaws.com/gpcali/048de9a0ea633f53fc010428c09966996066f065c3b3396d782e1d2b1b37d260.mp4"
-	"webm": "https://s3-us-west-1.amazonaws.com/gpcali/8a6a1896eb473f1d9138b9a4bbd73969cfda26b928c49702642004c87792f1e3.webm"
+	"status": "ready",
+	"id": 2580,
+	"mp4": "https://s3-us-west-1.amazonaws.com/gpcali/048de9a0ea633f53fc010428c09966996066f065c3b3396d782e1d2b1b37d260.mp4",
+	"webm": "https://s3-us-west-1.amazonaws.com/gpcali/8a6a1896eb473f1d9138b9a4bbd73969cfda26b928c49702642004c87792f1e3.webm",
 	"thumbnails": [
 		"https://s3-us-west-1.amazonaws.com/gpcali/234232a6aba24196c3228cc5c8efe191ad959f7783e4ade2a65e2b4e5644b9a0.jpg"
 	]
