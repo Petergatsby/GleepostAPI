@@ -88,12 +88,12 @@ An event with type "video-ready" is triggered once a video you have uploaded has
 ```json
 {
 	"type":"video-ready",
-	"location":"/videos/2586"
+	"location":"/videos/2586",
 	"data":{
-		"status": "ready"
-		"id": 2586
-		"mp4": "https://s3-us-west-1.amazonaws.com/gpcali/a28269e2de0cb2b5ca9a36a55e9b7ccaf1ae46e4cedc5054ba9667b31c4ccb9b.mp4"
-		"webm": "https://s3-us-west-1.amazonaws.com/gpcali/213107680550e4964c2d25c5999d9709d1d94c138b35d394c60b851ef69b0dc0.webm"
+		"status": "ready",
+		"id": 2586,
+		"mp4": "https://s3-us-west-1.amazonaws.com/gpcali/a28269e2de0cb2b5ca9a36a55e9b7ccaf1ae46e4cedc5054ba9667b31c4ccb9b.mp4",
+		"webm": "https://s3-us-west-1.amazonaws.com/gpcali/213107680550e4964c2d25c5999d9709d1d94c138b35d394c60b851ef69b0dc0.webm",
 		"thumbnails": [
 			"https://s3-us-west-1.amazonaws.com/gpcali/377f566caa4da4806a66795ce9241eee54f1b3be7c4ff5b32b6b526f08fdd449.jpg"
 		]
