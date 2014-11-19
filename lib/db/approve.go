@@ -39,7 +39,7 @@ var NoSuchGroup = gp.APIerror{Reason: "No such group"}
 
 //MasterGroup returns the id of the group which administrates this network, or NoSuchGroup if there is none.
 func (db *DB) MasterGroup(netID gp.NetworkID) (master gp.NetworkID, err error) {
-	q := "SELECT master_group FROM network WHERE id = ? AND MASTER NOT NULL"
+	q := "SELECT master_group FROM network WHERE id = ? AND MASTER IS NOT NULL"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
