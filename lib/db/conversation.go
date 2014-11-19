@@ -88,7 +88,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 
 //RandomPartners generates count users randomly (id ∉ participants).
 func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
-	q := "SELECT DISTINCT id, name, firstname, avatar " +
+	q := "SELECT DISTINCT id, firstname, avatar " +
 		"FROM users " +
 		"LEFT JOIN user_network ON id = user_id " +
 		"JOIN devices ON users.id = devices.user_id " +
@@ -110,8 +110,7 @@ func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (par
 	for rows.Next() && count > 0 {
 		var user gp.User
 		var av sql.NullString
-		var first sql.NullString
-		err = rows.Scan(&user.ID, &user.Name, &first, &av)
+		err = rows.Scan(&user.ID, &user.Name, &av)
 		if err != nil {
 			log.Println("Error scanning from user query", err)
 			return
@@ -121,9 +120,6 @@ func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (par
 		if err == nil && liveCount < 3 && user.ID != id {
 			if av.Valid {
 				user.Avatar = av.String
-			}
-			if first.Valid {
-				user.Name = first.String
 			}
 			partners = append(partners, user)
 			count--

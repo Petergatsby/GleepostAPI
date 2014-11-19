@@ -12,14 +12,14 @@ import (
 		User
 ********************************************************************/
 
-//RegisterUser creates a user with a username (todo:remove), a password hash and an email address.
-//They'll be created in an unverified state, and without a full name (which needs to be set separately).
-func (db *DB) RegisterUser(user string, hash []byte, email string) (gp.UserID, error) {
-	s, err := db.prepare("INSERT INTO users(name, password, email) VALUES (?,?,?)")
+//RegisterUser creates a user with a name a password hash and an email address.
+//They'll be created in an unverified state.
+func (db *DB) RegisterUser(first, last string, hash []byte, email string) (gp.UserID, error) {
+	s, err := db.prepare("INSERT INTO users(firstname, lastname, password, email) VALUES (?,?,?,?)")
 	if err != nil {
 		return 0, err
 	}
-	res, err := s.Exec(user, hash, email)
+	res, err := s.Exec(first, last, hash, email)
 	if err != nil {
 		if err, ok := err.(*mysql.MySQLError); ok {
 			if err.Number == 1062 {
@@ -52,14 +52,14 @@ func (db *DB) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
 	return
 }
 
-//GetUser returns a gp.User with User.Name set to their firstname if available (username if not).
+//GetUser returns this user, or ENOSUCHUSER if they don't exist.
 func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
-	var av, firstName sql.NullString
-	s, err := db.prepare("SELECT id, name, avatar, firstname FROM users WHERE id=?")
+	var av sql.NullString
+	s, err := db.prepare("SELECT id, avatar, firstname FROM users WHERE id=?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&user.ID, &user.Name, &av, &firstName)
+	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name)
 	log.Println("DB hit: db.GetUser id(user.Name, user.Id, user.Avatar)")
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -70,20 +70,17 @@ func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 	if av.Valid {
 		user.Avatar = av.String
 	}
-	if firstName.Valid {
-		user.Name = firstName.String
-	}
 	return
 }
 
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
-	var av, desc, firstName, lastName sql.NullString
-	s, err := db.prepare("SELECT name, `desc`, avatar, firstname, lastname FROM users WHERE id = ?")
+	var av, desc, lastName sql.NullString
+	s, err := db.prepare("SELECT `desc`, avatar, firstname, lastname FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&user.Name, &desc, &av, &firstName, &lastName)
+	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName)
 	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -97,11 +94,8 @@ func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 	if desc.Valid {
 		user.Desc = desc.String
 	}
-	if firstName.Valid {
-		user.Name = firstName.String
-	}
 	if lastName.Valid {
-		user.FullName = firstName.String + " " + lastName.String
+		user.FullName = user.Name + " " + lastName.String
 	}
 	user.ID = id
 	return

@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	//UserAlreadyExists appens when creating an account with a dupe email address or username.
+	//UserAlreadyExists appens when creating an account with a dupe email address.
 	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
 )
 

@@ -79,15 +79,7 @@ func (api *API) IsAdmin(user gp.UserID) (admin bool) {
 
 //CreateUserSpecial manually creates a user with these details, bypassing validation etc
 func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool, primaryNetwork gp.NetworkID) (userID gp.UserID, err error) {
-	user, err := RandomString()
-	if err != nil {
-		return
-	}
-	userID, err = api.createUser(user, pass, email)
-	if err != nil {
-		return
-	}
-	err = api.SetUserName(userID, first, last)
+	userID, err = api.createUser(first, last, pass, email)
 	if err != nil {
 		return
 	}

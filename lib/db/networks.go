@@ -232,7 +232,7 @@ func (db *DB) IsGroup(netID gp.NetworkID) (group bool, err error) {
 //GetNetworkAdmins returns all the administrators of the group netID
 func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
-	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
+	memberQuery := "SELECT user_id, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
 	s, err := db.prepare(memberQuery)
 	if err != nil {
 		return
@@ -245,16 +245,12 @@ func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err err
 	for rows.Next() {
 		var user gp.UserRole
 		var av sql.NullString
-		var name sql.NullString
-		err = rows.Scan(&user.ID, &user.User.Name, &av, &name, &user.Role.Name, &user.Role.Level)
+		err = rows.Scan(&user.ID, &av, &user.User.Name, &user.Role.Name, &user.Role.Level)
 		if err != nil {
 			return
 		}
 		if av.Valid {
 			user.Avatar = av.String
-		}
-		if name.Valid {
-			user.User.Name = name.String
 		}
 		users = append(users, user)
 	}
@@ -264,7 +260,7 @@ func (db *DB) GetNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err err
 //GetNetworkUsers returns all the members of the group netId
 func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
-	memberQuery := "SELECT user_id, users.name, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
+	memberQuery := "SELECT user_id, users.avatar, users.firstname, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
 	s, err := db.prepare(memberQuery)
 	if err != nil {
 		return
@@ -277,16 +273,12 @@ func (db *DB) GetNetworkUsers(netID gp.NetworkID) (users []gp.UserRole, err erro
 	for rows.Next() {
 		var user gp.UserRole
 		var av sql.NullString
-		var name sql.NullString
-		err = rows.Scan(&user.ID, &user.User.Name, &av, &name, &user.Role.Name, &user.Role.Level)
+		err = rows.Scan(&user.ID, &av, &user.User.Name, &user.Role.Name, &user.Role.Level)
 		if err != nil {
 			return
 		}
 		if av.Valid {
 			user.Avatar = av.String
-		}
-		if name.Valid {
-			user.User.Name = name.String
 		}
 		users = append(users, user)
 	}

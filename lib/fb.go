@@ -258,19 +258,13 @@ func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 	if err != nil {
 		return
 	}
-	//TODO: Do something different with names, two john smiths are
-	userID, err = api.createUser(username, random, email)
+	userID, err = api.createUser(firstName, lastName, random, email)
 	if err != nil {
 		log.Println("Something went wrong while creating the user from facebook:", err)
 		return
 	}
 	_, err = api.assignNetworks(userID, email)
 	if err != nil {
-		return
-	}
-	err = api.SetUserName(userID, firstName, lastName)
-	if err != nil {
-		log.Println("Problem setting name:", err)
 		return
 	}
 	err = api.SetProfileImage(userID, FBAvatar(username))

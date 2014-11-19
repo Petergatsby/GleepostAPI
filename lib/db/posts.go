@@ -543,7 +543,7 @@ func (db *DB) DeletePost(post gp.PostID) (err error) {
 
 //EventAttendees returns all users who are attending this event.
 func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
-	q := "SELECT id, name, firstname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
+	q := "SELECT id, firstname, avatar FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
@@ -552,13 +552,10 @@ func (db *DB) EventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 	if err != nil {
 		return
 	}
-	var first, avatar sql.NullString
+	var avatar sql.NullString
 	for rows.Next() {
 		var user gp.User
-		err = rows.Scan(&user.ID, &user.Name, &first, &avatar)
-		if first.Valid {
-			user.Name = first.String
-		}
+		err = rows.Scan(&user.ID, &user.Name, &avatar)
 		if avatar.Valid {
 			user.Avatar = avatar.String
 		}

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
 )
@@ -105,9 +104,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			go api.Count(1, "gleepost.auth.register.400")
 			return
 		}
-		rand, _ := lib.RandomString()
-		user := first + "." + last + rand
-		created, err := api.RegisterUser(user, pass, email, first, last, invite)
+		created, err := api.RegisterUser(pass, email, first, last, invite)
 		if err != nil {
 			_, ok := err.(gp.APIerror)
 			if ok { //Duplicate user/email or password too short
