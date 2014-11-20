@@ -111,6 +111,7 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			log.Println(err)
 		} else {
+			log.Println(url)
 			stringURL := fullyQualify(url.String(), api.Config.DevelopmentMode)
 			header := paginationHeaders(stringURL, posts)
 			w.Header().Set("Link", header)
