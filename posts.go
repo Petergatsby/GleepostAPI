@@ -107,13 +107,14 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 			}
 			return
 		}
-		url, err := r.Get("posts").URL("verstion", vars["version"])
+		url, err := r.Get("posts").URL("version", vars["version"])
 		if err != nil {
 			log.Println(err)
+		} else {
+			stringURL := fullyQualify(url.String(), api.Config.DevelopmentMode)
+			header := paginationHeaders(stringURL, posts)
+			w.Header().Set("Link", header)
 		}
-		stringURL := fullyQualify(url.String(), api.Config.DevelopmentMode)
-		header := paginationHeaders(stringURL, posts)
-		w.Header().Set("Link", header)
 		jsonResponse(w, posts, 200)
 	}
 }
