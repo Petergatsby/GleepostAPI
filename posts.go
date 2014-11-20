@@ -106,6 +106,8 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+		header := postPaginationHeaders(posts)
+		w.Header().Set("Link", header)
 		jsonResponse(w, posts, 200)
 	}
 }
@@ -522,4 +524,16 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 		}{Popularity: popularity, AttendeeCount: attendeeCount, Attendees: attendees}
 		jsonResponse(w, resp, 200)
 	}
+}
+
+func postPaginationHeaders(posts []gp.PostSmall) (header string) {
+	if len(posts) == 0 {
+		return
+	}
+	newest := posts[0].ID
+	oldest := posts[len(posts)-1].ID
+	prev = fmt.Sprintf("<https://gleepost.com/api/v1/posts?before=%d>; rel=\"prev\"", newest)
+	next = fmt.Sprintf("<https://gleepost.com/api/v1/posts?after=%d>; rel=\"next\"", oldest)
+	header = prev + ",\n" + next
+	return
 }
