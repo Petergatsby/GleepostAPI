@@ -78,7 +78,9 @@ func (pusher *Pusher) AndroidPush(msg *gcm.Message) (err error) {
 
 //IOSPush sends an apns notification to its recipient.
 func (pusher *Pusher) IOSPush(pn *apns.PushNotification) (err error) {
-	pusher.Connection.Enqueue(pn)
+	if pusher != nil {
+		pusher.Connection.Enqueue(pn)
+	}
 	return nil
 }
 
