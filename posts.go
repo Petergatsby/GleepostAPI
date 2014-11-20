@@ -532,8 +532,8 @@ func postPaginationHeaders(posts []gp.PostSmall) (header string) {
 	}
 	newest := posts[0].ID
 	oldest := posts[len(posts)-1].ID
-	prev = fmt.Sprintf("<https://gleepost.com/api/v1/posts?before=%d>; rel=\"prev\"", newest)
-	next = fmt.Sprintf("<https://gleepost.com/api/v1/posts?after=%d>; rel=\"next\"", oldest)
+	prev := fmt.Sprintf("<https://gleepost.com/api/v1/posts?before=%d>; rel=\"prev\"", newest)
+	next := fmt.Sprintf("<https://gleepost.com/api/v1/posts?after=%d>; rel=\"next\"", oldest)
 	header = prev + ",\n" + next
 	return
 }
