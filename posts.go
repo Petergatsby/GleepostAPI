@@ -107,7 +107,7 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 			}
 			return
 		}
-		url, err := r.Get("posts").URL("version", vars["version"])
+		url, err := r.Get("posts").URLPath("version", vars["version"])
 		if err != nil {
 			log.Println(err)
 		} else {
