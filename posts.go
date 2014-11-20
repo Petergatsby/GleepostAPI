@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/posts", getPosts).Methods("GET")
+	base.HandleFunc("/posts", getPosts).Methods("GET").Name("posts")
 	base.HandleFunc("/posts", postPosts).Methods("POST")
 	base.HandleFunc("/posts/{id:[0-9]+}/comments", getComments).Methods("GET")
 	base.HandleFunc("/posts/{id:[0-9]+}/comments", postComments).Methods("POST")
@@ -42,27 +43,27 @@ func ignored(key string) bool {
 	return false
 }
 
-func getPosts(w http.ResponseWriter, r *http.Request) {
+func getPosts(w http.ResponseWriter, req *http.Request) {
 	defer api.Time(time.Now(), "gleepost.posts.get")
-	userID, err := authenticate(r)
+	userID, err := authenticate(req)
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		start, err := strconv.ParseInt(req.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
 		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
+		before, err := strconv.ParseInt(req.FormValue("before"), 10, 64)
 		if err != nil {
 			before = 0
 		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
+		after, err := strconv.ParseInt(req.FormValue("after"), 10, 64)
 		if err != nil {
 			after = 0
 		}
-		filter := r.FormValue("filter")
-		vars := mux.Vars(r)
+		filter := req.FormValue("filter")
+		vars := mux.Vars(req)
 		id, ok := vars["network"]
 		var network gp.NetworkID
 		switch {
@@ -106,7 +107,12 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		header := postPaginationHeaders(posts)
+		url, err := r.Get("posts").URL("verstion", vars["version"])
+		if err != nil {
+			log.Println(err)
+		}
+		stringURL := fullyQualify(url.String(), api.Config.DevelopmentMode)
+		header := paginationHeaders(stringURL, posts)
 		w.Header().Set("Link", header)
 		jsonResponse(w, posts, 200)
 	}
@@ -526,14 +532,21 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postPaginationHeaders(posts []gp.PostSmall) (header string) {
+func fullyQualify(urlFragment string, development bool) (url string) {
+	if development {
+		return "https://dev.gleepost.com" + url
+	}
+	return "https://gleepost.com" + url
+}
+
+func paginationHeaders(baseURL string, posts []gp.PostSmall) (header string) {
 	if len(posts) == 0 {
 		return
 	}
 	newest := posts[0].ID
 	oldest := posts[len(posts)-1].ID
-	prev := fmt.Sprintf("<https://gleepost.com/api/v1/posts?before=%d>; rel=\"prev\"", newest)
-	next := fmt.Sprintf("<https://gleepost.com/api/v1/posts?after=%d>; rel=\"next\"", oldest)
+	prev := fmt.Sprintf("<%s?before=%d>; rel=\"prev\"", baseURL, newest)
+	next := fmt.Sprintf("<%s?after=%d>; rel=\"next\"", baseURL, oldest)
 	header = prev + ",\n" + next
 	return
 }
