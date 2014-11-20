@@ -546,8 +546,8 @@ func paginationHeaders(baseURL string, posts []gp.PostSmall) (header string) {
 	}
 	newest := posts[0].ID
 	oldest := posts[len(posts)-1].ID
-	prev := fmt.Sprintf("<%s?before=%d>; rel=\"prev\"", baseURL, newest)
-	next := fmt.Sprintf("<%s?after=%d>; rel=\"next\"", baseURL, oldest)
+	prev := fmt.Sprintf("<%s?after=%d>; rel=\"prev\"", baseURL, newest)
+	next := fmt.Sprintf("<%s?before=%d>; rel=\"next\"", baseURL, oldest)
 	header = prev + ",\n" + next
 	return
 }
