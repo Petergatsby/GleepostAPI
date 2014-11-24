@@ -35,7 +35,7 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 		if len(names) > 1 {
 			lastName = names[1]
 		}
-		email := strconv.FormatUint(uint64(rand.Uint32()), 10) + "@gleepost.com"
+		email := strconv.FormatUint(uint64(rand.New(rand.NewSource(time.Now().UnixNano())).Uint32()), 10) + "@gleepost.com"
 		var userID gp.UserID
 		userID, err = api.CreateUserSpecial(user.Name, lastName, email, "TestingPass", true, into)
 		if err != nil {
