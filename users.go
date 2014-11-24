@@ -31,7 +31,8 @@ func init() {
 	base.HandleFunc("/profile/busy", busyHandler)
 	base.HandleFunc("/profile/attending", userAttending)
 	//notifications
-	base.HandleFunc("/notifications", notificationHandler)
+	base.HandleFunc("/notifications", notificationHandler).Methods("PUT", "GET")
+	base.HandleFunc("/notifications", optionsHandler).Methods("OPTIONS")
 	//Approval
 	base.HandleFunc("/profile/pending", pendingPosts).Methods("GET")
 }
