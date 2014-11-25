@@ -39,6 +39,7 @@ func New(conf conf.Config) (api *API) {
 	api.mail = mail.New(conf.Email)
 	api.pushers = make(map[string]*push.Pusher)
 	for _, psh := range conf.Pushers {
+		log.Println(psh)
 		api.pushers[psh.AppName] = push.New(psh)
 	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)

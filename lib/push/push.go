@@ -42,6 +42,7 @@ func (pusher Pusher) CheckFeedbackService(f Feedbacker) {
 
 //New constructs a Pusher from a Config
 func New(conf conf.PusherConfig) (pusher *Pusher) {
+	log.Println("Building pusher")
 	pusher = new(Pusher)
 	pusher.APNSconfig = conf.APNS
 	pusher.GCMconfig = conf.GCM
@@ -49,6 +50,7 @@ func New(conf conf.PusherConfig) (pusher *Pusher) {
 	if pusher.APNSconfig.Production {
 		url = "gateway.push.apple.com:2195"
 	}
+	log.Println("Pusher is using url:", url)
 	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
 	conn := apns.NewConnection(client)
 	pusher.Connection = conn
@@ -61,7 +63,7 @@ func New(conf conf.PusherConfig) (pusher *Pusher) {
 	}(errs)
 	err := conn.Start()
 	if err != nil {
-		log.Println(err)
+		log.Println("ERROR STARTING APNS CONNECTION:", err)
 	}
 	return
 }
