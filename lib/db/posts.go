@@ -185,7 +185,7 @@ func (db *DB) GetPosts(netID gp.NetworkID, mode int, index int64, count int, cat
 	posts = make([]gp.PostSmall, 0)
 	var q string
 	if len(category) > 0 {
-		q = baseQuery + categoryClause + notDeleted + notPending + byNetwork + category
+		q = baseQuery + categoryClause + notDeleted + notPending + byNetwork + whereCategory
 	} else {
 		q = baseQuery + notDeleted + notPending + byNetwork
 	}
