@@ -301,6 +301,7 @@ func (db *DB) UserPendingPosts(userID gp.UserID) (pending []gp.PostSmall, err er
 		"FROM wall_posts " +
 		"LEFT JOIN post_reviews ON wall_posts.id = post_reviews.post_id " +
 		"WHERE deleted = 0 AND pending > 0 AND wall_posts.`by` = ? " +
+		"GROUP BY wall_posts.id " +
 		"ORDER BY CASE WHEN MAX(post_reviews.timestamp) IS NULL THEN wall_posts.time ELSE MAX(post_reviews.timestamp) END DESC "
 	s, err := db.prepare(q)
 	if err != nil {
