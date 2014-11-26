@@ -41,12 +41,51 @@ func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int)
 		default:
 			err = api.db.SetApproveLevel(netID, level)
 			if err == nil {
-				//Notifications, etc.
+				go api.approvalChangePush(netID, userID, level)
 			}
 		}
 		return
 	}
 
+}
+
+func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level int) (err error) {
+	badge := api.approvalBadgeCount(netID)
+	users, err := api.approveUsers(netID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, u := range users {
+		devices, err := api.GetDevices(u.ID, "approve")
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		for _, d := range devices {
+			switch {
+			case d.Type == "ios":
+				payload := apns.NewPayload()
+				alert := apns.NewAlertDictionary()
+				alert.ActionLocKey = "OK"
+				alert.LocKey = "level_change"
+				alert.LocArgs = []string{strconv.Itoa(level)}
+				payload.Badge = badge
+				payload.Alert = alert
+				payload.Sound = "default"
+				pn := apns.NewPushNotification()
+				pn.DeviceToken = d.ID
+				pn.AddPayload(payload)
+				err := api.pushers["approve"].IOSPush(pn)
+				if err != nil {
+					log.Println(err)
+				}
+			default:
+				//We only support iOS so far.
+			}
+		}
+	}
+	return nil
 }
 
 //GetNetworkPending returns all the posts which are pending review in this network.
@@ -271,13 +310,18 @@ func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error
 	return api.db.GetNetworkUsers(master)
 }
 
-func (api *API) postsToApproveNotification(netID gp.NetworkID) {
+func (api *API) approvalBadgeCount(netID gp.NetworkID) (badge int) {
 	posts, err := api.getNetworkPending(netID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	badge := len(posts)
+	badge = len(posts)
+	return
+}
+
+func (api *API) postsToApproveNotification(netID gp.NetworkID) {
+	badge := api.approvalBadgeCount(netID)
 	if badge == 0 {
 		return
 	}
