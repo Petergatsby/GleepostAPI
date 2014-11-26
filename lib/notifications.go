@@ -18,6 +18,9 @@ func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationID) (err
 
 //createNotification creates a new gleepost notification. location is the id of the object where the notification happened - a post id if the notification is "liked" or "commented", or a network id if the notification type is "added_group". Otherwise, the location will be ignored.
 func (api *API) createNotification(ntype string, by gp.UserID, recipient gp.UserID, postID gp.PostID, netID gp.NetworkID, preview string) (err error) {
+	if len(preview) > 97 {
+		preview = preview[:97] + "..."
+	}
 	notification, err := api.db.CreateNotification(ntype, by, recipient, postID, netID, preview)
 	if err == nil {
 		api.Push(notification, recipient)

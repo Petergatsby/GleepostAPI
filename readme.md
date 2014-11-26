@@ -1822,7 +1822,8 @@ HTTP 200
 			"id":2395,
 			"name":"testing_user",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
-		}
+		},
+		"preview":"Great idea for an event, Peter!"
 	},
 	{
 		"id":1525345,

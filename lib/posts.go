@@ -353,7 +353,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 			}
 			comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
 			if userID != post.By.ID {
-				go api.createNotification("commented", userID, post.By.ID, postID, 0, "")
+				go api.createNotification("commented", userID, post.By.ID, postID, 0, text)
 			}
 			go api.cache.AddComment(postID, comment)
 		}
