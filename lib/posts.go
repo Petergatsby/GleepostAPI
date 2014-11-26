@@ -470,7 +470,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 				go api.cache.AddPostToNetwork(post, netID)
 				creator, err := api.UserIsNetworkOwner(userID, netID)
 				if err == nil && creator && !pending {
-					go api.notifyGroupNewPost(userID, netID)
+					go api.notifyGroupNewPost(userID, netID, postID)
 				}
 			}
 			if pending {
@@ -482,7 +482,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 	}
 }
 
-func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID) {
+func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID) {
 	users, err := api.db.GetNetworkUsers(group)
 	if err != nil {
 		log.Println(err)
@@ -490,7 +490,7 @@ func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID) {
 	}
 	for _, u := range users {
 		if u.ID != by {
-			api.createNotification("group_post", by, u.ID, 0, group, "")
+			api.createNotification("group_post", by, u.ID, post, group, "")
 		}
 	}
 	return
