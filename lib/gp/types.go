@@ -21,9 +21,6 @@ type CommentID uint64
 //ConversationID identifies a conversation.
 type ConversationID uint64
 
-//NotificationID identifies a gleepost notification, eg "John Smith commented on your post!"
-type NotificationID uint64
-
 const (
 	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
 	OSTART = iota
@@ -246,27 +243,6 @@ type Device struct {
 	User UserID `json:"user"`
 	Type string `json:"type"`
 	ID   string `json:"id"`
-}
-
-//Notification is a gleepost notification which a user may receive based on other users' actions.
-type Notification struct {
-	ID   NotificationID `json:"id"`
-	Type string         `json:"type"`
-	Time time.Time      `json:"time"`
-	By   User           `json:"user"`
-	Seen bool           `json:"seen"`
-}
-
-//PostNotification is a Notification that has "happened" at a particular post.
-type PostNotification struct {
-	Notification
-	Post PostID `json:"post"`
-}
-
-//GroupNotification is a Notification that has "happened" in a particular group.
-type GroupNotification struct {
-	Notification
-	Group NetworkID `json:"network"`
 }
 
 //APIerror is a JSON-ified error.

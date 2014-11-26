@@ -353,7 +353,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 			}
 			comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
 			if userID != post.By.ID {
-				go api.createNotification("commented", userID, post.By.ID, uint64(postID))
+				go api.createNotification("commented", userID, post.By.ID, postID, 0, "")
 			}
 			go api.cache.AddComment(postID, comment)
 		}
@@ -490,7 +490,7 @@ func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID) {
 	}
 	for _, u := range users {
 		if u.ID != by {
-			api.createNotification("group_post", by, u.ID, uint64(group))
+			api.createNotification("group_post", by, u.ID, 0, group, "")
 		}
 	}
 	return
@@ -554,7 +554,7 @@ func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 			return
 		}
 		if user != post.By.ID {
-			api.createNotification("liked", user, post.By.ID, uint64(postID))
+			api.createNotification("liked", user, post.By.ID, postID, 0, "")
 		}
 		return
 	}

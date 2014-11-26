@@ -313,7 +313,7 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 	return
 }
 
-func (api *API) toIOS(notification interface{}, recipient gp.UserID, device string, newPush bool) (pn *apns.PushNotification, err error) {
+func (api *API) toIOS(notification gp.Notification, recipient gp.UserID, device string, newPush bool) (pn *apns.PushNotification, err error) {
 	alert := true
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -325,60 +325,52 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserID, device stri
 	} else {
 		payload.Badge = badge
 	}
-	switch n := notification.(type) {
-	case gp.GroupNotification:
+	switch {
+	case notification.Type == "added_group" || notification.Type == "group_post":
 		var group gp.Group
-		group, err = api.getNetwork(n.Group)
+		group, err = api.getNetwork(notification.Group)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		d.LocArgs = []string{n.By.Name, group.Name}
+		d.LocArgs = []string{notification.By.Name, group.Name}
 		pn.Set("group-id", group.ID)
 		switch {
-		case n.Type == "group_post":
+		case notification.Type == "group_post":
 			d.LocKey = "group_post"
 		default:
 			d.LocKey = "GROUP"
 		}
-	case gp.Notification:
-		switch {
-		case n.Type == "accepted_you":
-			d.LocKey = "accepted_you"
-			d.LocArgs = []string{n.By.Name}
-			pn.Set("accepter-id", n.By.ID)
-		case n.Type == "added_you":
-			d.LocKey = "added_you"
-			d.LocArgs = []string{n.By.Name}
-			pn.Set("adder-id", n.By.ID)
-		default:
-			alert = false
-		}
-	case gp.PostNotification:
-		switch {
-		case n.Type == "liked" && newPush:
-			d.LocKey = "liked"
-			d.LocArgs = []string{n.By.Name}
-			pn.Set("liker-id", n.By.ID)
-			pn.Set("post-id", n.Post)
-		case n.Type == "commented" && newPush:
-			d.LocKey = "commented"
-			d.LocArgs = []string{n.By.Name}
-			pn.Set("commenter-id", n.By.ID)
-			pn.Set("post-id", n.Post)
-		case n.Type == "approved_post" && newPush:
-			d.LocKey = "approved_post"
-			d.LocArgs = []string{n.By.Name}
-			pn.Set("approver-id", n.By.ID)
-			pn.Set("post-id", n.Post)
-		case n.Type == "rejected_post" && newPush:
-			d.LocKey = "rejected_post"
-			d.LocArgs = []string{n.By.Name}
-			pn.Set("rejecter-id", n.By.ID)
-			pn.Set("post-id", n.Post)
-		default:
-			alert = false
-		}
+	case notification.Type == "accepted_you":
+		d.LocKey = "accepted_you"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("accepter-id", notification.By.ID)
+	case notification.Type == "added_you":
+		d.LocKey = "added_you"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("adder-id", notification.By.ID)
+	case notification.Type == "liked" && newPush:
+		d.LocKey = "liked"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("liker-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	case notification.Type == "commented" && newPush:
+		d.LocKey = "commented"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("commenter-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	case notification.Type == "approved_post" && newPush:
+		d.LocKey = "approved_post"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("approver-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	case notification.Type == "rejected_post" && newPush:
+		d.LocKey = "rejected_post"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("rejecter-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	default:
+		alert = false
 	}
 	if alert {
 		payload.Alert = d
@@ -389,12 +381,12 @@ func (api *API) toIOS(notification interface{}, recipient gp.UserID, device stri
 	return
 }
 
-func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device string, newPush bool) (msg *gcm.Message, err error) {
+func (api *API) toAndroid(n gp.Notification, recipient gp.UserID, device string, newPush bool) (msg *gcm.Message, err error) {
 	unknown := false
 	var CollapseKey string
 	var data map[string]interface{}
-	switch n := notification.(type) {
-	case gp.GroupNotification:
+	switch {
+	case n.Type == "added_group" || n.Type == "group_post":
 		var group gp.Group
 		group, err = api.getNetwork(n.Group)
 		if err != nil {
@@ -409,28 +401,20 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device 
 			data = map[string]interface{}{"type": "GROUP", "adder": n.By.Name, "group-id": n.Group, "group-name": group.Name, "for": recipient}
 			CollapseKey = "You've been added to a group"
 		}
-	case gp.Notification:
-		switch {
-		case n.Type == "added_you":
-			data = map[string]interface{}{"type": "added_you", "adder": n.By.Name, "adder-id": n.By.ID, "for": recipient}
-			CollapseKey = "Someone added you to their contacts."
-		case n.Type == "accepted_you":
-			data = map[string]interface{}{"type": "accepted_you", "accepter": n.By.Name, "accepter-id": n.By.ID, "for": recipient}
-			CollapseKey = "Someone accepted your contact request."
-		default:
-			unknown = true
-		}
-	case gp.PostNotification:
-		switch {
-		case n.Type == "liked" && newPush:
-			data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient, "post-id": n.Post}
-			CollapseKey = "Someone liked your post."
-		case n.Type == "commented" && newPush:
-			data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient, "post-id": n.Post}
-			CollapseKey = "Someone commented on your post."
-		default:
-			unknown = true
-		}
+	case n.Type == "added_you":
+		data = map[string]interface{}{"type": "added_you", "adder": n.By.Name, "adder-id": n.By.ID, "for": recipient}
+		CollapseKey = "Someone added you to their contacts."
+	case n.Type == "accepted_you":
+		data = map[string]interface{}{"type": "accepted_you", "accepter": n.By.Name, "accepter-id": n.By.ID, "for": recipient}
+		CollapseKey = "Someone accepted your contact request."
+	case n.Type == "liked" && newPush:
+		data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient, "post-id": n.Post}
+		CollapseKey = "Someone liked your post."
+	case n.Type == "commented" && newPush:
+		data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient, "post-id": n.Post}
+		CollapseKey = "Someone commented on your post."
+	default:
+		unknown = true
 	}
 	if unknown {
 		var count int
@@ -450,7 +434,7 @@ func (api *API) toAndroid(notification interface{}, recipient gp.UserID, device 
 }
 
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
-func (api *API) Push(notification interface{}, recipient gp.UserID) {
+func (api *API) Push(notification gp.Notification, recipient gp.UserID) {
 	devices, err := api.GetDevices(recipient, "gleepost")
 	if err != nil {
 		log.Println(err)

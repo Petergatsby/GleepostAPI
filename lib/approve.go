@@ -120,7 +120,7 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 	err = api.db.ApprovePost(userID, postID, reason)
 	if err == nil {
 		//Notify user their post has been approved
-		api.createNotification("approved_post", userID, p.By.ID, uint64(postID))
+		api.createNotification("approved_post", userID, p.By.ID, postID, 0, "")
 		//Silently reduce badge count for app users
 		//nb: just using p.Network won't work if we eventually want to eg. approve posts in public groups
 		api.silentSetApproveBadgeCount(p.Network)
@@ -170,7 +170,7 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 	}
 	err = api.db.RejectPost(userID, postID, reason)
 	if err == nil {
-		api.createNotification("rejected_post", userID, p.By.ID, uint64(postID))
+		api.createNotification("rejected_post", userID, p.By.ID, postID, 0, "")
 		api.silentSetApproveBadgeCount(p.Network)
 	}
 	return

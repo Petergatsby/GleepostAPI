@@ -37,7 +37,7 @@ func (api *API) AddContact(adder gp.UserID, addee gp.UserID) (contact gp.Contact
 	}
 	err = api.db.AddContact(adder, addee)
 	if err == nil {
-		go api.createNotification("added_you", adder, addee, 0)
+		go api.createNotification("added_you", adder, addee, 0, 0, "")
 	}
 	contact.User = user
 	contact.YouConfirmed = true
@@ -62,7 +62,7 @@ func (api *API) AcceptContact(user gp.UserID, toAccept gp.UserID) (contact gp.Co
 	}
 	contact.YouConfirmed = true
 	contact.TheyConfirmed = true
-	go api.createNotification("accepted_you", user, toAccept, 0)
+	go api.createNotification("accepted_you", user, toAccept, 0, 0, "")
 	go api.UnExpireBetween([]gp.UserID{user, toAccept})
 	return
 }
