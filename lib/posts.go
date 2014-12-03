@@ -68,6 +68,10 @@ func (api *API) getPostFull(postID gp.PostID) (post gp.PostFull, err error) {
 	if err != nil {
 		return
 	}
+	post.ReviewHistory, err = api.db.ReviewHistory(post.ID)
+	if err != nil {
+		return
+	}
 	post.LikeCount, post.Likes, err = api.LikesAndCount(postID)
 	return
 }

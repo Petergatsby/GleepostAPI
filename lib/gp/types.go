@@ -181,7 +181,7 @@ type ReviewEvent struct {
 
 //PostFull enhances a Post with comments and likes.
 type PostFull struct {
-	Post
+	PendingPost
 	CommentCount int        `json:"comment_count"`
 	LikeCount    int        `json:"like_count"`
 	Comments     []Comment  `json:"comments"`
