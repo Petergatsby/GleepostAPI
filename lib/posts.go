@@ -47,7 +47,7 @@ func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 }
 
 func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
-	post, err = api.db.UserGetPost(userID, postID)
+	post.Post, err = api.db.UserGetPost(userID, postID)
 	if err != nil {
 		return
 	}
