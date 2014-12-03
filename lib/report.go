@@ -8,7 +8,7 @@ import (
 
 //ReportPost records that this user reported this post, with this (optional) reason.
 func (api *API) ReportPost(user gp.UserID, post gp.PostID, reason string) error {
-	p, err := api.getPostFull(post)
+	p, err := api.getPostFull(user, post)
 	if err != nil {
 		return err
 	}

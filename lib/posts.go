@@ -24,7 +24,7 @@ func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
 
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
 func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
-	p, err := api.getPostFull(postID)
+	p, err := api.getPostFull(userID, postID)
 	if err != nil {
 		return
 	}
@@ -36,12 +36,18 @@ func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		log.Printf("User %d not in %d\n", userID, p.Network)
 		return post, &ENOTALLOWED
 	default:
+		if p.By.ID == userID {
+			post.ReviewHistory, err = api.db.ReviewHistory(post.ID)
+			if err != nil {
+				return
+			}
+		}
 		return p, nil
 	}
 }
 
-func (api *API) getPostFull(postID gp.PostID) (post gp.PostFull, err error) {
-	post.Post, err = api.GetPost(postID)
+func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
+	post, err = api.UserGetPost(userID, postID)
 	if err != nil {
 		return
 	}
@@ -65,10 +71,6 @@ func (api *API) getPostFull(postID gp.PostID) (post gp.PostFull, err error) {
 	}
 	post.CommentCount = api.GetCommentCount(postID)
 	post.Comments, err = api.getComments(postID, 0, api.Config.CommentPageSize)
-	if err != nil {
-		return
-	}
-	post.ReviewHistory, err = api.db.ReviewHistory(post.ID)
 	if err != nil {
 		return
 	}
@@ -250,21 +252,21 @@ func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp
 
 //UserGetComments returns comments for this post, chronologically ordered starting from the start-th.
 //If you are unable to view this post, it will return ENOTALLOWED
-func (api *API) UserGetComments(user gp.UserID, id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	comments = make([]gp.Comment, 0)
-	p, err := api.getPostFull(id)
+	p, err := api.getPostFull(userID, postID)
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(user, p.Network)
+	in, err := api.UserInNetwork(userID, p.Network)
 	switch {
 	case err != nil:
 		return comments, err
 	case !in:
-		log.Printf("User %d not in %d\n", user, p.Network)
+		log.Printf("User %d not in %d\n", userID, p.Network)
 		return comments, &ENOTALLOWED
 	default:
-		return api.getComments(id, start, count)
+		return api.getComments(postID, start, count)
 	}
 }
 
@@ -622,7 +624,7 @@ func (api *API) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 
 //UserDeletePost marks a post as deleted (it remains in the db but doesn't show up in feeds). You can only delete your own posts.
 func (api *API) UserDeletePost(user gp.UserID, post gp.PostID) (err error) {
-	p, err := api.getPostFull(post)
+	p, err := api.getPostFull(user, post)
 	switch {
 	case err != nil:
 		return
@@ -693,7 +695,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 			}
 		}
 	}
-	post, err = api.getPostFull(postID)
+	post, err = api.getPostFull(userID, postID)
 	if err != nil {
 		return
 	}

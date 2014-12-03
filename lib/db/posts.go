@@ -374,6 +374,36 @@ func (db *DB) GetCommentCount(id gp.PostID) (count int) {
 	return count
 }
 
+//UserGetPost returns the post postId or an error if it doesn't exist.
+//TODO: This could return without an embedded user or images array
+func (db *DB) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, err error) {
+	s, err := db.prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ? AND (pending = 0 OR `by` = ?)")
+	if err != nil {
+		return
+	}
+	post.ID = postID
+	var by gp.UserID
+	var t string
+	err = s.QueryRow(postID, userID).Scan(&post.Network, &by, &t, &post.Text)
+	if err != nil {
+		return
+	}
+	post.By, err = db.GetUser(by)
+	if err != nil {
+		return
+	}
+	post.Time, err = time.Parse(mysqlTime, t)
+	if err != nil {
+		return
+	}
+	post.Images, err = db.GetPostImages(postID)
+	if err != nil {
+		return
+	}
+	post.Videos, err = db.GetPostVideos(postID)
+	return
+}
+
 //GetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
 func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
