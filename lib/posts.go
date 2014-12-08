@@ -36,12 +36,6 @@ func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		log.Printf("User %d not in %d\n", userID, p.Network)
 		return post, &ENOTALLOWED
 	default:
-		if p.By.ID == userID {
-			post.ReviewHistory, err = api.db.ReviewHistory(post.ID)
-			if err != nil {
-				return
-			}
-		}
 		return p, nil
 	}
 }
@@ -75,6 +69,15 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		return
 	}
 	post.LikeCount, post.Likes, err = api.LikesAndCount(postID)
+	if err != nil {
+		return
+	}
+	if post.By.ID == userID {
+		post.ReviewHistory, err = api.db.ReviewHistory(post.ID)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 
