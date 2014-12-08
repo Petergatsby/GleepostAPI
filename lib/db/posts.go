@@ -379,6 +379,9 @@ func (db *DB) GetCommentCount(id gp.PostID) (count int) {
 func (db *DB) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, err error) {
 	s, err := db.prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ? AND (pending = 0 OR `by` = ?)")
 	if err != nil {
+		if err == sql.ErrNoRows {
+			err = gp.NoSuchPost
+		}
 		return
 	}
 	post.ID = postID

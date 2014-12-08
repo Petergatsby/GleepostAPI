@@ -629,6 +629,9 @@ func (api *API) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 func (api *API) UserDeletePost(user gp.UserID, post gp.PostID) (err error) {
 	p, err := api.getPostFull(user, post)
 	switch {
+	case err != nil && err == gp.NoSuchPost:
+		return nil //You're allowed to "delete" any post which doesn't exist from your perspective.
+		//(ie: your posts you've already deleted, for example.)
 	case err != nil:
 		return
 	case p.By.ID != user:

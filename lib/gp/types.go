@@ -15,6 +15,9 @@ type MessageID uint64
 //PostID uniquely identifies a post (which Events are a subset of).
 type PostID uint64
 
+//NoSuchPost is returned when trying to get a post that doesn't exist (from your perspective)
+var NoSuchPost = APIerror{Reason: "No such post"}
+
 //CommentID identifies a comment on a post.
 type CommentID uint64
 
