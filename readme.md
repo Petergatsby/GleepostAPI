@@ -161,6 +161,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish] [[GET]](#get-statspostspost-idstat-typeperiodstartfinish)
 
+/views/posts [[POST]](#post-viewsposts)
+
 ###Gleepost Approve endpoints
 
 /approve/access [[GET]](#get-approveaccess)
@@ -2035,6 +2037,20 @@ GET https://dev.gleepost.com/api/v1/stats/posts/2395/rsvps/week/2013-01-01T00:00
 	}
 }
 ```
+
+##POST /views/posts
+
+Unlike every other API method, this expects a JSON-encoded post body.
+You should submit an array of post:time pairs, like so:
+
+```json
+[ 
+    {"post":123, "time":"2013-09-05T13:09:38Z"}, 
+    {"post":456, "time":"2013-09-05T13:09:38Z"}
+]
+```
+
+This should respond with a 204.
 
 ##GET /approve/access
 
