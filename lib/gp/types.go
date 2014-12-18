@@ -157,6 +157,7 @@ type Post struct {
 	Popularity int                    `json:"popularity,omitempty"`
 	Attendees  int                    `json:"attendee_count,omitempty"`
 	Group      *Group                 `json:"network,omitempty"`
+	Views      int                    `json:"views,omitempty"`
 }
 
 //PostSmall enhances a Post with a comment count, a like count, and all the users who've liked the post.

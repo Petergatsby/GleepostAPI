@@ -78,6 +78,11 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 			return
 		}
 	}
+	post.Views, err = api.db.PostViewCount(postID)
+	if err != nil {
+		log.Println(err)
+		err = nil
+	}
 	return
 }
 
@@ -207,6 +212,11 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 			}
 			break
 		}
+	}
+	processed.Views, err = api.db.PostViewCount(processed.ID)
+	if err != nil {
+		log.Println(err)
+		err = nil
 	}
 	return processed, nil
 }

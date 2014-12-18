@@ -16,6 +16,13 @@ func Up_20141216221609(txn *sql.Tx) {
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()
+		return
+	}
+	q = "ALTER TABLE  `gleepost`.`post_views` ADD INDEX  `p_t` (  `post_id` ,  `ts` )"
+	_, err = txn.Query(q)
+	if err != nil {
+		log.Println(err)
+		txn.Rollback()
 	}
 }
 
