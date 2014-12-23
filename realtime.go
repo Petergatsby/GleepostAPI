@@ -41,6 +41,7 @@ func jsonServer(ws *websocket.Conn) {
 	chans := lib.ConversationChannelKeys([]gp.User{{ID: userID}})
 	chans = append(chans, lib.NotificationChannelKey(userID))
 	events := api.EventSubscribe(chans)
+	go websocketReader(ws, events)
 	for {
 		message, ok := <-events.Messages
 		if !ok {
@@ -57,4 +58,29 @@ func jsonServer(ws *websocket.Conn) {
 		}
 		log.Println("Sent bytes: ", n)
 	}
+}
+
+func websocketReader(ws *websocket.Conn, events gp.MsgQueue) {
+	var c postSubscriptionAction
+	for {
+		if ws == nil {
+			return
+		}
+		err := websocket.JSON.Receive(ws, &c)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		//TODO: Check you're actually allowed to see these.
+		var chans string
+		for _, i := range c.Channels {
+			chans += " " + string(i)
+		}
+		events.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
+	}
+}
+
+type postSubscriptionAction struct {
+	Action   string `json:"action"`
+	Channels []int  `json:"posts"`
 }
