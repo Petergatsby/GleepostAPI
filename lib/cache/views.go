@@ -3,6 +3,7 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -10,6 +11,7 @@ import (
 func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	conn := c.pool.Get()
 	defer conn.Close()
+	log.Println(counts)
 	for _, cnt := range counts {
 		JSONview, _ := json.Marshal(cnt)
 		conn.Send("PUBLISH", postViewChannel(cnt.Post), JSONview)
