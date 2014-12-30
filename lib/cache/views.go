@@ -14,10 +14,11 @@ func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	log.Println(counts)
 	for _, cnt := range counts {
 		JSONview, _ := json.Marshal(cnt)
-		conn.Send("PUBLISH", postViewChannel(cnt.Post), JSONview)
+		conn.Send("PUBLISH", PostViewChannel(cnt.Post), JSONview)
 	}
 }
 
-func postViewChannel(post gp.PostID) string {
+//PostViewChannel returns the namme of the channel for this post's events
+func PostViewChannel(post gp.PostID) string {
 	return fmt.Sprintf("posts.%d.views", post)
 }
