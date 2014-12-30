@@ -53,7 +53,7 @@ func jsonServer(ws *websocket.Conn) {
 		n, err := ws.Write(message)
 		if err != nil {
 			log.Println("Saw an error: ", err)
-			events.Commands <- gp.QueueCommand{Command: "UNSUBSCRIBE", Value: ""}
+			events.Commands <- gp.QueueCommand{Command: "UNSUBSCRIBE", Value: []string{}}
 			close(events.Commands)
 			return
 		}
@@ -73,9 +73,9 @@ func websocketReader(ws *websocket.Conn, events gp.MsgQueue) {
 			return
 		}
 		//TODO: Check you're actually allowed to see these.
-		var chans string
+		var chans []string
 		for _, i := range c.Channels {
-			chans += cache.PostViewChannel(gp.PostID(i)) + " "
+			chans = append(chans, cache.PostViewChannel(gp.PostID(i)))
 		}
 		log.Println(c)
 		log.Println(chans)

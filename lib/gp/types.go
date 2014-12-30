@@ -326,7 +326,7 @@ type MsgQueue struct {
 //QueueCommand represents a command to be sent to the message queue. It's sent as is, so never expose this to API clients!
 type QueueCommand struct {
 	Command string
-	Value   string
+	Value   []string
 }
 
 //Event represents something that happened which a consumer of a MsgQueue wants to hear about in real time.
