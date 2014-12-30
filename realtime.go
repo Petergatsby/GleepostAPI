@@ -74,8 +74,11 @@ func websocketReader(ws *websocket.Conn, events gp.MsgQueue) {
 		//TODO: Check you're actually allowed to see these.
 		var chans string
 		for _, i := range c.Channels {
-			chans += " " + string(i)
+			chans += string(i) + " "
 		}
+		log.Println(c)
+		log.Println(chans)
+
 		events.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
 	}
 }
