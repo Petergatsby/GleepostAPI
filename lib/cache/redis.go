@@ -136,9 +136,12 @@ func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
 			return
 		}
 		log.Println("Got a command: ", command)
-		if command.Command == "UNSUBSCRIBE" && command.Value == "" {
-			psc.Unsubscribe()
+		switch {
+		case command.Command == "UNSUBSCRIBE":
+			psc.Unsubscribe(command.Value)
 			return
+		case command.Command == "SUBSCRIBE":
+			psc.Subscribe(command.Value)
 		}
 	}
 }
