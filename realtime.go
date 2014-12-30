@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"code.google.com/p/go.net/websocket"
 	"github.com/draaglom/GleepostAPI/lib"
@@ -74,7 +75,7 @@ func websocketReader(ws *websocket.Conn, events gp.MsgQueue) {
 		//TODO: Check you're actually allowed to see these.
 		var chans string
 		for _, i := range c.Channels {
-			chans += string(i) + " "
+			chans += strconv.Itoa(i) + " "
 		}
 		log.Println(c)
 		log.Println(chans)
