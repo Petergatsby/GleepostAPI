@@ -102,3 +102,25 @@ An event with type "video-ready" is triggered once a video you have uploaded has
 ```
 
 Note: The location might be changed in future to the location that the notification "happened" (particular post, user, etc).
+
+#Post events
+In addition to the core events every user who subscribes to a websocket will get, a client may optionally indicate interest in specific posts.
+
+To do so, the client must send a subscription message with the following format:
+
+```json
+{"action":"SUBSCRIBE", "posts":[123,456,789]}
+```
+Where `123`, `456`, `789` represent post IDs that the client is interested in.
+
+From this point onwards, the client will be updated with realtime view counts for these posts:
+
+```json
+{"post":123, "views":355}
+```
+
+Once a client is no longer interested in updates to a particular post (for example, when it has scrolled out of view) it can stop receiving more events:
+
+```json
+{"action":"UNSUBSCRIBE", "posts":[123]}
+```
