@@ -145,7 +145,7 @@ func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
 			for i, v := range command.Value {
 				channels[i] = interface{}(v)
 			}
-			psc.Subscribe(channels)
+			psc.Subscribe(channels...)
 		}
 	}
 }
