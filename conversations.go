@@ -32,6 +32,7 @@ func init() {
 	base.HandleFunc("/conversations/{id:[0-9]+}/messages", postMessages).Methods("POST")
 	base.HandleFunc("/conversations/{id:[0-9]+}/messages", putMessages).Methods("PUT")
 	base.HandleFunc("/conversations/", optionsHandler).Methods("OPTIONS")
+	base.HandleFunc("/conversations", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/conversations/{id}/messages", optionsHandler).Methods("OPTIONS")
 }
 

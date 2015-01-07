@@ -17,11 +17,13 @@ func init() {
 	base.HandleFunc("/networks/{network:[0-9]+}/posts", postPosts).Methods("POST")
 	base.HandleFunc("/networks/{network:[0-9]+}", getNetwork).Methods("GET")
 	base.HandleFunc("/networks/{network:[0-9]+}", putNetwork).Methods("PUT")
+	base.HandleFunc("/networks/{network:[0-9]+}", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/networks/{network:[0-9]+}/users", postNetworkUsers).Methods("POST")
 	base.HandleFunc("/networks/{network:[0-9]+}/users", getNetworkUsers).Methods("GET")
 	base.HandleFunc("/networks/{network:[0-9]+}/admins", postNetworkAdmins).Methods("POST")
 	base.HandleFunc("/networks/{network:[0-9]+}/admins", getNetworkAdmins).Methods("GET")
 	base.HandleFunc("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", deleteNetworkAdmins).Methods("DELETE")
+	base.HandleFunc("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/networks", postNetworks).Methods("POST")
 
 	base.HandleFunc("/profile/networks", getGroups)
