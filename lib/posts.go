@@ -40,6 +40,15 @@ func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 	}
 }
 
+func (api *API) canViewPost(userID gp.UserID, postID gp.PostID) (canView bool, err error) {
+	p, err := api.getPostFull(userID, postID)
+	if err != nil {
+		return
+	}
+	in, err := api.UserInNetwork(userID, p.Network)
+	return in, err
+}
+
 func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
 	post.Post, err = api.db.UserGetPost(userID, postID)
 	if err != nil {

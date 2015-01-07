@@ -51,3 +51,15 @@ func (api *API) publishNewViewCounts(views ...gp.PostView) {
 	}
 	go api.cache.PublishViewCounts(counts...)
 }
+
+//CanSubscribePosts takes a list of posts that a user wishes to subscribe to and returns the ones they can actually see.
+func (api *API) CanSubscribePosts(user gp.UserID, posts []gp.PostID) (subscribable []gp.PostID, err error) {
+	subscribable = make([]gp.PostID, 0)
+	for _, p := range posts {
+		viewable, err := api.canViewPost(user, p)
+		if err == nil && viewable {
+			subscribable = append(subscribable, p)
+		}
+	}
+	return subscribable, err
+}
