@@ -124,3 +124,9 @@ Once a client is no longer interested in updates to a particular post (for examp
 ```json
 {"action":"UNSUBSCRIBE", "posts":[123]}
 ```
+
+If you unsubscribe from an empty list of posts, this is treated as unsubscribing from everything, including notifications / messages; the websocket will then close itself.
+
+```json
+{"action":"UNSUBSCRIBE", "posts":[]}
+```
