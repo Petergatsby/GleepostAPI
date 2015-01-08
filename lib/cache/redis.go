@@ -143,7 +143,9 @@ func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
 				channels[i] = interface{}(v)
 			}
 			psc.Unsubscribe(channels...)
-			return
+			if len(channels) == 0 {
+				return
+			}
 		case command.Command == "SUBSCRIBE":
 			channels := make([]interface{}, len(command.Value))
 			for i, v := range command.Value {
