@@ -92,6 +92,11 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		log.Println(err)
 		err = nil
 	}
+	post.Attending, err = api.db.IsAttending(userID, postID)
+	if err != nil {
+		log.Println(err)
+		err = nil
+	}
 	return
 }
 
@@ -111,18 +116,18 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 	if err != nil {
 		return
 	}
-	return api.getLive(networks[0].ID, t, count)
+	return api.getLive(networks[0].ID, t, count, userID)
 }
 
 //getLive returns the first count events happening after after, within network netId.
-func (api *API) getLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (api *API) getLive(netID gp.NetworkID, after time.Time, count int, userID gp.UserID) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	posts, err = api.db.GetLive(netID, after, count)
 	if err != nil {
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i])
+		processed, err := api.PostProcess(posts[i], userID)
 		if err == nil {
 			posts[i] = processed
 		}
@@ -138,7 +143,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i])
+		processed, err := api.PostProcess(posts[i], userID)
 		if err == nil {
 			posts[i] = processed
 		}
@@ -156,18 +161,18 @@ func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode i
 	case !in:
 		return posts, &ENOTALLOWED
 	default:
-		return api.getPosts(netID, mode, index, count, category)
+		return api.getPosts(netID, mode, index, count, category, userID)
 	}
 }
 
-func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string, userID gp.UserID) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	posts, err = api.db.GetPosts(netID, mode, index, count, category)
 	if err != nil {
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i])
+		processed, err := api.PostProcess(posts[i], userID)
 		if err == nil {
 			posts[i] = processed
 		} else {
@@ -185,7 +190,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i])
+		processed, err := api.PostProcess(posts[i], user)
 		if err == nil {
 			posts[i] = processed
 		} else {
@@ -197,7 +202,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 }
 
 //PostProcess fetches all the parts of a post which the newGetPosts style methods don't provide
-func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err error) {
+func (api *API) PostProcess(post gp.PostSmall, userID gp.UserID) (processed gp.PostSmall, err error) {
 	//Ha! I am so funny...
 	processed = post
 	processed.Likes, err = api.GetLikes(processed.ID)
@@ -227,6 +232,7 @@ func (api *API) PostProcess(post gp.PostSmall) (processed gp.PostSmall, err erro
 		log.Println(err)
 		err = nil
 	}
+	processed.Attending, err = api.db.IsAttending(userID, processed.ID)
 	return processed, nil
 }
 
@@ -503,7 +509,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 			}
 			if pending {
 				//Send out "There are posts to review" notification.
-				api.postsToApproveNotification(netID)
+				api.postsToApproveNotification(netID, userID)
 			}
 		}
 		return
@@ -631,7 +637,7 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 		return
 	}
 	for i := range events {
-		processed, err := api.PostProcess(events[i])
+		processed, err := api.PostProcess(events[i], user)
 		if err == nil {
 			events[i] = processed
 		}

@@ -645,6 +645,17 @@ func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode i
 	return db.scanPostRows(rows, false)
 }
 
+//IsAttending returns true iff this user is attending/has attended this post.
+func (db *DB) IsAttending(userID gp.UserID, postID gp.PostID) (attending bool, err error) {
+	q := "SELECT COUNT(*) FROM event_attendees WHERE user_id = ? AND post_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, postID).Scan(&attending)
+	return
+}
+
 //ChangePostText sets this post's text.
 func (db *DB) ChangePostText(postID gp.PostID, text string) (err error) {
 	q := "UPDATE wall_posts SET text = ? WHERE id = ?"

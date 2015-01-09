@@ -50,7 +50,7 @@ func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int)
 }
 
 func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level int) (err error) {
-	badge := api.approvalBadgeCount(netID)
+	badge := api.approvalBadgeCount(netID, changer)
 	users, err := api.approveUsers(netID)
 	if err != nil {
 		log.Println(err)
@@ -98,11 +98,11 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 	case !access.ApproveAccess:
 		return pending, &ENOTALLOWED
 	default:
-		return api.getNetworkPending(netID)
+		return api.getNetworkPending(netID, userID)
 	}
 }
 
-func (api *API) getNetworkPending(netID gp.NetworkID) (pending []gp.PendingPost, err error) {
+func (api *API) getNetworkPending(netID gp.NetworkID, userID gp.UserID) (pending []gp.PendingPost, err error) {
 	pending = make([]gp.PendingPost, 0)
 	_pending, err := api.db.PendingPosts(netID)
 	if err != nil {
@@ -111,7 +111,7 @@ func (api *API) getNetworkPending(netID gp.NetworkID) (pending []gp.PendingPost,
 
 	for i := range _pending {
 		pending = append(pending, gp.PendingPost{PostSmall: _pending[i]})
-		processed, err := api.PostProcess(pending[i].PostSmall)
+		processed, err := api.PostProcess(pending[i].PostSmall, userID)
 		if err == nil {
 			pending[i].PostSmall = processed
 		}
@@ -162,7 +162,7 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 		api.createNotification("approved_post", userID, p.By.ID, postID, 0, "")
 		//Silently reduce badge count for app users
 		//nb: just using p.Network won't work if we eventually want to eg. approve posts in public groups
-		api.silentSetApproveBadgeCount(p.Network)
+		api.silentSetApproveBadgeCount(p.Network, userID)
 	}
 	return
 }
@@ -183,7 +183,7 @@ func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID, mode in
 		}
 		for i := range _approved {
 			approved = append(approved, gp.PendingPost{PostSmall: _approved[i]})
-			processed, err := api.PostProcess(approved[i].PostSmall)
+			processed, err := api.PostProcess(approved[i].PostSmall, userID)
 			if err == nil {
 				approved[i].PostSmall = processed
 			}
@@ -210,7 +210,7 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 	err = api.db.RejectPost(userID, postID, reason)
 	if err == nil {
 		api.createNotification("rejected_post", userID, p.By.ID, postID, 0, "")
-		api.silentSetApproveBadgeCount(p.Network)
+		api.silentSetApproveBadgeCount(p.Network, userID)
 	}
 	return
 }
@@ -231,7 +231,7 @@ func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID, mode in
 		}
 		for i := range _rejected {
 			rejected = append(rejected, gp.PendingPost{PostSmall: _rejected[i]})
-			processed, err := api.PostProcess(rejected[i].PostSmall)
+			processed, err := api.PostProcess(rejected[i].PostSmall, userID)
 			if err == nil {
 				rejected[i].PostSmall = processed
 			}
@@ -253,7 +253,7 @@ func (api *API) PendingPosts(userID gp.UserID) (pending []gp.PendingPost, err er
 	}
 	for i := range _pending {
 		pending = append(pending, gp.PendingPost{PostSmall: _pending[i]})
-		processed, err := api.PostProcess(pending[i].PostSmall)
+		processed, err := api.PostProcess(pending[i].PostSmall, userID)
 		if err == nil {
 			pending[i].PostSmall = processed
 		}
@@ -265,8 +265,8 @@ func (api *API) PendingPosts(userID gp.UserID) (pending []gp.PendingPost, err er
 	return
 }
 
-func (api *API) silentSetApproveBadgeCount(netID gp.NetworkID) {
-	posts, err := api.getNetworkPending(netID)
+func (api *API) silentSetApproveBadgeCount(netID gp.NetworkID, userID gp.UserID) {
+	posts, err := api.getNetworkPending(netID, userID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -310,8 +310,8 @@ func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error
 	return api.db.GetNetworkUsers(master)
 }
 
-func (api *API) approvalBadgeCount(netID gp.NetworkID) (badge int) {
-	posts, err := api.getNetworkPending(netID)
+func (api *API) approvalBadgeCount(netID gp.NetworkID, userID gp.UserID) (badge int) {
+	posts, err := api.getNetworkPending(netID, userID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -320,8 +320,8 @@ func (api *API) approvalBadgeCount(netID gp.NetworkID) (badge int) {
 	return
 }
 
-func (api *API) postsToApproveNotification(netID gp.NetworkID) {
-	badge := api.approvalBadgeCount(netID)
+func (api *API) postsToApproveNotification(netID gp.NetworkID, userID gp.UserID) {
+	badge := api.approvalBadgeCount(netID, userID)
 	if badge == 0 {
 		return
 	}
@@ -377,7 +377,7 @@ func (api *API) maybeResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.N
 func (api *API) ResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.NetworkID, reason string) (err error) {
 	err = api.db.ResubmitPost(userID, postID, reason)
 	if err == nil {
-		api.postsToApproveNotification(netID)
+		api.postsToApproveNotification(netID, userID)
 	}
 	return
 }
