@@ -819,6 +819,7 @@ example responses:
 		"comment_count":4,
 		"like_count":5,
 		"attendee_count":324,
+		"attending":true,
 		"popularity":75,
 		"likes":[{"by": {
 				"id":545,
@@ -1245,6 +1246,7 @@ example responses:
 		"attribs": {
 			"event-time":"2013-09-05T13:09:38Z"
 		},
+		"attending":true,
 		"comment_count":4,
 		"like_count":5,
 		"likes":[{"by": {
@@ -1341,6 +1343,7 @@ Paginated in the same way as [posts](#get-posts).
 		},
 		"comment_count":4,
 		"like_count":5,
+		"attending":true,
 		"likes":[{"by": {
 				"id":545,
 				"name":"SomeoneElse"
