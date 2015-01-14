@@ -634,12 +634,15 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 	events = make([]gp.PostSmall, 0)
 	events, err = api.db.UserAttending(perspective, user, category, mode, index, count)
 	if err != nil {
+		log.Println("Error getting events:", err)
 		return
 	}
 	for i := range events {
 		processed, err := api.PostProcess(events[i], user)
 		if err == nil {
 			events[i] = processed
+		} else {
+			log.Println("Error processing events:", err)
 		}
 	}
 	return

@@ -275,6 +275,7 @@ func getUserAttending(w http.ResponseWriter, r *http.Request) {
 		events, err := api.UserEvents(userID, otherID, category, mode, index, 20)
 		if err != nil {
 			jsonResponse(w, err, 500)
+			return
 		}
 		jsonResponse(w, events, 200)
 	default:

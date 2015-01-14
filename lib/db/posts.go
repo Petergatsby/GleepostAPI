@@ -630,6 +630,7 @@ func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode i
 	}
 	s, err := db.prepare(q)
 	if err != nil {
+		log.Println("Error preparing statement:", err, "Statement:", q)
 		return
 	}
 	var rows *sql.Rows
