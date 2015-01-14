@@ -36,8 +36,8 @@ const (
 	whereBefore = "AND wall_posts.id < ? "
 	whereAfter  = "AND wall_posts.id > ? "
 
-	whereBeforeAtt = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
-	whereAfterAtt  = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ?) "
+	whereBeforeAtt = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ? AND user_id = ?) "
+	whereAfterAtt  = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ? AND user_id = ?) "
 
 	byNetwork = "AND network_id = ? "
 	byPoster  = "AND `by` = ? AND network_id IN ( " +
@@ -634,13 +634,18 @@ func (db *DB) UserAttending(perspective, user gp.UserID, category string, mode i
 		return
 	}
 	var rows *sql.Rows
-	if len(category) > 0 {
+	switch {
+	case len(category) > 0 && mode != gp.OSTART:
+		rows, err = s.Query(perspective, user, category, index, user, count)
+	case len(category) > 0 && mode == gp.OSTART:
 		rows, err = s.Query(perspective, user, category, index, count)
-
-	} else {
+	case mode != gp.OSTART:
+		rows, err = s.Query(perspective, user, index, user, count)
+	default:
 		rows, err = s.Query(perspective, user, index, count)
 	}
 	if err != nil {
+		log.Println("Error querying:", err, q)
 		return
 	}
 	return db.scanPostRows(rows, false)
