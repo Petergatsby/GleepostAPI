@@ -292,7 +292,8 @@ example responses:
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 		"attribs": {
-			"event-time":"2013-09-05T13:09:38Z"
+			"event-time":"2013-09-05T13:09:38Z",
+			"title": "Dead Week Grams!"
 		},
 		"comment_count":4,
 		"like_count":5,
@@ -391,7 +392,8 @@ example responses:
 	"text":"This is a cool post for cool people!",
 	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 	"attribs": {
-		"event-time":"2013-09-05T13:09:38Z"
+		"event-time":"2013-09-05T13:09:38Z",
+		"title": "Dead Week Grams!"
 	},
 	"comment_count":4,
 	"like_count":5,
@@ -473,7 +475,8 @@ On success, will be 200:
 	"text":"This is a cool post for cool people!",
 	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 	"attribs": {
-		"event-time":"2013-09-05T13:09:38Z"
+		"event-time":"2013-09-05T13:09:38Z",
+		"title": "Dead Week Grams!"
 	},
 	"comment_count":4,
 	"like_count":5,
@@ -703,7 +706,10 @@ example responses:
 			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
 		}
 	],
-	"attribs":{"event-time":"2014-02-05T12:47:59Z"},
+	"attribs":{
+		"event-time":"2013-09-05T13:09:38Z",
+		"title": "Dead Week Grams!"
+	},
 	"popularity":25,
 	"attendee_count":1,
 	"comment_count":0,
@@ -722,7 +728,10 @@ example responses:
 			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
 		}
 	],
-	"attribs":{"event-time":"2014-02-05T15:34:39Z"},
+	"attribs":{
+		"event-time":"2013-09-05T13:09:38Z",
+		"title": "Dead Week Grams!"
+	},
 	"popularity":100,
 	"attendee_count":5,
 	"comment_count":0,
@@ -813,8 +822,9 @@ example responses:
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
-		"attribs": {
-			"event-time":"2013-09-05T13:09:38Z"
+		"attribs":{
+			"event-time":"2013-09-05T13:09:38Z",
+			"title": "Dead Week Grams!"
 		},
 		"comment_count":4,
 		"like_count":5,
@@ -1243,8 +1253,9 @@ example responses:
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
-		"attribs": {
-			"event-time":"2013-09-05T13:09:38Z"
+		"attribs":{
+			"event-time":"2013-09-05T13:09:38Z",
+			"title": "Dead Week Grams!"
 		},
 		"attending":true,
 		"comment_count":4,
@@ -1338,8 +1349,9 @@ Paginated in the same way as [posts](#get-posts).
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
-		"attribs": {
-			"event-time":"2013-09-05T13:09:38Z"
+		"attribs":{
+			"event-time":"2013-09-05T13:09:38Z",
+			"title": "Dead Week Grams!"
 		},
 		"comment_count":4,
 		"like_count":5,
