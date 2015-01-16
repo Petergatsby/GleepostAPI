@@ -293,6 +293,9 @@ example responses:
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 		"attribs": {
 			"event-time":"2013-09-05T13:09:38Z",
+			"location-desc": "1 Jermyn Street",
+			"location-gps": "51.509882,-0.133541",
+			"location-name": "McKinsey & Co.",
 			"title": "Dead Week Grams!"
 		},
 		"comment_count":4,
@@ -393,6 +396,9 @@ example responses:
 	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 	"attribs": {
 		"event-time":"2013-09-05T13:09:38Z",
+		"location-desc": "1 Jermyn Street",
+		"location-gps": "51.509882,-0.133541",
+		"location-name": "McKinsey & Co.",
 		"title": "Dead Week Grams!"
 	},
 	"comment_count":4,
@@ -476,6 +482,9 @@ On success, will be 200:
 	"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
 	"attribs": {
 		"event-time":"2013-09-05T13:09:38Z",
+		"location-desc": "1 Jermyn Street",
+		"location-gps": "51.509882,-0.133541",
+		"location-name": "McKinsey & Co.",
 		"title": "Dead Week Grams!"
 	},
 	"comment_count":4,
@@ -706,8 +715,11 @@ example responses:
 			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
 		}
 	],
-	"attribs":{
+	"attribs": {
 		"event-time":"2013-09-05T13:09:38Z",
+		"location-desc": "1 Jermyn Street",
+		"location-gps": "51.509882,-0.133541",
+		"location-name": "McKinsey & Co.",
 		"title": "Dead Week Grams!"
 	},
 	"popularity":25,
@@ -728,8 +740,11 @@ example responses:
 			"thumbnails":["https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg"]
 		}
 	],
-	"attribs":{
+	"attribs": {
 		"event-time":"2013-09-05T13:09:38Z",
+		"location-desc": "1 Jermyn Street",
+		"location-gps": "51.509882,-0.133541",
+		"location-name": "McKinsey & Co.",
 		"title": "Dead Week Grams!"
 	},
 	"popularity":100,
@@ -822,8 +837,11 @@ example responses:
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
-		"attribs":{
+		"attribs": {
 			"event-time":"2013-09-05T13:09:38Z",
+			"location-desc": "1 Jermyn Street",
+			"location-gps": "51.509882,-0.133541",
+			"location-name": "McKinsey & Co.",
 			"title": "Dead Week Grams!"
 		},
 		"comment_count":4,
@@ -1253,8 +1271,11 @@ example responses:
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
-		"attribs":{
+		"attribs": {
 			"event-time":"2013-09-05T13:09:38Z",
+			"location-desc": "1 Jermyn Street",
+			"location-gps": "51.509882,-0.133541",
+			"location-name": "McKinsey & Co.",
 			"title": "Dead Week Grams!"
 		},
 		"attending":true,
@@ -1349,8 +1370,11 @@ Paginated in the same way as [posts](#get-posts).
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
-		"attribs":{
+		"attribs": {
 			"event-time":"2013-09-05T13:09:38Z",
+			"location-desc": "1 Jermyn Street",
+			"location-gps": "51.509882,-0.133541",
+			"location-name": "McKinsey & Co.",
 			"title": "Dead Week Grams!"
 		},
 		"comment_count":4,
