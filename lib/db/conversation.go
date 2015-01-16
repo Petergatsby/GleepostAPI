@@ -416,6 +416,7 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 	}
 	err = s.QueryRow(id).Scan(&message.ID, &by, &message.Text, &timeString)
 	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time)")
+	log.Println("Message is:", message, "Len of message.Text:", len(message.Text))
 	if err != nil {
 		return message, err
 	}
