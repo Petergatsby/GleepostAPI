@@ -74,7 +74,7 @@ type MysqlConfig struct {
 
 //ConnectionString returns the db/sql string for connecting to MySQL based on this config.
 func (c *MysqlConfig) ConnectionString() string {
-	return c.User + ":" + c.Pass + "@tcp(" + c.Host + ":" + c.Port + ")/gleepost?charset=utf8"
+	return c.User + ":" + c.Pass + "@tcp(" + c.Host + ":" + c.Port + ")/gleepost?charset=utf8mb4"
 }
 
 //RedisConfig represents the cache configuration.
