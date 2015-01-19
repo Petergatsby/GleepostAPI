@@ -50,7 +50,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	var err error
 	//Transcode mp4 to webm
 	if inProgress.MP4 != "" {
-		inProgress.WebM, err = MP4ToWebM(inProgress.MP4)
+		inProgress.WebM, err = MP4ToWebM(inProgress.MP4, inProgress.ShouldRotate)
 		if err != nil {
 			log.Println(err)
 			return
@@ -90,11 +90,17 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 
 //MP4ToWebM converts an MP4 video to WebM, returning the path to the output video.
 //The caller is responsible for cleaning up after itself (ie, deleting the videos from local storage when it is done)
-func MP4ToWebM(in string) (output string, err error) {
+func MP4ToWebM(in string, rotate bool) (output string, err error) {
 	//do transcode
 	output = "/tmp/" + randomFilename(".webm")
 	log.Println("Creating ffmpeg command")
-	cmd := exec.Command("ffmpeg", "-i", in, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", output)
+	var cmd *exec.Cmd
+	if rotate {
+		cmd = exec.Command("ffmpeg", "-i", in, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "transpose=1", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", output)
+	} else {
+		cmd = exec.Command("ffmpeg", "-i", in, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", output)
+
+	}
 	err = cmd.Run()
 	if err != nil {
 		return
@@ -213,7 +219,7 @@ func del(v gp.UploadStatus) (err error) {
 }
 
 //EnqueueVideo takes a user-uploaded video and enqueues it for processing.
-func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multipart.FileHeader) (inProgress gp.UploadStatus, err error) {
+func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multipart.FileHeader, shouldRotate bool) (inProgress gp.UploadStatus, err error) {
 	//First we must copy the file to /tmp,
 	//because while ffmpeg _can_ operate on a stream directly,
 	//that throws away the video length.
@@ -239,6 +245,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	case ext == ".webm":
 		video.WebM = name
 	}
+	video.ShouldRotate = shouldRotate
 	video.Status = "uploaded"
 	video.Owner = user
 	log.Println("Recording upload status")

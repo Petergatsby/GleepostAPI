@@ -354,6 +354,7 @@ type VideoID uint64
 
 //UploadStatus represents the status of an uploaded video.
 type UploadStatus struct {
-	Status string `json:"status"`
+	ShouldRotate bool   `json:"-"`
+	Status       string `json:"status"`
 	Video
 }

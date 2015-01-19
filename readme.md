@@ -1571,11 +1571,15 @@ HTTP 201
 
 ##POST /videos
 
-required parameters: id, token, video
+required parameters: `id`, `token`, `video`
+
+optional parameters: `rotate`
 
 /video takes a single multipart/form-data encoded video and returns an id and a status ("uploaded").
 You can then check [its resource](#get-videosvideo-id) to discover when it is ready to be used.
 In addition, when the video has uploaded you will get a "video-ready" event if you have a websocket connection.
+
+If `rotate` is `true`, the output webm will be rotated 90 degrees clockwise.
 
 HTTP 201
 ```json

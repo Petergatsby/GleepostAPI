@@ -27,6 +27,7 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
+		shouldRotate, _ := strconv.ParseBool(r.FormValue("rotate"))
 		log.Println("Entering upload handler")
 		file, header, err := r.FormFile("video")
 		log.Println("Got file from request body")
@@ -36,7 +37,7 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 		log.Println("About to enqueue the video for processing...")
-		videoStatus, err := api.EnqueueVideo(userID, file, header)
+		videoStatus, err := api.EnqueueVideo(userID, file, header, shouldRotate)
 		if err != nil {
 			jsonErr(w, err, 400)
 		} else {
