@@ -303,7 +303,10 @@ func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users
 	users = make([]gp.UserRole, 0)
 	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
+	CanJoin, errJoin := api.UserCanJoin(userID, netID)
 	switch {
+	case errJoin == nil && CanJoin:
+		return api.db.GetNetworkUsers(netID)
 	case errin != nil:
 		return users, errin
 	case errgroup != nil:
