@@ -498,9 +498,9 @@ func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 	return
 }
 
-//UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations.
-func (api *API) UnreadMessageCount(user gp.UserID) (count int, err error) {
-	return api.db.UnreadMessageCount(user)
+//UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations, optionally ignoring ones before the user's configured threshold time.
+func (api *API) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
+	return api.db.UnreadMessageCount(user, useThreshold)
 }
 
 //TotalLiveConversations returns the number of non-expired conversations this user has.
