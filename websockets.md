@@ -118,8 +118,8 @@ From this point onwards, the client will be updated with realtime view counts fo
 ```json
 {
 	"type":"views",
-	"location":"/posts/123"
-	"data":"{
+	"location":"/posts/123",
+	"data":{
 		"views":355
 	}
 }
