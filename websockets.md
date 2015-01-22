@@ -116,7 +116,13 @@ Where `123`, `456`, `789` represent post IDs that the client is interested in.
 From this point onwards, the client will be updated with realtime view counts for these posts:
 
 ```json
-{"post":123, "views":355}
+{
+	"type":"views",
+	"location":"/posts/123"
+	"data":"{
+		"views":355
+	}
+}
 ```
 
 Once a client is no longer interested in updates to a particular post (for example, when it has scrolled out of view) it can stop receiving more events:
