@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -13,8 +14,12 @@ func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	defer conn.Close()
 	log.Println(counts)
 	for _, cnt := range counts {
-		JSONview, _ := json.Marshal(cnt)
-		conn.Send("PUBLISH", PostViewChannel(cnt.Post), JSONview)
+		viewChan := PostViewChannel(cnt.Post)
+		event := gp.Event{Type: "views", Location: "/posts/" + strconv.Itoa(int(cnt.Post))}
+		cnt.Post = 0 //PostID is redundant now, so hide it
+		event.Data = cnt
+		JSONview, _ := json.Marshal(event)
+		conn.Send("PUBLISH", viewChan, JSONview)
 	}
 }
 

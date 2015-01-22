@@ -10,6 +10,6 @@ type PostView struct {
 }
 
 type PostViewCount struct {
-	Post  PostID `json:"post"`
+	Post  PostID `json:"post,omitempty"`
 	Count int    `json:"views"`
 }
