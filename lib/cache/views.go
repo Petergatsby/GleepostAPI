@@ -16,7 +16,6 @@ func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	for _, cnt := range counts {
 		viewChan := PostViewChannel(cnt.Post)
 		event := gp.Event{Type: "views", Location: "/posts/" + strconv.Itoa(int(cnt.Post))}
-		cnt.Post = 0 //PostID is redundant now, so hide it
 		event.Data = cnt
 		JSONview, _ := json.Marshal(event)
 		conn.Send("PUBLISH", viewChan, JSONview)
