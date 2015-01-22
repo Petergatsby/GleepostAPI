@@ -519,8 +519,8 @@ func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID
 	return
 }
 
-//UnreadMessageCount returns the number of unread messages this user has.
-func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
+//UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
+func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
 	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
 	sParticipate, err := db.prepare(qParticipate)
 	if err != nil {
@@ -531,7 +531,12 @@ func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 		return
 	}
 	defer rows.Close()
+
 	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ?"
+	if useThreshold {
+		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE user_id = ?)"
+
+	}
 	sUnreadCount, err := db.prepare(qUnreadCount)
 	if err != nil {
 		return
@@ -545,7 +550,11 @@ func (db *DB) UnreadMessageCount(user gp.UserID) (count int, err error) {
 		}
 		log.Printf("Conversation %d, last read message was %d\n", convID, lastID)
 		_count := 0
-		err = sUnreadCount.QueryRow(convID, lastID).Scan(&_count)
+		if !useThreshold {
+			err = sUnreadCount.QueryRow(convID, lastID).Scan(&_count)
+		} else {
+			err = sUnreadCount.QueryRow(convID, lastID, user).Scan(&_count)
+		}
 		if err == nil {
 			log.Printf("Conversation %d, unread message count was %d\n", convID, _count)
 			count += _count
@@ -619,4 +628,15 @@ func (db *DB) PrunableConversations() (conversations []gp.ConversationID, err er
 		conversations = append(conversations, c)
 	}
 	return conversations, nil
+}
+
+//UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
+func (db *DB) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
+	q := "UPDATE users SET new_message_threshold = ? WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(t, userID)
+	return
 }

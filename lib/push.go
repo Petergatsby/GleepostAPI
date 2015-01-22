@@ -40,7 +40,7 @@ func (api *API) notificationPush(user gp.UserID) {
 		return
 	}
 	badge := len(notifications)
-	unread, err := api.UnreadMessageCount(user)
+	unread, err := api.UnreadMessageCount(user, true)
 	if err == nil {
 		badge += unread
 	}
@@ -179,7 +179,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 		return
 	}
 	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(user)
+	unread, err := api.UnreadMessageCount(user, true)
 	if err == nil {
 		payload.Badge += unread
 	}
@@ -229,7 +229,7 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 		return
 	}
 	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(user)
+	unread, err := api.UnreadMessageCount(user, true)
 	if err == nil {
 		payload.Badge += unread
 	}
@@ -284,7 +284,7 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 		return
 	}
 	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(device.User)
+	unread, err := api.UnreadMessageCount(device.User, true)
 	if err == nil {
 		payload.Badge += unread
 	}
@@ -304,7 +304,7 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 		return
 	}
 	count = len(notifications)
-	unread, e := api.UnreadMessageCount(user)
+	unread, e := api.UnreadMessageCount(user, true)
 	if e == nil {
 		count += unread
 	} else {

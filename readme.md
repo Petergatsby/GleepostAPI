@@ -91,6 +91,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /conversations/read_all [[POST]](#post-conversationsread_all)
 
+/conversations/mute_badges [[POST]](#post-conversationsmute_badges)
+
 /conversations/[conversation-id] [[GET]](#get-conversationsconversation-id) [[DELETE]](#delete-conversationsconversation-id) [[PUT]](#get-conversationsconversation-id)
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
@@ -1015,6 +1017,13 @@ token=[token]
 
 Marks all conversations as "seen".
 On success, will return a 204 (no content).
+
+##POST /conversations/mute_badges
+required parameters:
+`id` = `[user-id]`
+`token` = `[token]`
+
+mute_badges marks all unread messages before the current time to be ignored from any badge calculations.
 
 ##GET /conversations
 required parameters:

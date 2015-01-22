@@ -318,7 +318,7 @@ func unread(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
 		uid := gp.UserID(_uid)
-		count, err := api.UnreadMessageCount(uid)
+		count, err := api.UnreadMessageCount(uid, false)
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}

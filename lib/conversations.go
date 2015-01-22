@@ -498,9 +498,9 @@ func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 	return
 }
 
-//UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations.
-func (api *API) UnreadMessageCount(user gp.UserID) (count int, err error) {
-	return api.db.UnreadMessageCount(user)
+//UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations, optionally ignoring ones before the user's configured threshold time.
+func (api *API) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
+	return api.db.UnreadMessageCount(user, useThreshold)
 }
 
 //TotalLiveConversations returns the number of non-expired conversations this user has.
@@ -529,4 +529,9 @@ func (api *API) EndOldConversations() {
 //(A live conversation is one which has not ended and has an expiry in the future)
 func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.ConversationSmall, err error) {
 	return api.db.GetLiveConversations(userID)
+}
+
+//UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
+func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
+	return api.db.UserMuteBadges(userID, t)
 }
