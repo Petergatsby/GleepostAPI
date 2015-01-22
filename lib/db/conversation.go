@@ -534,7 +534,7 @@ func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, 
 
 	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ?"
 	if useThreshold {
-		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE user_id = ?)"
+		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?)"
 
 	}
 	sUnreadCount, err := db.prepare(qUnreadCount)
