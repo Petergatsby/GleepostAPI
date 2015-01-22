@@ -558,6 +558,8 @@ func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, 
 		if err == nil {
 			log.Printf("Conversation %d, unread message count was %d\n", convID, _count)
 			count += _count
+		} else {
+			log.Println("Error calculating badge for:", convID, _count, user, err)
 		}
 	}
 	return count, nil
