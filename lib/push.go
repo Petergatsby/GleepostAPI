@@ -34,18 +34,10 @@ func (api *API) notify(user gp.UserID) {
 }
 
 func (api *API) notificationPush(user gp.UserID) {
-	notifications, err := api.GetUserNotifications(user, false)
+	badge, err := api.badgeCount(user)
 	if err != nil {
 		log.Println(err)
-		return
 	}
-	badge := len(notifications)
-	unread, err := api.UnreadMessageCount(user, true)
-	if err == nil {
-		badge += unread
-	}
-	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, badge, unread)
-
 	devices, err := api.GetDevices(user, "gleepost")
 	if err != nil {
 		log.Println(err)
@@ -173,17 +165,7 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 	}
 	payload.Alert = d
 	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(user, false)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(user, true)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("Badging %d with %d notifications (%d from unread messages)", user, payload.Badge, unread)
+	payload.Badge, err = api.badgeCount(user)
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
@@ -223,17 +205,10 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	d.LocArgs = []string{with.Name}
 	payload.Alert = d
 	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(user, false)
+	payload.Badge, err = api.badgeCount(user)
 	if err != nil {
 		log.Println(err)
-		return
 	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(user, true)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("Badging %d with %d notifications (%d from unread messages)", user, payload.Badge, unread)
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
@@ -278,17 +253,10 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 	payload := apns.NewPayload()
 	payload.Alert = message
 	payload.Sound = "default"
-	notifications, err := api.GetUserNotifications(device.User, false)
+	payload.Badge, err = api.badgeCount(device.User)
 	if err != nil {
 		log.Println(err)
-		return
 	}
-	payload.Badge = len(notifications)
-	unread, err := api.UnreadMessageCount(device.User, true)
-	if err == nil {
-		payload.Badge += unread
-	}
-	log.Printf("mass notification: badging %d with %d notifications (%d from unread messages)", device.User, payload.Badge, unread)
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device.ID
 	pn.AddPayload(payload)
@@ -310,6 +278,7 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 	} else {
 		log.Println(err)
 	}
+	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, count, unread)
 	return
 }
 
