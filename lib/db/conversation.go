@@ -620,3 +620,14 @@ func (db *DB) PrunableConversations() (conversations []gp.ConversationID, err er
 	}
 	return conversations, nil
 }
+
+//UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
+func (db *DB) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
+	q := "UPDATE users SET new_message_threshold = ? WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(t, userID)
+	return
+}

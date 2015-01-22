@@ -530,3 +530,8 @@ func (api *API) EndOldConversations() {
 func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.ConversationSmall, err error) {
 	return api.db.GetLiveConversations(userID)
 }
+
+//UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
+func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
+	return api.db.UserMuteBadges(userID, t)
+}

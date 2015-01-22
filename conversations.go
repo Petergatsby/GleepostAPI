@@ -22,6 +22,8 @@ func init() {
 	base.HandleFunc("/conversations/live", liveConversationHandler)
 	base.HandleFunc("/conversations/read_all", readAll).Methods("POST")
 	base.HandleFunc("/conversations/read_all/", readAll).Methods("POST")
+	base.HandleFunc("/conversations/mute_badges", muteBadges).Methods("POST")
+	base.HandleFunc("/conversations/mute_badges/", muteBadges).Methods("POST")
 	base.HandleFunc("/conversations", getConversations).Methods("GET")
 	base.HandleFunc("/conversations", postConversations).Methods("POST")
 	base.HandleFunc("/conversations/{id:[0-9]+}", getSpecificConversation).Methods("GET")
@@ -383,6 +385,28 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		go api.Count(1, "gleepost.conversations.read_all.post.204")
+		w.WriteHeader(204)
+	default:
+		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func muteBadges(w http.ResponseWriter, r *http.Request) {
+	defer api.Time(time.Now(), "gleepost.conversations.mute_badges.post")
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		go api.Count(1, "gleepost.conversations.mute_badges.post.400")
+		jsonResponse(w, &EBADTOKEN, 400)
+	case r.Method == "POST":
+		t := time.Now().UTC()
+		err = api.UserMuteBadges(userID, t)
+		if err != nil {
+			go api.Count(1, "gleepost.conversations.mute_badges.post.500")
+			jsonResponse(w, err, 500)
+			return
+		}
+		go api.Count(1, "gleepost.conversations.mute_badges.post.204")
 		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
