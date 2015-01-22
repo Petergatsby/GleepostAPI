@@ -24,19 +24,14 @@ func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
 
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
 func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
-	p, err := api.getPostFull(userID, postID)
-	if err != nil {
-		return
-	}
-	in, err := api.UserInNetwork(userID, p.Network)
+	canView, err := api.canViewPost(userID, postID)
 	switch {
 	case err != nil:
 		return post, err
-	case !in:
-		log.Printf("User %d not in %d\n", userID, p.Network)
+	case !canView:
 		return post, &ENOTALLOWED
 	default:
-		return p, nil
+		return api.getPostFull(userID, postID)
 	}
 }
 
