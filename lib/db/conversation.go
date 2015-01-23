@@ -49,6 +49,10 @@ func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.Conversatio
 		if err == nil {
 			conv.Expiry = &Expiry
 		}
+		conv.Unread, err = db.UserConversationUnread(id, conv.ID)
+		if err != nil {
+			log.Println("error getting unread count:", err)
+		}
 		conversations = append(conversations, conv)
 	}
 	return conversations, nil
@@ -215,6 +219,10 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 		if err == nil {
 			conv.Read = read
 		}
+		conv.Unread, err = db.UserConversationUnread(userID, conv.ID)
+		if err != nil {
+			log.Println("error getting unread count:", err)
+		}
 		conversations = append(conversations, conv)
 	}
 	return conversations, nil
@@ -291,7 +299,7 @@ func (db *DB) ConversationSetExpiry(convID gp.ConversationID, expiry gp.Expiry) 
 }
 
 //GetConversation returns the conversation convId, including up to count messages.
-func (db *DB) GetConversation(convID gp.ConversationID, count int) (conversation gp.ConversationAndMessages, err error) {
+func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count int) (conversation gp.ConversationAndMessages, err error) {
 	conversation.ID = convID
 	conversation.LastActivity, err = db.ConversationActivity(convID)
 	if err != nil {
@@ -308,6 +316,10 @@ func (db *DB) GetConversation(convID gp.ConversationID, count int) (conversation
 	expiry, err := db.ConversationExpiry(convID)
 	if err == nil {
 		conversation.Expiry = &expiry
+	}
+	conversation.Unread, err = db.UserConversationUnread(userID, convID)
+	if err != nil {
+		log.Println("error getting unread count:", err)
 	}
 	conversation.Messages, err = db.GetMessages(convID, 0, "start", count)
 	return
@@ -640,5 +652,20 @@ func (db *DB) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 		return
 	}
 	_, err = s.Exec(t, userID)
+	return
+}
+
+//UserConversationUnread returns the nubmer of unread messages in this conversation for this user.
+//If userID == 0, will return 0, nil.
+func (db *DB) UserConversationUnread(userID gp.UserID, convID gp.ConversationID) (unread int, err error) {
+	if userID == 0 {
+		return 0, nil
+	}
+	q := "SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ? AND EXISTS (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND id > (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?)"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(convID, convID, userID, convID, userID).Scan(&unread)
 	return
 }
