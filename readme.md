@@ -1054,7 +1054,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 		{"id":232515, "name":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z"},
+	"mostRecentMessage": {"id":123512624, "by":{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z"},
 	"unread": 123
 	}
 ]
@@ -1142,9 +1142,9 @@ Given [before], it returns at most 20 of the messages received immediately befor
 example responses:
 ```json
 [
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
-		{"id":1234214, "by":9, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
+		{"id":1234214, "by":{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 ]
 ```
 
