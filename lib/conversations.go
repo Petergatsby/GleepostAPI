@@ -52,7 +52,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 		return
 	}
 	api.cache.MarkConversationSeen(id, convID, upTo)
-	conv, err := api.getConversation(convID)
+	conv, err := api.getConversation(id, convID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -194,7 +194,7 @@ func (api *API) NewConversationEvent(conversation gp.Conversation) {
 
 //EndConversationEvent publishes an event to all listening participants to let them know the conversation is terminated.
 func (api *API) EndConversationEvent(conversation gp.ConversationID) {
-	conv, err := api.getConversation(conversation)
+	conv, err := api.getConversation(0, conversation) //0 means we will omit the unread count.
 	if err != nil {
 		log.Println(err)
 		return
@@ -238,13 +238,13 @@ func (api *API) addAllConversations(userID gp.UserID) (err error) {
 //TODO: Restrict access to correct userId
 func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
-		return api.getConversation(convID)
+		return api.getConversation(userID, convID)
 	}
 	return conversation, &ENOTALLOWED
 }
 
-func (api *API) getConversation(convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
-	return api.db.GetConversation(convID, api.Config.ConversationPageSize)
+func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
+	return api.db.GetConversation(userID, convID, api.Config.ConversationPageSize)
 }
 
 //GetMessage retrieves the message msgID from the cache if available.
