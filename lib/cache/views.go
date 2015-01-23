@@ -9,6 +9,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//PublishViewCounts publishes the updated view counts given to it in the channel posts.:id.views, to be consumed by a websocket subscriber.
+//It doesn't perform rate limiting, deduplication or sanity checking of any kind; this is the caller's responsibility.
 func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	conn := c.pool.Get()
 	defer conn.Close()

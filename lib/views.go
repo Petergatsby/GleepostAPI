@@ -6,7 +6,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//RecordViews saves a bunch of post views.
+//RecordViews saves a bunch of post views, after purging views that the user couldn't have done. It also triggers a views-change event on all the posts involved.
 func (api *API) RecordViews(views ...gp.PostView) {
 	//Purge views the user couldn't have made
 	views = api.verifyViews(views...)
@@ -35,7 +35,7 @@ func (api *API) verifyViews(views ...gp.PostView) (verified []gp.PostView) {
 
 func (api *API) publishNewViewCounts(views ...gp.PostView) {
 	done := make(map[gp.PostID]bool)
-	counts := make([]gp.PostViewCount, 0)
+	var counts []gp.PostViewCount
 
 	for _, v := range views {
 		_, ok := done[v.Post]

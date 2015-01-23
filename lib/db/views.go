@@ -2,6 +2,7 @@ package db
 
 import "github.com/draaglom/GleepostAPI/lib/gp"
 
+//RecordViews saves a bunch of post views. You probably want api.RecordViews() instead.
 func (db *DB) RecordViews(views ...gp.PostView) error {
 	q := "INSERT INTO post_views (user_id, post_id, ts) VALUES (?, ?, ?)"
 	s, err := db.prepare(q)
@@ -17,6 +18,7 @@ func (db *DB) RecordViews(views ...gp.PostView) error {
 	return nil
 }
 
+//PostViewCount returns the number of total views this post has had.
 func (db *DB) PostViewCount(post gp.PostID) (count int, err error) {
 	q := "SELECT COUNT(*) FROM post_views WHERE post_id = ?"
 	s, err := db.prepare(q)

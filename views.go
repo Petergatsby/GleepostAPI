@@ -19,7 +19,7 @@ func postPostViews(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		views := make([]gp.PostView, 0)
+		var views []gp.PostView
 		decoder := json.NewDecoder(r.Body)
 		err := decoder.Decode(&views)
 		if err != nil {

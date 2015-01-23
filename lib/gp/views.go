@@ -9,6 +9,7 @@ type PostView struct {
 	Time time.Time `json:"time"`
 }
 
+//PostViewCount is a post:total views tuple.
 type PostViewCount struct {
 	Post  PostID `json:"post,omitempty"`
 	Count int    `json:"views"`
