@@ -1002,10 +1002,11 @@ Returns up to three live conversations (whose "ended" attribute is false) for th
 		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
-	"read":[{"user":9,"last_read":1000}],
-	"lastActivity":"2013-09-05T13:09:38Z",
+	"read": [{"user":9,"last_read":1000}],
+	"lastActivity": "2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
+	"unread": 12
 	}
 ]
 ```
@@ -1044,15 +1045,17 @@ returns a list of 20 of your conversations ordered by most recent message, start
 	"read":[{"user":9,"last_read":1000}],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
+	"unread": 123
 	},
 	{"id":2,
-	"participants" [
+	"participants": [
 		{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
 		{"id":232515, "name":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z"}
+	"mostRecentMessage": {"id":123512624, "by":99999, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z"},
+	"unread": 123
 	}
 ]
 ```
@@ -1112,7 +1115,8 @@ example responses:
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
+	"unread": 123
 }
 ```
 
@@ -1190,6 +1194,7 @@ seen=51
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
 	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
+	"unread":123,
 	"messages": [
 		{
 			"id": 52,
