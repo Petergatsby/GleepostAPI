@@ -77,6 +77,7 @@ func (db *DB) SearchGroups(parent gp.NetworkID, name string) (groups []gp.Group,
 			if err == nil {
 				group.Creator = &u
 			}
+			group.MemberCount, _ = db.GroupMemberCount(group.ID)
 		}
 		if desc.Valid {
 			group.Desc = desc.String
