@@ -76,6 +76,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 			if err == nil {
 				network.Creator = &u
 			}
+			network.MemberCount, _ = db.GroupMemberCount(network.ID)
 		}
 		if privacy.Valid {
 			network.Privacy = privacy.String
@@ -137,6 +138,7 @@ func (db *DB) SubjectiveMemberships(perspective, user gp.UserID) (groups []gp.Gr
 			if err == nil {
 				network.Creator = &u
 			}
+			network.MemberCount, _ = db.GroupMemberCount(network.ID)
 		}
 		if privacy.Valid {
 			network.Privacy = privacy.String
@@ -185,6 +187,7 @@ func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 		if err == nil {
 			network.Creator = &u
 		}
+		network.MemberCount, _ = db.GroupMemberCount(network.ID)
 	}
 	if privacy.Valid {
 		network.Privacy = privacy.String
@@ -441,5 +444,16 @@ func (db *DB) UserSetRole(user gp.UserID, network gp.NetworkID, role gp.Role) (e
 		return
 	}
 	_, err = s.Exec(role.Name, role.Level, user, network)
+	return
+}
+
+//GroupMemberCount returns the number of members this group has.
+func (db *DB) GroupMemberCount(network gp.NetworkID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM user_network WHERE network_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(network).Scan(&count)
 	return
 }
