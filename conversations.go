@@ -434,7 +434,13 @@ func postParticipants(w http.ResponseWriter, r *http.Request) {
 				users = append(users, gp.UserID(user))
 			}
 		}
-		err := api.UserAddParticipants(userID, convID, users...)
-
+		participants, err := api.UserAddParticipants(userID, convID, users...)
+		if err != nil {
+			jsonErr(w, err, 400)
+			go api.Count(1, url+".400")
+			return
+		}
+		jsonResponse(w, participants, 205)
+		go api.Count(1, url+".205")
 	}
 }

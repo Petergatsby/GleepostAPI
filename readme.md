@@ -97,6 +97,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
+/conversations/[conversation-id]/participants [[POST]](#post-conversationsconversation-idparticipants)
+
 /user [[POST]](#post-user)
 
 /user/[user-id] [[GET]](#get-useruser-id)
@@ -1248,6 +1250,30 @@ seen=51
 }
 
 
+```
+
+##POST /conversations/[conversation-id]/participants
+
+Required parameters:
+`id`, `token` (Auth)
+
+`users`: a comma-delimited list of userIDs to add as participants to this conversation.
+
+On success, returns the updated list of participants. Note: This may be different to the list you were expecting, if eg. one of the users could not be added to the conversation
+
+```json
+[
+	{
+		"id":9,
+		"name": "Patrick",
+		"profile_image":"https://gleepost.com/uploads/123.jpg"
+	},
+	{
+		"id":9999,
+		"name": "Jeff",
+		"profile_image":"https://gleepost.com/uploads/456.jpg"
+	}
+]
 ```
 
 ##POST /user

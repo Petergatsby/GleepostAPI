@@ -537,9 +537,9 @@ func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 }
 
 //UserAddParticipants adds new user(s) to this conversation, iff userID is in conversation && userID and participants share at least one network (ie, university)
-func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (err error) {
+func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants, err error) {
 	//add to conversation
 	//emit conversation changed event
 	//emit "system" message
-	return nil
+	return
 }
