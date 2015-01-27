@@ -517,9 +517,7 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 	return
 }
 
-//MarkRead will set all messages in the conversation convId read = true
-//up to and including upTo and excluding messages sent by user id.
-//TODO: This won't generalize to >2 participants
+//MarkRead moves this user's "read" marker up to this message in this conversation.
 func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (err error) {
 	s, err := db.prepare("UPDATE conversation_participants " +
 		"SET last_read = ? " +
