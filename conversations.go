@@ -36,6 +36,7 @@ func init() {
 	base.HandleFunc("/conversations/", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/conversations", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/conversations/{id}/messages", optionsHandler).Methods("OPTIONS")
+	base.HandleFunc("/conversations/{id:[0-9]+}/participants", postParticipants).Methods("POST")
 }
 
 func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
@@ -410,5 +411,30 @@ func muteBadges(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)
+	}
+}
+
+func postParticipants(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	url := fmt.Sprintf("gleepost.conversations.%s.participants.post", vars["id"])
+	defer api.Time(time.Now(), url)
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		go api.Count(1, url+".400")
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
+		convID := gp.ConversationID(_convID)
+		_users := strings.Split(r.FormValue("users"), ",")
+		var users []gp.UserID
+		for _, u := range _users {
+			user, err := strconv.ParseUint(u, 10, 64)
+			if err == nil {
+				users = append(users, gp.UserID(user))
+			}
+		}
+		err := api.UserAddParticipants(userID, convID, users...)
+
 	}
 }

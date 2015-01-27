@@ -535,3 +535,11 @@ func (api *API) GetLiveConversations(userID gp.UserID) (conversations []gp.Conve
 func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 	return api.db.UserMuteBadges(userID, t)
 }
+
+//UserAddParticipants adds new user(s) to this conversation, iff userID is in conversation && userID and participants share at least one network (ie, university)
+func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (err error) {
+	//add to conversation
+	//emit conversation changed event
+	//emit "system" message
+	return nil
+}
