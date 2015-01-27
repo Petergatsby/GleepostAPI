@@ -71,15 +71,13 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 		return
 	}
 	log.Println("DB hit: createConversation (user.Name, user.Id)")
-	s, err = db.prepare("INSERT INTO conversation_participants (conversation_id, participant_id) VALUES (?,?)")
+	var pids []gp.UserID
+	for _, u := range participants {
+		pids = append(pids, u.ID)
+	}
+	err = db.AddConversationParticipants(id, pids, conversation.ID)
 	if err != nil {
 		return
-	}
-	for _, u := range participants {
-		_, err = s.Exec(conversation.ID, u.ID)
-		if err != nil {
-			return
-		}
 	}
 	conversation.Participants = participants
 	conversation.LastActivity = time.Now().UTC()
@@ -88,6 +86,21 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 		err = db.ConversationSetExpiry(conversation.ID, *conversation.Expiry)
 	}
 	return
+}
+
+//AddConversationParticipants adds these participants to convID, or does nothing if they are already members.
+func (db *DB) AddConversationParticipants(adder gp.UserID, participants []gp.UserID, convID gp.ConversationID) (err error) {
+	s, err := db.prepare("REPLACE INTO conversation_participants (conversation_id, participant_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	for _, u := range participants {
+		_, err = s.Exec(convID, u)
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
 
 //RandomPartners generates count users randomly (id ∉ participants).
