@@ -235,7 +235,6 @@ func (api *API) addAllConversations(userID gp.UserID) (err error) {
 }
 
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
-//TODO: Restrict access to correct userId
 func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
 		return api.getConversation(userID, convID)
@@ -542,7 +541,11 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 		err = &ENOTALLOWED
 		return
 	}
-	err = api.db.AddConversationParticipants(userID, participants, convID)
+	addable, err := api.addableParticipants(userID, convID, participants...)
+	if err != nil {
+		return
+	}
+	err = api.db.AddConversationParticipants(userID, addable, convID)
 	if err != nil {
 		return
 	}
@@ -551,10 +554,25 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 		return
 	}
 	go api.ConversationChangedEvent(conv.Conversation)
-	for _, p := range participants {
+	for _, p := range addable {
 		api.addSystemMessage(convID, p, "JOINED")
 	}
 	updatedParticipants = api.GetParticipants(convID, false)
+	return
+}
+
+//addableParticipants returns all the participants who can be added to this conversation -- ie, purges those with no shared networks and those already in the conv.
+func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (addableParticipants []gp.User, err error) {
+	for _, p := range participants {
+		shared, err := api.HaveSharedNetwork(userID, p) //Not someone who you can see
+		if !shared || err != nil {
+			continue
+		}
+		if api.UserCanViewConversation(p, convID) { //Already in conversation
+			continue
+		}
+		addableParticipants = append(addableParticipants, p)
+	}
 	return
 }
 
