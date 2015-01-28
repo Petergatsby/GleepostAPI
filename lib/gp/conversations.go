@@ -11,10 +11,11 @@ type ConversationID uint64
 //Message does not contain a conversation ID. If you need that, see RedisMessage.
 //TODO: Combine them?
 type Message struct {
-	ID   MessageID `json:"id"`
-	By   User      `json:"by"`
-	Text string    `json:"text"`
-	Time time.Time `json:"timestamp"`
+	ID     MessageID `json:"id"`
+	By     User      `json:"by"`
+	Text   string    `json:"text"`
+	Time   time.Time `json:"timestamp"`
+	System bool      `json:"system,omitempty"`
 }
 
 //Read represents the most recent message a user has seen in a particular conversation (it doesn't make much sense without that context).

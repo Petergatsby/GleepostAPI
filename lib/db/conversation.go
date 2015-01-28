@@ -454,14 +454,14 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 	return message, nil
 }
 
-//AddMessage records this message in the database.
-func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string) (id gp.MessageID, err error) {
-	log.Printf("Adding message to db: %d, %d %s", convID, userID, text)
-	s, err := db.prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`) VALUES (?,?,?)")
+//AddMessage records this message in the database. System represents whether this is a system- or user-generated message.
+func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string, system bool) (id gp.MessageID, err error) {
+	log.Printf("Adding message to db: %d, %d %s", convID, userID, text, system)
+	s, err := db.prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`, `system`) VALUES (?,?,?,?)")
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(convID, userID, text)
+	res, err := s.Exec(convID, userID, text, system)
 	if err != nil {
 		return 0, err
 	}

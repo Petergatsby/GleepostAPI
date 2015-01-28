@@ -553,3 +553,32 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 	go api.ConversationChangedEvent(conv.Conversation)
 	return
 }
+
+func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
+	messageID, err := api.db.AddMessage(convID, userID, text, true)
+	if err != nil {
+		return
+	}
+	user, err := api.GetUser(userID)
+	if err != nil {
+		return
+	}
+	msg := gp.Message{
+		ID:     gp.MessageID(messageID),
+		By:     user,
+		Text:   text,
+		Time:   time.Now().UTC(),
+		System: true}
+	participants, err := api.db.GetParticipants(convID, false)
+	if err == nil {
+		//Note to self: What is the difference between Publish and PublishEvent?
+		go api.cache.Publish(msg, participants, convID)
+		chans := ConversationChannelKeys(participants)
+		go api.cache.PublishEvent("message", ConversationURI(convID), msg, chans)
+	} else {
+		log.Println("Error getting participants; didn't bradcast event to websockets")
+	}
+	go api.cache.AddMessage(msg, convID)
+	go api.updateConversation(convID)
+	return
+}
