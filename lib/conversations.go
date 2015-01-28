@@ -268,7 +268,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	if !api.UserCanViewConversation(userID, convID) {
 		return messageID, &ENOTALLOWED
 	}
-	messageID, err = api.db.AddMessage(convID, userID, text)
+	messageID, err = api.db.AddMessage(convID, userID, text, false)
 	if err != nil {
 		return
 	}
@@ -551,11 +551,12 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 		return
 	}
 	go api.ConversationChangedEvent(conv.Conversation)
+	api.addSystemMessage(convID, userID, "JOINED")
 	return
 }
 
 func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
-	messageID, err := api.db.AddMessage(convID, userID, text, true)
+	messageID, err = api.db.AddMessage(convID, userID, text, true)
 	if err != nil {
 		return
 	}
