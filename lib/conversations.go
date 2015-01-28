@@ -551,7 +551,9 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 		return
 	}
 	go api.ConversationChangedEvent(conv.Conversation)
-	api.addSystemMessage(convID, userID, "JOINED")
+	for _, p := range participants {
+		api.addSystemMessage(convID, p, "JOINED")
+	}
 	updatedParticipants = api.GetParticipants(convID, false)
 	return
 }
