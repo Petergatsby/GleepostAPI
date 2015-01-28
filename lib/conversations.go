@@ -377,12 +377,8 @@ func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, inde
 }
 
 func (api *API) getMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
-	messages, err = api.cache.GetMessages(convID, index, sel, count)
-	if err != nil {
-		messages, err = api.db.GetMessages(convID, index, sel, count)
-		go api.FillMessageCache(convID)
-		return
-	}
+	messages, err = api.db.GetMessages(convID, index, sel, count)
+	go api.FillMessageCache(convID)
 	return
 }
 
