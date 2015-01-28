@@ -431,7 +431,7 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 	//Ordered by id rather than timestamp because timestamps are limited to 1-second resolution
 	//ie, the last message by timestamp may be _several
 	//note: this won't work if we move away from incremental message ids.
-	q := "SELECT id, `from`, text, `timestamp`" +
+	q := "SELECT id, `from`, text, `timestamp`, `system`" +
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? " +
 		"ORDER BY `id` DESC LIMIT 1"
@@ -439,7 +439,7 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&message.ID, &by, &message.Text, &timeString)
+	err = s.QueryRow(id).Scan(&message.ID, &by, &message.Text, &timeString, &message.System)
 	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time)")
 	log.Println("Message is:", message, "Len of message.Text:", len(message.Text))
 	if err != nil {
@@ -483,17 +483,17 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 	var q string
 	switch {
 	case sel == "after":
-		q = "SELECT id, `from`, text, `timestamp`" +
+		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE conversation_id = ? AND id > ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "before":
-		q = "SELECT id, `from`, text, `timestamp`" +
+		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE conversation_id = ? AND id < ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "start":
-		q = "SELECT id, `from`, text, `timestamp`" +
+		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE conversation_id = ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?, ?"
@@ -512,7 +512,7 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 		var message gp.Message
 		var timeString string
 		var by gp.UserID
-		err = rows.Scan(&message.ID, &by, &message.Text, &timeString)
+		err = rows.Scan(&message.ID, &by, &message.Text, &timeString, &message.System)
 		if err != nil {
 			log.Printf("%v", err)
 		}
@@ -555,9 +555,9 @@ func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, 
 	}
 	defer rows.Close()
 
-	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ?"
+	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND `system` = 0"
 	if useThreshold {
-		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?)"
+		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) AND `system` = 0"
 
 	}
 	sUnreadCount, err := db.prepare(qUnreadCount)
@@ -672,7 +672,7 @@ func (db *DB) UserConversationUnread(userID gp.UserID, convID gp.ConversationID)
 	if userID == 0 {
 		return 0, nil
 	}
-	q := "SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ? AND EXISTS (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND id > (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?)"
+	q := "SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ? AND EXISTS (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND id > (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND `system` = 0"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
