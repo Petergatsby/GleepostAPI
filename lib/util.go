@@ -111,7 +111,7 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, regEx string, 
 			image = post.Images[0]
 		}
 		var id gp.PostID
-		id, _, err = api.AddPostWithImage(userID, into, post.Text, attribs, image, tags...)
+		id, _, err = api.AddPostWithImage(userID, into, post.Text, attribs, true, image, tags...)
 		if err != nil {
 			return
 		}

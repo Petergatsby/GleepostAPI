@@ -165,7 +165,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		case videoID > 0:
 			postID, pending, err = api.AddPostWithVideo(userID, network, text, attribs, videoID, ts...)
 		case len(url) > 5:
-			postID, pending, err = api.AddPostWithImage(userID, network, text, attribs, url, ts...)
+			postID, pending, err = api.AddPostWithImage(userID, network, text, attribs, false, url, ts...)
 		default:
 			postID, pending, err = api.AddPost(userID, network, text, attribs, ts...)
 		}
