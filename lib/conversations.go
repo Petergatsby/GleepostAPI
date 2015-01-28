@@ -562,7 +562,7 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 }
 
 //addableParticipants returns all the participants who can be added to this conversation -- ie, purges those with no shared networks and those already in the conv.
-func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (addableParticipants []gp.User, err error) {
+func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (addableParticipants []gp.UserID, err error) {
 	for _, p := range participants {
 		shared, err := api.HaveSharedNetwork(userID, p) //Not someone who you can see
 		if !shared || err != nil {
