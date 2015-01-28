@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -51,8 +52,15 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 	return
 }
 
-//DuplicatePosts takes a bunch of posts and copies them into another network, ie for demos. It can also copy their owners.
-func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.PostID) (duplicates []gp.PostID, err error) {
+//DuplicatePosts takes a bunch of posts and copies them into another network, ie for demos. It can also copy their owners. If regEx is set, it will replace all matches in the post attribs and body with replacement.
+func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, regEx string, replacement string, posts ...gp.PostID) (duplicates []gp.PostID, err error) {
+	var re *regexp.Regexp
+	if len(regEx) > 0 {
+		re, err = regexp.Compile(regEx)
+		if err != nil {
+			return
+		}
+	}
 	if len(posts) == 0 {
 		err = ErrNoPosts
 		return
@@ -62,6 +70,9 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.Po
 		post, err = api.GetPost(p)
 		if err != nil {
 			return
+		}
+		if len(regEx) > 0 {
+			post.Text = re.ReplaceAllString(post.Text, replacement)
 		}
 		var userID gp.UserID
 		if copyUsers {
@@ -81,8 +92,12 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, posts ...gp.Po
 		if err == nil {
 			for k, v := range atts {
 				s, ok := v.(string)
-				if ok {
+				switch {
+				case ok && len(regEx) > 0:
+					attribs[k] = re.ReplaceAllString(s, replacement)
+				case ok:
 					attribs[k] = s
+				default:
 				}
 			}
 		}

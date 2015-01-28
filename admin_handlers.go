@@ -123,7 +123,9 @@ func postDuplicate(w http.ResponseWriter, r *http.Request) {
 					postIDs = append(postIDs, postID)
 				}
 			}
-			dupes, err := api.DuplicatePosts(netID, true, postIDs...)
+			regExp := r.FormValue("regexp")
+			replacement := r.FormValue("replacement")
+			dupes, err := api.DuplicatePosts(netID, true, regExp, replacement, postIDs...)
 			if err != nil {
 				jsonResponse(w, err, 500)
 				return
