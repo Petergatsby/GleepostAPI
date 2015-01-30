@@ -1498,67 +1498,16 @@ token=[token]
 See [the websockets readme.](websockets.md)
 
 ##GET /contacts
-required parameters:
-id=[user-id]
-token=[token]
 
-Gets all the current user's contacts.
-
-If you've added someone, they_confirmed will be false until they accept you and vice versa.
-
-example responses:
-
-HTTP 200
-```json
-[
-	{
-		"id":1234,
-		"name":"calgould",
-		"you_confirmed":true,
-		"they_confirmed":false,
-	},
-	{
-		"id":21,
-		"name":"petergatsby",
-		"you_confirmed":false,
-		"they_confirmed":true,
-	}
-]
-```
+###Deprecated.
 
 ##POST /contacts
-required parameters: id, token, user
 
-Adds the user with id [user] to the current contact list.
-If this user has already added you, it will accept them.
-
-example responses:
-
-HTTP 201
-```json
-{
-	"id":1234,
-	"name":"calgould",
-	"you_confirmed":true,
-	"they_confirmed":false,
-}
-```
+###Deprecated.
 
 ##PUT /contacts/[user]
-required parameters: id, token, accepted
 
-if accepted = true, it will set that contact to "confirmed"
-
-example responses:
-HTTP 200
-```json
-{
-	"id":21,
-	"name":"petergatsby",
-	"you_confirmed":true,
-	"they_confirmed":true,
-}
-```
+###Deprecated.
 
 ##POST /devices
 required parameters: `type`, `device_id`

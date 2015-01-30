@@ -79,29 +79,19 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 }
 
 //CanContact returns true if the initiator is allowed to contact the recipient.
-//This means that a) they are contacts already or b) recipient has posted somewhere a) can see.
-//TODO: Include comments / attends too.
 func (api *API) CanContact(initiator gp.UserID, recipient gp.UserID) (contactable bool, err error) {
-	contacts, err := api.AreContacts(initiator, recipient)
-	if err != nil {
-		return
-	}
-	if !contacts {
-		shared, e := api.HaveSharedNetwork(initiator, recipient)
-		switch {
-		case e != nil:
-			return false, e
-		case !shared:
-			return false, nil
-		default:
-			posted, err := api.UserHasPosted(recipient, initiator)
-			if err != nil {
-				return false, err
-			}
-			return posted, nil
+	shared, e := api.HaveSharedNetwork(initiator, recipient)
+	switch {
+	case e != nil:
+		return false, e
+	case !shared:
+		return false, nil
+	default:
+		posted, err := api.UserHasPosted(recipient, initiator)
+		if err != nil {
+			return false, err
 		}
-	} else {
-		return true, nil
+		return posted, nil
 	}
 }
 
