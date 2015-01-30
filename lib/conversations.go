@@ -36,6 +36,7 @@ func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationI
 		if err != nil {
 			return
 		}
+		go api.addSystemMessage(convID, userID, "PARTED")
 		return api.terminateConversation(convID)
 	}
 	return &ENOTALLOWED
