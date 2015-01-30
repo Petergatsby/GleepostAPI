@@ -19,7 +19,7 @@ var ETOOFEW = gp.APIerror{Reason: "Must have at least one valid recipient."}
 var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipients"}
 
 func init() {
-	base.HandleFunc("/conversations/live", liveConversationHandler)
+	base.HandleFunc("/conversations/live", goneHandler)
 	base.HandleFunc("/conversations/read_all", readAll).Methods("POST")
 	base.HandleFunc("/conversations/read_all/", readAll).Methods("POST")
 	base.HandleFunc("/conversations/mute_badges", muteBadges).Methods("POST")
@@ -28,7 +28,7 @@ func init() {
 	base.HandleFunc("/conversations", postConversations).Methods("POST")
 	base.HandleFunc("/conversations/{id:[0-9]+}", getSpecificConversation).Methods("GET")
 	base.HandleFunc("/conversations/{id:[0-9]+}/", getSpecificConversation).Methods("GET")
-	base.HandleFunc("/conversations/{id:[0-9]+}", putSpecificConversation).Methods("PUT")
+	base.HandleFunc("/conversations/{id:[0-9]+}", goneHandler).Methods("PUT")
 	base.HandleFunc("/conversations/{id:[0-9]+}", deleteSpecificConversation).Methods("DELETE")
 	base.HandleFunc("/conversations/{id:[0-9]+}/messages", getMessages).Methods("GET")
 	base.HandleFunc("/conversations/{id:[0-9]+}/messages", postMessages).Methods("POST")
@@ -37,29 +37,6 @@ func init() {
 	base.HandleFunc("/conversations", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/conversations/{id}/messages", optionsHandler).Methods("OPTIONS")
 	base.HandleFunc("/conversations/{id:[0-9]+}/participants", postParticipants).Methods("POST")
-}
-
-func liveConversationHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.live.get")
-	userID, err := authenticate(r)
-	switch {
-	case err != nil:
-		go api.Count(1, "gleepost.conversations.live.get.400")
-		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
-		conversations, err := api.GetLiveConversations(userID)
-		switch {
-		case err != nil:
-			go api.Count(1, "gleepost.conversations.live.get.500")
-			jsonErr(w, err, 500)
-			return
-		default:
-			go api.Count(1, "gleepost.conversations.live.get.200")
-			jsonResponse(w, conversations, 200)
-		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	}
 }
 
 func getConversations(w http.ResponseWriter, r *http.Request) {
@@ -91,46 +68,27 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
-	random, err := strconv.ParseBool(r.FormValue("random"))
 	var conversation gp.Conversation
-	if err != nil {
-		random = true
-		err = nil
+	idstring := r.FormValue("participants")
+	ids := strings.Split(idstring, ",")
+	userIds := make([]gp.UserID, 0, 50)
+	for _, _id := range ids {
+		id, err := strconv.ParseUint(_id, 10, 64)
+		if err == nil {
+			userIds = append(userIds, gp.UserID(id))
+		}
 	}
-	if random {
-		partners, err := strconv.ParseUint(r.FormValue("participant_count"), 10, 64)
-		switch {
-		case err != nil:
-			partners = 2
-		case partners > 4:
-			partners = 4
-		case partners < 2:
-			partners = 2
-		}
-		conversation, err = api.CreateRandomConversation(userID, int(partners), true)
-	} else {
-		idstring := r.FormValue("participants")
-		ids := strings.Split(idstring, ",")
-		userIds := make([]gp.UserID, 0, 50)
-		for _, _id := range ids {
-			id, err := strconv.ParseUint(_id, 10, 64)
-			if err == nil {
-				userIds = append(userIds, gp.UserID(id))
-			}
-		}
-		switch {
-		case len(userIds) < 1:
-			go api.Count(1, "gleepost.conversations.get.400")
-			jsonResponse(w, &ETOOFEW, 400)
-			return
-		case len(userIds) > 50:
-			go api.Count(1, "gleepost.conversations.get.400")
-			jsonResponse(w, &ETOOMANY, 400)
-			return
-		default:
-			conversation, err = api.CreateConversationWith(userID, userIds, false)
-		}
-
+	switch {
+	case len(userIds) < 1:
+		go api.Count(1, "gleepost.conversations.get.400")
+		jsonResponse(w, &ETOOFEW, 400)
+		return
+	case len(userIds) > 50:
+		go api.Count(1, "gleepost.conversations.get.400")
+		jsonResponse(w, &ETOOMANY, 400)
+		return
+	default:
+		conversation, err = api.CreateConversationWith(userID, userIds)
 	}
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
@@ -180,58 +138,6 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	go api.Count(1, url+".200")
 	jsonResponse(w, conv, 200)
-}
-
-func putSpecificConversation(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	convID := gp.ConversationID(_convID)
-	url := fmt.Sprintf("gleepost.conversations.%d.put", convID)
-	defer api.Time(time.Now(), url)
-	userID, err := authenticate(r)
-	if err != nil {
-		go api.Count(1, url+".400")
-		jsonResponse(w, &EBADTOKEN, 400)
-		return
-	}
-	expires, err := strconv.ParseBool(r.FormValue("expiry"))
-	if err != nil {
-		go api.Count(1, url+".400")
-		jsonErr(w, err, 400)
-		return
-	}
-	if expires == false {
-		err = api.UserDeleteExpiry(userID, convID)
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
-				jsonResponse(w, e, 403)
-				return
-			}
-			go api.Count(1, url+".500")
-			jsonErr(w, err, 500)
-			return
-		}
-		conversation, err := api.GetConversation(userID, convID)
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				//This should never happen but just in case the UserDeleteExpiry block above is changed...
-				go api.Count(1, url+".403")
-				jsonResponse(w, e, 403)
-				return
-			}
-			go api.Count(1, url+".500")
-			jsonErr(w, err, 500)
-			return
-		}
-		go api.Count(1, url+".200")
-		jsonResponse(w, conversation, 200)
-	} else {
-		go api.Count(1, url+".400")
-		jsonResponse(w, gp.APIerror{Reason: "Missing parameter:expiry"}, 400)
-	}
 }
 
 func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {

@@ -34,9 +34,8 @@ type RedisMessage struct {
 type Conversation struct {
 	ID           ConversationID `json:"id"`
 	LastActivity time.Time      `json:"lastActivity"`
-	Participants []User         `json:"participants"`     //Participants can send messages to and read from this conversation.
-	Read         []Read         `json:"read,omitempty"`   //Read represents the most recent message each user has seen.
-	Expiry       *Expiry        `json:"expiry,omitempty"` //Expiry is optional; if a conversation does expire, it's no longer accessible.
+	Participants []User         `json:"participants"`   //Participants can send messages to and read from this conversation.
+	Read         []Read         `json:"read,omitempty"` //Read represents the most recent message each user has seen.
 	Unread       int            `json:"unread,omitempty"`
 }
 
@@ -50,15 +49,4 @@ type ConversationSmall struct {
 type ConversationAndMessages struct {
 	Conversation
 	Messages []Message `json:"messages"`
-}
-
-//Expiry indicates when a conversation is due to expire / whether it has ended yet.
-type Expiry struct {
-	Time  time.Time `json:"time"`
-	Ended bool      `json:"ended"`
-}
-
-//NewExpiry creates an expiry d into the future.
-func NewExpiry(d time.Duration) *Expiry {
-	return &Expiry{Time: time.Now().Add(d), Ended: false}
 }

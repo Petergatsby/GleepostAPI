@@ -8,58 +8,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//GetLiveConversations returns the three most recent unfinished live conversations for a given user.
-//TODO: retrieve conversation & expiry in a single query
-func (db *DB) GetLiveConversations(id gp.UserID) (conversations []gp.ConversationSmall, err error) {
-	conversations = make([]gp.ConversationSmall, 0)
-	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-		"FROM conversation_participants " +
-		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
-		"AND conversation_expirations.ended = 0 " +
-		"ORDER BY conversations.last_mod DESC  " +
-		"LIMIT 0 , 3"
-	s, err := db.prepare(q)
-	if err != nil {
-		return
-	}
-	rows, err := s.Query(id)
-	if err != nil {
-		return conversations, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var conv gp.ConversationSmall
-		var t string
-		err = rows.Scan(&conv.ID, &t)
-		if err != nil {
-			return conversations, err
-		}
-		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants, err = db.GetParticipants(conv.ID, true)
-		if err != nil {
-			return conversations, err
-		}
-		LastMessage, err := db.GetLastMessage(conv.ID)
-		if err == nil {
-			conv.LastMessage = &LastMessage
-		}
-		Expiry, err := db.ConversationExpiry(conv.ID)
-		if err == nil {
-			conv.Expiry = &Expiry
-		}
-		conv.Unread, err = db.UserConversationUnread(id, conv.ID)
-		if err != nil {
-			log.Println("error getting unread count:", err)
-		}
-		conversations = append(conversations, conv)
-	}
-	return conversations, nil
-}
-
 //CreateConversation generates a new conversation with these participants and an initiator id. Expiry is optional.
-func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *gp.Expiry) (conversation gp.Conversation, err error) {
+func (db *DB) CreateConversation(id gp.UserID, participants []gp.User) (conversation gp.Conversation, err error) {
 	s, err := db.prepare("INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())")
 	if err != nil {
 		return
@@ -81,10 +31,6 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, expiry *g
 	}
 	conversation.Participants = participants
 	conversation.LastActivity = time.Now().UTC()
-	if expiry != nil {
-		conversation.Expiry = expiry
-		err = db.ConversationSetExpiry(conversation.ID, *conversation.Expiry)
-	}
 	return
 }
 
@@ -103,59 +49,6 @@ func (db *DB) AddConversationParticipants(adder gp.UserID, participants []gp.Use
 	return nil
 }
 
-//RandomPartners generates count users randomly (id ∉ participants).
-func (db *DB) RandomPartners(id gp.UserID, count int, network gp.NetworkID) (partners []gp.User, err error) {
-	q := "SELECT DISTINCT id, firstname, avatar, official " +
-		"FROM users " +
-		"LEFT JOIN user_network ON id = user_id " +
-		"JOIN devices ON users.id = devices.user_id " +
-		"WHERE network_id = ? " +
-		"AND verified = 1 " +
-		"ORDER BY RAND()"
-	log.Println(q, id, count, network)
-
-	s, err := db.prepare(q)
-	if err != nil {
-		return
-	}
-	rows, err := s.Query(network)
-	if err != nil {
-		log.Println("Error after initial query when generating partners")
-		return
-	}
-	defer rows.Close()
-	for rows.Next() && count > 0 {
-		var user gp.User
-		var av sql.NullString
-		err = rows.Scan(&user.ID, &user.Name, &av, &user.Official)
-		if err != nil {
-			log.Println("Error scanning from user query", err)
-			return
-		}
-		log.Println("Got a partner")
-		liveCount, err := db.LiveCount(user.ID)
-		if err == nil && liveCount < 3 && user.ID != id {
-			if av.Valid {
-				user.Avatar = av.String
-			}
-			partners = append(partners, user)
-			count--
-		}
-	}
-	return
-}
-
-//LiveCount returns the total number of conversations which are currently live for this user (ie, have an expiry, which is in the future, and are not ended.)
-func (db *DB) LiveCount(userID gp.UserID) (count int, err error) {
-	q := "SELECT COUNT( conversation_participants.conversation_id ) FROM conversation_participants JOIN conversations ON conversation_participants.conversation_id = conversations.id JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id WHERE participant_id = ? AND conversation_expirations.ended = 0 AND conversation_expirations.expiry > NOW( )"
-	stmt, err := db.prepare(q)
-	if err != nil {
-		return
-	}
-	err = stmt.QueryRow(userID).Scan(&count)
-	return
-}
-
 //UpdateConversation marks this conversation as modified now.
 func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
 	s, err := db.prepare("UPDATE conversations SET last_mod = NOW() WHERE id = ?")
@@ -170,30 +63,21 @@ func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
 	return err
 }
 
-//GetConversations returns this user's conversations; if all is false, it will omit live conversations.
-func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all bool) (conversations []gp.ConversationSmall, err error) {
+//GetConversations returns this user's conversations;
+func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations = make([]gp.ConversationSmall, 0)
 	var s *sql.Stmt
 	var q string
-	if all {
-		q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-			"FROM conversation_participants " +
-			"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-			"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-			"WHERE participant_id = ? " +
-			"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
-	} else {
-		q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-			"FROM conversation_participants " +
-			"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-			"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-			"WHERE participant_id = ? AND ( " +
-			"conversation_expirations.ended IS NULL " +
-			"OR conversation_expirations.ended =0 " +
-			") " +
-			"AND deleted = 0 " +
-			"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
-	}
+	q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+		"FROM conversation_participants " +
+		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
+		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
+		"WHERE participant_id = ? AND ( " +
+		"conversation_expirations.ended IS NULL " +
+		"OR conversation_expirations.ended =0 " +
+		") " +
+		"AND deleted = 0 " +
+		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	s, err = db.prepare(q)
 	if err != nil {
 		return
@@ -224,10 +108,6 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int, all boo
 		if err == nil {
 			conv.LastMessage = &LastMessage
 		}
-		Expiry, err := db.ConversationExpiry(conv.ID)
-		if err == nil {
-			conv.Expiry = &Expiry
-		}
 		read, err := db.GetReadStatus(conv.ID)
 		if err == nil {
 			conv.Read = read
@@ -256,31 +136,6 @@ func (db *DB) ConversationActivity(convID gp.ConversationID) (t time.Time, err e
 	return
 }
 
-//ConversationExpiry returns this conversation's expiry, or an error if it doesn't have one.
-func (db *DB) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, err error) {
-	s, err := db.prepare("SELECT expiry, ended FROM conversation_expirations WHERE conversation_id = ?")
-	if err != nil {
-		return
-	}
-	var t string
-	err = s.QueryRow(convID).Scan(&t, &expiry.Ended)
-	if err != nil {
-		return
-	}
-	expiry.Time, err = time.Parse(mysqlTime, t)
-	return
-}
-
-//DeleteConversationExpiry removes this conversation's expiry, effectively converting it to a regular conversation.
-func (db *DB) DeleteConversationExpiry(convID gp.ConversationID) (err error) {
-	s, err := db.prepare("DELETE FROM conversation_expirations WHERE conversation_id = ?")
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(convID)
-	return
-}
-
 //TerminateConversation ends this conversation.
 func (db *DB) TerminateConversation(convID gp.ConversationID) (err error) {
 	s, err := db.prepare("UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?")
@@ -301,16 +156,6 @@ func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (er
 	return
 }
 
-//ConversationSetExpiry updates this conversation's expiry to equal expiry.
-func (db *DB) ConversationSetExpiry(convID gp.ConversationID, expiry gp.Expiry) (err error) {
-	s, err := db.prepare("REPLACE INTO conversation_expirations (conversation_id, expiry) VALUES (?, ?)")
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(convID, expiry.Time)
-	return
-}
-
 //GetConversation returns the conversation convId, including up to count messages.
 func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count int) (conversation gp.ConversationAndMessages, err error) {
 	conversation.ID = convID
@@ -326,45 +171,11 @@ func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count 
 	if err == nil {
 		conversation.Read = read
 	}
-	expiry, err := db.ConversationExpiry(convID)
-	if err == nil {
-		conversation.Expiry = &expiry
-	}
 	conversation.Unread, err = db.UserConversationUnread(userID, convID)
 	if err != nil {
 		log.Println("error getting unread count:", err)
 	}
 	conversation.Messages, err = db.GetMessages(convID, 0, "start", count)
-	return
-}
-
-//ConversationsToTerminate finds all of this user's live conversations except for the three with their expiries furthest in the future.
-func (db *DB) ConversationsToTerminate(id gp.UserID) (conversations []gp.ConversationID, err error) {
-	q := "SELECT conversation_participants.conversation_id " +
-		"FROM conversation_participants " +
-		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
-		"AND conversation_expirations.ended = 0 " +
-		"ORDER BY conversation_expirations.expiry DESC  " +
-		"LIMIT 2 , 20"
-	s, err := db.prepare(q)
-	if err != nil {
-		return
-	}
-	rows, err := s.Query(id)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var id gp.ConversationID
-		err = rows.Scan(&id)
-		if err != nil {
-			return
-		}
-		conversations = append(conversations, id)
-	}
 	return
 }
 
@@ -586,73 +397,6 @@ func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, 
 		}
 	}
 	return count, nil
-}
-
-//TotalLiveConversations returns the number of non-ended live conversations this user has.
-func (db *DB) TotalLiveConversations(user gp.UserID) (count int, err error) {
-	q := "SELECT conversation_participants.conversation_id, conversations.last_mod " +
-		"FROM conversation_participants " +
-		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
-		"AND conversation_expirations.ended = 0 " +
-		"ORDER BY conversations.last_mod DESC"
-	s, err := db.prepare(q)
-	if err != nil {
-		return
-	}
-	rows, err := s.Query(user)
-	if err != nil {
-		return count, err
-	}
-	defer rows.Close()
-	var conversations []gp.ConversationSmall
-	for rows.Next() {
-		var conv gp.ConversationSmall
-		var t string
-		err = rows.Scan(&conv.ID, &t)
-		if err != nil {
-			return 0, err
-		}
-		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants, err = db.GetParticipants(conv.ID, true)
-		if err != nil {
-			return 0, err
-		}
-		LastMessage, err := db.GetLastMessage(conv.ID)
-		if err == nil {
-			conv.LastMessage = &LastMessage
-		}
-		Expiry, err := db.ConversationExpiry(conv.ID)
-		if err == nil {
-			conv.Expiry = &Expiry
-		}
-		conversations = append(conversations, conv)
-	}
-	return len(conversations), nil
-}
-
-//PrunableConversations returns all the conversations whose expiry is in the past and yet haven't finished yet.
-func (db *DB) PrunableConversations() (conversations []gp.ConversationID, err error) {
-	q := "SELECT conversation_id FROM conversation_expirations WHERE expiry < NOW() AND ended = 0"
-	s, err := db.prepare(q)
-	if err != nil {
-		return
-	}
-	rows, err := s.Query()
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var c gp.ConversationID
-		err = rows.Scan(&c)
-		if err != nil {
-			return
-		}
-		conversations = append(conversations, c)
-	}
-	return conversations, nil
 }
 
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.

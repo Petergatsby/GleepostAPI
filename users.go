@@ -20,7 +20,7 @@ func init() {
 	base.HandleFunc("/user/{id:[0-9]+}/attending", getUserAttending).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/networks", getGroups).Methods("GET")
 	base.HandleFunc("/user/{id:[0-9]+}/unread", unread)
-	base.HandleFunc("/user/{id:[0-9]+}/total_live", totalLiveConversations)
+	base.HandleFunc("/user/{id:[0-9]+}/total_live", goneHandler)
 	base.HandleFunc("/user/", postUsers)
 	base.HandleFunc("/user", postUsers)
 	//profile stuff
@@ -319,28 +319,6 @@ func unread(w http.ResponseWriter, r *http.Request) {
 		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
 		uid := gp.UserID(_uid)
 		count, err := api.UnreadMessageCount(uid, false)
-		if err != nil {
-			jsonResponse(w, err, 500)
-		}
-		jsonResponse(w, count, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	}
-}
-
-func totalLiveConversations(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.users.*.conversations.live.get")
-	userID, err := authenticate(r)
-	switch {
-	case err != nil:
-		jsonResponse(w, &EBADTOKEN, 400)
-	case userID != 2:
-		jsonResponse(w, gp.APIerror{Reason: "Not allowed"}, 403)
-	case r.Method == "GET":
-		vars := mux.Vars(r)
-		_uid, _ := strconv.ParseInt(vars["id"], 10, 64)
-		uid := gp.UserID(_uid)
-		count, err := api.TotalLiveConversations(uid)
 		if err != nil {
 			jsonResponse(w, err, 500)
 		}

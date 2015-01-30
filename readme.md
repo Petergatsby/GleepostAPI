@@ -1020,26 +1020,8 @@ Delete administrative permissions for this user. You must be an administrator or
 If you are allowed to downgrade this user, the result will be 204.
 
 ##GET /conversations/live
-required parameters:
-id=[user-id]
-token=[token]
-Returns up to three live conversations (whose "ended" attribute is false) for the current user.
 
-```json
-[
-	{"id":1,
-	"participants": [
-		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
-	],
-	"read": [{"user":9,"last_read":1000}],
-	"lastActivity": "2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
-	"unread": 12
-	}
-]
-```
+###Deprecated.
 
 ##POST /conversations/read_all
 required parameters:
@@ -1095,13 +1077,6 @@ required parameters:
 id=[user-id]
 token=[token]
 
-optional parameters:
-random=[true/false], defaults to true
-
-If random = true, you should provide:
-participant_count=[2 <= n <= 4], defaults to 2
-
-if random = false, you should provide:
 participants=[user_id],[user_id],[user_id],...
 (a comma-delimited list of up to 50 user_ids to start a conversation with.)
 
@@ -1119,8 +1094,7 @@ example responses:
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
-	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+	"lastActivity":"2013-09-05T13:09:38Z"
 }
 ```
 
@@ -1145,7 +1119,6 @@ example responses:
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
 	"unread": 123
 }
 ```
@@ -1179,15 +1152,8 @@ example responses:
 ```
 
 ##PUT /conversations/[conversation-id]
-required parameters:
-id=[user-id]
-token=[token]
-expiry=[bool]
 
-Set expiry = false and a conversation's expiry will be deleted.
-Will return the updated conversation object.
-NB: This probably isn't the right place to put this. Will change in a future release.
-
+###Deprecated.
 
 ##POST /conversations/[conversation-id]/messages
 required parameters: id, token, text

@@ -59,7 +59,6 @@ func init() {
 	config = conf.GetConfig()
 	api = lib.New(*config)
 	go api.FeedbackDaemon(60)
-	go api.EndOldConversations()
 	if !config.DevelopmentMode {
 		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
 	}
@@ -116,4 +115,8 @@ func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, struct {
 		Success bool `json:"success"`
 	}{Success: true}, 200)
+}
+
+func goneHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResponse(w, gp.APIerror{Reason: "All endpoints to do with Live conversations have been deprecated. Stop using them."}, 410)
 }

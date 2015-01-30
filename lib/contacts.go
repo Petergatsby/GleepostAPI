@@ -63,6 +63,5 @@ func (api *API) AcceptContact(user gp.UserID, toAccept gp.UserID) (contact gp.Co
 	contact.YouConfirmed = true
 	contact.TheyConfirmed = true
 	go api.createNotification("accepted_you", user, toAccept, 0, 0, "")
-	go api.UnExpireBetween([]gp.UserID{user, toAccept})
 	return
 }

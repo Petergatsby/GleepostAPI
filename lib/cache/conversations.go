@@ -140,46 +140,10 @@ func (c *Cache) GetRead(convID gp.ConversationID) (read []gp.Read, err error) {
 	return
 }
 
-//ConversationExpiry returns the Expiry of this conversation, or an error if it's missing from the cache.
-func (c *Cache) ConversationExpiry(convID gp.ConversationID) (expiry gp.Expiry, err error) {
-	conn := c.pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d", convID)
-	t, err := redis.Int(conn.Do("GET", key+":expiry"))
-	if err != nil {
-		return
-	}
-	expiry.Ended, err = redis.Bool(conn.Do("GET", key+":ended"))
-	expiry.Time = time.Unix(int64(t), 0).UTC()
-	return
-}
-
-//SetConversationExpiry records this conversation's expiry in the cache (NB: expiry meaning "conversation end time" not cache-expiry).
-func (c *Cache) SetConversationExpiry(convID gp.ConversationID, expiry gp.Expiry) {
-	conn := c.pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d", convID)
-	conn.Send("MSET", key+":expiry", expiry.Time.Unix(), key+":ended", expiry.Ended)
-	conn.Flush()
-}
-
-//DelConversationExpiry removes an expiry (ie, it will now no longer end).
-//TODO: think of something better than a cache miss
-func (c *Cache) DelConversationExpiry(convID gp.ConversationID) {
-	conn := c.pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("conversations:%d", convID)
-	conn.Send("DEL", key+":expiry", key+":ended")
-	conn.Flush()
-}
-
 //AddConversation records this conversation and its participants (but not its messages) in the cache
 func (c *Cache) AddConversation(conv gp.Conversation) {
 	conn := c.pool.Get()
 	defer conn.Close()
-	if conv.Expiry != nil {
-		go c.SetConversationExpiry(conv.ID, *conv.Expiry)
-	}
 	if len(conv.Read) > 0 {
 		go c.SetReadStatus(conv.ID, conv.Read)
 	}
