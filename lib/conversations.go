@@ -29,14 +29,15 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 	if err != nil {
 		return
 	}
-	api.cache.MarkConversationSeen(id, convID, upTo)
+	read := gp.Read{UserID: id, LastRead: upTo}
+	api.cache.SetReadStatus(convID, read)
 	conv, err := api.getConversation(id, convID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	chans := ConversationChannelKeys(conv.Participants)
-	go api.cache.PublishEvent("read", ConversationURI(convID), gp.Read{UserID: id, LastRead: upTo}, chans)
+	go api.cache.PublishEvent("read", ConversationURI(convID), read, chans)
 	return
 }
 
@@ -198,7 +199,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
-	go api.cache.AddMessage(msg, convID)
+	go api.cache.AddMessages(convID, msg)
 	go api.updateConversation(convID)
 	go api.messagePush(msg, convID)
 	return
@@ -298,7 +299,7 @@ func (api *API) FillMessageCache(convID gp.ConversationID) (err error) {
 		log.Println(err)
 		return (err)
 	}
-	go api.cache.AddMessages(convID, messages)
+	go api.cache.AddMessages(convID, messages...)
 	return
 }
 
@@ -416,7 +417,7 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
-	go api.cache.AddMessage(msg, convID)
+	go api.cache.AddMessages(convID, msg)
 	go api.updateConversation(convID)
 	return
 }
