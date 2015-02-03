@@ -8,6 +8,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
+
 //CreateConversation generates a new conversation with these participants and an initiator id. Expiry is optional.
 func (db *DB) CreateConversation(id gp.UserID, participants []gp.User) (conversation gp.Conversation, err error) {
 	s, err := db.prepare("INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())")
@@ -423,4 +425,19 @@ func (db *DB) UserConversationUnread(userID gp.UserID, convID gp.ConversationID)
 	}
 	err = s.QueryRow(convID, convID, userID, convID, userID).Scan(&unread)
 	return
+}
+
+//GetPrimaryConversation returns the primary conversation for this set of users, or NoSuchConversation otherwise.
+func (db *DB) GetPrimaryConversation(participantA, participantB gp.UserID) (conversation gp.ConversationAndMessages, err error) {
+	q := "SELECT conversation_id FROM conversation_participants JOIN conversations ON conversations.id = conversation_participants.conversation_id WHERE conversations.primary_conversation=1 AND participant_id IN (?, ?) GROUP BY conversation_id HAVING count(*) = 2"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var conv gp.ConversationID
+	err = s.QueryRow(participantA, participantB).Scan(&conv)
+	if err != nil {
+		return
+	}
+	return db.GetConversation(participantA, conv, 20)
 }

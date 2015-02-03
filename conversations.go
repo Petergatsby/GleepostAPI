@@ -68,7 +68,7 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
-	var conversation gp.Conversation
+	var conversation gp.ConversationAndMessages
 	idstring := r.FormValue("participants")
 	ids := strings.Split(idstring, ",")
 	userIds := make([]gp.UserID, 0, 50)
@@ -87,8 +87,10 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 		go api.Count(1, "gleepost.conversations.get.400")
 		jsonResponse(w, &ETOOMANY, 400)
 		return
+	case len(userIds) == 1:
+		conversation, err = api.CreateConversationWith(userID, true, userIds)
 	default:
-		conversation, err = api.CreateConversationWith(userID, userIds)
+		conversation, err = api.CreateConversationWith(userID, false, userIds)
 	}
 	if err != nil {
 		e, ok := err.(*gp.APIerror)

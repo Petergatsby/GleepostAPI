@@ -51,14 +51,20 @@ func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User) 
 	return
 }
 
-//CreateConversationWith generates a new conversation with a particular group of participants.
-func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (conversation gp.Conversation, err error) {
+//CreateConversationWith generates a new conversation with a particular group of participants. If reuse is true, it will return the existing "primary" conversation with those users, creating one only if necessary.
+func (api *API) CreateConversationWith(initiator gp.UserID, reuse bool, with []gp.UserID) (conversation gp.ConversationAndMessages, err error) {
 	var participants []gp.User
 	user, err := api.GetUser(initiator)
 	if err != nil {
 		return
 	}
 	participants = append(participants, user)
+	if reuse && len(with) == 1 {
+		primaryConversation, err := api.getPrimaryConversation(initiator, with[0])
+		if err == nil {
+			return primaryConversation, nil
+		}
+	}
 	for _, id := range with {
 		canContact, e := api.HaveSharedNetwork(initiator, id)
 		if e != nil {
@@ -76,7 +82,17 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 			return
 		}
 	}
-	return api.CreateConversation(initiator, participants)
+	conv, err := api.CreateConversation(initiator, participants)
+	if err != nil {
+		return
+	}
+	conversation = gp.ConversationAndMessages{Conversation: conv}
+	return
+}
+
+func (api *API) getPrimaryConversation(participantA, participantB gp.UserID) (conversation gp.ConversationAndMessages, err error) {
+	return api.db.GetPrimaryConversation(participantA, participantB)
+
 }
 
 //CanContact returns true if the initiator is allowed to contact the recipient.
