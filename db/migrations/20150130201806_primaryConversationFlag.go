@@ -20,6 +20,12 @@ func Up_20150130201806(txn *sql.Tx) {
 		txn.Rollback()
 		return
 	}
+	log.Println("Adding merged_into reference on conversations")
+	_, err = txn.Query("ALTER TABLE conversations ADD merged INT(10) UNSIGNED NULL")
+	if err != nil {
+		log.Println(err)
+		txn.Rollback()
+	}
 }
 
 // Down is executed when this migration is rolled back

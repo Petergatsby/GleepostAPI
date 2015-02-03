@@ -57,8 +57,8 @@ func Up_20150202143600(txn *sql.Tx) {
 		txn.Rollback()
 		return
 	}
-	log.Println("Preparing: delete conv")
-	deleteConversationStmt, err := txn.Prepare("DELETE FROM conversations WHERE id = ?")
+	log.Println("Preparing: set merged")
+	mergeConversationStmt, err := txn.Prepare("UPDATE conversations SET merged = ? WHERE id = ?")
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()
@@ -106,8 +106,8 @@ func Up_20150202143600(txn *sql.Tx) {
 						}
 					}
 					//Delete d
-					log.Println("Deleting", d.ID)
-					_, err = deleteConversationStmt.Exec(d.ID)
+					log.Println("Merging", d.ID)
+					_, err = mergeConversationStmt.Exec(c.ID, d.ID)
 					if err != nil {
 						log.Println(err)
 						txn.Rollback()
