@@ -110,6 +110,16 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func maybeRedirect(w http.ResponseWriter, r *http.Request, conv gp.ConversationID, urlPattern string, statusCode int) bool {
+	mergedID, err := api.ConversationMergedInto(conv)
+	if err != nil {
+		return false
+	}
+	url := fmt.Sprintf(urlPattern, mergedID)
+	http.Redirect(w, r, url, statusCode)
+	return true
+}
+
 func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
@@ -130,6 +140,10 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			if maybeRedirect(w, r, convID, "/api/v1/conversations/%d", 301) {
+				go api.Count(1, url+".301")
+				return
+			}
 			go api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 		} else {
@@ -158,6 +172,10 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			if maybeRedirect(w, r, convID, "api/v1/conversations/%d", 301) {
+				go api.Count(1, url+".301")
+				return
+			}
 			go api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
@@ -206,6 +224,10 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
+				go api.Count(1, url+".301")
+				return
+			}
 			go api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
@@ -234,6 +256,10 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
+			if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
+				go api.Count(1, url+".301")
+				return
+			}
 			api.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
@@ -265,6 +291,10 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	upTo := gp.MessageID(_upTo)
 	err = api.MarkConversationSeen(userID, convID, upTo)
 	if err != nil {
+		if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
+			go api.Count(1, url+".301")
+			return
+		}
 		go api.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
@@ -344,6 +374,10 @@ func postParticipants(w http.ResponseWriter, r *http.Request) {
 		}
 		participants, err := api.UserAddParticipants(userID, convID, users...)
 		if err != nil {
+			if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
+				go api.Count(1, url+".301")
+				return
+			}
 			jsonErr(w, err, 400)
 			go api.Count(1, url+".400")
 			return

@@ -437,3 +437,8 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	go api.updateConversation(convID)
 	return
 }
+
+//ConversationMergedInto returns the id of the conversation this one has merged with, or err if it hasn't merged.
+func (api *API) ConversationMergedInto(convID gp.ConversationID) (mergedInto gp.ConversationID, err error) {
+	return api.db.ConversationMergedInto(convID)
+}

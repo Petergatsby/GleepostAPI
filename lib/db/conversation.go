@@ -445,3 +445,24 @@ func (db *DB) GetPrimaryConversation(participantA, participantB gp.UserID) (conv
 	}
 	return db.GetConversation(participantA, conv, 20)
 }
+
+//ErrNotMerged is the result when you try to find the conversation another has been merged into but the conversation has not been merged.
+var ErrNotMerged = gp.APIerror{Reason: "Conversation not merged"}
+
+//ConversationMergedInto returns the id of the conversation this one has merged with, or err if it hasn't merged.
+func (db *DB) ConversationMergedInto(convID gp.ConversationID) (merged gp.ConversationID, err error) {
+	q := "SELECT merged FROM conversations WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var _merged sql.NullInt64
+	err = s.QueryRow(convID).Scan(&_merged)
+	if err != nil {
+		return
+	}
+	if !_merged.Valid {
+		return merged, ErrNotMerged
+	}
+	return gp.ConversationID(_merged.Int64), nil
+}
