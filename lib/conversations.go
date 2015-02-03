@@ -42,8 +42,8 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 }
 
 //CreateConversation generates a new conversation involving initiator and participants. If live is true, it will generate a conversation which expires after api.Config.Expiry seconds.
-func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User) (conversation gp.Conversation, err error) {
-	conversation, err = api.db.CreateConversation(initiator, participants)
+func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, primary bool) (conversation gp.Conversation, err error) {
+	conversation, err = api.db.CreateConversation(initiator, participants, primary)
 	if err == nil {
 		go api.cache.AddConversation(conversation)
 		go api.NewConversationEvent(conversation)
@@ -82,7 +82,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, reuse bool, with []g
 			return
 		}
 	}
-	conv, err := api.CreateConversation(initiator, participants)
+	conv, err := api.CreateConversation(initiator, participants, len(with) == 1)
 	if err != nil {
 		return
 	}

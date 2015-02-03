@@ -10,9 +10,9 @@ import (
 
 var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 
-//CreateConversation generates a new conversation with these participants and an initiator id. Expiry is optional.
-func (db *DB) CreateConversation(id gp.UserID, participants []gp.User) (conversation gp.Conversation, err error) {
-	s, err := db.prepare("INSERT INTO conversations (initiator, last_mod) VALUES (?, NOW())")
+//CreateConversation generates a new conversation with these participants and an initiator id.
+func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary bool) (conversation gp.Conversation, err error) {
+	s, err := db.prepare("INSERT INTO conversations (initiator, last_mod, primary_conversation) VALUES (?, NOW(), ?)")
 	if err != nil {
 		return
 	}
