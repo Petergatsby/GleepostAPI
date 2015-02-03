@@ -16,7 +16,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary b
 	if err != nil {
 		return
 	}
-	r, err := s.Exec(id)
+	r, err := s.Exec(id, primary)
 	if err != nil {
 		log.Println(err)
 		return
