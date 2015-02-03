@@ -1080,6 +1080,8 @@ token=[token]
 participants=[user_id],[user_id],[user_id],...
 (a comma-delimited list of up to 50 user_ids to start a conversation with.)
 
+If started with exactly 1 other participant, it will only create a new conversation if you do not already have one with this participant. Otherwise, it will create a new conversation.
+
 example responses:
 (HTTP 200)
 ```json
