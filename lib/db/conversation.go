@@ -16,7 +16,11 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary b
 	if err != nil {
 		return
 	}
-	r, _ := s.Exec(id)
+	r, err := s.Exec(id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	cID, _ := r.LastInsertId()
 	conversation.ID = gp.ConversationID(cID)
 	if err != nil {
