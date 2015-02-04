@@ -62,13 +62,6 @@ type ApproveLevel struct {
 	Categories []string `json:"categories"`
 }
 
-//Contact represents a contact relation from the perspective of a particular user, containing the other user and who has accepted the request so far.
-type Contact struct {
-	User
-	YouConfirmed  bool `json:"you_confirmed"`
-	TheyConfirmed bool `json:"they_confirmed"`
-}
-
 //Token is a gleepost access token.
 //TODO: Add scopes?
 //TODO: Deprecate in favour of OAuth?

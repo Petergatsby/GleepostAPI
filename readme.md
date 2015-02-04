@@ -97,6 +97,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
+/conversations/[conversation-id]/participants [[POST]](#post-conversationsconversation-idparticipants)
+
 /user [[POST]](#post-user)
 
 /user/[user-id] [[GET]](#get-useruser-id)
@@ -1018,26 +1020,8 @@ Delete administrative permissions for this user. You must be an administrator or
 If you are allowed to downgrade this user, the result will be 204.
 
 ##GET /conversations/live
-required parameters:
-id=[user-id]
-token=[token]
-Returns up to three live conversations (whose "ended" attribute is false) for the current user.
 
-```json
-[
-	{"id":1,
-	"participants": [
-		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
-	],
-	"read": [{"user":9,"last_read":1000}],
-	"lastActivity": "2013-09-05T13:09:38Z",
-	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
-	"unread": 12
-	}
-]
-```
+###Deprecated.
 
 ##POST /conversations/read_all
 required parameters:
@@ -1093,15 +1077,10 @@ required parameters:
 id=[user-id]
 token=[token]
 
-optional parameters:
-random=[true/false], defaults to true
-
-If random = true, you should provide:
-participant_count=[2 <= n <= 4], defaults to 2
-
-if random = false, you should provide:
 participants=[user_id],[user_id],[user_id],...
 (a comma-delimited list of up to 50 user_ids to start a conversation with.)
+
+If started with exactly 1 other participant, it will only create a new conversation if you do not already have one with this participant. Otherwise, it will create a new conversation.
 
 example responses:
 (HTTP 200)
@@ -1117,8 +1096,7 @@ example responses:
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
-	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false }
+	"lastActivity":"2013-09-05T13:09:38Z"
 }
 ```
 
@@ -1143,7 +1121,6 @@ example responses:
 		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 	],
 	"lastActivity":"2013-09-05T13:09:38Z",
-	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
 	"unread": 123
 }
 ```
@@ -1177,15 +1154,8 @@ example responses:
 ```
 
 ##PUT /conversations/[conversation-id]
-required parameters:
-id=[user-id]
-token=[token]
-expiry=[bool]
 
-Set expiry = false and a conversation's expiry will be deleted.
-Will return the updated conversation object.
-NB: This probably isn't the right place to put this. Will change in a future release.
-
+###Deprecated.
 
 ##POST /conversations/[conversation-id]/messages
 required parameters: id, token, text
@@ -1248,6 +1218,30 @@ seen=51
 }
 
 
+```
+
+##POST /conversations/[conversation-id]/participants
+
+Required parameters:
+`id`, `token` (Auth)
+
+`users`: a comma-delimited list of userIDs to add as participants to this conversation.
+
+On success, returns the updated list of participants. Note: This may be different to the list you were expecting, if eg. one of the users could not be added to the conversation
+
+```json
+[
+	{
+		"id":9,
+		"name": "Patrick",
+		"profile_image":"https://gleepost.com/uploads/123.jpg"
+	},
+	{
+		"id":9999,
+		"name": "Jeff",
+		"profile_image":"https://gleepost.com/uploads/456.jpg"
+	}
+]
 ```
 
 ##POST /user
@@ -1506,67 +1500,16 @@ token=[token]
 See [the websockets readme.](websockets.md)
 
 ##GET /contacts
-required parameters:
-id=[user-id]
-token=[token]
 
-Gets all the current user's contacts.
-
-If you've added someone, they_confirmed will be false until they accept you and vice versa.
-
-example responses:
-
-HTTP 200
-```json
-[
-	{
-		"id":1234,
-		"name":"calgould",
-		"you_confirmed":true,
-		"they_confirmed":false,
-	},
-	{
-		"id":21,
-		"name":"petergatsby",
-		"you_confirmed":false,
-		"they_confirmed":true,
-	}
-]
-```
+###Deprecated.
 
 ##POST /contacts
-required parameters: id, token, user
 
-Adds the user with id [user] to the current contact list.
-If this user has already added you, it will accept them.
-
-example responses:
-
-HTTP 201
-```json
-{
-	"id":1234,
-	"name":"calgould",
-	"you_confirmed":true,
-	"they_confirmed":false,
-}
-```
+###Deprecated.
 
 ##PUT /contacts/[user]
-required parameters: id, token, accepted
 
-if accepted = true, it will set that contact to "confirmed"
-
-example responses:
-HTTP 200
-```json
-{
-	"id":21,
-	"name":"petergatsby",
-	"you_confirmed":true,
-	"they_confirmed":true,
-}
-```
+###Deprecated.
 
 ##POST /devices
 required parameters: `type`, `device_id`
