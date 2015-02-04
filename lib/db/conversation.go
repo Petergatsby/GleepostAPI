@@ -8,6 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//NoSuchConversation happens when you try to find the primary conversation for a pair of users and it doesn't exist.
 var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 
 //CreateConversation generates a new conversation with these participants and an initiator id.
