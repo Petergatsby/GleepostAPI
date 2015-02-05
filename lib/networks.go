@@ -163,9 +163,22 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 			if e != nil {
 				log.Println("Error creating notification:", e)
 			}
+			e = api.groupAddConvParticipants(adder, addee, group)
+			if e != nil {
+				log.Println("Error adding new group members to conversation:", e)
+			}
 		}
 		return
 	}
+}
+
+func (api *API) groupAddConvParticipants(adder, addee gp.UserID, group gp.NetworkID) (err error) {
+	conv, err := api.db.GroupConversation(group)
+	if err != nil {
+		return
+	}
+	_, err = api.UserAddParticipants(adder, conv, addee)
+	return
 }
 
 //UserCanJoin returns true if the user is allowed to unilaterally join this network (ie, it is both "public" and a sub-network of one this user already belongs to.)

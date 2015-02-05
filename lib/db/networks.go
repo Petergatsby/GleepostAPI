@@ -457,3 +457,14 @@ func (db *DB) GroupMemberCount(network gp.NetworkID) (count int, err error) {
 	err = s.QueryRow(network).Scan(&count)
 	return
 }
+
+//GroupConversation returns this group's conversation ID.
+func (db *DB) GroupConversation(group gp.NetworkID) (conversation gp.ConversationID, err error) {
+	q := "SELECT id FROM conversations WHERE group_id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(group).Scan(&conversation)
+	return
+}
