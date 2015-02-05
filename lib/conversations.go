@@ -30,7 +30,6 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 		return
 	}
 	read := gp.Read{UserID: id, LastRead: upTo}
-	api.cache.SetReadStatus(convID, read)
 	conv, err := api.getConversation(id, convID)
 	if err != nil {
 		log.Println(err)
@@ -45,7 +44,6 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, primary bool) (conversation gp.Conversation, err error) {
 	conversation, err = api.db.CreateConversation(initiator, participants, primary)
 	if err == nil {
-		go api.cache.AddConversation(conversation)
 		go api.NewConversationEvent(conversation)
 	}
 	return
@@ -151,15 +149,6 @@ func (api *API) GetMessageChan(userID gp.UserID) (c chan []byte) {
 	return api.cache.MessageChan(userID)
 }
 
-//TODO: use conf.ConversationPageSize
-func (api *API) addAllConversations(userID gp.UserID) (err error) {
-	conversations, err := api.db.GetConversations(userID, 0, 2000)
-	for _, conv := range conversations {
-		go api.cache.AddConversation(conv.Conversation)
-	}
-	return
-}
-
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
 func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
@@ -172,19 +161,11 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID) (con
 	return api.db.GetConversation(userID, convID, api.Config.ConversationPageSize)
 }
 
-//GetMessage retrieves the message msgID from the cache if available.
-func (api *API) GetMessage(msgID gp.MessageID) (message gp.Message, err error) {
-	message, err = api.cache.GetMessage(msgID)
-	return message, err
-}
-
 func (api *API) updateConversation(id gp.ConversationID) (err error) {
 	err = api.db.UpdateConversation(id)
 	if err != nil {
 		return err
 	}
-	participants, err := api.db.GetParticipants(id, false)
-	go api.cache.UpdateConversationLists(participants, id)
 	return nil
 }
 
@@ -215,7 +196,6 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
-	go api.cache.AddMessages(convID, msg)
 	go api.updateConversation(convID)
 	go api.messagePush(msg, convID)
 	return
@@ -304,18 +284,6 @@ func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, inde
 
 func (api *API) getMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
 	messages, err = api.db.GetMessages(convID, index, sel, count)
-	go api.FillMessageCache(convID)
-	return
-}
-
-//FillMessageCache copies a bunch of messages from db to cache.
-func (api *API) FillMessageCache(convID gp.ConversationID) (err error) {
-	messages, err := api.db.GetMessages(convID, 0, "start", api.Config.Redis.MessageCache)
-	if err != nil {
-		log.Println(err)
-		return (err)
-	}
-	go api.cache.AddMessages(convID, messages...)
 	return
 }
 
@@ -327,15 +295,7 @@ func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conv
 
 //GetLastMessage returns the most recent message in this conversation.
 func (api *API) GetLastMessage(id gp.ConversationID) (message gp.Message, err error) {
-	message, err = api.cache.GetLastMessage(id)
-	if err != nil {
-		message, err = api.db.GetLastMessage(id)
-		go api.FillMessageCache(id)
-		if err != nil {
-			return
-		}
-	}
-	return
+	return api.db.GetLastMessage(id)
 }
 
 //MarkAllConversationsSeen sets "read" = LastMessage for all user's conversations.
@@ -433,7 +393,6 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
-	go api.cache.AddMessages(convID, msg)
 	go api.updateConversation(convID)
 	return
 }
