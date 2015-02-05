@@ -138,7 +138,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i], userID)
+		processed, err := api.PostProcess(posts[i], perspective)
 		if err == nil {
 			posts[i] = processed
 		}
@@ -633,7 +633,7 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 		return
 	}
 	for i := range events {
-		processed, err := api.PostProcess(events[i], user)
+		processed, err := api.PostProcess(events[i], perspective)
 		if err == nil {
 			events[i] = processed
 		} else {
