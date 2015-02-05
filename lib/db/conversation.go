@@ -84,6 +84,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 		"OR conversation_expirations.ended =0 " +
 		") " +
 		"AND deleted = 0 " +
+		"AND conversations.group_id IS NULL " +
 		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
 	s, err = db.prepare(q)
 	if err != nil {
@@ -423,7 +424,7 @@ func (db *DB) UserConversationUnread(userID gp.UserID, convID gp.ConversationID)
 	if userID == 0 {
 		return 0, nil
 	}
-	q := "SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ? AND EXISTS (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND id > (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND `system` = 0"
+	q := "SELECT COUNT(*) FROM chat_messages JOIN conversations ON conversations.id = chat_messages.conversation_id WHERE conversation_id = ? AND EXISTS (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND id > (SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?) AND `system` = 0 AND conversations.group_id IS NULL"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
