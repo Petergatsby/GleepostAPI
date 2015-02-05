@@ -257,6 +257,16 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 			return
 		}
 		err = api.db.UserSetRole(userID, network.ID, gp.Role{Name: "creator", Level: 9})
+		if err != nil {
+			return
+		}
+		var user gp.User
+		user, err = api.GetUser(userID)
+		if err != nil {
+			return
+		}
+		//var conversation gp.Conversation
+		_, err = api.CreateConversation(userID, []gp.User{user}, false, network.ID)
 		return
 	}
 }

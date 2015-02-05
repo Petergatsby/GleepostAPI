@@ -12,12 +12,22 @@ import (
 var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 
 //CreateConversation generates a new conversation with these participants and an initiator id.
-func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary bool) (conversation gp.Conversation, err error) {
-	s, err := db.prepare("INSERT INTO conversations (initiator, last_mod, primary_conversation) VALUES (?, NOW(), ?)")
+func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
+	var s *sql.Stmt
+	if group > 0 {
+		s, err = db.prepare("INSERT INTO conversations (initiator, last_mod, primary_conversation, group_id) VALUES (?, NOW(), ?, ?)")
+	} else {
+		s, err = db.prepare("INSERT INTO conversations (initiator, last_mod, primary_conversation) VALUES (?, NOW(), ?)")
+	}
 	if err != nil {
 		return
 	}
-	r, err := s.Exec(id, primary)
+	var r sql.Result
+	if group > 0 {
+		r, err = s.Exec(id, primary, group)
+	} else {
+		r, err = s.Exec(id, primary)
+	}
 	if err != nil {
 		log.Println(err)
 		return
