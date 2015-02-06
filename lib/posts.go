@@ -492,11 +492,8 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 					return
 				}
 			}
-			user, err := api.db.GetUser(userID)
+			_, err := api.db.GetUser(userID)
 			if err == nil {
-				post := gp.Post{ID: postID, By: user, Text: text, Time: time.Now().UTC()}
-				go api.cache.AddPost(post)
-				go api.cache.AddPostToNetwork(post, netID)
 				creator, err := api.UserIsNetworkOwner(userID, netID)
 				if err == nil && creator && !pending {
 					go api.notifyGroupNewPost(userID, netID, postID)
