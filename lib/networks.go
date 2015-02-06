@@ -350,7 +350,16 @@ func (api *API) UserLeaveGroup(userID gp.UserID, netID gp.NetworkID) (err error)
 	case !group:
 		return &ENOTALLOWED
 	default:
-		return api.db.LeaveNetwork(userID, netID)
+		err = api.db.LeaveNetwork(userID, netID)
+		if err == nil {
+			convID, e := api.db.GroupConversation(netID)
+			if e != nil {
+				log.Println(e)
+				return
+			}
+			go api.addSystemMessage(convID, userID, "PARTED")
+		}
+		return
 	}
 }
 
