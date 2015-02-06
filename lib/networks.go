@@ -357,7 +357,7 @@ func (api *API) UserLeaveGroup(userID gp.UserID, netID gp.NetworkID) (err error)
 				log.Println(e)
 				return
 			}
-			go api.addSystemMessage(convID, userID, "PARTED")
+			go api.UserDeleteConversation(userID, convID)
 		}
 		return
 	}
