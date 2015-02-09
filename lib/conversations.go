@@ -234,6 +234,7 @@ func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, 
 }
 
 //GetFullConversation returns a full conversation containing up to count messages.
+//TODO(patrick) - clarify this vs getConversation etc
 func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.ID = convID
 	conv.LastActivity, err = api.ConversationLastActivity(convID)
@@ -244,6 +245,10 @@ func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count
 	conv.Read, err = api.readStatus(convID)
 	if err != nil {
 		return
+	}
+	conv.Group, err = api.db.ConversationGroup(convID)
+	if err != nil {
+		log.Println(err)
 	}
 	conv.Messages, err = api.getMessages(convID, start, "start", count)
 	return
