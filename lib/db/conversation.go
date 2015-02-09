@@ -48,6 +48,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary b
 	}
 	conversation.Participants = participants
 	conversation.LastActivity = time.Now().UTC()
+	conversation.Group = group
 	return
 }
 
@@ -192,6 +193,10 @@ func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count 
 	conversation.Unread, err = db.UserConversationUnread(userID, convID)
 	if err != nil {
 		log.Println("error getting unread count:", err)
+	}
+	conversation.Group, err = db.ConversationGroup(convID)
+	if err != nil {
+		log.Println(err)
 	}
 	conversation.Messages, err = db.GetMessages(convID, 0, "start", count)
 	return
@@ -477,4 +482,19 @@ func (db *DB) ConversationMergedInto(convID gp.ConversationID) (merged gp.Conver
 		return merged, ErrNotMerged
 	}
 	return gp.ConversationID(_merged.Int64), nil
+}
+
+//ConversationGroup returns the id of the group this conversation is connected to, or zero if it isn't.
+func (db *DB) ConversationGroup(convID gp.ConversationID) (group gp.NetworkID, err error) {
+	q := "SELECT group_id FROM conversations WHERE id = ?"
+	s, err := db.prepare(q)
+	if err != nil {
+		return
+	}
+	var _group sql.NullInt64
+	err = s.QueryRow(convID).Scan(&_group)
+	if err != nil {
+		return
+	}
+	return gp.NetworkID(_group.Int64), nil //This is OK because a missing group ID will be 0
 }

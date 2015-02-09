@@ -37,6 +37,7 @@ type Conversation struct {
 	Participants []User         `json:"participants"`   //Participants can send messages to and read from this conversation.
 	Read         []Read         `json:"read,omitempty"` //Read represents the most recent message each user has seen.
 	Unread       int            `json:"unread,omitempty"`
+	Group        NetworkID      `json:"group,omitempty"`
 }
 
 //ConversationSmall only contains the last message in a conversation - for things like displaying an inbox view.
