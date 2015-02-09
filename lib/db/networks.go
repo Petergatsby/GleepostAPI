@@ -209,6 +209,7 @@ func (db *DB) CreateNetwork(name string, parent gp.NetworkID, url, desc string, 
 	group.Image = url
 	group.Desc = desc
 	group.Privacy = privacy
+	group.MemberCount = 1
 	u, err := db.GetUser(creator)
 	if err == nil {
 		group.Creator = &u
