@@ -18,11 +18,12 @@ type Role struct {
 //Group is a user-group. It's a network with a cover image, a description and maybe a creator.
 type Group struct {
 	Network
-	Image       string `json:"image,omitempty"`
-	Desc        string `json:"description,omitempty"`
-	Creator     *User  `json:"creator,omitempty"`
-	Privacy     string `json:"privacy,omitempty"`
-	MemberCount int    `json:"size,omitempty"`
+	Image        string         `json:"image,omitempty"`
+	Desc         string         `json:"description,omitempty"`
+	Creator      *User          `json:"creator,omitempty"`
+	Privacy      string         `json:"privacy,omitempty"`
+	MemberCount  int            `json:"size,omitempty"`
+	Conversation ConversationID `json:"conversation,omitempty"`
 }
 
 //GroupMembership is a group and a user's membership status in that group.
