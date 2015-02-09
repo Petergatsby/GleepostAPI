@@ -44,6 +44,7 @@ An event with type "read" is triggered every time someone marks a message as see
 
 ###New conversation
 An event with type "new-conversation" is triggered every time you are placed in a new conversation. It contains a location (the URI of the conversation) and the data payload is the conversation object.
+Note: if `group` is present in the conversation, this conversation should not be displayed in the inbox.
 ```json
 {
 	"type":"new-conversation",

@@ -780,7 +780,8 @@ example responses (http 200):
 		"name":"Patrick",
 		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 	},
-	"size":1234
+	"size":1234,
+	"conversation":5678
 }
 ```
 
@@ -804,7 +805,8 @@ If you created this group, you can change the group's image. If you didn't creat
 		"name":"Patrick",
 		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 	},
-	"size":1234
+	"size":1234,
+	"conversation":5678
 }
 ```
 
@@ -833,7 +835,9 @@ A successful response is 201:
 	"name":"Even Cooler Group", 
 	"description":"Pretty cool, no?",
 	"url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", 
-	"creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"}
+	"creator":{"id":2491,"name":"Patrick","profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"},
+	"size":1,
+	"conversation":5678
 }
 ```
 
@@ -1751,7 +1755,8 @@ Example response: (http 200)
 			"name":"member",
 			"level":1
 		},
-		"size":1234
+		"size":1234,
+		"conversation":5678
 	}
 ]
 ```
@@ -1796,8 +1801,8 @@ It functions identically to [/posts](#get-posts) but with one exception:
 						"name":"Patrick",
 						"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 				},
-				"size":1234
-
+				"size":1234,
+				"conversation":2345
 			},
 		"comment_count":0,
 		"like_count":1
