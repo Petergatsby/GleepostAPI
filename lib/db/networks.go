@@ -7,10 +7,6 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-/********************************************************************
-		Network
-********************************************************************/
-
 //GetRules returns all the network matching rules for every network.
 func (db *DB) GetRules() (rules []gp.Rule, err error) {
 	ruleSelect := "SELECT network_id, rule_type, rule_value FROM net_rules"
@@ -188,6 +184,7 @@ func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 			network.Creator = &u
 		}
 		network.MemberCount, _ = db.GroupMemberCount(network.ID)
+		network.Conversation, _ = db.GroupConversation(network.ID)
 	}
 	if privacy.Valid {
 		network.Privacy = privacy.String
