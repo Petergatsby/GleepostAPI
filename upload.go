@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
@@ -48,7 +47,6 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func getVideos(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.videos.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -72,7 +70,6 @@ func getVideos(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUpload(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.uploads.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -96,7 +93,6 @@ func getUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.uploads.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -67,7 +66,6 @@ func mm(w http.ResponseWriter, r *http.Request) {
 }
 
 func postUsers(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "users.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
