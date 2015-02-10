@@ -24,6 +24,7 @@ type Group struct {
 	Privacy      string         `json:"privacy,omitempty"`
 	MemberCount  int            `json:"size,omitempty"`
 	Conversation ConversationID `json:"conversation,omitempty"`
+	UnreadCount  int            `json:"unread,omitempty"`
 }
 
 //GroupMembership is a group and a user's membership status in that group.

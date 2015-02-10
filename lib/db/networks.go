@@ -75,6 +75,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 			network.MemberCount, _ = db.GroupMemberCount(network.ID)
 			//TODO(patrick) - maybe don't display group conversation id if you're not a member.
 			network.Conversation, _ = db.GroupConversation(network.ID)
+			network.UnreadCount, _ = db.UserConversationUnread(id, network.Conversation)
 		}
 		if privacy.Valid {
 			network.Privacy = privacy.String
@@ -187,6 +188,7 @@ func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 		}
 		network.MemberCount, _ = db.GroupMemberCount(network.ID)
 		network.Conversation, _ = db.GroupConversation(network.ID)
+		network.UnreadCount, _ = db.UserConversationUnread(id, network.Conversation)
 	}
 	if privacy.Valid {
 		network.Privacy = privacy.String
