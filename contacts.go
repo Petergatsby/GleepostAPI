@@ -1,7 +1,9 @@
 package main
 
+import "net/http"
+
 func init() {
-	base.HandleFunc("/contacts", goneHandler)
-	base.HandleFunc("/contacts/{id:[0-9]+}", goneHandler)
-	base.HandleFunc("/contacts/{id:[0-9]+}/", goneHandler)
+	base.Handle("/contacts", timeHandler(api, http.HandlerFunc(goneHandler)))
+	base.Handle("/contacts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(goneHandler)))
+	base.Handle("/contacts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(goneHandler)))
 }
