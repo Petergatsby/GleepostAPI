@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	api    *lib.API
-	config *conf.Config
+	config = conf.GetConfig()
+	api    = lib.New(*config)
 )
 
 func init() {
@@ -57,8 +57,6 @@ func missingParamErr(param string) *gp.APIerror {
 }
 
 func init() {
-	config = conf.GetConfig()
-	api = lib.New(*config)
 	go api.FeedbackDaemon(60)
 	if !config.DevelopmentMode {
 		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
