@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -13,26 +12,25 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/networks/{network:[0-9]+}/posts", getPosts).Methods("GET")
-	base.HandleFunc("/networks/{network:[0-9]+}/posts", postPosts).Methods("POST")
-	base.HandleFunc("/networks/{network:[0-9]+}", getNetwork).Methods("GET")
-	base.HandleFunc("/networks/{network:[0-9]+}", putNetwork).Methods("PUT")
-	base.HandleFunc("/networks/{network:[0-9]+}", optionsHandler).Methods("OPTIONS")
-	base.HandleFunc("/networks/{network:[0-9]+}/users", postNetworkUsers).Methods("POST")
-	base.HandleFunc("/networks/{network:[0-9]+}/users", getNetworkUsers).Methods("GET")
-	base.HandleFunc("/networks/{network:[0-9]+}/admins", postNetworkAdmins).Methods("POST")
-	base.HandleFunc("/networks/{network:[0-9]+}/admins", getNetworkAdmins).Methods("GET")
-	base.HandleFunc("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", deleteNetworkAdmins).Methods("DELETE")
-	base.HandleFunc("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", optionsHandler).Methods("OPTIONS")
-	base.HandleFunc("/networks", postNetworks).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(getPosts))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(postPosts))).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(getNetwork))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(putNetwork))).Methods("PUT")
+	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(postNetworkUsers))).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(getNetworkUsers))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(postNetworkAdmins))).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(getNetworkAdmins))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteNetworkAdmins))).Methods("DELETE")
+	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/networks", timeHandler(api, http.HandlerFunc(postNetworks))).Methods("POST")
 
-	base.HandleFunc("/profile/networks", getGroups)
-	base.HandleFunc("/profile/networks/posts", getGroupPosts).Methods("GET")
-	base.HandleFunc("/profile/networks/{network:[0-9]+}", deleteUserNetwork).Methods("DELETE")
+	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(getGroups)))
+	base.Handle("/profile/networks/posts", timeHandler(api, http.HandlerFunc(getGroupPosts))).Methods("GET")
+	base.Handle("/profile/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteUserNetwork))).Methods("DELETE")
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
-	t := time.Now()
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -54,7 +52,6 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 			otherID = gp.UserID(id)
 			url = fmt.Sprintf("gleepost.users.%d.networks.get", otherID)
 		}
-		defer api.Time(t, url)
 		networks, err := api.UserGetUserGroups(userID, otherID)
 		if err != nil {
 			go api.Count(1, url+".500")
@@ -71,7 +68,6 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 func getNetwork(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.get", vars["network"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -106,7 +102,6 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 
 func postNetworks(w http.ResponseWriter, r *http.Request) {
 	url := "gleepost.networks.post"
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -151,7 +146,6 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	//TODO: Consolidate the various AddUser* fns into one; return a composite error list.
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.users.post", vars["network"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -242,7 +236,6 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.admins.post", vars["network"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -294,7 +287,6 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.admins.get", vars["network"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -327,7 +319,6 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%d.admins.%d.delete", vars["network"], vars["user"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -364,7 +355,6 @@ func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.users.get", vars["network"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -399,7 +389,6 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 //getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
 func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 	url := "gleepost.profile.networks.get"
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -454,7 +443,6 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 func putNetwork(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.networks.%s.put", vars["network"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -503,7 +491,6 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.profile.networks.%s.delete", vars["networks"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

@@ -4,19 +4,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 )
 
 func init() {
-	base.HandleFunc("/devices/{id}", deleteDevice)
-	base.HandleFunc("/devices/{id}/", deleteDevice)
-	base.HandleFunc("/devices", postDevice)
+	base.Handle("/devices/{id}", timeHandler(api, http.HandlerFunc(deleteDevice)))
+	base.Handle("/devices/{id}/", timeHandler(api, http.HandlerFunc(deleteDevice)))
+	base.Handle("/devices", timeHandler(api, http.HandlerFunc(postDevice)))
 }
 
 func postDevice(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.devices.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -49,7 +47,6 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.devices.%s.delete", vars["id"])
-	defer api.Time(time.Now(), url)
 	w.Header().Set("Content-Type", "application/json")
 	log.Println("Delete device hit")
 	userID, err := authenticate(r)

@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -11,12 +10,11 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/search/users/{query}", searchUsers).Methods("GET")
-	base.HandleFunc("/search/groups/{query}", searchGroups).Methods("GET")
+	base.Handle("/search/users/{query}", timeHandler(api, http.HandlerFunc(searchUsers))).Methods("GET")
+	base.Handle("/search/groups/{query}", timeHandler(api, http.HandlerFunc(searchGroups))).Methods("GET")
 }
 
 func searchUsers(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.search.users.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -54,8 +52,6 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchGroups(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.search.groups.get")
-	//TODO: UserSearchGroups (search groups within primary network)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

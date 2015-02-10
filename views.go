@@ -3,17 +3,15 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func init() {
-	base.HandleFunc("/views/posts", postPostViews).Methods("POST")
+	base.Handle("/views/posts", timeHandler(api, http.HandlerFunc(postPostViews))).Methods("POST")
 }
 
 func postPostViews(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.views.posts.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

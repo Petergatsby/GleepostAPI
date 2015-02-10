@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -14,23 +13,23 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/posts", getPosts).Methods("GET").Name("posts")
-	base.HandleFunc("/posts", postPosts).Methods("POST")
-	base.HandleFunc("/posts/{id:[0-9]+}/comments", getComments).Methods("GET")
-	base.HandleFunc("/posts/{id:[0-9]+}/comments", postComments).Methods("POST")
-	base.HandleFunc("/posts/{id:[0-9]+}", getPost).Methods("GET")
-	base.HandleFunc("/posts/{id:[0-9]+}/", getPost).Methods("GET")
-	base.HandleFunc("/posts/{id:[0-9]+}", putPost).Methods("PUT")
-	base.HandleFunc("/posts/{id:[0-9]+}/", putPost).Methods("PUT")
-	base.HandleFunc("/posts/{id:[0-9]+}/", deletePost).Methods("DELETE")
-	base.HandleFunc("/posts/{id:[0-9]+}", deletePost).Methods("DELETE")
-	base.HandleFunc("/posts/{id:[0-9]+}/images", postImages).Methods("POST")
-	base.HandleFunc("/posts/{id:[0-9]+}/videos", postVideos).Methods("POST")
-	base.HandleFunc("/posts/{id:[0-9]+}/likes", postLikes).Methods("POST")
-	base.HandleFunc("/posts/{id:[0-9]+}/attendees", getAttendees).Methods("GET")
-	base.HandleFunc("/posts/{id:[0-9]+}/attendees", putAttendees).Methods("PUT")
-	base.HandleFunc("/posts/{id:[0-9]+}/attending", attendHandler)
-	base.HandleFunc("/live", liveHandler)
+	base.Handle("/posts", timeHandler(api, http.HandlerFunc(getPosts))).Methods("GET").Name("posts")
+	base.Handle("/posts", timeHandler(api, http.HandlerFunc(postPosts))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/comments", timeHandler(api, http.HandlerFunc(getComments))).Methods("GET")
+	base.Handle("/posts/{id:[0-9]+}/comments", timeHandler(api, http.HandlerFunc(postComments))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getPost))).Methods("GET")
+	base.Handle("/posts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(getPost))).Methods("GET")
+	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(putPost))).Methods("PUT")
+	base.Handle("/posts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(putPost))).Methods("PUT")
+	base.Handle("/posts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(deletePost))).Methods("DELETE")
+	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deletePost))).Methods("DELETE")
+	base.Handle("/posts/{id:[0-9]+}/images", timeHandler(api, http.HandlerFunc(postImages))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/videos", timeHandler(api, http.HandlerFunc(postVideos))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/likes", timeHandler(api, http.HandlerFunc(postLikes))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(getAttendees))).Methods("GET")
+	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(putAttendees))).Methods("PUT")
+	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(attendHandler)))
+	base.Handle("/live", timeHandler(api, http.HandlerFunc(liveHandler)))
 }
 
 func ignored(key string) bool {
@@ -44,7 +43,6 @@ func ignored(key string) bool {
 }
 
 func getPosts(w http.ResponseWriter, req *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.get")
 	userID, err := authenticate(req)
 	switch {
 	case err != nil:
@@ -120,7 +118,6 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 }
 
 func postPosts(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -183,7 +180,6 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func getComments(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.comments.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -210,7 +206,6 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func postComments(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.comments.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -237,7 +232,6 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPost(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -262,8 +256,6 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 
 func putPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	url := fmt.Sprintf("gleepost.posts.%s.put", vars["id"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -301,7 +293,6 @@ func putPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func postImages(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.images.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -329,7 +320,6 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 }
 
 func postVideos(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.videos.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -351,7 +341,6 @@ func postVideos(w http.ResponseWriter, r *http.Request) {
 }
 
 func postLikes(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.likes.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -388,7 +377,6 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 }
 
 func liveHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.live..get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -423,7 +411,6 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET":
 		//Implement
 	case r.Method == "POST":
-		defer api.Time(time.Now(), "gleepost.posts.*.attending.post")
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
 		err := api.UserAttend(post, userID, true)
@@ -432,7 +419,6 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(204)
 	case r.Method == "DELETE":
-		defer api.Time(time.Now(), "gleepost.posts.*.attending.delete")
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
 		err := api.UserAttend(post, userID, false)
@@ -446,7 +432,6 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func deletePost(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.delete")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -470,7 +455,6 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func putAttendees(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.attendees.put")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -495,7 +479,6 @@ func putAttendees(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAttendees(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.posts.*.attendees.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

@@ -12,8 +12,8 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", postsStatsHandler).Methods("GET")
-	base.HandleFunc("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", individualPostStats).Methods("GET")
+	base.Handle("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(postsStatsHandler))).Methods("GET")
+	base.Handle("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(individualPostStats))).Methods("GET")
 }
 
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -124,5 +124,4 @@ func individualPostStats(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, stats, 200)
 	}
-
 }

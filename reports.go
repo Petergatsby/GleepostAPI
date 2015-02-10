@@ -3,18 +3,16 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func init() {
-	base.HandleFunc("/reports", postReports).Methods("POST")
+	base.Handle("/reports", timeHandler(api, http.HandlerFunc(postReports))).Methods("POST")
 }
 
 func postReports(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.reports.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

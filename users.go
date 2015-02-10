@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -14,31 +13,30 @@ import (
 var EBADINPUT = gp.APIerror{Reason: "Missing parameter: first / last"}
 
 func init() {
-	base.HandleFunc("/user/{id:[0-9]+}", getUser).Methods("GET")
-	base.HandleFunc("/user/{id:[0-9]+}/", getUser).Methods("GET")
-	base.HandleFunc("/user/{id:[0-9]+}/posts", getUserPosts).Methods("GET")
-	base.HandleFunc("/user/{id:[0-9]+}/attending", getUserAttending).Methods("GET")
-	base.HandleFunc("/user/{id:[0-9]+}/networks", getGroups).Methods("GET")
-	base.HandleFunc("/user/{id:[0-9]+}/unread", unread)
-	base.HandleFunc("/user/{id:[0-9]+}/total_live", goneHandler)
-	base.HandleFunc("/user/", postUsers)
-	base.HandleFunc("/user", postUsers)
+	base.Handle("/user/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getUser))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(getUser))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(getUserPosts))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(getUserAttending))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/networks", timeHandler(api, http.HandlerFunc(getGroups))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/unread", timeHandler(api, http.HandlerFunc(unread)))
+	base.Handle("/user/{id:[0-9]+}/total_live", timeHandler(api, http.HandlerFunc(goneHandler)))
+	base.Handle("/user/", timeHandler(api, http.HandlerFunc(postUsers)))
+	base.Handle("/user", timeHandler(api, http.HandlerFunc(postUsers)))
 	//profile stuff
-	base.HandleFunc("/profile/profile_image", profileImageHandler)
-	base.HandleFunc("/profile/name", changeNameHandler)
-	base.HandleFunc("/profile/tagline", postProfileTagline).Methods("POST")
-	base.HandleFunc("/profile/change_pass", changePassHandler)
-	base.HandleFunc("/profile/busy", busyHandler)
-	base.HandleFunc("/profile/attending", userAttending)
+	base.Handle("/profile/profile_image", timeHandler(api, http.HandlerFunc(profileImageHandler)))
+	base.Handle("/profile/name", timeHandler(api, http.HandlerFunc(changeNameHandler)))
+	base.Handle("/profile/tagline", timeHandler(api, http.HandlerFunc(postProfileTagline))).Methods("POST")
+	base.Handle("/profile/change_pass", timeHandler(api, http.HandlerFunc(changePassHandler)))
+	base.Handle("/profile/busy", timeHandler(api, http.HandlerFunc(busyHandler)))
+	base.Handle("/profile/attending", timeHandler(api, http.HandlerFunc(userAttending)))
 	//notifications
-	base.HandleFunc("/notifications", notificationHandler).Methods("PUT", "GET")
-	base.HandleFunc("/notifications", optionsHandler).Methods("OPTIONS")
+	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(notificationHandler))).Methods("PUT", "GET")
+	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	//Approval
-	base.HandleFunc("/profile/pending", pendingPosts).Methods("GET")
+	base.Handle("/profile/pending", timeHandler(api, http.HandlerFunc(pendingPosts))).Methods("GET")
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.users.*.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -64,7 +62,6 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserPosts(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.users.*.posts.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -117,7 +114,6 @@ Profile stuff
 */
 
 func changeNameHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.name.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -142,7 +138,6 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
-		defer api.Time(time.Now(), "gleepost.profile.busy.post")
 		status, err := strconv.ParseBool(r.FormValue("status"))
 		if err != nil {
 			jsonResponse(w, gp.APIerror{Reason: "Bad input"}, 400)
@@ -154,7 +149,6 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, &gp.BusyStatus{Busy: status}, 200)
 		}
 	case r.Method == "GET":
-		defer api.Time(time.Now(), "gleepost.profile.busy.get")
 		status, err := api.BusyStatus(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -167,7 +161,6 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func profileImageHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.profile_image.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -204,7 +197,6 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
-		defer api.Time(time.Now(), "gleepost.notifications.put")
 		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 		if err != nil {
 			_upTo = 0
@@ -223,7 +215,6 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case r.Method == "GET":
-		defer api.Time(time.Now(), "gleepost.notifications.get")
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
 		notifications, err := api.GetUserNotifications(userID, includeSeen)
 		if err != nil {
@@ -237,7 +228,6 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserAttending(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.user.*.attending.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -284,7 +274,6 @@ func getUserAttending(w http.ResponseWriter, r *http.Request) {
 }
 
 func userAttending(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.attending.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -307,7 +296,6 @@ Utilities - undocumented.
 */
 
 func unread(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.users.*.conversations.unread.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -329,7 +317,6 @@ func unread(w http.ResponseWriter, r *http.Request) {
 }
 
 func postProfileTagline(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.tagline.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -345,7 +332,6 @@ func postProfileTagline(w http.ResponseWriter, r *http.Request) {
 }
 
 func pendingPosts(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.pending.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

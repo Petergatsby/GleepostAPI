@@ -3,18 +3,16 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func init() {
-	base.HandleFunc("/profile/facebook", facebookAssociate)
-	base.HandleFunc("/fblogin", facebookHandler)
+	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(facebookAssociate)))
+	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(facebookHandler)))
 }
 
 func facebookAssociate(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.facebook.post")
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
 	id, err := api.ValidatePass(email, pass)
@@ -76,7 +74,6 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 }
 
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.facebook.post")
 	if r.Method == "POST" {
 		_fbToken := r.FormValue("token")
 		email := r.FormValue("email")

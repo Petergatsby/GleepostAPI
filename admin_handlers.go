@@ -12,10 +12,9 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/admin/massmail", mm).Methods("POST")
-	base.HandleFunc("/admin/masspush", newVersionNotificationHandler).Methods("POST")
-	base.HandleFunc("/admin/posts/duplicate", postDuplicate).Methods("POST")
-	base.HandleFunc("/admin/posts/copy_attribs", copyAttribs).Methods("POST")
+	base.Handle("/admin/massmail", timeHandler(api, http.HandlerFunc(mm))).Methods("POST")
+	base.Handle("/admin/masspush", timeHandler(api, http.HandlerFunc(newVersionNotificationHandler))).Methods("POST")
+	base.Handle("/admin/posts/duplicate", timeHandler(api, http.HandlerFunc(postDuplicate))).Methods("POST")
 }
 
 //MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
@@ -23,7 +22,6 @@ func init() {
 var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "admin.masspush")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -46,7 +44,6 @@ func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func mm(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "admin.massmail")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -99,7 +96,6 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func postDuplicate(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "admin.posts.duplicate")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -131,46 +127,6 @@ func postDuplicate(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			jsonResponse(w, dupes, 201)
-		} else {
-			jsonResponse(w, &lib.ENOTALLOWED, 403)
-		}
-	}
-}
-
-func copyAttribs(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "admin.posts.copy_attribs")
-	userID, err := authenticate(r)
-	switch {
-	case err != nil:
-		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	default:
-		if api.IsAdmin(userID) {
-			from := strings.Split(r.FormValue("from"), ",")
-			var fromIDs []gp.PostID
-			for _, p := range from {
-				_postID, err := strconv.ParseUint(p, 10, 64)
-				if err == nil {
-					postID := gp.PostID(_postID)
-					fromIDs = append(fromIDs, postID)
-				}
-			}
-			to := strings.Split(r.FormValue("to"), ",")
-			var toIDs []gp.PostID
-			for _, p := range to {
-				_postID, err := strconv.ParseUint(p, 10, 64)
-				if err == nil {
-					postID := gp.PostID(_postID)
-					toIDs = append(toIDs, postID)
-				}
-			}
-			err := api.MultiCopyPostAttribs(fromIDs, toIDs)
-			if err != nil {
-				jsonResponse(w, err, 500)
-				return
-			}
-			w.WriteHeader(204)
 		} else {
 			jsonResponse(w, &lib.ENOTALLOWED, 403)
 		}

@@ -14,14 +14,13 @@ import (
 var NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
 
 func init() {
-	base.HandleFunc("/upload", uploadHandler)
-	base.HandleFunc("/upload/{id}", getUpload)
-	base.HandleFunc("/videos", postVideoUpload).Methods("POST")
-	base.HandleFunc("/videos/{id}", getVideos).Methods("GET")
+	base.Handle("/upload", timeHandler(api, http.HandlerFunc(uploadHandler)))
+	base.Handle("/upload/{id}", timeHandler(api, http.HandlerFunc(getUpload)))
+	base.Handle("/videos", timeHandler(api, http.HandlerFunc(postVideoUpload))).Methods("POST")
+	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(getVideos))).Methods("GET")
 }
 
 func postVideoUpload(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.videos.put")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

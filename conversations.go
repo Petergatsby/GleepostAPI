@@ -19,28 +19,27 @@ var ETOOFEW = gp.APIerror{Reason: "Must have at least one valid recipient."}
 var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipients"}
 
 func init() {
-	base.HandleFunc("/conversations/live", goneHandler)
-	base.HandleFunc("/conversations/read_all", readAll).Methods("POST")
-	base.HandleFunc("/conversations/read_all/", readAll).Methods("POST")
-	base.HandleFunc("/conversations/mute_badges", muteBadges).Methods("POST")
-	base.HandleFunc("/conversations/mute_badges/", muteBadges).Methods("POST")
-	base.HandleFunc("/conversations", getConversations).Methods("GET")
-	base.HandleFunc("/conversations", postConversations).Methods("POST")
-	base.HandleFunc("/conversations/{id:[0-9]+}", getSpecificConversation).Methods("GET")
-	base.HandleFunc("/conversations/{id:[0-9]+}/", getSpecificConversation).Methods("GET")
-	base.HandleFunc("/conversations/{id:[0-9]+}", goneHandler).Methods("PUT")
-	base.HandleFunc("/conversations/{id:[0-9]+}", deleteSpecificConversation).Methods("DELETE")
-	base.HandleFunc("/conversations/{id:[0-9]+}/messages", getMessages).Methods("GET")
-	base.HandleFunc("/conversations/{id:[0-9]+}/messages", postMessages).Methods("POST")
-	base.HandleFunc("/conversations/{id:[0-9]+}/messages", putMessages).Methods("PUT")
-	base.HandleFunc("/conversations/", optionsHandler).Methods("OPTIONS")
-	base.HandleFunc("/conversations", optionsHandler).Methods("OPTIONS")
-	base.HandleFunc("/conversations/{id}/messages", optionsHandler).Methods("OPTIONS")
-	base.HandleFunc("/conversations/{id:[0-9]+}/participants", postParticipants).Methods("POST")
+	base.Handle("/conversations/live", timeHandler(api, http.HandlerFunc(goneHandler)))
+	base.Handle("/conversations/read_all", timeHandler(api, http.HandlerFunc(readAll))).Methods("POST")
+	base.Handle("/conversations/read_all/", timeHandler(api, http.HandlerFunc(readAll))).Methods("POST")
+	base.Handle("/conversations/mute_badges", timeHandler(api, http.HandlerFunc(muteBadges))).Methods("POST")
+	base.Handle("/conversations/mute_badges/", timeHandler(api, http.HandlerFunc(muteBadges))).Methods("POST")
+	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(getConversations))).Methods("GET")
+	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(postConversations))).Methods("POST")
+	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
+	base.Handle("/conversations/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
+	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(goneHandler))).Methods("PUT")
+	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteSpecificConversation))).Methods("DELETE")
+	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(getMessages))).Methods("GET")
+	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(postMessages))).Methods("POST")
+	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(putMessages))).Methods("PUT")
+	base.Handle("/conversations/", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/conversations/{id}/messages", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/conversations/{id:[0-9]+}/participants", timeHandler(api, http.HandlerFunc(postParticipants))).Methods("POST")
 }
 
 func getConversations(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.get")
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -61,7 +60,6 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 }
 
 func postConversations(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.post")
 	userID, err := authenticate(r)
 	if err != nil {
 		go api.Count(1, "gleepost.conversations.get.400")
@@ -124,7 +122,6 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	url := fmt.Sprintf("gleepost.conversations.%d.get", _convID)
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		go api.Count(1, url+".400")
@@ -161,7 +158,6 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
 	url := fmt.Sprintf("gleepost.conversations.%d.delete", convID)
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		go api.Count(1, url+".400")
@@ -193,7 +189,6 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
 	url := fmt.Sprintf("gleepost.conversations.%d.messages.get", convID)
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		go api.Count(1, url+".400")
@@ -245,7 +240,6 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
 	url := fmt.Sprintf("gleepost.conversations.%d.messages.post", convID)
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		jsonResponse(w, &EBADTOKEN, 400)
@@ -277,7 +271,6 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
 	url := fmt.Sprintf("gleepost.conversations.%d.messages.put", convID)
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	if err != nil {
 		go api.Count(1, url+".400")
@@ -310,7 +303,6 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func readAll(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.read_all.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -331,7 +323,6 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func muteBadges(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.conversations.mute_badges.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -355,7 +346,6 @@ func muteBadges(w http.ResponseWriter, r *http.Request) {
 func postParticipants(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	url := fmt.Sprintf("gleepost.conversations.%s.participants.post", vars["id"])
-	defer api.Time(time.Now(), url)
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:

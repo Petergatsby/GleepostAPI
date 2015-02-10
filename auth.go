@@ -31,12 +31,12 @@ var BadLogin = gp.APIerror{Reason: "Bad username/password"}
 var EBADTOKEN = gp.APIerror{Reason: "Invalid credentials"}
 
 func init() {
-	base.HandleFunc("/login", loginHandler)
-	base.HandleFunc("/register", registerHandler)
-	base.HandleFunc("/verify/{token:[a-fA-F0-9]+}", verificationHandler)
-	base.HandleFunc("/profile/request_reset", requestResetHandler)
-	base.HandleFunc("/profile/reset/{id:[0-9]+}/{token}", resetPassHandler)
-	base.HandleFunc("/resend_verification", resendVerificationHandler)
+	base.Handle("/login", timeHandler(api, http.HandlerFunc(loginHandler)))
+	base.Handle("/register", timeHandler(api, http.HandlerFunc(registerHandler)))
+	base.Handle("/verify/{token:[a-fA-F0-9]+}", timeHandler(api, http.HandlerFunc(verificationHandler)))
+	base.Handle("/profile/request_reset", timeHandler(api, http.HandlerFunc(requestResetHandler)))
+	base.Handle("/profile/reset/{id:[0-9]+}/{token}", timeHandler(api, http.HandlerFunc(resetPassHandler)))
+	base.Handle("/resend_verification", timeHandler(api, http.HandlerFunc(resendVerificationHandler)))
 }
 
 //Note to self: validateToken should probably return an error at some point
@@ -63,17 +63,7 @@ func authenticate(r *http.Request) (userID gp.UserID, err error) {
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-	/* POST /register
-		requires parameters: user, pass, email
-	        example responses:
-	        HTTP 201
-		{"id":2397}
-		HTTP 400
-		{"error":"Invalid email"}
-	*/
-
 	//Note to self: maybe check cache for user before trying to register
-	defer api.Time(time.Now(), "gleepost.auth.register")
 	pass := r.FormValue("pass")
 	email := r.FormValue("email")
 	first := r.FormValue("first")
@@ -122,19 +112,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	/* POST /login
-		requires parameters: email, pass
-		example responses:
-		HTTP 200
-	        {
-	            "id":2397,
-	            "value":"552e5a9687ec04418b3b4da61a8b062dbaf5c7937f068341f36a4b4fcbd4ed45",
-	            "expiry":"2013-09-25T14:43:17.664646892Z"
-	        }
-		HTTP 400
-		{"error":"Bad username/password"}
-	*/
-	defer api.Time(time.Now(), "gleepost.auth.login")
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
 	id, err := api.ValidatePass(email, pass)
@@ -169,7 +146,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func changePassHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.change_pass.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -194,7 +170,6 @@ func changePassHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.verify.post")
 	if r.Method == "POST" {
 		vars := mux.Vars(r)
 		err := api.Verify(vars["token"])
@@ -215,7 +190,6 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func requestResetHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.request_reset.post")
 	switch {
 	case r.Method == "POST":
 		email := r.FormValue("email")
@@ -235,7 +209,6 @@ func requestResetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resetPassHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.profile.reset.post")
 	switch {
 	case r.Method == "POST":
 		vars := mux.Vars(r)
@@ -263,7 +236,6 @@ func resetPassHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.resend_verification.post")
 	switch {
 	case r.Method == "POST":
 		email := r.FormValue("email")

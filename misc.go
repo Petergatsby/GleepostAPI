@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	base.HandleFunc("/invite_message", inviteMessageHandler)
-	base.HandleFunc("/contact_form", contactFormHandler).Methods("POST")
-	base.HandleFunc("/", optionsHandler).Methods("OPTIONS")
+	base.Handle("/invite_message", timeHandler(api, http.HandlerFunc(inviteMessageHandler)))
+	base.Handle("/contact_form", timeHandler(api, http.HandlerFunc(contactFormHandler))).Methods("POST")
+	base.Handle("/", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 }
 
 //EUNSUPPORTED = 405
@@ -93,7 +93,6 @@ func jsonErr(w http.ResponseWriter, err error, code int) {
 	}
 }
 func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.invite_message.get")
 	switch {
 	case r.Method == "GET":
 		resp := struct {
@@ -106,7 +105,6 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func contactFormHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "gleepost.contact_form.post")
 	err := api.ContactFormRequest(r.FormValue("name"), r.FormValue("college"), r.FormValue("email"), r.FormValue("phoneNo"))
 	if err != nil {
 		jsonErr(w, err, 500)

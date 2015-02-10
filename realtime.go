@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/longpoll", longPollHandler)
+	base.Handle("/longpoll", timeHandler(api, http.HandlerFunc(longPollHandler)))
 	base.Handle("/ws", websocket.Handler(jsonServer))
 }
 

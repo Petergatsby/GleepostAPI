@@ -3,25 +3,23 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func init() {
-	base.HandleFunc("/approve/access", permissionHandler).Methods("GET")
-	base.HandleFunc("/approve/level", getApproveSettings).Methods("GET")
-	base.HandleFunc("/approve/level", postApproveSettings).Methods("POST")
-	base.HandleFunc("/approve/pending", getApprovePending).Methods("GET")
-	base.HandleFunc("/approve/approved", postApproveApproved).Methods("POST")
-	base.HandleFunc("/approve/approved", getApproveApproved).Methods("GET")
-	base.HandleFunc("/approve/rejected", postApproveRejected).Methods("POST")
-	base.HandleFunc("/approve/rejected", getApproveRejected).Methods("GET")
+	base.Handle("/approve/access", timeHandler(api, http.HandlerFunc(permissionHandler))).Methods("GET")
+	base.Handle("/approve/level", timeHandler(api, http.HandlerFunc(getApproveSettings))).Methods("GET")
+	base.Handle("/approve/level", timeHandler(api, http.HandlerFunc(postApproveSettings))).Methods("POST")
+	base.Handle("/approve/pending", timeHandler(api, http.HandlerFunc(getApprovePending))).Methods("GET")
+	base.Handle("/approve/approved", timeHandler(api, http.HandlerFunc(postApproveApproved))).Methods("POST")
+	base.Handle("/approve/approved", timeHandler(api, http.HandlerFunc(getApproveApproved))).Methods("GET")
+	base.Handle("/approve/rejected", timeHandler(api, http.HandlerFunc(postApproveRejected))).Methods("POST")
+	base.Handle("/approve/rejected", timeHandler(api, http.HandlerFunc(getApproveRejected))).Methods("GET")
 }
 
 func permissionHandler(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.access.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -42,7 +40,6 @@ func permissionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getApproveSettings(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.level.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -63,7 +60,6 @@ func getApproveSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func postApproveSettings(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.level.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -94,7 +90,6 @@ func postApproveSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func getApprovePending(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.pending.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -118,7 +113,6 @@ func getApprovePending(w http.ResponseWriter, r *http.Request) {
 }
 
 func postApproveApproved(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.approved.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -140,7 +134,6 @@ func postApproveApproved(w http.ResponseWriter, r *http.Request) {
 }
 
 func getApproveApproved(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.approved.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -190,7 +183,6 @@ func getApproveApproved(w http.ResponseWriter, r *http.Request) {
 }
 
 func postApproveRejected(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.rejected.post")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
@@ -212,7 +204,6 @@ func postApproveRejected(w http.ResponseWriter, r *http.Request) {
 }
 
 func getApproveRejected(w http.ResponseWriter, r *http.Request) {
-	defer api.Time(time.Now(), "approve.rejected.get")
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
