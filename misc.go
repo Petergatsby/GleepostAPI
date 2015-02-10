@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 
 	"time"
 
@@ -119,4 +120,18 @@ func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 
 func goneHandler(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, gp.APIerror{Reason: "All endpoints to do with Live conversations have been deprecated. Stop using them."}, 410)
+}
+
+func timeHandler(api *lib.API, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		metric := statsdMetricName(r)
+		api.Time(start, metric)
+	})
+}
+
+func statsdMetricName(r *http.Request) string {
+	metric := "gleepost." + strings.Replace(r.URL.Path, "/", ".", -1) + "." + strings.ToLower(r.Method)
+	return metric
 }
