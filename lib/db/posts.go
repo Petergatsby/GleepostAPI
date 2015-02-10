@@ -92,7 +92,7 @@ func (db *DB) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.Post
 				return
 			}
 			if expandNetworks {
-				net, err := db.GetNetwork(post.Network)
+				net, err := db.GetNetwork(0, post.Network)
 				if err == nil {
 					post.Group = &net
 				} else {

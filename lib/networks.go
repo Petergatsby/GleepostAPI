@@ -183,7 +183,7 @@ func (api *API) groupAddConvParticipants(adder, addee gp.UserID, group gp.Networ
 
 //UserCanJoin returns true if the user is allowed to unilaterally join this network (ie, it is both "public" and a sub-network of one this user already belongs to.)
 func (api *API) UserCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
-	net, err := api.getNetwork(netID)
+	net, err := api.getNetwork(0, netID)
 	if err != nil {
 		return
 	}
@@ -235,12 +235,13 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 	case !in:
 		return network, &ENOTALLOWED
 	default:
-		return api.getNetwork(netID)
+		return api.getNetwork(userID, netID)
 	}
 }
 
-func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
-	return api.db.GetNetwork(netID)
+//TODO(patrick) - break getNetwork into subjective / nonsubjective versions
+func (api *API) getNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Group, err error) {
+	return api.db.GetNetwork(userID, netID)
 }
 
 //CreateGroup creates a group and adds the creator as a member.
@@ -398,7 +399,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 				return
 			}
 			var group gp.Group
-			group, err = api.getNetwork(netID)
+			group, err = api.getNetwork(0, netID)
 			if err != nil {
 				return
 			}
