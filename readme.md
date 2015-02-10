@@ -781,7 +781,8 @@ example responses (http 200):
 		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 	},
 	"size":1234,
-	"conversation":5678
+	"conversation":5678,
+	"unread":12
 }
 ```
 
@@ -1756,7 +1757,8 @@ Example response: (http 200)
 			"level":1
 		},
 		"size":1234,
-		"conversation":5678
+		"conversation":5678,
+		"unread":3
 	}
 ]
 ```
