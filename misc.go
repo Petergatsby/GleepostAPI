@@ -127,6 +127,17 @@ func timeHandler(api *lib.API, next http.Handler) http.Handler {
 	})
 }
 
+func authenticatedHandler(api *lib.API, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := authenticate(r)
+		if err != nil {
+			jsonResponse(w, &EBADTOKEN, 400)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func statsdMetricName(r *http.Request) string {
 	metric := "gleepost." + strings.Replace(r.URL.Path, "/", ".", -1) + "." + strings.ToLower(r.Method)
 	return metric
