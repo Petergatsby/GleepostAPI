@@ -321,7 +321,7 @@ func (api *API) approvalBadgeCount(userID gp.UserID, netID gp.NetworkID) (badge 
 	return
 }
 
-func (api *API) postsToApproveNotification(netID gp.NetworkID, userID gp.UserID) {
+func (api *API) postsToApproveNotification(userID gp.UserID, netID gp.NetworkID) {
 	badge := api.approvalBadgeCount(userID, netID)
 	if badge == 0 {
 		return
@@ -378,7 +378,7 @@ func (api *API) maybeResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.N
 func (api *API) ResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.NetworkID, reason string) (err error) {
 	err = api.db.ResubmitPost(userID, postID, reason)
 	if err == nil {
-		api.postsToApproveNotification(netID, userID)
+		api.postsToApproveNotification(userID, netID)
 	}
 	return
 }

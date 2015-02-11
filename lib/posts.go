@@ -500,8 +500,7 @@ func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 				}
 			}
 			if pending {
-				//Send out "There are posts to review" notification.
-				api.postsToApproveNotification(netID, userID)
+				api.postsToApproveNotification(userID, netID)
 			}
 		}
 		return
