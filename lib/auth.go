@@ -13,11 +13,10 @@ import (
 
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
-//createtoken might do with returning an error
-//why would it break though
 func createToken(userID gp.UserID) gp.Token {
 	random, err := RandomString()
 	if err != nil {
+		log.Println(err)
 		return (gp.Token{UserID: userID, Token: "foo", Expiry: time.Now().UTC()})
 	}
 	expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
