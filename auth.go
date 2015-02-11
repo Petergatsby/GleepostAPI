@@ -7,25 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
 )
 
-//Status represents a user's current signup state (You should only ever see "unverified" (you have an account pending email verification" or "registered" (this email is taken by someone else)
-type Status struct {
-	Status string `json:"status"`
-	Email  string `json:"email"`
-}
-
-func newStatus(status, email string) *Status {
-	return &Status{Status: status, Email: email}
-}
-
 //InvalidEmail = Your email isn't in our approved list
 var InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
-
-//BadLogin = guess...
-var BadLogin = gp.APIerror{Reason: "Bad username/password"}
 
 //EBADTOKEN = Your token was missing or invalid
 var EBADTOKEN = gp.APIerror{Reason: "Invalid credentials"}
@@ -114,34 +102,26 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
-	id, err := api.ValidatePass(email, pass)
 	switch {
 	case r.Method != "POST":
 		go api.Count(1, "gleepost.auth.login.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
-	case err == nil:
-		verified, err := api.IsVerified(id)
+	default:
+		token, verificationStatus, err := api.AttemptLogin(email, pass)
 		switch {
-		case err != nil:
+		case err != nil && err == lib.BadLogin:
+			go api.Count(1, "gleepost.auth.login.400")
+			jsonResponse(w, err, 400)
+		case verificationStatus.Status != "":
+			go api.Count(1, "gleepost.auth.login.403")
+			jsonResponse(w, verificationStatus, 403)
+		case err == nil:
+			go api.Count(1, "gleepost.auth.login.200")
+			jsonResponse(w, token, 200)
+		default:
 			go api.Count(1, "gleepost.auth.login.500")
 			jsonErr(w, err, 500)
-		case !verified:
-			resp := newStatus("unverified", email)
-			go api.Count(1, "gleepost.auth.login.403")
-			jsonResponse(w, resp, 403)
-		default:
-			token, err := api.CreateAndStoreToken(id)
-			if err == nil {
-				go api.Count(1, "gleepost.auth.login.200")
-				jsonResponse(w, token, 200)
-			} else {
-				go api.Count(1, "gleepost.auth.login.500")
-				jsonErr(w, err, 500)
-			}
 		}
-	default:
-		go api.Count(1, "gleepost.auth.login.400")
-		jsonResponse(w, BadLogin, 400)
 	}
 }
 

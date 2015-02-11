@@ -62,15 +62,6 @@ type ApproveLevel struct {
 	Categories []string `json:"categories"`
 }
 
-//Token is a gleepost access token.
-//TODO: Add scopes?
-//TODO: Deprecate in favour of OAuth?
-type Token struct {
-	UserID UserID    `json:"id"`
-	Token  string    `json:"value"`
-	Expiry time.Time `json:"expiry"`
-}
-
 //PostCore is the minimal representation of a post.
 type PostCore struct {
 	ID   PostID    `json:"id"`

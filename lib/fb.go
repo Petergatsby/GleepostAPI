@@ -105,7 +105,7 @@ func (api *API) FacebookLogin(fbToken string) (token gp.Token, err error) {
 	if err != nil {
 		log.Println("Error pulling in profile changes from facebook:", err)
 	}
-	token, err = api.CreateAndStoreToken(userID)
+	token, err = api.createAndStoreToken(userID)
 	return
 }
 
@@ -125,7 +125,8 @@ func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
 // email address, or create a gleepost account as appropriate.
 //If the invite is invalid or nonexistent, it issues a verification email
 //(the rest of the association will be handled upon verification in FBVerify.
-func (api *API) FacebookRegister(fbToken string, email string, invite string) (id gp.UserID, err error) {
+//It will either return a token (meaning that the user has logged in successfully) or a verification status (meaning the user should verify their email).
+func (api *API) FacebookRegister(fbToken string, email string, invite string) (token gp.Token, verification gp.Status, err error) {
 	t, err := api.FBValidateToken(fbToken, 3)
 	if err != nil {
 		return
@@ -133,12 +134,18 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (i
 	err = api.db.CreateFBUser(t.FBUser, email)
 	exists, _ := api.InviteExists(email, invite)
 	if exists {
-		id, err = api.FBSetVerified(email, t.FBUser)
+		id, e := api.FBSetVerified(email, t.FBUser)
+		if e != nil {
+			err = e
+			return
+		}
+		token, err = api.createAndStoreToken(id)
 		return
 	}
 	if err == nil {
 		err = api.FBissueVerification(t.FBUser)
 	}
+	verification = gp.NewStatus("unverified", email)
 	return
 }
 
@@ -299,4 +306,28 @@ func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 	err = api.AcceptAllFBInvites(fbid)
 	return
 
+}
+
+//AttemptLoginWithInvite tries to perform a facebook login with an invite code sent over email.
+//This will implicitly verify an account (because they have to have access to that email) and issue a session token if the invite is valid.
+//If the invite is not valid, returns status - registered.
+//(why?? I can't remember.)
+func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (token gp.Token, status gp.Status, err error) {
+	exists, _ := api.InviteExists(email, invite)
+	if exists {
+		//Verify
+		id, e := api.FBSetVerified(email, FBUser)
+		if e != nil {
+			err = e
+			return
+		}
+		//Login
+		token, err = api.createAndStoreToken(id)
+		if err != nil {
+			return
+		}
+	}
+	status = gp.NewStatus("registered", email)
+
+	return
 }

@@ -120,56 +120,36 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 					jsonErr(w, err, 500)
 					return
 				}
-				id, err := api.FacebookRegister(_fbToken, email, invite)
+				token, verification, err := api.FacebookRegister(_fbToken, email, invite)
 				if err != nil {
 					go api.Count(1, "gleepost.facebook.post.500")
 					jsonErr(w, err, 500)
 					return
 				}
-				if id > 0 {
-					//The invite was valid so an account has been created
-					//Login
-					token, err := api.CreateAndStoreToken(id)
-					if err == nil {
-						go api.Count(1, "gleepost.facebook.post.200")
-						jsonResponse(w, token, 200)
-					} else {
-						go api.Count(1, "gleepost.facebook.post.500")
-						jsonErr(w, err, 500)
-					}
+				if token.UserID > 0 {
+					go api.Count(1, "gleepost.facebook.post.200")
+					jsonResponse(w, token, 200)
 					return
 				}
 				go api.Count(1, "gleepost.facebook.post.201")
 				log.Println("Should be unverified response")
-				jsonResponse(w, Status{"unverified", email}, 201)
+				jsonResponse(w, verification, 201)
 				return
 			}
 			//User has signed up already with a username+pass
 			//If invite is valid, we can log in immediately
-			exists, _ := api.InviteExists(email, invite)
-			if exists {
-				//Verify
-				id, err := api.FBSetVerified(email, fbToken.FBUser)
-				if err != nil {
-					go api.Count(1, "gleepost.facebook.post.500")
-					jsonErr(w, err, 500)
-					return
-				}
-				//Login
-				token, err := api.CreateAndStoreToken(id)
-				if err == nil {
-					go api.Count(1, "gleepost.facebook.post.200")
-					jsonResponse(w, token, 200)
-				} else {
-					go api.Count(1, "gleepost.facebook.post.500")
-					jsonErr(w, err, 500)
-				}
-				return
+			token, status, err := api.AttemptLoginWithInvite(email, invite, fbToken.FBUser)
+			switch {
+			case err != nil:
+				go api.Count(1, "gleepost.facebook.post.500")
+				jsonErr(w, err, 500)
+			case status.Status == "registered":
+				go api.Count(1, "gleepost.facebook.post.200")
+				jsonResponse(w, status, 200)
+			default:
+				go api.Count(1, "gleepost.facebook.post.200")
+				jsonResponse(w, token, 200)
 			}
-			//otherwise, we must ask for a password
-			status := Status{"registered", email}
-			go api.Count(1, "gleepost.facebook.post.200")
-			jsonResponse(w, status, 200)
 			return
 		case len(email) > 3 && (err == nil && (storedEmail == email)):
 			//We already saw this user, so we don't need to re-send verification
@@ -181,10 +161,10 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Println("Should be unverified response")
 				go api.Count(1, "gleepost.facebook.post.201")
-				jsonResponse(w, Status{"unverified", storedEmail}, 201)
+				jsonResponse(w, gp.NewStatus("unverified", storedEmail), 201)
 				return
 			}
-			status := Status{"registered", storedEmail}
+			status := gp.NewStatus("registered", storedEmail)
 			go api.Count(1, "gleepost.facebook.post.200")
 			jsonResponse(w, status, 200)
 			return

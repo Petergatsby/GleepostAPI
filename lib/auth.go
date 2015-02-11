@@ -11,6 +11,9 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//BadLogin = guess...
+var BadLogin = gp.APIerror{Reason: "Bad username/password"}
+
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
 func createToken(userID gp.UserID) gp.Token {
@@ -30,9 +33,9 @@ func (api *API) ValidateToken(id gp.UserID, token string) bool {
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
 	if api.Config.LoginOverride {
-		return (true)
+		return true
 	} else if api.cache.TokenExists(id, token) {
-		return (true)
+		return true
 	} else {
 		return api.db.TokenExists(id, token)
 	}
@@ -53,7 +56,7 @@ func (api *API) ValidatePass(email string, pass string) (id gp.UserID, err error
 }
 
 //CreateAndStoreToken issues an access token for this user.
-func (api *API) CreateAndStoreToken(id gp.UserID) (gp.Token, error) {
+func (api *API) createAndStoreToken(id gp.UserID) (gp.Token, error) {
 	token := createToken(id)
 	err := api.db.AddToken(token)
 	api.cache.PutToken(token)
@@ -61,6 +64,25 @@ func (api *API) CreateAndStoreToken(id gp.UserID) (gp.Token, error) {
 		return token, err
 	}
 	return token, nil
+}
+
+//AttemptLogin will (a) return BadLogin if your email:pass combination isn't correct; (b) return a non-nil verification status (if your account is not yet verified) and (c) if neither of the above, issue you a session token.
+func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification gp.Status, err error) {
+	id, err := api.ValidatePass(email, pass)
+	if err != nil {
+		err = BadLogin
+		return
+	}
+	verified, err := api.IsVerified(id)
+	if err != nil {
+		return
+	}
+	if !verified {
+		verification = gp.NewStatus("unverified", email)
+		return
+	}
+	token, err = api.createAndStoreToken(id)
+	return
 }
 
 //ValidateEmail returns true if this email (a) looks vaguely well-formed and (b) belongs to a domain who is allowed to sign up.
