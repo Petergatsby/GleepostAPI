@@ -50,7 +50,7 @@ func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int)
 }
 
 func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level int) (err error) {
-	badge := api.approvalBadgeCount(netID, changer)
+	badge := api.approvalBadgeCount(changer, netID)
 	users, err := api.approveUsers(netID)
 	if err != nil {
 		log.Println(err)
@@ -302,6 +302,7 @@ func (api *API) silentSetApproveBadgeCount(netID gp.NetworkID, userID gp.UserID)
 	}
 }
 
+//approveUsers returns all the users who have Approve access in this network.
 func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error) {
 	master, err := api.db.MasterGroup(netID)
 	if err != nil {
@@ -310,7 +311,7 @@ func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error
 	return api.db.GetNetworkUsers(master)
 }
 
-func (api *API) approvalBadgeCount(netID gp.NetworkID, userID gp.UserID) (badge int) {
+func (api *API) approvalBadgeCount(userID gp.UserID, netID gp.NetworkID) (badge int) {
 	posts, err := api.getNetworkPending(userID, netID)
 	if err != nil {
 		log.Println(err)
@@ -321,7 +322,7 @@ func (api *API) approvalBadgeCount(netID gp.NetworkID, userID gp.UserID) (badge 
 }
 
 func (api *API) postsToApproveNotification(netID gp.NetworkID, userID gp.UserID) {
-	badge := api.approvalBadgeCount(netID, userID)
+	badge := api.approvalBadgeCount(userID, netID)
 	if badge == 0 {
 		return
 	}
