@@ -98,11 +98,11 @@ func (api *API) GetNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending
 	case !access.ApproveAccess:
 		return pending, &ENOTALLOWED
 	default:
-		return api.getNetworkPending(netID, userID)
+		return api.getNetworkPending(userID, netID)
 	}
 }
 
-func (api *API) getNetworkPending(netID gp.NetworkID, userID gp.UserID) (pending []gp.PendingPost, err error) {
+func (api *API) getNetworkPending(userID gp.UserID, netID gp.NetworkID) (pending []gp.PendingPost, err error) {
 	pending = make([]gp.PendingPost, 0)
 	_pending, err := api.db.PendingPosts(netID)
 	if err != nil {
@@ -266,7 +266,7 @@ func (api *API) PendingPosts(userID gp.UserID) (pending []gp.PendingPost, err er
 }
 
 func (api *API) silentSetApproveBadgeCount(netID gp.NetworkID, userID gp.UserID) {
-	posts, err := api.getNetworkPending(netID, userID)
+	posts, err := api.getNetworkPending(userID, netID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -311,7 +311,7 @@ func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error
 }
 
 func (api *API) approvalBadgeCount(netID gp.NetworkID, userID gp.UserID) (badge int) {
-	posts, err := api.getNetworkPending(netID, userID)
+	posts, err := api.getNetworkPending(userID, netID)
 	if err != nil {
 		log.Println(err)
 		return
