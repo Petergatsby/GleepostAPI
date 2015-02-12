@@ -94,7 +94,7 @@ func (api *API) getPrimaryConversation(participantA, participantB gp.UserID) (co
 }
 
 //CanContact returns true if the initiator is allowed to contact the recipient.
-func (api *API) CanContact(initiator gp.UserID, recipient gp.UserID) (contactable bool, err error) {
+func (api *API) canContact(initiator gp.UserID, recipient gp.UserID) (contactable bool, err error) {
 	shared, e := api.HaveSharedNetwork(initiator, recipient)
 	switch {
 	case e != nil:
