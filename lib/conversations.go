@@ -133,11 +133,6 @@ func (api *API) conversationChangedEvent(conversation gp.Conversation) {
 	go api.cache.PublishEvent("changed-conversation", ConversationURI(conversation.ID), conversation, chans)
 }
 
-//GetMessageChan returns the event channel for this user
-func (api *API) GetMessageChan(userID gp.UserID) (c chan []byte) {
-	return api.cache.MessageChan(userID)
-}
-
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
 func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
