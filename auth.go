@@ -12,9 +12,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//InvalidEmail = Your email isn't in our approved list
-var InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
-
 //EBADTOKEN = Your token was missing or invalid
 var EBADTOKEN = gp.APIerror{Reason: "Invalid credentials"}
 
@@ -57,45 +54,33 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	first := r.FormValue("first")
 	last := r.FormValue("last")
 	invite := r.FormValue("invite")
+	created, err := api.AttemptRegister(email, pass, first, last, invite)
 	switch {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 		//Note to future self : would be neater if
 		//we returned _all_ errors not just the first
-	case len(first) < 2:
-		jsonResponse(w, missingParamErr("first"), 400)
-	case len(last) < 1:
-		jsonResponse(w, missingParamErr("last"), 400)
-	case len(pass) == 0:
-		jsonResponse(w, missingParamErr("pass"), 400)
-	case len(email) == 0:
-		jsonResponse(w, missingParamErr("email"), 400)
+	case err == lib.MissingParamFirst:
+		fallthrough
+	case err == lib.MissingParamLast:
+		fallthrough
+	case err == lib.MissingParamPass:
+		fallthrough
+	case err == lib.MissingParamEmail:
+		fallthrough
+	case err == lib.ETOOWEAK:
+		fallthrough
+	case err == lib.UserAlreadyExists:
+		fallthrough
+	case err == lib.InvalidEmail:
+		go api.Count(1, "gleepost.auth.register.400")
+		jsonResponse(w, err, 400)
+	case err != nil:
+		go api.Count(1, "gleepost.auth.register.500")
+		jsonErr(w, err, 500)
 	default:
-		validates, err := api.ValidateEmail(email)
-		if err != nil {
-			jsonErr(w, err, 500)
-			go api.Count(1, "gleepost.auth.register.500")
-			return
-		}
-		if !validates {
-			jsonResponse(w, InvalidEmail, 400)
-			go api.Count(1, "gleepost.auth.register.400")
-			return
-		}
-		created, err := api.RegisterUser(pass, email, first, last, invite)
-		if err != nil {
-			_, ok := err.(gp.APIerror)
-			if ok { //Duplicate user/email or password too short
-				go api.Count(1, "gleepost.auth.register.400")
-				jsonResponse(w, err, 400)
-			} else {
-				go api.Count(1, "gleepost.auth.register.500")
-				jsonErr(w, err, 500)
-			}
-		} else {
-			go api.Count(1, "gleepost.auth.register.201")
-			jsonResponse(w, created, 201)
-		}
+		go api.Count(1, "gleepost.auth.register.201")
+		jsonResponse(w, created, 201)
 	}
 }
 

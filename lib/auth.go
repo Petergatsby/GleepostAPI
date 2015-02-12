@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
+	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -85,8 +86,46 @@ func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification g
 	return
 }
 
+var (
+	MissingParamFirst = gp.APIerror{Reason: "Missing parameter: first"}
+	MissingParamLast  = gp.APIerror{Reason: "Missing parameter: last"}
+	MissingParamPass  = gp.APIerror{Reason: "Missing parameter: pass"}
+	MissingParamEmail = gp.APIerror{Reason: "Missing parameter: email"}
+	//InvalidEmail = Your email isn't in our approved list
+	InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
+	//UserAlreadyExists appens when creating an account with a dupe email address.
+	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
+)
+
+//AttemptRegister tries to register this user.
+func (api *API) AttemptRegister(email, pass, first, last, invite string) (created gp.NewUser, err error) {
+	switch {
+	case len(first) < 2:
+		err = MissingParamFirst
+		return
+	case len(last) < 1:
+		err = MissingParamLast
+		return
+	case len(pass) == 0:
+		err = MissingParamPass
+		return
+	case len(email) == 0:
+		err = MissingParamEmail
+		return
+	}
+	validates, err := api.validateEmail(email)
+	if err != nil {
+		return
+	}
+	if !validates {
+		err = InvalidEmail
+		return
+	}
+	return api.RegisterUser(pass, email, first, last, invite)
+}
+
 //ValidateEmail returns true if this email (a) looks vaguely well-formed and (b) belongs to a domain who is allowed to sign up.
-func (api *API) ValidateEmail(email string) (validates bool, err error) {
+func (api *API) validateEmail(email string) (validates bool, err error) {
 	if !looksLikeEmail(email) {
 		return false, nil
 	}
@@ -150,6 +189,9 @@ func (api *API) createUser(first, last string, pass string, email string) (userI
 	}
 	userID, err = api.db.RegisterUser(first, last, hash, email)
 	if err != nil {
+		if err == db.UserAlreadyExists {
+			err = UserAlreadyExists
+		}
 		return 0, err
 	}
 	return
@@ -195,7 +237,7 @@ func looksLikeEmail(email string) bool {
 
 func checkPassStrength(pass string) (err error) {
 	if len(pass) < 5 {
-		return &ETOOWEAK
+		return ETOOWEAK
 	}
 	return nil
 }

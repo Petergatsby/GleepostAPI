@@ -93,52 +93,28 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			//(So we should check if there's an existing signed up / verified user)
 			//(and if not, issue a verification email)
 			//(since this is the first time they've signed up with this email)
-			_, err := api.UserWithEmail(email)
-			if err != nil {
-				//There isn't already a user with this email address.
-				validates, err := api.ValidateEmail(email)
-				if !validates {
-					go api.Count(1, "gleepost.facebook.post.400")
-					jsonResponse(w, InvalidEmail, 400)
-					return
-				}
-				if err != nil {
-					go api.Count(1, "gleepost.facebook.post.500")
-					jsonErr(w, err, 500)
-					return
-				}
-				token, verification, err := api.FacebookRegister(_fbToken, email, invite)
-				if err != nil {
-					go api.Count(1, "gleepost.facebook.post.500")
-					jsonErr(w, err, 500)
-					return
-				}
-				if token.UserID > 0 {
-					go api.Count(1, "gleepost.facebook.post.200")
-					jsonResponse(w, token, 200)
-					return
-				}
-				go api.Count(1, "gleepost.facebook.post.201")
-				log.Println("Should be unverified response")
-				jsonResponse(w, verification, 201)
-				return
-			}
-			//User has signed up already with a username+pass
-			//If invite is valid, we can log in immediately
-			token, status, err := api.AttemptLoginWithInvite(email, invite, fbToken.FBUser)
+			token, verification, err := api.FBFirstTimeWithEmail(email, _fbToken, invite, fbToken.FBUser)
 			switch {
+			case err == lib.InvalidEmail:
+				go api.Count(1, "gleepost.facebook.post.400")
+				jsonResponse(w, err, 400)
 			case err != nil:
 				go api.Count(1, "gleepost.facebook.post.500")
 				jsonErr(w, err, 500)
-			case status.Status == "registered":
-				//The invite wasn't valid; this means that this user is already registered but the fb user wasn't able to prove they are this gleepost user.
-				go api.Count(1, "gleepost.facebook.post.200")
-				jsonResponse(w, status, 200)
-			default:
+				return
+			case token.UserID > 0:
 				go api.Count(1, "gleepost.facebook.post.200")
 				jsonResponse(w, token, 200)
+				return
+			case verification.Status == "registered":
+				//The invite wasn't valid; this means that this user is already registered but the fb user wasn't able to prove they are this gleepost user.
+				go api.Count(1, "gleepost.facebook.post.200")
+				jsonResponse(w, verification, 200)
+			default:
+				go api.Count(1, "gleepost.facebook.post.201")
+				jsonResponse(w, verification, 201)
+				return
 			}
-			return
 		case len(email) > 3 && (err == nil && (storedEmail == email)):
 			//We already saw this user, so we don't need to re-send verification
 			fallthrough

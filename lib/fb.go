@@ -360,3 +360,27 @@ func (api *API) AssociateFB(id gp.UserID, fbToken string, fbUser uint64) (err er
 		return AlreadyAssociated
 	}
 }
+
+//FBFirstTimeWithEmail will create a fresh association with this fb:email pair. If there is no existing gleepost user signed up with this email, it will record this fb user and issue a verification email.
+//If there's already a gleepost user, it will associate the two accounts if the invite is valid (proving that this fb user has access to that email; otherwise it will return status:registered.
+func (api *API) FBFirstTimeWithEmail(email, fbToken, invite string, fbUser uint64) (token gp.Token, verification gp.Status, err error) {
+	_, err = api.UserWithEmail(email)
+	if err != nil {
+		//There isn't already a user with this email address.
+		validates, e := api.validateEmail(email)
+		if !validates {
+			err = InvalidEmail
+			return
+		}
+		if e != nil {
+			err = e
+			return
+		}
+		token, verification, err = api.FacebookRegister(fbToken, email, invite)
+		return
+	}
+	//User has signed up already with a username+pass
+	//If invite is valid, we can log in immediately
+	token, verification, err = api.AttemptLoginWithInvite(email, invite, fbUser)
+	return
+}
