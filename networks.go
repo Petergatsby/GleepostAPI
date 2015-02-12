@@ -318,7 +318,7 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 
 func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	url := fmt.Sprintf("gleepost.networks.%d.admins.%d.delete", vars["network"], vars["user"])
+	url := fmt.Sprintf("gleepost.networks.%s.admins.%s.delete", vars["network"], vars["user"])
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
