@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -15,60 +16,46 @@ func init() {
 func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
-	id, err := api.ValidatePass(email, pass)
 	_fbToken := r.FormValue("fbtoken")
 	//Is this a valid facebook token for this app?
 	fbToken, errtoken := api.FBValidateToken(_fbToken, 3)
 	userID, autherr := authenticate(r)
 	switch {
 	case r.Method != "POST":
-		log.Println(r)
 		go api.Count(1, "gleepost.profile.facebook.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
-	case err != nil:
-		if autherr != nil {
-			go api.Count(1, "gleepost.profile.facebook.post.400")
-			jsonResponse(w, gp.APIerror{Reason: "Bad email/password"}, 400)
-		} else {
-			//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
-			token, err := api.FacebookLogin(_fbToken)
-			if err != nil {
-				//This isn't associated with a gleepost account
-				err = api.UserSetFB(userID, fbToken.FBUser)
-				go api.Count(1, "gleepost.profile.facebook.post.204")
-				w.WriteHeader(204)
-			} else {
-				if token.UserID == userID {
-					//The facebook account is already associated with this gleepost account
-					go api.Count(1, "gleepost.profile.facebook.post.204")
-					w.WriteHeader(204)
-				} else {
-					go api.Count(1, "gleepost.profile.facebook.post.400")
-					jsonResponse(w, gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}, 400)
-				}
-
-			}
-		}
 	case errtoken != nil:
 		go api.Count(1, "gleepost.profile.facebook.post.400")
 		jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
-	default:
-		token, err := api.FacebookLogin(_fbToken)
-		if err != nil {
-			//This isn't associated with a gleepost account
-			err = api.UserSetFB(id, fbToken.FBUser)
+	case autherr == nil:
+		//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
+		err := api.AssociateFB(userID, _fbToken, fbToken.FBUser)
+		switch {
+		case err != nil && err == lib.AlreadyAssociated:
+			go api.Count(1, "gleepost.profile.facebook.post.400")
+			jsonResponse(w, err, 400)
+		case err != nil:
+			go api.Count(1, "gleepost.profile.facebook.post.500")
+			jsonResponse(w, err, 500)
+		default:
 			go api.Count(1, "gleepost.profile.facebook.post.204")
 			w.WriteHeader(204)
-		} else {
-			if token.UserID == id {
-				//The facebook account is already associated with this gleepost account
-				go api.Count(1, "gleepost.profile.facebook.post.204")
-				w.WriteHeader(204)
-			} else {
-				go api.Count(1, "gleepost.profile.facebook.post.400")
-				jsonResponse(w, gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}, 400)
-			}
-
+		}
+	default:
+		err := api.AttemptAssociationWithCredentials(email, pass, _fbToken, fbToken.FBUser)
+		switch {
+		case err != nil && err == lib.BadLogin:
+			go api.Count(1, "gleepost.profile.facebook.post.400")
+			jsonResponse(w, gp.APIerror{Reason: "Bad email/password"}, 400)
+		case err != nil && err == lib.AlreadyAssociated:
+			go api.Count(1, "gleepost.profile.facebook.post.400")
+			jsonResponse(w, err, 400)
+		case err != nil:
+			go api.Count(1, "gleepost.profile.facebook.post.500")
+			jsonResponse(w, err, 500)
+		default:
+			go api.Count(1, "gleepost.profile.facebook.post.204")
+			w.WriteHeader(204)
 		}
 	}
 }

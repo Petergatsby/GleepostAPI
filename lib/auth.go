@@ -42,7 +42,7 @@ func (api *API) ValidateToken(id gp.UserID, token string) bool {
 }
 
 //ValidatePass returns the id of the user with this email:pass pair, or err if the comparison is not valid.
-func (api *API) ValidatePass(email string, pass string) (id gp.UserID, err error) {
+func (api *API) validatePass(email string, pass string) (id gp.UserID, err error) {
 	passBytes := []byte(pass)
 	hash, id, err := api.db.GetHash(email)
 	if err != nil {
@@ -68,7 +68,7 @@ func (api *API) createAndStoreToken(id gp.UserID) (gp.Token, error) {
 
 //AttemptLogin will (a) return BadLogin if your email:pass combination isn't correct; (b) return a non-nil verification status (if your account is not yet verified) and (c) if neither of the above, issue you a session token.
 func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification gp.Status, err error) {
-	id, err := api.ValidatePass(email, pass)
+	id, err := api.validatePass(email, pass)
 	if err != nil {
 		err = BadLogin
 		return

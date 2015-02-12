@@ -40,6 +40,8 @@ type FB struct {
 //FBAPIError is a catchall error for anything that went wrong with a facebook reqest.
 var FBAPIError = gp.APIerror{Reason: "Something went wrong with a facebook API call."}
 
+var AlreadyAssociated = gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}
+
 //FBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
 //ie, expired or for another app.
 func (api *API) FBValidateToken(fbToken string, retries int) (token FacebookToken, err error) {
@@ -330,4 +332,31 @@ func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (tok
 	status = gp.NewStatus("registered", email)
 
 	return
+}
+
+//AttemptAssociationWithCredentials tries to connect a particular facebook account to a particular user account.
+func (api *API) AttemptAssociationWithCredentials(email, pass, fbToken string, fbUser uint64) (err error) {
+	id, err := api.validatePass(email, pass)
+	if err != nil {
+		log.Println(err)
+		err = BadLogin
+		return
+	}
+	err = api.AssociateFB(id, fbToken, fbUser)
+	return
+}
+
+func (api *API) AssociateFB(id gp.UserID, fbToken string, fbUser uint64) (err error) {
+	token, err := api.FacebookLogin(fbToken)
+	switch {
+	case err != nil:
+		//This isn't associated with a gleepost account
+		err = api.UserSetFB(id, fbUser)
+		return
+	case token.UserID == id:
+		//The facebook account is already associated with this gleepost account
+		return nil
+	default:
+		return AlreadyAssociated
+	}
 }
