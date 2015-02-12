@@ -306,6 +306,7 @@ example responses:
 		"like_count":5,
 		"popularity":75,
 		"attendee_count":3,
+		"views":123,
 		"likes":[{"by": {
 				"id":545,
 				"name":"SomeoneElse"
@@ -334,12 +335,13 @@ example responses:
 			"id":23,
 			"name":"PeterGatsby"
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
-		}
+		},
 		"timestamp":"2013-09-05T13:09:38Z",
-		"text":"Sailor Moon FTW!"
+		"text":"Sailor Moon FTW!",
 		"comment_count":9,
 		"like_count":0,
 		"images": ["https://gleepost.com/uploads/7911970371089d6d59a8a056fe6580a0.jpg"],
+		"views":123,
 		"videos":[
 			{
 				"mp4":"https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4",
