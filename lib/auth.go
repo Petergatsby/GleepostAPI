@@ -128,7 +128,7 @@ func (api *API) RegisterUser(pass, email, first, last, invite string) (newUser g
 			return
 		}
 		newUser.Status = "verified"
-		err = api.AssignNetworksFromInvites(userID, email)
+		err = api.assignNetworksFromInvites(userID, email)
 		if err != nil {
 			return
 		}
@@ -250,7 +250,7 @@ func (api *API) Verify(token string) (err error) {
 			if err != nil {
 				return
 			}
-			err = api.AssignNetworksFromInvites(id, email)
+			err = api.assignNetworksFromInvites(id, email)
 			if err != nil {
 				log.Println("Something went wrong with assigning to invited networks:", err)
 				return
@@ -282,7 +282,7 @@ func (api *API) Verify(token string) (err error) {
 		err = api.db.Verify(userID)
 		if err == nil {
 			log.Println("Verifying worked. Now setting networks from invites...")
-			err = api.AssignNetworksFromInvites(userID, email)
+			err = api.assignNetworksFromInvites(userID, email)
 			if err != nil {
 				log.Println("Something went wrong while setting networks from invites:", err)
 				return

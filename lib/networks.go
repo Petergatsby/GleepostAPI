@@ -440,7 +440,7 @@ func (api *API) inviteExists(email, invite string) (exists bool, err error) {
 }
 
 //AssignNetworksFromInvites finds all invites for this email address and resolves them (adds user to the groups involved)
-func (api *API) AssignNetworksFromInvites(user gp.UserID, email string) (err error) {
+func (api *API) assignNetworksFromInvites(user gp.UserID, email string) (err error) {
 	return api.db.AssignNetworksFromInvites(user, email)
 }
 
