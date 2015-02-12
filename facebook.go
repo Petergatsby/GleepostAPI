@@ -80,7 +80,6 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			go api.Count(1, "gleepost.facebook.post.201")
 			jsonResponse(w, token, 201)
 			return
-
 		}
 		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 		//Did the user provide an email (takes precedence over stored email, because they might have typo'd the first time)

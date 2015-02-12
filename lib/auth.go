@@ -95,6 +95,7 @@ var (
 	InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
 	//UserAlreadyExists appens when creating an account with a dupe email address.
 	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
+	NoSuchUser        = gp.APIerror{Reason: "That user does not exist."}
 )
 
 //AttemptRegister tries to register this user.
@@ -173,7 +174,7 @@ func (api *API) RegisterUser(pass, email, first, last, invite string) (newUser g
 		}
 		err = api.AcceptAllInvites(email)
 	} else {
-		err = api.GenerateAndSendVerification(userID, first, email)
+		err = api.generateAndSendVerification(userID, first, email)
 	}
 	return
 }
@@ -197,9 +198,33 @@ func (api *API) createUser(first, last string, pass string, email string) (userI
 	return
 }
 
+//AttemptResendVerification tries to send a new verification email to this address, or returns NoSuchUser if that email isn't one we know about. NB: this allows account enumeration, I guess...
+func (api *API) AttemptResendVerification(email string) error {
+	userID, err := api.UserWithEmail(email)
+	switch {
+	case err != nil: //No user with this email
+		fbid, err := api.FBUserWithEmail(email)
+		if err == nil {
+			api.FBissueVerification(fbid)
+			return nil
+		}
+		if err == db.NoSuchUser {
+			err = NoSuchUser
+		}
+		return err
+	default:
+		user, err := api.GetUser(userID)
+		if err != nil {
+			return err
+		}
+		api.generateAndSendVerification(userID, user.Name, email)
+		return nil
+	}
+}
+
 //GenerateAndSendVerification generates a random string and sends it embedded in a link to the user.
 //It's probably safe to give it user input -- \r\n is stripped out.
-func (api *API) GenerateAndSendVerification(userID gp.UserID, user string, email string) (err error) {
+func (api *API) generateAndSendVerification(userID gp.UserID, user string, email string) (err error) {
 	random, err := RandomString()
 	if err != nil {
 		return

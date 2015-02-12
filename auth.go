@@ -204,26 +204,18 @@ func resendVerificationHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "POST":
 		email := r.FormValue("email")
-		userID, err := api.UserWithEmail(email)
-		if err != nil {
-			fbid, err := api.FBUserWithEmail(email)
-			if err == nil {
-				go api.Count(1, "gleepost.resend_verification.post.400")
-				jsonErr(w, err, 400)
-				return
-			}
-			api.FBissueVerification(fbid)
-		} else {
-			user, err := api.GetUser(userID)
-			if err != nil {
-				go api.Count(1, "gleepost.resend_verification.post.500")
-				jsonErr(w, err, 500)
-				return
-			}
-			api.GenerateAndSendVerification(userID, user.Name, email)
+		err := api.AttemptResendVerification(email)
+		switch {
+		case err == lib.NoSuchUser:
+			go api.Count(1, "gleepost.resend_verification.post.400")
+			jsonErr(w, err, 400)
+		case err != nil:
+			go api.Count(1, "gleepost.resend_verification.post.500")
+			jsonErr(w, err, 500)
+		default:
+			go api.Count(1, "gleepost.resend_verification.post.204")
+			w.WriteHeader(204)
 		}
-		go api.Count(1, "gleepost.resend_verification.post.204")
-		w.WriteHeader(204)
 	default:
 		go api.Count(1, "gleepost.resend_verification.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)

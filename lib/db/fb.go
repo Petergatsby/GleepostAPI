@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -26,6 +27,8 @@ func (db *DB) FBUserEmail(fbid uint64) (email string, err error) {
 	return
 }
 
+var NoSuchUser = gp.APIerror{Reason: "That user does not exist."}
+
 //FBUserWithEmail returns the facebook id we've seen associated with this email, or error if none exists.
 func (db *DB) FBUserWithEmail(email string) (fbid uint64, err error) {
 	s, err := db.prepare("SELECT fb_id FROM facebook WHERE email = ?")
@@ -33,6 +36,9 @@ func (db *DB) FBUserWithEmail(email string) (fbid uint64, err error) {
 		return
 	}
 	err = s.QueryRow(email).Scan(&fbid)
+	if err == sql.ErrNoRows {
+		err = NoSuchUser
+	}
 	return
 }
 
