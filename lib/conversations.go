@@ -117,7 +117,7 @@ func (api *API) newConversationEvent(conversation gp.Conversation) {
 }
 
 //EndConversationEvent publishes an event to all listening participants to let them know the conversation is terminated.
-func (api *API) EndConversationEvent(conversation gp.ConversationID) {
+func (api *API) endConversationEvent(conversation gp.ConversationID) {
 	conv, err := api.getConversation(0, conversation) //0 means we will omit the unread count.
 	if err != nil {
 		log.Println(err)
@@ -128,7 +128,7 @@ func (api *API) EndConversationEvent(conversation gp.ConversationID) {
 }
 
 //ConversationChangedEvent publishes an event to all listening participants that this conversation has changed in some way, typically because its expiry has been removed.
-func (api *API) ConversationChangedEvent(conversation gp.Conversation) {
+func (api *API) conversationChangedEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
 	go api.cache.PublishEvent("changed-conversation", ConversationURI(conversation.ID), conversation, chans)
 }
@@ -351,7 +351,7 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		return
 	}
-	go api.ConversationChangedEvent(conv.Conversation)
+	go api.conversationChangedEvent(conv.Conversation)
 	for _, p := range addable {
 		api.addSystemMessage(convID, p, "JOINED")
 	}
