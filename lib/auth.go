@@ -73,7 +73,7 @@ func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification g
 		err = BadLogin
 		return
 	}
-	verified, err := api.IsVerified(id)
+	verified, err := api.isVerified(id)
 	if err != nil {
 		return
 	}
@@ -353,6 +353,6 @@ func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err e
 }
 
 //IsVerified returns true if this user has verified their email, and probably err if this user doesn't exist?
-func (api *API) IsVerified(userID gp.UserID) (verified bool, err error) {
+func (api *API) isVerified(userID gp.UserID) (verified bool, err error) {
 	return api.db.IsVerified(userID)
 }
