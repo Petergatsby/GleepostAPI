@@ -44,7 +44,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
 	conversation, err = api.db.CreateConversation(initiator, participants, primary, group)
 	if err == nil {
-		go api.NewConversationEvent(conversation)
+		go api.newConversationEvent(conversation)
 	}
 	return
 }
@@ -111,7 +111,7 @@ func (api *API) canContact(initiator gp.UserID, recipient gp.UserID) (contactabl
 }
 
 //NewConversationEvent publishes an event to all listening participants to let them know they have a new conversation.
-func (api *API) NewConversationEvent(conversation gp.Conversation) {
+func (api *API) newConversationEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
 	go api.cache.PublishEvent("new-conversation", ConversationURI(conversation.ID), conversation, chans)
 }
