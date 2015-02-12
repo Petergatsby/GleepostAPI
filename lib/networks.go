@@ -435,7 +435,7 @@ func (api *API) UserSetNetworkImage(userID gp.UserID, netID gp.NetworkID, url st
 }
 
 //InviteExists returns true if the email:invite pair is valid or err if the db is down.
-func (api *API) InviteExists(email, invite string) (exists bool, err error) {
+func (api *API) inviteExists(email, invite string) (exists bool, err error) {
 	return api.db.InviteExists(email, invite)
 }
 

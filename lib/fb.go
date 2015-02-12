@@ -132,7 +132,7 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (t
 		return
 	}
 	err = api.db.CreateFBUser(t.FBUser, email)
-	exists, _ := api.InviteExists(email, invite)
+	exists, _ := api.inviteExists(email, invite)
 	if exists {
 		id, e := api.FBSetVerified(email, t.FBUser)
 		if e != nil {
@@ -313,7 +313,7 @@ func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 //If the invite is not valid, returns status - registered.
 //(why?? I can't remember.)
 func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (token gp.Token, status gp.Status, err error) {
-	exists, _ := api.InviteExists(email, invite)
+	exists, _ := api.inviteExists(email, invite)
 	if exists {
 		//Verify
 		id, e := api.FBSetVerified(email, FBUser)
