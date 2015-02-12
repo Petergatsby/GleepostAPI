@@ -133,17 +133,6 @@ func (api *API) conversationChangedEvent(conversation gp.Conversation) {
 	go api.cache.PublishEvent("changed-conversation", ConversationURI(conversation.ID), conversation, chans)
 }
 
-//AwaitOneMessage waits up to 60 seconds for an event to arrive and returns it, or if none arrive it will return "{}"
-func (api *API) AwaitOneMessage(userID gp.UserID) (resp []byte) {
-	c := api.GetMessageChan(userID)
-	select {
-	case resp = <-c:
-		return
-	case <-time.After(60 * time.Second):
-		return []byte("{}")
-	}
-}
-
 //GetMessageChan returns the event channel for this user
 func (api *API) GetMessageChan(userID gp.UserID) (c chan []byte) {
 	return api.cache.MessageChan(userID)

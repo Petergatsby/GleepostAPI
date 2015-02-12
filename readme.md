@@ -109,8 +109,6 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /user/[user-id]/attending [[GET]](#get-useruser-idattending)
 
-/longpoll [[GET]](#get-longpoll) (Deprecated: Prefer /ws)
-
 /ws [[GET]](#get-ws)
 
 /contacts [[GET]](#get-contacts) [[POST]](#post-contacts)
@@ -1475,29 +1473,6 @@ DEPRECATED, use [[/conversations]](#post-conversations)
 ##POST /newgroupconversation
 
 DEPRECATED, use [[/conversations]](#post-conversations)
-
-##GET /longpoll
-
-DEPRECATED, use /ws
-
-
-required parameters:
-id=[user-id]
-token=[token]
-
-Longpoll will block until a message arrives for the current user (in any conversation).
-If no message arrives within 60s the response will be empty-object "{}".
-
-example responses:
-```json
-{
-	"id":53,
-	"by": {"id":9,"name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-	"text":"sup",
-	"timestamp":"2013-09-16T16:58:30.771905595Z",
-	"conversation_id":5
-}
-```
 
 ##GET /ws
 Required parameters:

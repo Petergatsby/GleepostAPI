@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"code.google.com/p/go.net/websocket"
 	"github.com/draaglom/GleepostAPI/lib"
@@ -11,23 +10,7 @@ import (
 )
 
 func init() {
-	base.Handle("/longpoll", timeHandler(api, http.HandlerFunc(longPollHandler)))
 	base.Handle("/ws", websocket.Handler(jsonServer))
-}
-
-func longPollHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	userID, err := authenticate(r)
-	switch {
-	case err != nil:
-		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "GET":
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	default:
-		//awaitOneMessage will block until a message arrives over redis
-		message := api.AwaitOneMessage(userID)
-		w.Write(message)
-	}
 }
 
 func jsonServer(ws *websocket.Conn) {
