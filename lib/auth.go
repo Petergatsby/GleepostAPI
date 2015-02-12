@@ -361,7 +361,7 @@ func (api *API) Verify(token string) (err error) {
 }
 
 //ChangePass updates a user's password, or gives a bcrypt error if the oldPass isn't valid.
-func (api *API) ChangePass(userID gp.UserID, oldPass string, newPass string) (err error) {
+func (api *API) ChangePass(userID gp.UserID, oldPass, newPass string) (err error) {
 	passBytes := []byte(oldPass)
 	hash, err := api.db.GetHashByID(userID)
 	if err != nil {
