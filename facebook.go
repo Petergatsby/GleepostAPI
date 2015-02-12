@@ -144,6 +144,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 				go api.Count(1, "gleepost.facebook.post.500")
 				jsonErr(w, err, 500)
 			case status.Status == "registered":
+				//The invite wasn't valid; this means that this user is already registered but the fb user wasn't able to prove they are this gleepost user.
 				go api.Count(1, "gleepost.facebook.post.200")
 				jsonResponse(w, status, 200)
 			default:
