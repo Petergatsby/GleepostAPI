@@ -18,20 +18,19 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	pass := r.FormValue("pass")
 	_fbToken := r.FormValue("fbtoken")
 	//Is this a valid facebook token for this app?
-	fbToken, errtoken := api.FBValidateToken(_fbToken, 3)
 	userID, autherr := authenticate(r)
 	switch {
 	case r.Method != "POST":
 		go api.Count(1, "gleepost.profile.facebook.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
-	case errtoken != nil:
-		go api.Count(1, "gleepost.profile.facebook.post.400")
-		jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
 	case autherr == nil:
 		//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
-		err := api.AssociateFB(userID, _fbToken, fbToken.FBUser)
+		err := api.AssociateFB(userID, _fbToken)
 		switch {
 		case err != nil && err == lib.AlreadyAssociated:
+			go api.Count(1, "gleepost.profile.facebook.post.400")
+			jsonResponse(w, err, 400)
+		case err != nil && err == lib.BadFBToken:
 			go api.Count(1, "gleepost.profile.facebook.post.400")
 			jsonResponse(w, err, 400)
 		case err != nil:
@@ -42,11 +41,11 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(204)
 		}
 	default:
-		err := api.AttemptAssociationWithCredentials(email, pass, _fbToken, fbToken.FBUser)
+		err := api.AttemptAssociationWithCredentials(email, pass, _fbToken)
 		switch {
 		case err != nil && err == lib.BadLogin:
 			go api.Count(1, "gleepost.profile.facebook.post.400")
-			jsonResponse(w, gp.APIerror{Reason: "Bad email/password"}, 400)
+			jsonResponse(w, err, 400)
 		case err != nil && err == lib.AlreadyAssociated:
 			go api.Count(1, "gleepost.profile.facebook.post.400")
 			jsonResponse(w, err, 400)
@@ -65,26 +64,23 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		_fbToken := r.FormValue("token")
 		email := r.FormValue("email")
 		invite := r.FormValue("invite")
-		//Is this a valid facebook token for this app?
-		fbToken, err := api.FBValidateToken(_fbToken, 3)
-		if err != nil {
+		token, FBUser, err := api.FacebookLogin(_fbToken)
+		switch {
+		case err == lib.BadFBToken:
 			go api.Count(1, "gleepost.facebook.post.400")
-			jsonResponse(w, gp.APIerror{Reason: "Bad token"}, 400)
+			jsonResponse(w, err, 400)
 			return
-		}
-		token, err := api.FacebookLogin(_fbToken)
-		//If we have an error here, that means that there is no associated gleepost user account.
-		if err == nil {
+		case err == nil:
 			//If there's an associated user, they're verified already so there's no need to check.
-			log.Println("Token: ", token)
 			go api.Count(1, "gleepost.facebook.post.201")
 			jsonResponse(w, token, 201)
 			return
 		}
+		//If we have an error here, that means that there is no associated gleepost user account.
 		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 		//Did the user provide an email (takes precedence over stored email, because they might have typo'd the first time)
 		var storedEmail string
-		storedEmail, err = api.FBGetEmail(fbToken.FBUser)
+		storedEmail, err = api.FBGetEmail(FBUser)
 		switch {
 		//Has this email been seen before for this user?
 		case len(email) > 3 && (err != nil || storedEmail != email):
@@ -92,7 +88,7 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 			//(So we should check if there's an existing signed up / verified user)
 			//(and if not, issue a verification email)
 			//(since this is the first time they've signed up with this email)
-			token, verification, err := api.FBFirstTimeWithEmail(email, _fbToken, invite, fbToken.FBUser)
+			token, verification, err := api.FBFirstTimeWithEmail(email, _fbToken, invite, FBUser)
 			switch {
 			case err == lib.InvalidEmail:
 				go api.Count(1, "gleepost.facebook.post.400")

@@ -42,9 +42,11 @@ var FBAPIError = gp.APIerror{Reason: "Something went wrong with a facebook API c
 
 var AlreadyAssociated = gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}
 
-//FBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
+var BadFBToken = gp.APIerror{Reason: "Bad token"}
+
+//fBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
 //ie, expired or for another app.
-func (api *API) FBValidateToken(fbToken string, retries int) (token FacebookToken, err error) {
+func (api *API) fBValidateToken(fbToken string, retries int) (token FacebookToken, err error) {
 	app := facebook.New(api.fb.config.AppID, api.fb.config.AppSecret)
 	appToken := app.AppAccessToken()
 	res, err := facebook.Get("/debug_token", facebook.Params{
@@ -55,7 +57,7 @@ func (api *API) FBValidateToken(fbToken string, retries int) (token FacebookToke
 		if _, ok := err.(net.Error); ok && retries > 0 {
 			//Probably a transient connection error, we can go again.
 			<-time.After(3 * time.Second)
-			token, err = api.FBValidateToken(fbToken, retries-1)
+			token, err = api.fBValidateToken(fbToken, retries-1)
 		} else {
 			log.Println("Couldn't retry:", err)
 		}
@@ -94,11 +96,14 @@ func (api *API) FBValidateToken(fbToken string, retries int) (token FacebookToke
 
 //FacebookLogin takes a facebook access token supplied by a user and tries to issue a gleepost session token,
 // or an error if there isn't an associated gleepost user for this facebook account.
-func (api *API) FacebookLogin(fbToken string) (token gp.Token, err error) {
-	t, err := api.FBValidateToken(fbToken, 2)
+//As long as err != BadToken, the user's fbid is returned.
+func (api *API) FacebookLogin(fbToken string) (token gp.Token, FBUser uint64, err error) {
+	t, err := api.fBValidateToken(fbToken, 2)
 	if err != nil {
+		err = BadFBToken
 		return
 	}
+	FBUser = t.FBUser
 	userID, err := api.FBGetGPUser(t.FBUser)
 	if err != nil {
 		return
@@ -129,7 +134,7 @@ func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
 //(the rest of the association will be handled upon verification in FBVerify.
 //It will either return a token (meaning that the user has logged in successfully) or a verification status (meaning the user should verify their email).
 func (api *API) FacebookRegister(fbToken string, email string, invite string) (token gp.Token, verification gp.Status, err error) {
-	t, err := api.FBValidateToken(fbToken, 3)
+	t, err := api.fBValidateToken(fbToken, 3)
 	if err != nil {
 		return
 	}
@@ -335,23 +340,25 @@ func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (tok
 }
 
 //AttemptAssociationWithCredentials tries to connect a particular facebook account to a particular user account.
-func (api *API) AttemptAssociationWithCredentials(email, pass, fbToken string, fbUser uint64) (err error) {
+func (api *API) AttemptAssociationWithCredentials(email, pass, fbToken string) (err error) {
 	id, err := api.validatePass(email, pass)
 	if err != nil {
 		log.Println(err)
 		err = BadLogin
 		return
 	}
-	err = api.AssociateFB(id, fbToken, fbUser)
+	err = api.AssociateFB(id, fbToken)
 	return
 }
 
-func (api *API) AssociateFB(id gp.UserID, fbToken string, fbUser uint64) (err error) {
-	token, err := api.FacebookLogin(fbToken)
+func (api *API) AssociateFB(id gp.UserID, fbToken string) (err error) {
+	token, fbuser, err := api.FacebookLogin(fbToken)
 	switch {
+	case err == BadFBToken:
+		return
 	case err != nil:
 		//This isn't associated with a gleepost account
-		err = api.UserSetFB(id, fbUser)
+		err = api.UserSetFB(id, fbuser)
 		return
 	case token.UserID == id:
 		//The facebook account is already associated with this gleepost account
