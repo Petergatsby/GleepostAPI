@@ -138,8 +138,10 @@ func (db *DB) UserIDFromFB(fbid uint64) (id gp.UserID, err error) {
 		return
 	}
 	err = s.QueryRow(fbid).Scan(&id)
+	if err == sql.ErrNoRows {
+		err = NoSuchUser
+	}
 	return
-	//TODO: return ENOSUCHUSER instead.
 }
 
 //GetEmail returns this user's email address.

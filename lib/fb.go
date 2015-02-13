@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/facebook"
 )
@@ -97,7 +98,7 @@ func (api *API) fBValidateToken(fbToken string, retries int) (token FacebookToke
 //FacebookLogin takes a facebook access token supplied by a user and tries to issue a gleepost session token,
 // or an error if there isn't an associated gleepost user for this facebook account.
 //As long as err != BadToken, the user's fbid is returned.
-func (api *API) FacebookLogin(fbToken string) (token gp.Token, FBUser uint64, err error) {
+func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FBUser uint64, status gp.Status, err error) {
 	t, err := api.fBValidateToken(fbToken, 2)
 	if err != nil {
 		err = BadFBToken
@@ -105,16 +106,54 @@ func (api *API) FacebookLogin(fbToken string) (token gp.Token, FBUser uint64, er
 	}
 	FBUser = t.FBUser
 	userID, err := api.FBGetGPUser(t.FBUser)
-	if err != nil {
+	switch {
+	case err == nil:
+		err = api.UpdateFBData(fbToken)
+		if err != nil {
+			log.Println("Error pulling in profile changes from facebook:", err)
+		}
+		token, err = api.createAndStoreToken(userID)
+		return
+	case err == NoSuchUser: //No gleepost user already associated with this fb user.
+		//If we have an error here, that means that there is no associated gleepost user account.
+		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
+		//Did the user provide an email (takes precedence over stored email, because they might have typo'd the first time)
+		var storedEmail string
+		storedEmail, err = api.FBGetEmail(FBUser)
+		switch {
+		//Has this email been seen before for this user?
+		case len(email) > 3 && (err != nil || storedEmail != email):
+			//Either we don't have a stored email for this user, or at least it wasn't this one.
+			//(So we should check if there's an existing signed up / verified user)
+			//(and if not, issue a verification email)
+			//(since this is the first time they've signed up with this email)
+			token, status, err = api.FBFirstTimeWithEmail(email, fbToken, invite, FBUser)
+			return
+		case len(email) > 3 && (err == nil && (storedEmail == email)):
+			//We already saw this user, so we don't need to re-send verification
+			fallthrough
+		case len(email) < 3 && (err == nil):
+			//We already saw this user, so we don't need to re-send verification
+			//So it should be "unverified" or "registered" as appropriate
+			_, err = api.UserWithEmail(storedEmail)
+			if err != nil {
+				log.Println("Should be unverified response")
+				status = gp.NewStatus("unverified", storedEmail)
+				return
+			}
+			status = gp.NewStatus("registered", storedEmail)
+			return
+		case len(email) < 3 && (err != nil):
+			err = FBNoEmail
+			return
+		}
+		return //Don't think this branch is reachable.
+	default: //Server error
 		return
 	}
-	err = api.UpdateFBData(fbToken)
-	if err != nil {
-		log.Println("Error pulling in profile changes from facebook:", err)
-	}
-	token, err = api.createAndStoreToken(userID)
-	return
 }
+
+var FBNoEmail = gp.APIerror{Reason: "Email required"}
 
 //UpdateFBData is a placeholder for the time being. In the future, place anything which needs to be regularly checked from facebook here.
 func (api *API) UpdateFBData(fbToken string) (err error) {
@@ -124,7 +163,11 @@ func (api *API) UpdateFBData(fbToken string) (err error) {
 //FBGetGPUser returns the associated gleepost user for a given facebook id, or sql.ErrNoRows if that user doesn't exist.
 //TODO: Change to ENOSUCHUSER
 func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
-	return api.db.UserIDFromFB(fbid)
+	id, err = api.db.UserIDFromFB(fbid)
+	if err == db.NoSuchUser {
+		err = NoSuchUser
+	}
+	return
 }
 
 //FacebookRegister takes a facebook access token, an email and an (optional) invite key.
@@ -352,7 +395,8 @@ func (api *API) AttemptAssociationWithCredentials(email, pass, fbToken string) (
 }
 
 func (api *API) AssociateFB(id gp.UserID, fbToken string) (err error) {
-	token, fbuser, err := api.FacebookLogin(fbToken)
+	//Ignore status for now - TODO(patrick): what does this imply
+	token, fbuser, _, err := api.FacebookLogin(fbToken, "", "")
 	switch {
 	case err == BadFBToken:
 		return
