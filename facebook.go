@@ -17,43 +17,29 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	_fbToken := r.FormValue("fbtoken")
 	//Is this a valid facebook token for this app?
 	userID, autherr := authenticate(r)
+	var err error
 	switch {
 	case r.Method != "POST":
 		go api.Count(1, "gleepost.profile.facebook.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	case autherr == nil:
 		//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
-		err := api.AssociateFB(userID, _fbToken)
-		switch {
-		case err != nil && err == lib.AlreadyAssociated:
-			go api.Count(1, "gleepost.profile.facebook.post.400")
-			jsonResponse(w, err, 400)
-		case err != nil && err == lib.BadFBToken:
-			go api.Count(1, "gleepost.profile.facebook.post.400")
-			jsonResponse(w, err, 400)
-		case err != nil:
-			go api.Count(1, "gleepost.profile.facebook.post.500")
-			jsonResponse(w, err, 500)
-		default:
-			go api.Count(1, "gleepost.profile.facebook.post.204")
-			w.WriteHeader(204)
-		}
+		err = api.AssociateFB(userID, _fbToken)
 	default:
-		err := api.AttemptAssociationWithCredentials(email, pass, _fbToken)
-		switch {
-		case err != nil && err == lib.BadLogin:
-			go api.Count(1, "gleepost.profile.facebook.post.400")
-			jsonResponse(w, err, 400)
-		case err != nil && err == lib.AlreadyAssociated:
-			go api.Count(1, "gleepost.profile.facebook.post.400")
-			jsonResponse(w, err, 400)
-		case err != nil:
-			go api.Count(1, "gleepost.profile.facebook.post.500")
-			jsonResponse(w, err, 500)
-		default:
-			go api.Count(1, "gleepost.profile.facebook.post.204")
-			w.WriteHeader(204)
-		}
+		err = api.AttemptAssociationWithCredentials(email, pass, _fbToken)
+	}
+	switch {
+	case err != nil && err == lib.AlreadyAssociated:
+		fallthrough
+	case err != nil && err == lib.BadFBToken:
+		go api.Count(1, "gleepost.profile.facebook.post.400")
+		jsonResponse(w, err, 400)
+	case err != nil:
+		go api.Count(1, "gleepost.profile.facebook.post.500")
+		jsonResponse(w, err, 500)
+	default:
+		go api.Count(1, "gleepost.profile.facebook.post.204")
+		w.WriteHeader(204)
 	}
 }
 
@@ -65,13 +51,9 @@ func facebookHandler(w http.ResponseWriter, r *http.Request) {
 		token, _, status, err := api.FacebookLogin(_fbToken, email, invite)
 		switch {
 		case err == lib.BadFBToken:
-			go api.Count(1, "gleepost.facebook.post.400")
-			jsonResponse(w, err, 400)
-			return
+			fallthrough
 		case err == lib.InvalidEmail:
-			go api.Count(1, "gleepost.facebook.post.400")
-			jsonResponse(w, err, 400)
-			return
+			fallthrough
 		case err == lib.FBNoEmail:
 			go api.Count(1, "gleepost.facebook.post.400")
 			jsonResponse(w, err, 400)
