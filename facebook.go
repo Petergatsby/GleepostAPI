@@ -22,6 +22,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	case r.Method != "POST":
 		go api.Count(1, "gleepost.profile.facebook.post.405")
 		jsonResponse(w, &EUNSUPPORTED, 405)
+		return
 	case autherr == nil:
 		//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
 		err = api.AssociateFB(userID, _fbToken)
