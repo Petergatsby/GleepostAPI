@@ -40,7 +40,7 @@ func (api *API) canViewPost(userID gp.UserID, postID gp.PostID) (canView bool, e
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(userID, p.Network)
+	in, err := api.userInNetwork(userID, p.Network)
 	return in, err
 }
 
@@ -158,7 +158,7 @@ func (api *API) UserGetPrimaryNetworkPosts(userID gp.UserID, mode int, index int
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
 func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	in, err := api.UserInNetwork(userID, netID)
+	in, err := api.userInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return posts, err
@@ -290,7 +290,7 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(userID, p.Network)
+	in, err := api.userInNetwork(userID, p.Network)
 	switch {
 	case err != nil:
 		return comments, err
@@ -375,7 +375,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(userID, post.Network)
+	in, err := api.userInNetwork(userID, post.Network)
 	switch {
 	case err != nil:
 		return
@@ -409,7 +409,7 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 	if !exists || err != nil {
 		return NoSuchUpload
 	}
-	in, err := api.UserInNetwork(userID, post.Network)
+	in, err := api.userInNetwork(userID, post.Network)
 	switch {
 	case err != nil:
 		return
@@ -439,7 +439,7 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(userID, p.Network)
+	in, err := api.userInNetwork(userID, p.Network)
 	switch {
 	case err != nil:
 		return
@@ -499,7 +499,7 @@ func (api *API) UserAddPostToNetwork(userID gp.UserID, netID gp.NetworkID, text 
 
 //AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
 func (api *API) AddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	in, err := api.UserInNetwork(userID, netID)
+	in, err := api.userInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
@@ -597,7 +597,7 @@ func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil:
 		return
@@ -638,7 +638,7 @@ func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
 		err = &ENOTALLOWED
@@ -778,7 +778,7 @@ func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attende
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
 		return attendees, &ENOTALLOWED
@@ -793,7 +793,7 @@ func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 	if err != nil {
 		return
 	}
-	in, err := api.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
 		err = &ENOTALLOWED

@@ -14,7 +14,7 @@ var ETOOSHORT = gp.APIerror{Reason: "Your query must be at least 2 characters lo
 //last may be omitted but first must be at least 2 characters.
 func (api *API) userSearchUsersInNetwork(user gp.UserID, first, last string, netID gp.NetworkID) (users []gp.User, err error) {
 	users = make([]gp.User, 0)
-	in, err := api.UserInNetwork(user, netID)
+	in, err := api.userInNetwork(user, netID)
 	//I don't like the idea of people being able to look for eg. %a%
 	first = strings.Replace(first, "%", "", -1)
 	last = strings.Replace(last, "%", "", -1)

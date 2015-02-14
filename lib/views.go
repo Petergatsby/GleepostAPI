@@ -25,7 +25,7 @@ func (api *API) verifyViews(views ...gp.PostView) (verified []gp.PostView) {
 		if err != nil {
 			log.Println(err)
 		}
-		in, err := api.UserInNetwork(v.User, p.Network)
+		in, err := api.userInNetwork(v.User, p.Network)
 		if in && err == nil {
 			verified = append(verified, v)
 		}
