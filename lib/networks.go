@@ -387,7 +387,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 		if e == nil {
 			return api.setNetwork(invitee, netID)
 		}
-		token, e := RandomString()
+		token, e := randomString()
 		if e != nil {
 			return e
 		}

@@ -230,7 +230,7 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	random, err := RandomString()
+	random, err := randomString()
 	if err != nil {
 		return
 	}
@@ -311,7 +311,7 @@ func (api *API) createUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 		log.Println("Couldn't get name info from facebook:", err)
 		return
 	}
-	random, err := RandomString()
+	random, err := randomString()
 	if err != nil {
 		return
 	}

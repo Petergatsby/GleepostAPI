@@ -18,7 +18,7 @@ var BadLogin = gp.APIerror{Reason: "Bad username/password"}
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
 func createToken(userID gp.UserID) gp.Token {
-	random, err := RandomString()
+	random, err := randomString()
 	if err != nil {
 		log.Println(err)
 		return (gp.Token{UserID: userID, Token: "foo", Expiry: time.Now().UTC()})
@@ -225,7 +225,7 @@ func (api *API) AttemptResendVerification(email string) error {
 //GenerateAndSendVerification generates a random string and sends it embedded in a link to the user.
 //It's probably safe to give it user input -- \r\n is stripped out.
 func (api *API) generateAndSendVerification(userID gp.UserID, user string, email string) (err error) {
-	random, err := RandomString()
+	random, err := randomString()
 	if err != nil {
 		return
 	}
@@ -389,7 +389,7 @@ func (api *API) RequestReset(email string) (err error) {
 	if err != nil {
 		return
 	}
-	token, err := RandomString()
+	token, err := randomString()
 	if err != nil {
 		return
 	}

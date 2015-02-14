@@ -86,7 +86,7 @@ const inviteCampaignAndroid = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0
 
 //RandomString generates a long, random string (currently hex encoded, for some unknown reason.)
 //TODO: base64 url-encode instead.
-func RandomString() (random string, err error) {
+func randomString() (random string, err error) {
 	hash := sha256.New()
 	randombuf := make([]byte, 32) //Number pulled out of my... ahem.
 	_, err = io.ReadFull(rand.Reader, randombuf)
