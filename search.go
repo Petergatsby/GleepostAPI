@@ -25,12 +25,7 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 		for i := range query {
 			query[i] = strings.TrimSpace(query[i])
 		}
-		networks, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
-		users, err := api.UserSearchUsersInNetwork(userID, query[0], strings.Join(query[1:], " "), networks[0].ID)
+		users, err := api.UserSearchUsersInPrimaryNetwork(userID, query[0], strings.Join(query[1:], " "))
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			switch {

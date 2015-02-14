@@ -17,7 +17,7 @@ var levels = map[string]int{
 }
 
 //GetUserNetworks returns all networks this user belongs to, or an error if zhe belongs to none.
-func (api *API) GetUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err error) {
+func (api *API) getUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err error) {
 	nets, err = api.db.GetUserNetworks(id, false)
 	if err != nil {
 		return
@@ -254,7 +254,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 		return network, &ENOTALLOWED
 	default:
 		var networks []gp.GroupMembership
-		networks, err = api.GetUserNetworks(userID)
+		networks, err = api.getUserNetworks(userID)
 		if err != nil {
 			return
 		}
@@ -292,11 +292,11 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 
 //HaveSharedNetwork returns true if both users a and b are in the same network.
 func (api *API) HaveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err error) {
-	anets, err := api.GetUserNetworks(a)
+	anets, err := api.getUserNetworks(a)
 	if err != nil {
 		return
 	}
-	bnets, err := api.GetUserNetworks(b)
+	bnets, err := api.getUserNetworks(b)
 	if err != nil {
 		return
 	}

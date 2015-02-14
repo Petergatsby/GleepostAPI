@@ -12,18 +12,30 @@ import (
 var NoSuchLevelErr = gp.APIerror{Reason: "That's not a valid approval level"}
 
 //ApproveAccess returns this user's access to review / change review level in this network.
-func (api *API) ApproveAccess(userID gp.UserID, netID gp.NetworkID) (access gp.ApprovePermission, err error) {
-	return api.db.ApproveAccess(userID, netID)
+func (api *API) ApproveAccess(userID gp.UserID) (access gp.ApprovePermission, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.db.ApproveAccess(userID, nets[0].ID)
 }
 
 //ApproveLevel returns this network's current approval level, or ENOTALLOWED if you aren't allowed to see it.
-func (api *API) ApproveLevel(userID gp.UserID, netID gp.NetworkID) (level gp.ApproveLevel, err error) {
-	return api.db.ApproveLevel(netID)
+func (api *API) ApproveLevel(userID gp.UserID) (level gp.ApproveLevel, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.db.ApproveLevel(nets[0].ID)
 }
 
 //SetApproveLevel sets this network's approval level, or returns ENOTALLOWED if you can't.
-func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int) (err error) {
-	access, err := api.db.ApproveAccess(userID, netID)
+func (api *API) SetApproveLevel(userID gp.UserID, level int) (err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	access, err := api.db.ApproveAccess(userID, nets[0].ID)
 	switch {
 	case err != nil:
 		return err
@@ -32,16 +44,16 @@ func (api *API) SetApproveLevel(userID gp.UserID, netID gp.NetworkID, level int)
 	case level < 0 || level > 3:
 		return NoSuchLevelErr
 	default:
-		current, e := api.db.ApproveLevel(netID)
+		current, e := api.db.ApproveLevel(nets[0].ID)
 		switch {
 		case e != nil:
 			return e
 		case current.Level == level:
 			//noop
 		default:
-			err = api.db.SetApproveLevel(netID, level)
+			err = api.db.SetApproveLevel(nets[0].ID, level)
 			if err == nil {
-				go api.approvalChangePush(netID, userID, level)
+				go api.approvalChangePush(nets[0].ID, userID, level)
 			}
 		}
 		return
@@ -86,6 +98,36 @@ func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level 
 		}
 	}
 	return nil
+}
+
+//UserGetPending returns all the posts pending review in this user's primary network.
+func (api *API) UserGetPending(userID gp.UserID) (pending []gp.PendingPost, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.GetNetworkPending(userID, nets[0].ID)
+
+}
+
+//UserGetApproved returns posts that have been approved in this user's primary network.
+func (api *API) UserGetApproved(userID gp.UserID, mode int, index int64, count int) (approved []gp.PendingPost, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.GetNetworkApproved(userID, nets[0].ID, mode, index, count)
+
+}
+
+//UserGetRejected returns posts that have been rejected in this user's primary network.
+func (api *API) UserGetRejected(userID gp.UserID, mode int, index int64, count int) (rejected []gp.PendingPost, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.GetNetworkRejected(userID, nets[0].ID, mode, index, count)
+
 }
 
 //GetNetworkPending returns all the posts which are pending review in this network.
@@ -152,7 +194,7 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 		return &ENOTALLOWED
 	}
 	p, _ := api.db.GetPost(postID)
-	access, _ := api.ApproveAccess(userID, p.Network)
+	access, _ := api.db.ApproveAccess(userID, p.Network)
 	if !access.ApproveAccess {
 		return &ENOTALLOWED
 	}
@@ -170,7 +212,7 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 //GetNetworkApproved returns the list of approved posts in this network.
 func (api *API) GetNetworkApproved(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int) (approved []gp.PendingPost, err error) {
 	approved = make([]gp.PendingPost, 0)
-	access, err := api.ApproveAccess(userID, netID)
+	access, err := api.db.ApproveAccess(userID, netID)
 	switch {
 	case err != nil:
 		return
@@ -203,7 +245,7 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 		return &ENOTALLOWED
 	}
 	p, _ := api.db.GetPost(postID)
-	access, _ := api.ApproveAccess(userID, p.Network)
+	access, _ := api.db.ApproveAccess(userID, p.Network)
 	if !access.ApproveAccess {
 		return &ENOTALLOWED
 	}
@@ -218,7 +260,7 @@ func (api *API) RejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 //GetNetworkRejected returns the list of rejected posts in this network.
 func (api *API) GetNetworkRejected(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int) (rejected []gp.PendingPost, err error) {
 	rejected = make([]gp.PendingPost, 0)
-	access, err := api.ApproveAccess(userID, netID)
+	access, err := api.db.ApproveAccess(userID, netID)
 	switch {
 	case err != nil:
 		return

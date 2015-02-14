@@ -47,7 +47,7 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 		return "", gp.APIerror{Reason: "Unsupported file type"}
 	}
 	//store on s3
-	networks, _ := api.GetUserNetworks(id)
+	networks, _ := api.getUserNetworks(id)
 	var s *s3.S3
 	var bucket *s3.Bucket
 	switch {

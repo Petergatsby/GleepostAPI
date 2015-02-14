@@ -62,24 +62,6 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 		}
 		filter := req.FormValue("filter")
 		vars := mux.Vars(req)
-		id, ok := vars["network"]
-		var network gp.NetworkID
-		switch {
-		case ok:
-			_network, err := strconv.ParseUint(id, 10, 64)
-			if err != nil {
-				jsonErr(w, err, 500)
-				return
-			}
-			network = gp.NetworkID(_network)
-		default: //We haven't been given a network, which means this handler is being called by /posts and we just want the users' default network
-			networks, err := api.GetUserNetworks(userID)
-			if err != nil {
-				jsonErr(w, err, 500)
-				return
-			}
-			network = networks[0].ID
-		}
 		//First: which paging scheme are we using
 		var mode int
 		var index int64
@@ -94,8 +76,21 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 			mode = gp.OSTART
 			index = start
 		}
+		id, ok := vars["network"]
+		var network gp.NetworkID
 		var posts []gp.PostSmall
-		posts, err = api.UserGetNetworkPosts(userID, network, mode, index, api.Config.PostPageSize, filter)
+		switch {
+		case ok:
+			_network, err := strconv.ParseUint(id, 10, 64)
+			if err != nil {
+				jsonErr(w, err, 500)
+				return
+			}
+			network = gp.NetworkID(_network)
+			posts, err = api.UserGetNetworkPosts(userID, network, mode, index, api.Config.PostPageSize, filter)
+		default: //We haven't been given a network, which means this handler is being called by /posts and we just want the users' default network
+			posts, err = api.UserGetPrimaryNetworkPosts(userID, mode, index, api.Config.PostPageSize, filter)
+		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
@@ -140,13 +135,11 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		n, ok := vars["network"]
 		var network gp.NetworkID
+		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
+		videoID := gp.VideoID(_vID)
+		var pending bool
 		if !ok {
-			networks, err := api.GetUserNetworks(userID)
-			if err != nil {
-				jsonErr(w, err, 500)
-				return
-			}
-			network = networks[0].ID
+			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, ts...)
 		} else {
 			_network, err := strconv.ParseUint(n, 10, 64)
 			if err != nil {
@@ -154,17 +147,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			network = gp.NetworkID(_network)
-		}
-		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
-		videoID := gp.VideoID(_vID)
-		var pending bool
-		switch {
-		case videoID > 0:
-			postID, pending, err = api.AddPostWithVideo(userID, network, text, attribs, videoID, ts...)
-		case len(url) > 5:
-			postID, pending, err = api.AddPostWithImage(userID, network, text, attribs, false, url, ts...)
-		default:
-			postID, pending, err = api.AddPost(userID, network, text, attribs, ts...)
+			postID, pending, err = api.UserAddPostToNetwork(userID, network, text, attribs, videoID, false, url, ts...)
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)

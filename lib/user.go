@@ -45,7 +45,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 	if err != nil {
 		return
 	}
-	nets, err := api.GetUserNetworks(user.ID)
+	nets, err := api.getUserNetworks(user.ID)
 	if err != nil {
 		return
 	}

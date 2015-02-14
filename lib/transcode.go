@@ -163,7 +163,7 @@ func (api *API) Upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) 
 }
 
 func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
-	networks, _ := api.GetUserNetworks(user)
+	networks, _ := api.getUserNetworks(user)
 	var s *s3.S3
 	var bucket *s3.Bucket
 	switch {

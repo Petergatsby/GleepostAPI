@@ -107,7 +107,7 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 		}
 		t = time.Unix(unix, 0)
 	}
-	networks, err := api.GetUserNetworks(userID)
+	networks, err := api.getUserNetworks(userID)
 	if err != nil {
 		return
 	}
@@ -144,6 +144,15 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 		}
 	}
 	return
+}
+
+//UserGetNetworkPosts returns the posts in the user's primary network.
+func (api *API) UserGetPrimaryNetworkPosts(userID gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.UserGetNetworkPosts(userID, nets[0].ID, mode, index, count, category)
 }
 
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
@@ -465,6 +474,27 @@ func (api *API) needsReview(netID gp.NetworkID, categories ...string) (needsRevi
 		return false, nil
 	}
 
+}
+
+//UserAddPostToNetwork creates a post in the user's primary network.
+func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageUrl string, tags ...string) (postID gp.PostID, pending bool, err error) {
+	nets, err := api.getUserNetworks(userID)
+	if err != nil {
+		return
+	}
+	return api.UserAddPostToNetwork(userID, nets[0].ID, text, attribs, video, allowUnowned, imageUrl, tags...)
+}
+
+//UserAddPostToNetwork creates a post in the given network.
+func (api *API) UserAddPostToNetwork(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageUrl string, tags ...string) (postID gp.PostID, pending bool, err error) {
+	switch {
+	case video > 0:
+		return api.AddPostWithVideo(userID, netID, text, attribs, video, tags...)
+	case len(imageUrl) > 5:
+		return api.AddPostWithImage(userID, netID, text, attribs, allowUnowned, imageUrl, tags...)
+	default:
+		return api.AddPost(userID, netID, text, attribs, tags...)
+	}
 }
 
 //AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.

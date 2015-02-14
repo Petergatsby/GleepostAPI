@@ -25,12 +25,7 @@ func permissionHandler(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		nets, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
-		access, err := api.ApproveAccess(userID, nets[0].ID)
+		access, err := api.ApproveAccess(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -45,12 +40,7 @@ func getApproveSettings(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		nets, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
-		level, err := api.ApproveLevel(userID, nets[0].ID)
+		level, err := api.ApproveLevel(userID)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return
@@ -65,17 +55,12 @@ func postApproveSettings(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		nets, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
 		_lev := r.FormValue("level")
 		level, _ := strconv.Atoi(_lev)
-		err = api.SetApproveLevel(userID, nets[0].ID, level)
+		err = api.SetApproveLevel(userID, level)
 		switch {
 		case err == nil:
-			level, err := api.ApproveLevel(userID, nets[0].ID)
+			level, err := api.ApproveLevel(userID)
 			if err != nil {
 				jsonErr(w, err, 500)
 				return
@@ -95,12 +80,7 @@ func getApprovePending(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		nets, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
-		pending, err := api.GetNetworkPending(userID, nets[0].ID)
+		pending, err := api.UserGetPending(userID)
 		switch {
 		case err == nil:
 			jsonResponse(w, pending, 200)
@@ -139,11 +119,6 @@ func getApproveApproved(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		nets, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -169,7 +144,7 @@ func getApproveApproved(w http.ResponseWriter, r *http.Request) {
 			mode = gp.OSTART
 			index = start
 		}
-		approved, err := api.GetNetworkApproved(userID, nets[0].ID, mode, index, api.Config.PostPageSize)
+		approved, err := api.UserGetApproved(userID, mode, index, api.Config.PostPageSize)
 		switch {
 		case err == nil:
 			jsonResponse(w, approved, 200)
@@ -209,11 +184,6 @@ func getApproveRejected(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		nets, err := api.GetUserNetworks(userID)
-		if err != nil {
-			jsonErr(w, err, 500)
-			return
-		}
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -239,7 +209,7 @@ func getApproveRejected(w http.ResponseWriter, r *http.Request) {
 			mode = gp.OSTART
 			index = start
 		}
-		rejected, err := api.GetNetworkRejected(userID, nets[0].ID, mode, index, api.Config.PostPageSize)
+		rejected, err := api.UserGetRejected(userID, mode, index, api.Config.PostPageSize)
 		switch {
 		case err == nil:
 			jsonResponse(w, rejected, 200)
