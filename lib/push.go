@@ -97,7 +97,7 @@ func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.
 
 func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	log.Println("Trying to send a push notification")
-	recipients := api.GetParticipants(convID, false)
+	recipients := api.getParticipants(convID, false)
 	for _, user := range recipients {
 		if user.ID != message.By.ID {
 			log.Println("Trying to send a push notification to", user.Name)

@@ -200,7 +200,7 @@ func ConversationChannelKeys(participants []gp.User) (keys []string) {
 
 //UserCanViewConversation returns true if userID is a participant of convID
 func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.ConversationID) (viewable bool) {
-	participants := api.GetParticipants(convID, false)
+	participants := api.getParticipants(convID, false)
 	for _, u := range participants {
 		if userID == u.ID {
 			return true
@@ -221,11 +221,11 @@ func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, 
 //TODO(patrick) - clarify this vs getConversation etc
 func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.ID = convID
-	conv.LastActivity, err = api.ConversationLastActivity(convID)
+	conv.LastActivity, err = api.conversationLastActivity(convID)
 	if err != nil {
 		return
 	}
-	conv.Participants = api.GetParticipants(convID, true)
+	conv.Participants = api.getParticipants(convID, true)
 	conv.Read, err = api.readStatus(convID)
 	if err != nil {
 		return
@@ -245,12 +245,12 @@ func (api *API) readStatus(convID gp.ConversationID) (read []gp.Read, err error)
 }
 
 //ConversationLastActivity returns the modification time (ie, creation  or last-message) for this conversation.
-func (api *API) ConversationLastActivity(convID gp.ConversationID) (t time.Time, err error) {
+func (api *API) conversationLastActivity(convID gp.ConversationID) (t time.Time, err error) {
 	return api.db.ConversationActivity(convID)
 }
 
 //GetParticipants returns all participants of this conversation, or omits the `deleted` participants if includeDeleted is false.
-func (api *API) GetParticipants(convID gp.ConversationID, includeDeleted bool) []gp.User {
+func (api *API) getParticipants(convID gp.ConversationID, includeDeleted bool) []gp.User {
 	participants, err := api.db.GetParticipants(convID, includeDeleted)
 	if err != nil {
 		log.Println(err)
@@ -283,7 +283,8 @@ func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conv
 }
 
 //GetLastMessage returns the most recent message in this conversation.
-func (api *API) GetLastMessage(id gp.ConversationID) (message gp.Message, err error) {
+//this function doesn't appear to be used
+func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err error) {
 	return api.db.GetLastMessage(id)
 }
 
@@ -339,7 +340,7 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 	for _, p := range addable {
 		api.addSystemMessage(convID, p, "JOINED")
 	}
-	updatedParticipants = api.GetParticipants(convID, false)
+	updatedParticipants = api.getParticipants(convID, false)
 	return
 }
 
