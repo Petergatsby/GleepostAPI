@@ -105,10 +105,10 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 		return
 	}
 	FBUser = t.FBUser
-	userID, err := api.FBGetGPUser(t.FBUser)
+	userID, err := api.fBGetGPUser(t.FBUser)
 	switch {
 	case err == nil:
-		err = api.UpdateFBData(fbToken)
+		err = api.updateFBData(fbToken)
 		if err != nil {
 			log.Println("Error pulling in profile changes from facebook:", err)
 		}
@@ -119,7 +119,7 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 		log.Println("Error logging in with facebook, probably means there's no associated gleepost account:", err)
 		//Did the user provide an email (takes precedence over stored email, because they might have typo'd the first time)
 		var storedEmail string
-		storedEmail, err = api.FBGetEmail(FBUser)
+		storedEmail, err = api.fBGetEmail(FBUser)
 		switch {
 		//Has this email been seen before for this user?
 		case len(email) > 3 && (err != nil || storedEmail != email):
@@ -127,7 +127,7 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 			//(So we should check if there's an existing signed up / verified user)
 			//(and if not, issue a verification email)
 			//(since this is the first time they've signed up with this email)
-			token, status, err = api.FBFirstTimeWithEmail(email, fbToken, invite, FBUser)
+			token, status, err = api.fBFirstTimeWithEmail(email, fbToken, invite, FBUser)
 			return
 		case len(email) > 3 && (err == nil && (storedEmail == email)):
 			//We already saw this user, so we don't need to re-send verification
@@ -156,13 +156,13 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 var FBNoEmail = gp.APIerror{Reason: "Email required"}
 
 //UpdateFBData is a placeholder for the time being. In the future, place anything which needs to be regularly checked from facebook here.
-func (api *API) UpdateFBData(fbToken string) (err error) {
+func (api *API) updateFBData(fbToken string) (err error) {
 	return nil
 }
 
 //FBGetGPUser returns the associated gleepost user for a given facebook id, or sql.ErrNoRows if that user doesn't exist.
 //TODO: Change to ENOSUCHUSER
-func (api *API) FBGetGPUser(fbid uint64) (id gp.UserID, err error) {
+func (api *API) fBGetGPUser(fbid uint64) (id gp.UserID, err error) {
 	id, err = api.db.UserIDFromFB(fbid)
 	if err == db.NoSuchUser {
 		err = NoSuchUser
@@ -184,7 +184,7 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (t
 	err = api.db.CreateFBUser(t.FBUser, email)
 	exists, _ := api.inviteExists(email, invite)
 	if exists {
-		id, e := api.FBSetVerified(email, t.FBUser)
+		id, e := api.fBSetVerified(email, t.FBUser)
 		if e != nil {
 			err = e
 			return
@@ -200,14 +200,14 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (t
 }
 
 //FBSetVerified creates a gleepost user for this fbuser, or associates with an existing one as appropriate.
-func (api *API) FBSetVerified(email string, fbuser uint64) (id gp.UserID, err error) {
+func (api *API) fBSetVerified(email string, fbuser uint64) (id gp.UserID, err error) {
 	id, err = api.UserWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
-		id, err = api.CreateUserFromFB(fbuser, email)
+		id, err = api.createUserFromFB(fbuser, email)
 		return
 	}
-	err = api.UserSetFB(id, fbuser)
+	err = api.userSetFB(id, fbuser)
 	if err == nil {
 		err = api.db.Verify(id)
 		if err == nil {
@@ -226,7 +226,7 @@ func (api *API) FBSetVerified(email string, fbuser uint64) (id gp.UserID, err er
 //FBissueVerification creates and sends a verification email for this facebook user, or returns an error if we haven't seen them before (ie, we don't have their email address on file)
 //TODO: Think about decoupling this from the email check
 func (api *API) FBissueVerification(fbid uint64) (err error) {
-	email, err := api.FBGetEmail(fbid)
+	email, err := api.fBGetEmail(fbid)
 	if err != nil {
 		return
 	}
@@ -238,7 +238,7 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	firstName, _, _, err := FBName(fbid)
+	firstName, _, _, err := fBName(fbid)
 	if err != nil {
 		return
 	}
@@ -247,7 +247,7 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 }
 
 //FBName retrieves the first-, last-, and username of facebook id fbid.
-func FBName(fbid uint64) (firstName, lastName, username string, err error) {
+func fBName(fbid uint64) (firstName, lastName, username string, err error) {
 	res, err := facebook.Get(fmt.Sprintf("/%d", fbid), nil)
 	log.Println(res)
 	var ok bool
@@ -267,27 +267,27 @@ func FBName(fbid uint64) (firstName, lastName, username string, err error) {
 }
 
 //FBAvatar constructs the facebook graph url for the profile picture of a given facebook username/id
-func FBAvatar(username string) (avatar string) {
+func fBAvatar(username string) (avatar string) {
 	return fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", username)
 }
 
 //FBVerify takes a verification token (previously sent to the user's email) and returns the facebook id of the (to-be-verified) facebook user or an error if the invite isn't valid.
-func (api *API) FBVerify(token string) (fbid uint64, err error) {
+func (api *API) fBVerify(token string) (fbid uint64, err error) {
 	return api.db.FBVerificationExists(token)
 }
 
 //FBGetEmail returns the email address we have on file for this facebook id, or an error if we don't have one.
-func (api *API) FBGetEmail(fbid uint64) (email string, err error) {
+func (api *API) fBGetEmail(fbid uint64) (email string, err error) {
 	return api.db.FBUserEmail(fbid)
 }
 
 //UserSetFB sets the associated facebook account for the gleepost user userID.
-func (api *API) UserSetFB(userID gp.UserID, fbid uint64) (err error) {
+func (api *API) userSetFB(userID gp.UserID, fbid uint64) (err error) {
 	return api.db.FBSetGPUser(fbid, userID)
 }
 
 //FBUserWithEmail returns the facebook ID for the user who owns email, or an error if we don't know about that email.
-func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
+func (api *API) fBUserWithEmail(email string) (fbid uint64, err error) {
 	return api.db.FBUserWithEmail(email)
 }
 
@@ -305,8 +305,8 @@ func (api *API) UserAddFBUsersToGroup(userID gp.UserID, fbusers []uint64, netID 
 }
 
 //CreateUserFromFB takes a facebook id and an email address and creates a gleepost user, returning their newly created id.
-func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, err error) {
-	firstName, lastName, username, err := FBName(fbid)
+func (api *API) createUserFromFB(fbid uint64, email string) (userID gp.UserID, err error) {
+	firstName, lastName, username, err := fBName(fbid)
 	if err != nil {
 		log.Println("Couldn't get name info from facebook:", err)
 		return
@@ -324,7 +324,7 @@ func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 	if err != nil {
 		return
 	}
-	err = api.SetProfileImage(userID, FBAvatar(username))
+	err = api.SetProfileImage(userID, fBAvatar(username))
 	if err != nil {
 		log.Println("Problem setting avatar:", err)
 	}
@@ -333,7 +333,7 @@ func (api *API) CreateUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 		log.Println("Verifying failed in the db:", err)
 		return
 	}
-	err = api.UserSetFB(userID, fbid)
+	err = api.userSetFB(userID, fbid)
 	if err != nil {
 		log.Println("associating facebook account with user account failed:", err)
 		return
@@ -366,7 +366,7 @@ func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (tok
 	exists, _ := api.inviteExists(email, invite)
 	if exists {
 		//Verify
-		id, e := api.FBSetVerified(email, FBUser)
+		id, e := api.fBSetVerified(email, FBUser)
 		if e != nil {
 			err = e
 			return
@@ -402,7 +402,7 @@ func (api *API) AssociateFB(id gp.UserID, fbToken string) (err error) {
 		return
 	case err != nil:
 		//This isn't associated with a gleepost account
-		err = api.UserSetFB(id, fbuser)
+		err = api.userSetFB(id, fbuser)
 		return
 	case token.UserID == id:
 		//The facebook account is already associated with this gleepost account
@@ -414,7 +414,7 @@ func (api *API) AssociateFB(id gp.UserID, fbToken string) (err error) {
 
 //FBFirstTimeWithEmail will create a fresh association with this fb:email pair. If there is no existing gleepost user signed up with this email, it will record this fb user and issue a verification email.
 //If there's already a gleepost user, it will associate the two accounts if the invite is valid (proving that this fb user has access to that email; otherwise it will return status:registered.
-func (api *API) FBFirstTimeWithEmail(email, fbToken, invite string, fbUser uint64) (token gp.Token, verification gp.Status, err error) {
+func (api *API) fBFirstTimeWithEmail(email, fbToken, invite string, fbUser uint64) (token gp.Token, verification gp.Status, err error) {
 	_, err = api.UserWithEmail(email)
 	if err != nil {
 		//There isn't already a user with this email address.

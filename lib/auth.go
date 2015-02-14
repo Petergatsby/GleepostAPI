@@ -203,7 +203,7 @@ func (api *API) AttemptResendVerification(email string) error {
 	userID, err := api.UserWithEmail(email)
 	switch {
 	case err != nil: //No user with this email
-		fbid, err := api.FBUserWithEmail(email)
+		fbid, err := api.fBUserWithEmail(email)
 		if err == nil {
 			api.FBissueVerification(fbid)
 			return nil
@@ -326,12 +326,12 @@ func (api *API) Verify(token string) (err error) {
 		}
 		return
 	}
-	fbid, err := api.FBVerify(token)
+	fbid, err := api.fBVerify(token)
 	if err != nil {
 		log.Println("Error verifying (facebook)", err)
 		return
 	}
-	email, err := api.FBGetEmail(fbid)
+	email, err := api.fBGetEmail(fbid)
 	if err != nil {
 		log.Println("Couldn't get this facebook account's email:", err)
 		return
@@ -339,12 +339,12 @@ func (api *API) Verify(token string) (err error) {
 	userID, err := api.UserWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
-		userID, err = api.CreateUserFromFB(fbid, email)
+		userID, err = api.createUserFromFB(fbid, email)
 		if err != nil {
 			return
 		}
 	}
-	err = api.UserSetFB(userID, fbid)
+	err = api.userSetFB(userID, fbid)
 	if err == nil {
 		err = api.db.Verify(userID)
 		if err == nil {
