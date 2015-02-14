@@ -2,10 +2,15 @@ package lib
 
 import (
 	"log"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 //Massmail sends a standard email to all users. Probably just use MailChimp instead, though.
-func (api *API) Massmail() (err error) {
+func (api *API) Massmail(userID gp.UserID) (err error) {
+	if !api.IsAdmin(userID) {
+		return ENOTALLOWED
+	}
 	subject := "FREE REDBULL STUDYGRAMS AT TRESIDDER AND GREEN LIBRARY!"
 	body := `<html><body>Hey guys!<br><br>
 

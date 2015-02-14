@@ -50,16 +50,14 @@ func mm(w http.ResponseWriter, r *http.Request) {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
-		if api.IsAdmin(userID) {
-			err := api.Massmail()
-			if err != nil {
-				jsonResponse(w, err, 500)
-			} else {
-				w.WriteHeader(204)
-			}
-
-		} else {
-			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		err = api.Massmail(userID)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err != nil:
+			jsonResponse(w, err, 500)
+		default:
+			w.WriteHeader(204)
 		}
 	}
 	jsonResponse(w, err, 200)
