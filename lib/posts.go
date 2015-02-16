@@ -122,7 +122,7 @@ func (api *API) getLive(netID gp.NetworkID, after time.Time, count int, userID g
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i], userID)
+		processed, err := api.postProcess(posts[i], userID)
 		if err == nil {
 			posts[i] = processed
 		}
@@ -138,7 +138,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i], perspective)
+		processed, err := api.postProcess(posts[i], perspective)
 		if err == nil {
 			posts[i] = processed
 		}
@@ -176,7 +176,7 @@ func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, c
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i], userID)
+		processed, err := api.postProcess(posts[i], userID)
 		if err == nil {
 			posts[i] = processed
 		} else {
@@ -194,7 +194,7 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 		return
 	}
 	for i := range posts {
-		processed, err := api.PostProcess(posts[i], user)
+		processed, err := api.postProcess(posts[i], user)
 		if err == nil {
 			posts[i] = processed
 		} else {
@@ -205,8 +205,8 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 	return
 }
 
-//PostProcess fetches all the parts of a post which the newGetPosts style methods don't provide
-func (api *API) PostProcess(post gp.PostSmall, userID gp.UserID) (processed gp.PostSmall, err error) {
+//postProcess fetches all the parts of a post which the newGetPosts style methods don't provide
+func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.PostSmall, err error) {
 	//Ha! I am so funny...
 	processed = post
 	processed.Likes, err = api.GetLikes(processed.ID)
@@ -659,7 +659,7 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 		return
 	}
 	for i := range events {
-		processed, err := api.PostProcess(events[i], perspective)
+		processed, err := api.postProcess(events[i], perspective)
 		if err == nil {
 			events[i] = processed
 		} else {
