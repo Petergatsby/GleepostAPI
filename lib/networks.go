@@ -36,7 +36,7 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.Grou
 		groups, err = api.db.GetUserNetworks(user, true)
 		return
 	default:
-		shared, err := api.HaveSharedNetwork(perspective, user)
+		shared, err := api.haveSharedNetwork(perspective, user)
 		switch {
 		case err != nil:
 			return groups, err
@@ -87,7 +87,7 @@ func (api *API) UserChangeRole(actor, recipient gp.UserID, network gp.NetworkID,
 		return ENoRole
 	}
 	//To start with, for simplicity: You can only add/remove roles less / equal to your own.
-	has, err := api.UserHasRole(actor, network, role)
+	has, err := api.userHasRole(actor, network, role)
 	switch {
 	case err != nil:
 		return
@@ -109,7 +109,7 @@ func (api *API) UserChangeRole(actor, recipient gp.UserID, network gp.NetworkID,
 }
 
 //UserHasRole returns true if this user has at least this role (or greater) in this group.
-func (api *API) UserHasRole(user gp.UserID, network gp.NetworkID, roleName string) (has bool, err error) {
+func (api *API) userHasRole(user gp.UserID, network gp.NetworkID, roleName string) (has bool, err error) {
 	lev, ok := levels[roleName]
 	if !ok {
 		return false, ENoRole
@@ -140,7 +140,7 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 	isgroup, grouperr := api.isGroup(group)
 	switch {
 	case adder == addee:
-		canJoin, joinerr := api.UserCanJoin(adder, group)
+		canJoin, joinerr := api.userCanJoin(adder, group)
 		switch {
 		case joinerr != nil:
 			return joinerr
@@ -182,7 +182,7 @@ func (api *API) groupAddConvParticipants(adder, addee gp.UserID, group gp.Networ
 }
 
 //UserCanJoin returns true if the user is allowed to unilaterally join this network (ie, it is both "public" and a sub-network of one this user already belongs to.)
-func (api *API) UserCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
+func (api *API) userCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
 	net, err := api.getNetwork(0, netID)
 	if err != nil {
 		return
@@ -291,7 +291,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 }
 
 //HaveSharedNetwork returns true if both users a and b are in the same network.
-func (api *API) HaveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err error) {
+func (api *API) haveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err error) {
 	anets, err := api.getUserNetworks(a)
 	if err != nil {
 		return
@@ -332,7 +332,7 @@ func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users
 	users = make([]gp.UserRole, 0)
 	in, errin := api.userInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
-	CanJoin, errJoin := api.UserCanJoin(userID, netID)
+	CanJoin, errJoin := api.userCanJoin(userID, netID)
 	switch {
 	case errJoin == nil && CanJoin:
 		return api.db.GetNetworkUsers(netID)
@@ -410,7 +410,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 }
 
 //UserIsNetworkOwner returns true if userID created netID, and err if the database is down.
-func (api *API) UserIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner bool, err error) {
+func (api *API) userIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner bool, err error) {
 	creator, err := api.db.NetworkCreator(netID)
 	return (creator == userID), err
 }
@@ -418,7 +418,7 @@ func (api *API) UserIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner 
 //UserSetNetworkImage sets the network's cover image to url, if userId is allowed to do so (currently, if they are the group's creator) or returns ENOTALLOWED otherwise.
 func (api *API) UserSetNetworkImage(userID gp.UserID, netID gp.NetworkID, url string) (err error) {
 	exists, eupload := api.UserUploadExists(userID, url)
-	owner, eowner := api.UserIsNetworkOwner(userID, netID)
+	owner, eowner := api.userIsNetworkOwner(userID, netID)
 	switch {
 	case eowner != nil:
 		return eowner
@@ -445,16 +445,16 @@ func (api *API) assignNetworksFromInvites(user gp.UserID, email string) (err err
 }
 
 //AssignNetworksFromFBInvites does the same as AssignNetworksFromInvites, but for a given facebook user id.
-func (api *API) AssignNetworksFromFBInvites(user gp.UserID, facebook uint64) (err error) {
+func (api *API) assignNetworksFromFBInvites(user gp.UserID, facebook uint64) (err error) {
 	return api.db.AssignNetworksFromFBInvites(user, facebook)
 }
 
 //AcceptAllInvites sets all invites to this email as "accepted" (they should not be valid any more)
-func (api *API) AcceptAllInvites(email string) (err error) {
+func (api *API) acceptAllInvites(email string) (err error) {
 	return api.db.AcceptAllInvites(email)
 }
 
 //AcceptAllFBInvites does the same as AcceptAllInvites, but for a facebook user.
-func (api *API) AcceptAllFBInvites(facebook uint64) (err error) {
+func (api *API) acceptAllFBInvites(facebook uint64) (err error) {
 	return api.db.AcceptAllFBInvites(facebook)
 }

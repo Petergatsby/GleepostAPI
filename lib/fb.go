@@ -217,7 +217,7 @@ func (api *API) fBSetVerified(email string, fbuser uint64) (id gp.UserID, err er
 				log.Println("Something went wrong while setting networks from invites:", err)
 				return
 			}
-			err = api.AcceptAllInvites(email)
+			err = api.acceptAllInvites(email)
 		}
 	}
 	return
@@ -343,17 +343,17 @@ func (api *API) createUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 		log.Println("Something went wrong while setting networks from invites:", err)
 		return
 	}
-	err = api.AcceptAllInvites(email)
+	err = api.acceptAllInvites(email)
 	if err != nil {
 		log.Println("Something went wrong while accepting invites:", err)
 		return
 	}
-	err = api.AssignNetworksFromFBInvites(userID, fbid)
+	err = api.assignNetworksFromFBInvites(userID, fbid)
 	if err != nil {
 		log.Println("Something went wrong while setting networks from fb invites:", err)
 		return
 	}
-	err = api.AcceptAllFBInvites(fbid)
+	err = api.acceptAllFBInvites(fbid)
 	return
 
 }

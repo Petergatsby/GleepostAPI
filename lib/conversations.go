@@ -64,7 +64,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, reuse bool, with []g
 		}
 	}
 	for _, id := range with {
-		canContact, e := api.HaveSharedNetwork(initiator, id)
+		canContact, e := api.haveSharedNetwork(initiator, id)
 		if e != nil {
 			log.Println("Error determining contactability:", initiator, id, e)
 			return conversation, e
@@ -95,7 +95,7 @@ func (api *API) getPrimaryConversation(participantA, participantB gp.UserID) (co
 
 //CanContact returns true if the initiator is allowed to contact the recipient.
 func (api *API) canContact(initiator gp.UserID, recipient gp.UserID) (contactable bool, err error) {
-	shared, e := api.HaveSharedNetwork(initiator, recipient)
+	shared, e := api.haveSharedNetwork(initiator, recipient)
 	switch {
 	case e != nil:
 		return false, e
@@ -347,7 +347,7 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 //addableParticipants returns all the participants who can be added to this conversation -- ie, purges those with no shared networks and those already in the conv.
 func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (addableParticipants []gp.UserID, err error) {
 	for _, p := range participants {
-		shared, err := api.HaveSharedNetwork(userID, p) //Not someone who you can see
+		shared, err := api.haveSharedNetwork(userID, p) //Not someone who you can see
 		if !shared || err != nil {
 			continue
 		}
