@@ -285,18 +285,15 @@ func postImages(w http.ResponseWriter, r *http.Request) {
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postID := gp.PostID(_id)
 		url := r.FormValue("url")
-		err := api.UserAddPostImage(userID, postID, url)
-		if err != nil {
-			switch {
-			case err == lib.ENOTALLOWED:
-				jsonErr(w, err, 403)
-			case err == lib.NoSuchUpload:
-				jsonErr(w, err, 400)
-			default:
-				jsonErr(w, err, 500)
-			}
-		} else {
-			images := api.GetPostImages(postID)
+		images, err := api.UserAddPostImage(userID, postID, url)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		case err == lib.NoSuchUpload:
+			jsonErr(w, err, 400)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
 			jsonResponse(w, images, 201)
 		}
 	}
@@ -313,11 +310,10 @@ func postVideos(w http.ResponseWriter, r *http.Request) {
 		postID := gp.PostID(_id)
 		_videoID, err := strconv.ParseUint(r.FormValue("video"), 10, 64)
 		videoID := gp.VideoID(_videoID)
-		err = api.UserAddPostVideo(userID, postID, videoID)
+		videos, err := api.UserAddPostVideo(userID, postID, videoID)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
-			videos := api.GetPostVideos(postID)
 			jsonResponse(w, videos, 201)
 		}
 	}

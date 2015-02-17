@@ -67,7 +67,7 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 	if err != nil {
 		return
 	}
-	post.CommentCount = api.GetCommentCount(postID)
+	post.CommentCount = api.getCommentCount(postID)
 	post.Comments, err = api.getComments(postID, 0, api.Config.CommentPageSize)
 	if err != nil {
 		return
@@ -241,14 +241,14 @@ func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.P
 }
 
 //PostSmall turns a PostCore (minimal detail Post) into a PostSmall (full detail but omitting comments).
-func (api *API) PostSmall(p gp.PostCore) (post gp.PostSmall, err error) {
+func (api *API) postSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	post.ID = p.ID
 	post.By = p.By
 	post.Time = p.Time
 	post.Text = p.Text
-	post.Images = api.GetPostImages(p.ID)
-	post.Videos = api.GetPostVideos(p.ID)
-	post.CommentCount = api.GetCommentCount(p.ID)
+	post.Images = api.getPostImages(p.ID)
+	post.Videos = api.getPostVideos(p.ID)
+	post.CommentCount = api.getCommentCount(p.ID)
 	post.Categories, err = api.postCategories(p.ID)
 	if err != nil {
 		return
@@ -303,7 +303,7 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 }
 
 //GetCommentCount returns the total number of comments for this post, trying the cache first (so it could be inaccurate)
-func (api *API) GetCommentCount(id gp.PostID) (count int) {
+func (api *API) getCommentCount(id gp.PostID) (count int) {
 	count, err := api.cache.GetCommentCount(id)
 	if err != nil {
 		count = api.db.GetCommentCount(id)
@@ -312,13 +312,13 @@ func (api *API) GetCommentCount(id gp.PostID) (count int) {
 }
 
 //GetPostImages returns all the images attached to postID.
-func (api *API) GetPostImages(postID gp.PostID) (images []string) {
+func (api *API) getPostImages(postID gp.PostID) (images []string) {
 	images, _ = api.db.GetPostImages(postID)
 	return
 }
 
 //GetPostVideos returns all the videos attached to postID.
-func (api *API) GetPostVideos(postID gp.PostID) (videos []gp.Video) {
+func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
 	videos, _ = api.db.GetPostVideos(postID)
 	return
 }
@@ -400,14 +400,14 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 }
 
 //UserAddPostImage adds an image (by url) to a post.
-func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string) (err error) {
+func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string) (images []string, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
 	}
 	exists, err := api.UserUploadExists(userID, url)
 	if !exists || err != nil {
-		return NoSuchUpload
+		return nil, NoSuchUpload
 	}
 	in, err := api.userInNetwork(userID, post.Network)
 	switch {
@@ -420,7 +420,11 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 		err = ENOTALLOWED
 		return
 	default:
-		return api.addPostImage(postID, url)
+		err = api.addPostImage(postID, url)
+		if err == nil {
+			return api.getPostImages(postID), nil
+		}
+		return
 	}
 }
 
@@ -434,7 +438,7 @@ func (api *API) addPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
 }
 
 //UserAddPostVideo attaches a video to a post, or errors if the user isn't allowed.
-func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
+func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (videos []gp.Video, err error) {
 	p, err := api.GetPost(postID)
 	if err != nil {
 		return
@@ -444,9 +448,13 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 	case err != nil:
 		return
 	case !in:
-		return &ENOTALLOWED
+		return nil, &ENOTALLOWED
 	default:
-		return api.addPostVideo(postID, videoID)
+		err = api.addPostVideo(postID, videoID)
+		if err == nil {
+			return api.getPostVideos(postID), nil
+		}
+		return
 	}
 }
 
@@ -722,7 +730,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 			if err != nil {
 				return
 			}
-			err = api.UserAddPostImage(userID, postID, url)
+			_, err = api.UserAddPostImage(userID, postID, url)
 			if err != nil {
 				return
 			}
@@ -733,7 +741,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 				return
 			}
 			//Set new video
-			err = api.UserAddPostVideo(userID, postID, videoID)
+			_, err = api.UserAddPostVideo(userID, postID, videoID)
 			if err != nil {
 				return
 			}
