@@ -25,19 +25,30 @@ func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationI
 
 //MarkConversationSeen sets the "read" location to upTo for user id in conversation convId.
 func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (err error) {
-	err = api.db.MarkRead(id, convID, upTo)
+	read, err := api.db.GetReadStatus(convID)
 	if err != nil {
 		return
 	}
-	read := gp.Read{UserID: id, LastRead: upTo}
-	conv, err := api.getConversation(id, convID)
-	if err != nil {
-		log.Println(err)
-		return
+	for _, r := range read {
+		if r.UserID == id {
+			if r.LastRead < upTo {
+				err = api.db.MarkRead(id, convID, upTo)
+				if err != nil {
+					return
+				}
+				read := gp.Read{UserID: id, LastRead: upTo}
+				conv, e := api.getConversation(id, convID)
+				if err != nil {
+					log.Println(e)
+					return e
+				}
+				chans := ConversationChannelKeys(conv.Participants)
+				go api.cache.PublishEvent("read", conversationURI(convID), read, chans)
+			}
+			return
+		}
 	}
-	chans := ConversationChannelKeys(conv.Participants)
-	go api.cache.PublishEvent("read", conversationURI(convID), read, chans)
-	return
+	return ENOTALLOWED
 }
 
 //CreateConversation generates a new conversation involving initiator and participants. If primary is true, it is the only permitted conversation between this set of participants. If group != 0, this is the conversation for that network.
