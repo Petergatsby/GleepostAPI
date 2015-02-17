@@ -367,7 +367,7 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 //MarkRead moves this user's "read" marker up to this message in this conversation.
 func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (read gp.MessageID, err error) {
 	s, err := db.prepare("UPDATE conversation_participants " +
-		"SET last_read = (SELECT MAX(id) FROM chat_messages WHERE conversation_id = ? AND id < ?) " +
+		"SET last_read = (SELECT MAX(id) FROM chat_messages WHERE conversation_id = ? AND id <= ?) " +
 		"WHERE `conversation_id` = ? AND `participant_id` = ?")
 	if err != nil {
 		return
