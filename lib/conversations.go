@@ -102,7 +102,7 @@ func (api *API) canContact(initiator gp.UserID, recipient gp.UserID) (contactabl
 	case !shared:
 		return false, nil
 	default:
-		posted, err := api.UserHasPosted(recipient, initiator)
+		posted, err := api.userHasPosted(recipient, initiator)
 		if err != nil {
 			return false, err
 		}

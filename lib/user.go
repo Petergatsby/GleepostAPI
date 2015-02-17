@@ -186,7 +186,7 @@ func (api *API) userIsOnline(id gp.UserID) bool {
 
 //UserHasPosted returns true if user has ever created a post from the perspective of perspective.
 //TODO: Implement a direct version
-func (api *API) UserHasPosted(user gp.UserID, perspective gp.UserID) (posted bool, err error) {
+func (api *API) userHasPosted(user gp.UserID, perspective gp.UserID) (posted bool, err error) {
 	posts, err := api.GetUserPosts(user, perspective, gp.OSTART, 0, 1, "")
 	if err != nil {
 		return
