@@ -21,7 +21,7 @@ It consists of a ["type"](#event-types), an optional "location" (A URI for the r
 An event type will be one of: [message](#message) [read](#read) [new-conversation](#new-conversation) [ended-conversation](#ended-conversation) [changed-conversation](#changed-conversation) [notification](#notification) [video-ready](#video-ready)
 
 ###Message
-An event with type "message" is the replacement for a long-poll message. It contains a location (the URI of the conversation it is in) and the data payload is the same message object you find in /conversations/[id]/messages.
+An event with type "message" is the replacement for a long-poll message. It contains a location (the URI of the conversation it is in) and the data payload is the same message object you find in /conversations/[id]/messages with one variation: it may optionally contain a `group` parameter, if the message belongs to a conversation in a group.
 
 ```json
 {
