@@ -32,11 +32,12 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 	for _, r := range read {
 		if r.UserID == id {
 			if r.LastRead < upTo {
-				err = api.db.MarkRead(id, convID, upTo)
+				var actuallyUpto gp.MessageID
+				actuallyUpto, err = api.db.MarkRead(id, convID, upTo)
 				if err != nil {
 					return
 				}
-				read := gp.Read{UserID: id, LastRead: upTo}
+				read := gp.Read{UserID: id, LastRead: actuallyUpto}
 				conv, e := api.getConversation(id, convID)
 				if err != nil {
 					log.Println(e)
