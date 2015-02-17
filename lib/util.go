@@ -20,7 +20,7 @@ var ErrNoUsers = errors.New("must supply at least one user to be duplicated")
 var ErrNoPosts = errors.New("must supply at least one post to be duplicated")
 
 //DuplicateUsers takes a list of users and copies them into another network, with a random email address and the password "TestingPass".
-func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUsers []gp.UserID, err error) {
+func (api *API) duplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUsers []gp.UserID, err error) {
 	if len(users) == 0 {
 		err = ErrNoUsers
 		return
@@ -85,7 +85,7 @@ func (api *API) duplicatePosts(into gp.NetworkID, copyUsers bool, regEx, replace
 		var userID gp.UserID
 		if copyUsers {
 			var userIDs []gp.UserID
-			userIDs, err = api.DuplicateUsers(into, post.By.ID)
+			userIDs, err = api.duplicateUsers(into, post.By.ID)
 			if err != nil {
 				return
 			}
@@ -160,35 +160,4 @@ func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []conf.Pos
 		}
 		<-t
 	}
-}
-
-//CopyPostAttribs sets `to`s attributes equal to `from`s
-func (api *API) CopyPostAttribs(from gp.PostID, to gp.PostID) (err error) {
-	atts, err := api.getPostAttribs(from)
-	if err != nil {
-		return
-	}
-	attribs := make(map[string]string)
-	for k, v := range atts {
-		s, ok := v.(string)
-		if ok {
-			attribs[k] = s
-		}
-	}
-	err = api.setPostAttribs(to, attribs)
-	return
-}
-
-//MultiCopyPostAttribs sets to[n]'s attributes equal to from[n].
-func (api *API) MultiCopyPostAttribs(from []gp.PostID, to []gp.PostID) (err error) {
-	if len(from) != len(to) {
-		return errors.New("from and to must be the same length")
-	}
-	for i := range from {
-		err = api.CopyPostAttribs(from[i], to[i])
-		if err != nil {
-			return
-		}
-	}
-	return
 }
