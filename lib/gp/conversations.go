@@ -16,6 +16,7 @@ type Message struct {
 	Text   string    `json:"text"`
 	Time   time.Time `json:"timestamp"`
 	System bool      `json:"system,omitempty"`
+	Group  NetworkID `json:"group,omitempty"`
 }
 
 //Read represents the most recent message a user has seen in a particular conversation (it doesn't make much sense without that context).
