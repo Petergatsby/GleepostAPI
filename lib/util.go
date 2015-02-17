@@ -44,7 +44,7 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 		}
 		copiedUsers = append(copiedUsers, userID)
 		//SetAvatar
-		err = api.SetProfileImage(userID, user.Avatar)
+		err = api.setProfileImage(userID, user.Avatar)
 		if err != nil {
 			return
 		}

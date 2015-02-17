@@ -324,7 +324,7 @@ func (api *API) createUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 	if err != nil {
 		return
 	}
-	err = api.SetProfileImage(userID, fBAvatar(username))
+	err = api.setProfileImage(userID, fBAvatar(username))
 	if err != nil {
 		log.Println("Problem setting avatar:", err)
 	}

@@ -167,24 +167,18 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "POST":
 		url := r.FormValue("url")
-		exists, err := api.UserUploadExists(userID, url)
-		if err != nil {
-			jsonErr(w, err, 400)
-			return
-		}
-		if !exists {
-			jsonResponse(w, NoSuchUpload, 400)
-		} else {
-			err = api.SetProfileImage(userID, url)
+		err = api.UserSetProfileImage(userID, url)
+		switch {
+		case err == lib.NoSuchUpload:
+			jsonResponse(w, err, 400)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			user, err := api.UserGetProfile(userID, userID)
 			if err != nil {
 				jsonErr(w, err, 500)
-			} else {
-				user, err := api.UserGetProfile(userID, userID)
-				if err != nil {
-					jsonErr(w, err, 500)
-				}
-				jsonResponse(w, user, 200)
 			}
+			jsonResponse(w, user, 200)
 		}
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

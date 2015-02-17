@@ -246,7 +246,7 @@ func (api *API) getNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Gro
 
 //CreateGroup creates a group and adds the creator as a member.
 func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (network gp.Group, err error) {
-	exists, eupload := api.UserUploadExists(userID, url)
+	exists, eupload := api.userUploadExists(userID, url)
 	switch {
 	case eupload != nil:
 		return network, eupload
@@ -417,7 +417,7 @@ func (api *API) userIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner 
 
 //UserSetNetworkImage sets the network's cover image to url, if userId is allowed to do so (currently, if they are the group's creator) or returns ENOTALLOWED otherwise.
 func (api *API) UserSetNetworkImage(userID gp.UserID, netID gp.NetworkID, url string) (err error) {
-	exists, eupload := api.UserUploadExists(userID, url)
+	exists, eupload := api.userUploadExists(userID, url)
 	owner, eowner := api.userIsNetworkOwner(userID, netID)
 	switch {
 	case eowner != nil:

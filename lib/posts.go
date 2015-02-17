@@ -405,7 +405,7 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 	if err != nil {
 		return
 	}
-	exists, err := api.UserUploadExists(userID, url)
+	exists, err := api.userUploadExists(userID, url)
 	if !exists || err != nil {
 		return nil, NoSuchUpload
 	}
@@ -565,7 +565,7 @@ func (api *API) addPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 	if err != nil {
 		return
 	}
-	exists, err := api.UserUploadExists(userID, image)
+	exists, err := api.userUploadExists(userID, image)
 	if allowUnowned || (exists && err == nil) {
 		err = api.addPostImage(postID, image)
 		if err != nil {

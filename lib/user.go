@@ -131,13 +131,25 @@ func (api *API) UserWithEmail(email string) (id gp.UserID, err error) {
 	return api.db.UserWithEmail(email)
 }
 
-//SetProfileImage updates this user's profile image to the new url
-func (api *API) SetProfileImage(id gp.UserID, url string) (err error) {
+//UserSetProfileImage updates this user's profile image to the new url
+func (api *API) UserSetProfileImage(id gp.UserID, url string) (err error) {
+	exists, err := api.userUploadExists(id, url)
+	if err != nil {
+		return
+	}
+	if !exists {
+		return NoSuchUpload
+	}
+	return api.setProfileImage(id, url)
+}
+
+func (api *API) setProfileImage(id gp.UserID, url string) (err error) {
 	err = api.db.SetProfileImage(id, url)
 	if err == nil {
 		go api.cache.SetProfileImage(id, url)
 	}
 	return
+
 }
 
 //SetBusyStatus records whether you are busy or not.
