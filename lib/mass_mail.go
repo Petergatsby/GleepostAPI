@@ -8,7 +8,7 @@ import (
 
 //Massmail sends a standard email to all users. Probably just use MailChimp instead, though.
 func (api *API) Massmail(userID gp.UserID) (err error) {
-	if !api.IsAdmin(userID) {
+	if !api.isAdmin(userID) {
 		return ENOTALLOWED
 	}
 	subject := "FREE REDBULL STUDYGRAMS AT TRESIDDER AND GREEN LIBRARY!"

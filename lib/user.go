@@ -69,7 +69,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 }
 
 //IsAdmin returns true if tis user is a member of the Admin network specified in the config.
-func (api *API) IsAdmin(user gp.UserID) (admin bool) {
+func (api *API) isAdmin(user gp.UserID) (admin bool) {
 	in, err := api.userInNetwork(user, gp.NetworkID(api.Config.Admins))
 	if err == nil && in {
 		return true
@@ -78,7 +78,15 @@ func (api *API) IsAdmin(user gp.UserID) (admin bool) {
 }
 
 //CreateUserSpecial manually creates a user with these details, bypassing validation etc
-func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool, primaryNetwork gp.NetworkID) (userID gp.UserID, err error) {
+func (api *API) UserCreateUserSpecial(creator gp.UserID, first, last, email, pass string, verified bool, primaryNetwork gp.NetworkID) (userID gp.UserID, err error) {
+	if !api.isAdmin(creator) {
+		err = ENOTALLOWED
+		return
+	}
+	return api.createUserSpecial(first, last, email, pass, verified, primaryNetwork)
+}
+
+func (api *API) createUserSpecial(first, last, email, pass string, verified bool, primaryNetwork gp.NetworkID) (userID gp.UserID, err error) {
 	userID, err = api.createUser(first, last, pass, email)
 	if err != nil {
 		return
@@ -92,6 +100,7 @@ func (api *API) CreateUserSpecial(first, last, email, pass string, verified bool
 	err = api.setNetwork(userID, primaryNetwork)
 	return
 }
+
 func (api *API) inviteURL(token, email string) string {
 	if api.Config.DevelopmentMode {
 		return fmt.Sprintf("https://dev.gleepost.com/?invite=%s&email=%s", token, email)

@@ -228,7 +228,7 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 
 //SendUpdateNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
 func (api *API) SendUpdateNotification(userID gp.UserID, message, version, platform string) (count int, err error) {
-	if !api.IsAdmin(userID) {
+	if !api.isAdmin(userID) {
 		err = ENOTALLOWED
 		return
 	}

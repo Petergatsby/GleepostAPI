@@ -38,7 +38,7 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 		}
 		email := strconv.FormatUint(uint64(rand.New(rand.NewSource(time.Now().UnixNano())).Uint32()), 10) + "@gleepost.com"
 		var userID gp.UserID
-		userID, err = api.CreateUserSpecial(user.Name, lastName, email, "TestingPass", true, into)
+		userID, err = api.createUserSpecial(user.Name, lastName, email, "TestingPass", true, into)
 		if err != nil {
 			return
 		}
@@ -52,8 +52,16 @@ func (api *API) DuplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUse
 	return
 }
 
-//DuplicatePosts takes a bunch of posts and copies them into another network, ie for demos. It can also copy their owners. If regEx is set, it will replace all matches in the post attribs and body with replacement.
-func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, regEx string, replacement string, posts ...gp.PostID) (duplicates []gp.PostID, err error) {
+//UserDuplicatePosts takes a bunch of posts and copies them into another network, ie for demos. It can also copy their owners. If regEx is set, it will replace all matches in the post attribs and body with replacement.
+func (api *API) UserDuplicatePosts(admin gp.UserID, into gp.NetworkID, copyUsers bool, regEx, replacement string, posts ...gp.PostID) (duplicates []gp.PostID, err error) {
+	if !api.isAdmin(admin) {
+		err = ENOTALLOWED
+		return
+	}
+	return api.duplicatePosts(into, copyUsers, regEx, replacement, posts...)
+}
+
+func (api *API) duplicatePosts(into gp.NetworkID, copyUsers bool, regEx, replacement string, posts ...gp.PostID) (duplicates []gp.PostID, err error) {
 	var re *regexp.Regexp
 	if len(regEx) > 0 {
 		re, err = regexp.Compile(regEx)
