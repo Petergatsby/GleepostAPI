@@ -171,6 +171,10 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 		By:   user,
 		Text: text,
 		Time: time.Now().UTC()}
+	group, err := api.db.ConversationGroup(convID)
+	if group > 0 && err == nil {
+		msg.Group = group
+	}
 	participants, err := api.db.GetParticipants(convID, false)
 	if err == nil {
 		//Note to self: What is the difference between Publish and PublishEvent?

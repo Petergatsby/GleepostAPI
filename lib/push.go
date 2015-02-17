@@ -170,6 +170,9 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("conv", convID)
+	if message.Group > 0 {
+		pn.Set("group", message.Group)
+	}
 	pn.Set("profile_image", message.By.Avatar)
 	err = api.pushers["gleepost"].IOSPush(pn)
 	return
