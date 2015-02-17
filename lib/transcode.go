@@ -50,7 +50,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	var err error
 	//Transcode mp4 to webm
 	if inProgress.MP4 != "" {
-		inProgress.WebM, err = MP4ToWebM(inProgress.MP4, inProgress.ShouldRotate)
+		inProgress.WebM, err = mp4ToWebM(inProgress.MP4, inProgress.ShouldRotate)
 		if err != nil {
 			log.Println(err)
 			return
@@ -58,7 +58,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	}
 	log.Println("State after transcode to webM:", inProgress)
 	//Extract initial thumb
-	thumb, err := MP4Thumb(inProgress.MP4)
+	thumb, err := mp4Thumb(inProgress.MP4)
 	if err != nil {
 		log.Println(err)
 		return
@@ -90,7 +90,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 
 //MP4ToWebM converts an MP4 video to WebM, returning the path to the output video.
 //The caller is responsible for cleaning up after itself (ie, deleting the videos from local storage when it is done)
-func MP4ToWebM(in string, rotate bool) (output string, err error) {
+func mp4ToWebM(in string, rotate bool) (output string, err error) {
 	//do transcode
 	output = "/tmp/" + randomFilename(".webm")
 	log.Println("Creating ffmpeg command")
@@ -111,7 +111,7 @@ func MP4ToWebM(in string, rotate bool) (output string, err error) {
 
 //MP4Thumb attempts to extract a thumbnail from the first second of a video at path `in`, returning the path for the thumbnail
 //The caller is responsible for cleaning up after itself (ie, deleting the files from local storage when it is done)
-func MP4Thumb(in string) (output string, err error) {
+func mp4Thumb(in string) (output string, err error) {
 	output = "/tmp/" + randomFilename(".jpg")
 	log.Println("Extracting thumbnail")
 	cmd := exec.Command("ffmpeg", "-ss", "00:00:00", "-i", in, "-frames:v", "1", output)
@@ -120,7 +120,7 @@ func MP4Thumb(in string) (output string, err error) {
 }
 
 //TransientStoreFile writes a multipart.File to disk, returning its location.
-func TransientStoreFile(f multipart.File, ext string) (location string, err error) {
+func transientStoreFile(f multipart.File, ext string) (location string, err error) {
 	location = "/tmp/" + randomFilename(ext)
 	tmp, err := os.Create(location)
 	if err != nil {
@@ -233,7 +233,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 		return inProgress, errors.New("unsupported video type")
 	}
 	log.Println("Storing the video in /tmp for now")
-	name, err := TransientStoreFile(file, ext)
+	name, err := transientStoreFile(file, ext)
 	if err != nil {
 		return
 	}
