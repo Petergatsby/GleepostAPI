@@ -226,8 +226,17 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	return api.pushers["gleepost"].AndroidPush(msg)
 }
 
+//SendUpdateNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
+func (api *API) SendUpdateNotification(userID gp.UserID, message, version, platform string) (count int, err error) {
+	if !api.IsAdmin(userID) {
+		err = ENOTALLOWED
+		return
+	}
+	return api.massNotification(message, version, platform)
+}
+
 //MassNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
-func (api *API) MassNotification(message string, version string, platform string) (count int, err error) {
+func (api *API) massNotification(message string, version string, platform string) (count int, err error) {
 	devices, err := api.db.GetAllDevices(platform)
 	if err != nil {
 		return
@@ -404,7 +413,7 @@ func (api *API) toAndroid(n gp.Notification, recipient gp.UserID, device string,
 }
 
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
-func (api *API) Push(notification gp.Notification, recipient gp.UserID) {
+func (api *API) push(notification gp.Notification, recipient gp.UserID) {
 	devices, err := api.GetDevices(recipient, "gleepost")
 	if err != nil {
 		log.Println(err)

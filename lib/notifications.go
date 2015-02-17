@@ -23,7 +23,7 @@ func (api *API) createNotification(ntype string, by gp.UserID, recipient gp.User
 	}
 	notification, err := api.db.CreateNotification(ntype, by, recipient, postID, netID, preview)
 	if err == nil {
-		api.Push(notification, recipient)
+		api.push(notification, recipient)
 		go api.cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
 	}
 	return

@@ -28,16 +28,15 @@ func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	case r.Method != "POST":
 		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
-		if api.IsAdmin(userID) {
-			count, err := api.MassNotification(r.FormValue("message"), r.FormValue("version"), r.FormValue("type"))
-			if err != nil {
-				log.Println(err)
-				jsonResponse(w, err, 500)
-			} else {
-				jsonResponse(w, count, 200)
-			}
-		} else {
-			jsonResponse(w, &lib.ENOTALLOWED, 403)
+		count, err := api.SendUpdateNotification(userID, r.FormValue("message"), r.FormValue("version"), r.FormValue("type"))
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err != nil:
+			log.Println(err)
+			jsonErr(w, err, 500)
+		default:
+			jsonResponse(w, count, 200)
 		}
 	}
 }
