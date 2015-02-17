@@ -27,6 +27,7 @@ func (db *DB) FBUserEmail(fbid uint64) (email string, err error) {
 	return
 }
 
+//NoSuchUser means there is no user with this email.
 var NoSuchUser = gp.APIerror{Reason: "That user does not exist."}
 
 //FBUserWithEmail returns the facebook id we've seen associated with this email, or error if none exists.

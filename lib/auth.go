@@ -12,8 +12,24 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//BadLogin = guess...
-var BadLogin = gp.APIerror{Reason: "Bad username/password"}
+var (
+	//BadLogin = guess...
+	BadLogin = gp.APIerror{Reason: "Bad username/password"}
+	//MissingParamFirst = your first name wasn't long enough
+	MissingParamFirst = gp.APIerror{Reason: "Missing parameter: first"}
+	//MissingParamLast = your last name wasn't long enough
+	MissingParamLast = gp.APIerror{Reason: "Missing parameter: last"}
+	//MissingParamPass = your password wasn't long enough
+	MissingParamPass = gp.APIerror{Reason: "Missing parameter: pass"}
+	//MissingParamEmail = your email wasn't long enough
+	MissingParamEmail = gp.APIerror{Reason: "Missing parameter: email"}
+	//InvalidEmail = Your email isn't in our approved list
+	InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
+	//UserAlreadyExists appens when creating an account with a dupe email address.
+	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
+	//NoSuchUser happens when you do an action which specifies a non-existent user.
+	NoSuchUser = gp.APIerror{Reason: "That user does not exist."}
+)
 
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
@@ -85,18 +101,6 @@ func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification g
 	token, err = api.createAndStoreToken(id)
 	return
 }
-
-var (
-	MissingParamFirst = gp.APIerror{Reason: "Missing parameter: first"}
-	MissingParamLast  = gp.APIerror{Reason: "Missing parameter: last"}
-	MissingParamPass  = gp.APIerror{Reason: "Missing parameter: pass"}
-	MissingParamEmail = gp.APIerror{Reason: "Missing parameter: email"}
-	//InvalidEmail = Your email isn't in our approved list
-	InvalidEmail = gp.APIerror{Reason: "Invalid Email"}
-	//UserAlreadyExists appens when creating an account with a dupe email address.
-	UserAlreadyExists = gp.APIerror{Reason: "Username or email address already taken"}
-	NoSuchUser        = gp.APIerror{Reason: "That user does not exist."}
-)
 
 //AttemptRegister tries to register this user.
 func (api *API) AttemptRegister(email, pass, first, last, invite string) (created gp.NewUser, err error) {

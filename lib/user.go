@@ -77,7 +77,7 @@ func (api *API) isAdmin(user gp.UserID) (admin bool) {
 	return false
 }
 
-//CreateUserSpecial manually creates a user with these details, bypassing validation etc
+//UserCreateUserSpecial manually creates a user with these details, bypassing validation etc
 func (api *API) UserCreateUserSpecial(creator gp.UserID, first, last, email, pass string, verified bool, primaryNetwork gp.NetworkID) (userID gp.UserID, err error) {
 	if !api.isAdmin(creator) {
 		err = ENOTALLOWED

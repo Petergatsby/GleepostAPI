@@ -8,6 +8,7 @@ type Status struct {
 	Email  string `json:"email"`
 }
 
+//NewStatus is a shorthand for creating a Status
 func NewStatus(status, email string) Status {
 	return Status{Status: status, Email: email}
 }

@@ -246,6 +246,7 @@ type UploadStatus struct {
 	Video
 }
 
+//AttendeeSummary comprises a list of attending users, a total attendee count (which may not be len(attendees)) and an arbitrary "popularity" score
 type AttendeeSummary struct {
 	Popularity    int    `json:"popularity"`
 	AttendeeCount int    `json:"attendee_count"`

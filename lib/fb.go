@@ -38,12 +38,16 @@ type FB struct {
 	config conf.FacebookConfig
 }
 
-//FBAPIError is a catchall error for anything that went wrong with a facebook reqest.
-var FBAPIError = gp.APIerror{Reason: "Something went wrong with a facebook API call."}
-
-var AlreadyAssociated = gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}
-
-var BadFBToken = gp.APIerror{Reason: "Bad token"}
+var (
+	//FBAPIError is a catchall error for anything that went wrong with a facebook reqest.
+	FBAPIError = gp.APIerror{Reason: "Something went wrong with a facebook API call."}
+	//AlreadyAssociated means you're trying to connect a facebook account to a second gleepost account.
+	AlreadyAssociated = gp.APIerror{Reason: "Facebook account already associated with another gleepost account..."}
+	//BadFBToken means the facebook token provided is invalid in some way.
+	BadFBToken = gp.APIerror{Reason: "Bad token"}
+	//FBNoEmail = the email supplied by the user is too short.
+	FBNoEmail = gp.APIerror{Reason: "Email required"}
+)
 
 //fBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
 //ie, expired or for another app.
@@ -152,8 +156,6 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 		return
 	}
 }
-
-var FBNoEmail = gp.APIerror{Reason: "Email required"}
 
 //UpdateFBData is a placeholder for the time being. In the future, place anything which needs to be regularly checked from facebook here.
 func (api *API) updateFBData(fbToken string) (err error) {
@@ -394,6 +396,8 @@ func (api *API) AttemptAssociationWithCredentials(email, pass, fbToken string) (
 	return
 }
 
+//AssociateFB tries to connect the facebook account encoded in this facebook token to this gleepost account.
+//It will return BadFBToken if the token doesn't validate; and AlreadyAssociated if this facebook account is already associated with a different gleepost account.
 func (api *API) AssociateFB(id gp.UserID, fbToken string) (err error) {
 	//Ignore status for now - TODO(patrick): what does this imply
 	token, fbuser, _, err := api.FacebookLogin(fbToken, "", "")
