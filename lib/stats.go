@@ -259,7 +259,7 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 }
 
 //SummaryEmail sends out an email to everyone in the Admin group, summarizing what the users have done in this period.
-func (api *API) SummaryEmail(start time.Time, finish time.Time) {
+func (api *API) summaryEmail(start time.Time, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
 	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
 	var text string
@@ -300,12 +300,12 @@ func (api *API) SummaryEmail(start time.Time, finish time.Time) {
 //What it actually does, however, is send an email summarizing the previous day every interval.
 func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 	f := func() {
-		api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
+		api.summaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
 		tick := time.Tick(interval)
 		for {
 			select {
 			case <-tick:
-				api.SummaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
+				api.summaryEmail(time.Now().AddDate(0, 0, -1), time.Now())
 			}
 		}
 	}
