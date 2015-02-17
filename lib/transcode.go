@@ -46,7 +46,7 @@ func randomFilename(extension string) string {
 func (api *API) pipeline(inProgress gp.UploadStatus) {
 	log.Println("Initial state:", inProgress)
 	inProgress.Status = "transcoding"
-	api.SetUploadStatus(inProgress)
+	api.setUploadStatus(inProgress)
 	var err error
 	//Transcode mp4 to webm
 	if inProgress.MP4 != "" {
@@ -67,7 +67,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	log.Println("State after extracting thumb:", inProgress)
 	//Upload
 	inProgress.Status = "transferring"
-	api.SetUploadStatus(inProgress)
+	api.setUploadStatus(inProgress)
 	uploaded, err := api.Upload(inProgress)
 	if err != nil {
 		log.Println("Upload error:", err)
@@ -75,7 +75,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	log.Println("State after uploading:", uploaded)
 	//Mark as processed
 	uploaded.Status = "ready"
-	id, err := api.SetUploadStatus(uploaded)
+	id, err := api.setUploadStatus(uploaded)
 	if err != nil {
 		log.Println(id, err)
 	}
@@ -249,7 +249,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	video.Status = "uploaded"
 	video.Owner = user
 	log.Println("Recording upload status")
-	id, err := api.SetUploadStatus(video)
+	id, err := api.setUploadStatus(video)
 	if err != nil {
 		return video, err
 	}
@@ -261,7 +261,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 }
 
 func (api *API) enqueueVideo(video gp.UploadStatus) {
-	api.SetUploadStatus(video)
+	api.setUploadStatus(video)
 	transcodeQueue <- video
 	return
 }

@@ -110,6 +110,6 @@ func (api *API) GetUploadStatus(user gp.UserID, upload gp.VideoID) (UploadStatus
 //SetUploadStatus records the current status of this upload.
 //Status must be one of "uploaded", "transcode", "transfer", "done".
 //If provided, urls[0] will be its mp4 format and urls[1] its webm..
-func (api *API) SetUploadStatus(video gp.UploadStatus) (id gp.VideoID, err error) {
+func (api *API) setUploadStatus(video gp.UploadStatus) (id gp.VideoID, err error) {
 	return api.db.SetUploadStatus(video)
 }
