@@ -49,7 +49,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 	if err != nil {
 		return
 	}
-	rsvps, err := api.SubjectiveRSVPCount(perspective, otherID)
+	rsvps, err := api.subjectiveRSVPCount(perspective, otherID)
 	if err != nil {
 		return
 	}

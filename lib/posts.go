@@ -825,6 +825,6 @@ func (api *API) clearPostImages(postID gp.PostID) (err error) {
 }
 
 //SubjectiveRSVPCount shows the number of events otherID has attended, from the perspective of the `perspective` user (ie, not counting those events perspective can't see...)
-func (api *API) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
+func (api *API) subjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
 	return api.db.SubjectiveRSVPCount(perspective, otherID)
 }
