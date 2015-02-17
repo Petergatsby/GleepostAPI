@@ -383,7 +383,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 		return &ENOTALLOWED
 	default:
 		//If the user already exists, add them straight into the group and don't email them.
-		invitee, e := api.UserWithEmail(email)
+		invitee, e := api.userWithEmail(email)
 		if e == nil {
 			return api.setNetwork(invitee, netID)
 		}

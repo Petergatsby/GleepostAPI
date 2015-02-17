@@ -135,7 +135,7 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 		case len(email) < 3 && (err == nil):
 			//We already saw this user, so we don't need to re-send verification
 			//So it should be "unverified" or "registered" as appropriate
-			_, err = api.UserWithEmail(storedEmail)
+			_, err = api.userWithEmail(storedEmail)
 			if err != nil {
 				log.Println("Should be unverified response")
 				status = gp.NewStatus("unverified", storedEmail)
@@ -201,7 +201,7 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (t
 
 //FBSetVerified creates a gleepost user for this fbuser, or associates with an existing one as appropriate.
 func (api *API) fBSetVerified(email string, fbuser uint64) (id gp.UserID, err error) {
-	id, err = api.UserWithEmail(email)
+	id, err = api.userWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
 		id, err = api.createUserFromFB(fbuser, email)
@@ -415,7 +415,7 @@ func (api *API) AssociateFB(id gp.UserID, fbToken string) (err error) {
 //FBFirstTimeWithEmail will create a fresh association with this fb:email pair. If there is no existing gleepost user signed up with this email, it will record this fb user and issue a verification email.
 //If there's already a gleepost user, it will associate the two accounts if the invite is valid (proving that this fb user has access to that email; otherwise it will return status:registered.
 func (api *API) fBFirstTimeWithEmail(email, fbToken, invite string, fbUser uint64) (token gp.Token, verification gp.Status, err error) {
-	_, err = api.UserWithEmail(email)
+	_, err = api.userWithEmail(email)
 	if err != nil {
 		//There isn't already a user with this email address.
 		validates, e := api.validateEmail(email)

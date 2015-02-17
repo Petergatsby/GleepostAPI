@@ -200,7 +200,7 @@ func (api *API) createUser(first, last string, pass string, email string) (userI
 
 //AttemptResendVerification tries to send a new verification email to this address, or returns NoSuchUser if that email isn't one we know about. NB: this allows account enumeration, I guess...
 func (api *API) AttemptResendVerification(email string) error {
-	userID, err := api.UserWithEmail(email)
+	userID, err := api.userWithEmail(email)
 	switch {
 	case err != nil: //No user with this email
 		fbid, err := api.fBUserWithEmail(email)
@@ -313,7 +313,7 @@ func (api *API) Verify(token string) (err error) {
 		if err == nil {
 			log.Println("User has verified successfully")
 			var email string
-			email, err = api.GetEmail(id)
+			email, err = api.getEmail(id)
 			if err != nil {
 				return
 			}
@@ -336,7 +336,7 @@ func (api *API) Verify(token string) (err error) {
 		log.Println("Couldn't get this facebook account's email:", err)
 		return
 	}
-	userID, err := api.UserWithEmail(email)
+	userID, err := api.userWithEmail(email)
 	if err != nil {
 		log.Println("There isn't a user with this facebook email")
 		userID, err = api.createUserFromFB(fbid, email)
@@ -381,7 +381,7 @@ func (api *API) ChangePass(userID gp.UserID, oldPass, newPass string) (err error
 
 //RequestReset sends a random reset token to this email address. If it doesn't correspond to an existing user, returns an error.
 func (api *API) RequestReset(email string) (err error) {
-	userID, err := api.UserWithEmail(email)
+	userID, err := api.userWithEmail(email)
 	if err != nil {
 		return
 	}

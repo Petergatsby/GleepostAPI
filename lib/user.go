@@ -121,7 +121,7 @@ func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, tok
 }
 
 //GetEmail returns this user's email address.
-func (api *API) GetEmail(id gp.UserID) (email string, err error) {
+func (api *API) getEmail(id gp.UserID) (email string, err error) {
 	return api.db.GetEmail(id)
 }
 
@@ -136,7 +136,7 @@ func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) 
 }
 
 //UserWithEmail returns the userID this email is associated with, or err if there isn't one.
-func (api *API) UserWithEmail(email string) (id gp.UserID, err error) {
+func (api *API) userWithEmail(email string) (id gp.UserID, err error) {
 	return api.db.UserWithEmail(email)
 }
 
