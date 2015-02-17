@@ -88,7 +88,7 @@ func (api *API) DuplicatePosts(into gp.NetworkID, copyUsers bool, regEx string, 
 		//Get attribs in a usable form
 		attribs := make(map[string]string)
 		atts := make(map[string]interface{})
-		atts, err = api.GetPostAttribs(post.ID)
+		atts, err = api.getPostAttribs(post.ID)
 		if err == nil {
 			for k, v := range atts {
 				s, ok := v.(string)
@@ -156,7 +156,7 @@ func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []conf.Pos
 
 //CopyPostAttribs sets `to`s attributes equal to `from`s
 func (api *API) CopyPostAttribs(from gp.PostID, to gp.PostID) (err error) {
-	atts, err := api.GetPostAttribs(from)
+	atts, err := api.getPostAttribs(from)
 	if err != nil {
 		return
 	}
@@ -167,7 +167,7 @@ func (api *API) CopyPostAttribs(from gp.PostID, to gp.PostID) (err error) {
 			attribs[k] = s
 		}
 	}
-	err = api.SetPostAttribs(to, attribs)
+	err = api.setPostAttribs(to, attribs)
 	return
 }
 

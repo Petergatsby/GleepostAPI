@@ -467,31 +467,14 @@ func getAttendees(w http.ResponseWriter, r *http.Request) {
 		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
 		postID := gp.PostID(_postID)
 		attendees, err := api.UserGetEventAttendees(userID, postID)
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				jsonResponse(w, e, 403)
-			} else {
-				jsonErr(w, err, 500)
-			}
-			return
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			jsonResponse(w, attendees, 200)
 		}
-		popularity, attendeeCount, err := api.UserGetEventPopularity(userID, postID)
-		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				jsonResponse(w, e, 403)
-			} else {
-				jsonErr(w, err, 500)
-			}
-			return
-		}
-		resp := struct {
-			Popularity    int       `json:"popularity"`
-			AttendeeCount int       `json:"attendee_count"`
-			Attendees     []gp.User `json:"attendees,omitempty"`
-		}{Popularity: popularity, AttendeeCount: attendeeCount, Attendees: attendees}
-		jsonResponse(w, resp, 200)
 	}
 }
 

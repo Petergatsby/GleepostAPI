@@ -245,3 +245,9 @@ type UploadStatus struct {
 	Status       string `json:"status"`
 	Video
 }
+
+type AttendeeSummary struct {
+	Popularity    int    `json:"popularity"`
+	AttendeeCount int    `json:"attendee_count"`
+	Attendees     []User `json:"attendees,omitempty"`
+}

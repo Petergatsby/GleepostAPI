@@ -63,7 +63,7 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 			break
 		}
 	}
-	post.Attribs, err = api.GetPostAttribs(postID)
+	post.Attribs, err = api.getPostAttribs(postID)
 	if err != nil {
 		return
 	}
@@ -72,7 +72,7 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 	if err != nil {
 		return
 	}
-	post.LikeCount, post.Likes, err = api.LikesAndCount(postID)
+	post.LikeCount, post.Likes, err = api.likesAndCount(postID)
 	if err != nil {
 		return
 	}
@@ -209,11 +209,11 @@ func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.PostSmall, err error) {
 	//Ha! I am so funny...
 	processed = post
-	processed.Likes, err = api.GetLikes(processed.ID)
+	processed.Likes, err = api.getLikes(processed.ID)
 	if err != nil {
 		return
 	}
-	processed.Attribs, err = api.GetPostAttribs(processed.ID)
+	processed.Attribs, err = api.getPostAttribs(processed.ID)
 	if err != nil {
 		return
 	}
@@ -253,11 +253,11 @@ func (api *API) postSmall(p gp.PostCore) (post gp.PostSmall, err error) {
 	if err != nil {
 		return
 	}
-	post.Attribs, err = api.GetPostAttribs(p.ID)
+	post.Attribs, err = api.getPostAttribs(p.ID)
 	if err != nil {
 		return
 	}
-	post.LikeCount, post.Likes, err = api.LikesAndCount(p.ID)
+	post.LikeCount, post.Likes, err = api.likesAndCount(p.ID)
 	if err != nil {
 		return
 	}
@@ -328,7 +328,7 @@ func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, er
 }
 
 //GetLikes returns all the likes for a particular post.
-func (api *API) GetLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
+func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 	log.Println("GetLikes", post)
 	l, err := api.db.GetLikes(post)
 	if err != nil {
@@ -356,8 +356,8 @@ func (api *API) likeCount(post gp.PostID) (count int, err error) {
 }
 
 //LikesAndCount retrieves both the likes and the total count of likes for a post.
-func (api *API) LikesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, err error) {
-	likes, err = api.GetLikes(post)
+func (api *API) likesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, err error) {
+	likes, err = api.getLikes(post)
 	if err != nil {
 		return
 	}
@@ -519,13 +519,13 @@ func (api *API) addPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 		postID, err = api.db.AddPost(userID, text, netID, pending)
 		if err == nil {
 			if len(tags) > 0 {
-				err = api.TagPost(postID, tags...)
+				err = api.tagPost(postID, tags...)
 				if err != nil {
 					return
 				}
 			}
 			if len(attribs) > 0 {
-				err = api.SetPostAttribs(postID, attribs)
+				err = api.setPostAttribs(postID, attribs)
 				if err != nil {
 					return
 				}
@@ -588,12 +588,12 @@ func (api *API) addPostWithVideo(userID gp.UserID, netID gp.NetworkID, text stri
 }
 
 //TagPost adds these tags/categories to the post if they're not already.
-func (api *API) TagPost(post gp.PostID, tags ...string) (err error) {
+func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
 	//TODO: Only allow the post owner to tag
-	return api.tagPost(post, tags...)
+	return api._tagPost(post, tags...)
 }
 
-func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
+func (api *API) _tagPost(post gp.PostID, tags ...string) (err error) {
 	//TODO: Stick this shit in cache
 	return api.db.TagPost(post, tags...)
 }
@@ -628,13 +628,13 @@ func (api *API) DelLike(user gp.UserID, post gp.PostID) (err error) {
 	return api.db.RemoveLike(user, post)
 }
 
-//SetPostAttribs associates a set of key, value pairs with a particular post
-func (api *API) SetPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
+//setPostAttribs associates a set of key, value pairs with a particular post
+func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
 	return api.db.SetPostAttribs(post, attribs)
 }
 
-//GetPostAttribs returns all the custom attributes of a post.
-func (api *API) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
+//getPostAttribs returns all the custom attributes of a post.
+func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
 	return api.db.GetPostAttribs(post)
 }
 
@@ -720,7 +720,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 		}
 		//Set attribs
 		if len(attribs) > 0 {
-			err = api.SetPostAttribs(postID, attribs)
+			err = api.setPostAttribs(postID, attribs)
 			if err != nil {
 				return
 			}
@@ -752,7 +752,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 			if err != nil {
 				return
 			}
-			err = api.TagPost(postID, tags...)
+			err = api.tagPost(postID, tags...)
 			if err != nil {
 				return
 			}
@@ -781,7 +781,7 @@ func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err 
 }
 
 //UserGetEventAttendees returns all the attendees of a given event, or ENOTALLOWED if user isn't in its network.
-func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attendees []gp.User, err error) {
+func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attendeeSummary gp.AttendeeSummary, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
@@ -789,14 +789,19 @@ func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attende
 	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
-		return attendees, &ENOTALLOWED
+		return attendeeSummary, ENOTALLOWED
 	default:
-		return api.db.EventAttendees(postID)
+		attendeeSummary.Attendees, err = api.db.EventAttendees(postID)
+		if err != nil {
+			return
+		}
+		attendeeSummary.Popularity, attendeeSummary.AttendeeCount, err = api.userGetEventPopularity(user, postID)
+		return
 	}
 }
 
 //UserGetEventPopularity returns popularity (an arbitrary score between 0 and 100), and the number of attendees. If user isn't in the same network as the event, it will return ENOTALLOWED instead.
-func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostID) (popularity int, attendees int, err error) {
+func (api *API) userGetEventPopularity(user gp.UserID, postID gp.PostID) (popularity int, attendees int, err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
@@ -804,7 +809,7 @@ func (api *API) UserGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
-		err = &ENOTALLOWED
+		err = ENOTALLOWED
 		return
 	default:
 		return api.db.GetEventPopularity(postID)
