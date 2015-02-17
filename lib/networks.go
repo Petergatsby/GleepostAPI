@@ -275,7 +275,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 			return
 		}
 		var user gp.User
-		user, err = api.GetUser(userID)
+		user, err = api.getUser(userID)
 		if err != nil {
 			return
 		}
@@ -394,7 +394,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 		err = api.db.CreateInvite(userID, netID, email, token)
 		if err == nil {
 			var from gp.User
-			from, err = api.GetUser(userID)
+			from, err = api.getUser(userID)
 			if err != nil {
 				return
 			}

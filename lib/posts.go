@@ -336,7 +336,7 @@ func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 	}
 	for _, like := range l {
 		lf := gp.LikeFull{}
-		lf.User, err = api.GetUser(like.UserID)
+		lf.User, err = api.getUser(like.UserID)
 		if err == nil {
 			lf.Time = like.Time
 			likes = append(likes, lf)
@@ -385,7 +385,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	default:
 		commID, err = api.db.CreateComment(postID, userID, text)
 		if err == nil {
-			user, e := api.GetUser(userID)
+			user, e := api.getUser(userID)
 			if e != nil {
 				return commID, e
 			}

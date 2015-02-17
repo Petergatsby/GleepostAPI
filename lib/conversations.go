@@ -52,7 +52,7 @@ func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, 
 //CreateConversationWith generates a new conversation with a particular group of participants. If reuse is true, it will return the existing "primary" conversation with those users, creating one only if necessary.
 func (api *API) CreateConversationWith(initiator gp.UserID, reuse bool, with []gp.UserID) (conversation gp.ConversationAndMessages, err error) {
 	var participants []gp.User
-	user, err := api.GetUser(initiator)
+	user, err := api.getUser(initiator)
 	if err != nil {
 		return
 	}
@@ -70,7 +70,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, reuse bool, with []g
 			return conversation, e
 		}
 		if canContact {
-			user, err = api.GetUser(id)
+			user, err = api.getUser(id)
 			if err != nil {
 				return
 			}
@@ -162,7 +162,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	if err != nil {
 		return
 	}
-	user, err := api.GetUser(userID)
+	user, err := api.getUser(userID)
 	if err != nil {
 		return
 	}
@@ -364,7 +364,7 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	if err != nil {
 		return
 	}
-	user, err := api.GetUser(userID)
+	user, err := api.getUser(userID)
 	if err != nil {
 		return
 	}

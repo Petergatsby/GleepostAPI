@@ -7,7 +7,7 @@ import (
 )
 
 //GetUser returns the User with this ID. It hits the cache first, so some details may be out of date.
-func (api *API) GetUser(id gp.UserID) (user gp.User, err error) {
+func (api *API) getUser(id gp.UserID) (user gp.User, err error) {
 	/* Hits the api.cache then the api.db
 	only I'm not 100% confident yet with what
 	happens when you attempt to get a redis key
