@@ -25,7 +25,7 @@ func Down_20150218132731(txn *sql.Tx) {
 		"`timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
 		"PRIMARY KEY (`id`) ) " +
 		"ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;"
-	_, err := txn.Query("q")
+	_, err := txn.Query(q)
 	if err != nil {
 		log.Println(err)
 		return
