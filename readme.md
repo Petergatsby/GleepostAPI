@@ -1968,7 +1968,20 @@ If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "J
 
 Example response: (HTTP 200)
 ```json
-[{"id":9, "name":"Steph", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},{"id":23, "name":"Steve", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}]
+[
+	{
+		"id":9, 
+		"name":"Steph", 
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
+		"full_name":"Steph Smith"
+	},
+	{
+		"id":23, 
+		"name":"Steve", 
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
+		"full_name":"Steve Smith"
+	}
+]
 ```
 
 ##GET /search/groups/[name]

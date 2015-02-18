@@ -8,9 +8,9 @@ import (
 )
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
-func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (users []gp.User, err error) {
-	users = make([]gp.User, 0)
-	search := "SELECT id, avatar, firstname, official " +
+func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (users []gp.FullNameUser, err error) {
+	users = make([]gp.FullNameUser, 0)
+	search := "SELECT id, avatar, firstname, lastname, official " +
 		"FROM users JOIN user_network ON users.id = user_network.user_id " +
 		"WHERE network_id = ? " +
 		"AND firstname LIKE ? " +
@@ -28,14 +28,17 @@ func (db *DB) SearchUsersInNetwork(first, last string, netID gp.NetworkID) (user
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var av sql.NullString
-		var user gp.User
-		err = rows.Scan(&user.ID, &av, &user.Name, &user.Official)
+		var av, last sql.NullString
+		var user gp.FullNameUser
+		err = rows.Scan(&user.ID, &av, &user.Name, &last, &user.Official)
 		if err != nil {
 			return
 		}
 		if av.Valid {
 			user.Avatar = av.String
+		}
+		if last.Valid {
+			user.FullName = user.Name + " " + last.String
 		}
 		users = append(users, user)
 	}
