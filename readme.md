@@ -1966,6 +1966,8 @@ You can supply partial names (with a minimum length of two characters for the fi
 
 If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "Jon S" "Jonathan Smi" will match him.
 
+A user may optionally have a `full_name`.
+
 Example response: (HTTP 200)
 ```json
 [
