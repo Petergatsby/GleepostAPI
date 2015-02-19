@@ -79,9 +79,10 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 		id, ok := vars["network"]
 		var network gp.NetworkID
 		var posts []gp.PostSmall
+		var _network uint64
 		switch {
 		case ok:
-			_network, err := strconv.ParseUint(id, 10, 64)
+			_network, err = strconv.ParseUint(id, 10, 64)
 			if err != nil {
 				jsonErr(w, err, 500)
 				return
