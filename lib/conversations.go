@@ -25,7 +25,7 @@ func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationI
 
 //MarkConversationSeen sets the "read" location to upTo for user id in conversation convId.
 func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (err error) {
-	read, err := api.db.GetReadStatus(convID)
+	read, err := api.db.GetReadStatus(convID, false)
 	if err != nil {
 		return
 	}
@@ -257,7 +257,7 @@ func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count
 //readStatus returns the point all participants have read until in a conversation, omitting any participants who have read nothing.
 //TODO: Use cache
 func (api *API) readStatus(convID gp.ConversationID) (read []gp.Read, err error) {
-	return api.db.GetReadStatus(convID)
+	return api.db.GetReadStatus(convID, true)
 }
 
 //ConversationLastActivity returns the modification time (ie, creation  or last-message) for this conversation.

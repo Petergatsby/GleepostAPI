@@ -127,7 +127,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 		if err == nil {
 			conv.LastMessage = &LastMessage
 		}
-		read, err := db.GetReadStatus(conv.ID)
+		read, err := db.GetReadStatus(conv.ID, true)
 		if err == nil {
 			conv.Read = read
 		}
@@ -186,7 +186,7 @@ func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count 
 	if err != nil {
 		return conversation, err
 	}
-	read, err := db.GetReadStatus(convID)
+	read, err := db.GetReadStatus(convID, true)
 	if err == nil {
 		conversation.Read = read
 	}
@@ -202,8 +202,8 @@ func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count 
 	return
 }
 
-//GetReadStatus returns all the positions the participants in this conversation have read to. It omits participants who haven't read.
-func (db *DB) GetReadStatus(convID gp.ConversationID) (read []gp.Read, err error) {
+//GetReadStatus returns all the positions the participants in this conversation have read to. If omitZeros is true, it omits participants who haven't read any messages.
+func (db *DB) GetReadStatus(convID gp.ConversationID, omitZeros bool) (read []gp.Read, err error) {
 	s, err := db.prepare("SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?")
 	if err != nil {
 		return
@@ -219,7 +219,7 @@ func (db *DB) GetReadStatus(convID gp.ConversationID) (read []gp.Read, err error
 		if err != nil {
 			return
 		}
-		if r.LastRead > 0 {
+		if r.LastRead > 0 || !omitZeros {
 			read = append(read, r)
 		}
 	}
