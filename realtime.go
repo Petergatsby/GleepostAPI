@@ -87,6 +87,7 @@ type postSubscriptionAction struct {
 var upgrader = gwebsocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 func gorillaWS(w http.ResponseWriter, r *http.Request) {
