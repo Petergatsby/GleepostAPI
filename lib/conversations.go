@@ -337,6 +337,7 @@ func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants []gp.User, err error) {
 	updatedParticipants = make([]gp.User, 0)
 	if !api.UserCanViewConversation(userID, convID) {
+		log.Println("Adding participants: adder can't see the conversation themself")
 		err = &ENOTALLOWED
 		return
 	}
