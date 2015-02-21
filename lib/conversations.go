@@ -366,6 +366,7 @@ func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, 
 	for _, p := range participants {
 		shared, err := api.haveSharedNetwork(userID, p) //Not someone who you can see
 		if !shared || err != nil {
+			log.Printf("%d and %d have no shared network\n", userID, p)
 			continue
 		}
 		if api.UserCanViewConversation(p, convID) { //Already in conversation
