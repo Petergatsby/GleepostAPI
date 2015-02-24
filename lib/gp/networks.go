@@ -24,13 +24,13 @@ type Group struct {
 	Privacy      string         `json:"privacy,omitempty"`
 	MemberCount  int            `json:"size,omitempty"`
 	Conversation ConversationID `json:"conversation,omitempty"`
-	UnreadCount  int            `json:"unread,omitempty"`
 }
 
 //GroupMembership is a group and a user's membership status in that group.
 type GroupMembership struct {
 	Group
-	Role `json:"role"`
+	UnreadCount int `json:"unread,omitempty"`
+	Role        `json:"role"`
 }
 
 //Rule represents a condition that makes a user part of a particular Network. At the moment the only possible Rule.Type is "email";

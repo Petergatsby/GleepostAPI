@@ -159,7 +159,7 @@ func (db *DB) SetNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
 }
 
 //GetNetwork returns the network netId. If userID is 0, it will omit the group's unread count.
-func (db *DB) GetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Group, err error) {
+func (db *DB) GetNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group, privacy " +
 		"FROM network " +
 		"WHERE network.id = ?"
@@ -188,9 +188,6 @@ func (db *DB) GetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Group
 		}
 		network.MemberCount, _ = db.GroupMemberCount(network.ID)
 		network.Conversation, _ = db.GroupConversation(network.ID)
-		if userID > 0 {
-			network.UnreadCount, _ = db.UserConversationUnread(userID, network.Conversation)
-		}
 	}
 	if privacy.Valid {
 		network.Privacy = privacy.String

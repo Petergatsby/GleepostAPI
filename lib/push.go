@@ -310,7 +310,7 @@ func (api *API) toIOS(notification gp.Notification, recipient gp.UserID, device 
 	switch {
 	case notification.Type == "added_group" || notification.Type == "group_post":
 		var group gp.Group
-		group, err = api.getNetwork(recipient, notification.Group)
+		group, err = api.getNetwork(notification.Group)
 		if err != nil {
 			log.Println(err)
 			return
@@ -370,7 +370,7 @@ func (api *API) toAndroid(n gp.Notification, recipient gp.UserID, device string,
 	switch {
 	case n.Type == "added_group" || n.Type == "group_post":
 		var group gp.Group
-		group, err = api.getNetwork(recipient, n.Group)
+		group, err = api.getNetwork(n.Group)
 		if err != nil {
 			log.Println(err)
 			return

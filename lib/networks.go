@@ -183,7 +183,7 @@ func (api *API) groupAddConvParticipants(adder, addee gp.UserID, group gp.Networ
 
 //UserCanJoin returns true if the user is allowed to unilaterally join this network (ie, it is both "public" and a sub-network of one this user already belongs to.)
 func (api *API) userCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
-	net, err := api.getNetwork(0, netID)
+	net, err := api.getNetwork(netID)
 	if err != nil {
 		return
 	}
@@ -227,7 +227,7 @@ func (api *API) assignNetworks(user gp.UserID, email string) (networks int, err 
 }
 
 //UserGetNetwork returns the information about a network, if userID is a member of it; ENOTALLOWED otherwise.
-func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Group, err error) {
+func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.GroupMembership, err error) {
 	in, err := api.userInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -235,13 +235,25 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 	case !in:
 		return network, &ENOTALLOWED
 	default:
-		return api.getNetwork(userID, netID)
+		network.Group, err = api.getNetwork(netID)
+		if err != nil {
+			return
+		}
+		network.UnreadCount, err = api.db.UserConversationUnread(userID, network.Conversation)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		network.Role, err = api.db.UserRole(userID, netID)
+		if err != nil {
+			log.Println(err)
+		}
+		return
 	}
 }
 
-//TODO(patrick) - break getNetwork into subjective / nonsubjective versions
-func (api *API) getNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.Group, err error) {
-	return api.db.GetNetwork(userID, netID)
+func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
+	return api.db.GetNetwork(netID)
 }
 
 //CreateGroup creates a group and adds the creator as a member.
@@ -399,7 +411,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 				return
 			}
 			var group gp.Group
-			group, err = api.getNetwork(0, netID)
+			group, err = api.getNetwork(netID)
 			if err != nil {
 				return
 			}
