@@ -7,13 +7,13 @@ import (
 
 // Up is executed when this migration is applied
 func Up_20150224145928(txn *sql.Tx) {
-	_, err := txn.Query("DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM conversation_expirations)")
+	_, err := txn.Query("DELETE FROM chat_messages WHERE conversation_id IN (SELECT conversation_id FROM conversation_expirations)")
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()
 		return
 	}
-	_, err = txn.Query("DELETE FROM conversations WHERE id IN (SELECT id FROM conversation_expirations)")
+	_, err = txn.Query("DELETE FROM conversations WHERE id IN (SELECT conversation_id FROM conversation_expirations)")
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()
