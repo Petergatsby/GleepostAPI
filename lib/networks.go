@@ -70,7 +70,11 @@ func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
 //UserAddUsersToGroup adds all addees to the group until the first error.
 func (api *API) UserAddUsersToGroup(adder gp.UserID, addees []gp.UserID, group gp.NetworkID) (count int, err error) {
 	for _, addee := range addees {
-		err = api.UserAddUserToGroup(adder, addee, group)
+		if adder == addee {
+			err = api.UserJoinGroup(adder, group)
+		} else {
+			err = api.UserAddUserToGroup(adder, addee, group)
+		}
 		if err == nil {
 			count++
 		} else {
@@ -139,17 +143,6 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 	in, neterr := api.userInNetwork(adder, group)
 	isgroup, grouperr := api.isGroup(group)
 	switch {
-	case adder == addee:
-		canJoin, joinerr := api.userCanJoin(adder, group)
-		switch {
-		case joinerr != nil:
-			return joinerr
-		case canJoin:
-			err = api.setNetwork(addee, group)
-			return
-		default:
-			return &ENOTALLOWED
-		}
 	case neterr != nil:
 		return neterr
 	case grouperr != nil:
@@ -170,6 +163,42 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 		}
 		return
 	}
+}
+
+//UserJoinGroup makes this user a member of the group iff the group's privacy is "public" and the group is visible to them (ie, within their university network)
+func (api *API) UserJoinGroup(userID gp.UserID, group gp.NetworkID) (err error) {
+	canJoin, err := api.userCanJoin(userID, group)
+	switch {
+	case err != nil:
+		return
+	case canJoin:
+		err = api.setNetwork(userID, group)
+		if err != nil {
+			return
+		}
+		err = api.joinGroupConversation(userID, group)
+		return
+	default:
+		return &ENOTALLOWED
+	}
+}
+
+func (api *API) joinGroupConversation(userID gp.UserID, group gp.NetworkID) (err error) {
+	convID, err := api.db.GroupConversation(group)
+	if err != nil {
+		return
+	}
+	err = api.db.AddConversationParticipants(userID, []gp.UserID{userID}, convID)
+	if err != nil {
+		return
+	}
+	conv, err := api.GetConversation(userID, convID)
+	if err != nil {
+		return
+	}
+	go api.conversationChangedEvent(conv.Conversation)
+	api.addSystemMessage(convID, userID, "JOINED")
+	return
 }
 
 func (api *API) groupAddConvParticipants(adder, addee gp.UserID, group gp.NetworkID) (err error) {
