@@ -89,11 +89,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 	q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
 		"FROM conversation_participants " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"LEFT OUTER JOIN conversation_expirations ON conversation_expirations.conversation_id = conversations.id " +
-		"WHERE participant_id = ? AND ( " +
-		"conversation_expirations.ended IS NULL " +
-		"OR conversation_expirations.ended =0 " +
-		") " +
+		"WHERE participant_id = ? " +
 		"AND deleted = 0 " +
 		"AND conversations.group_id IS NULL " +
 		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
@@ -152,16 +148,6 @@ func (db *DB) ConversationActivity(convID gp.ConversationID) (t time.Time, err e
 		return
 	}
 	t, err = time.Parse(mysqlTime, tstring)
-	return
-}
-
-//TerminateConversation ends this conversation.
-func (db *DB) TerminateConversation(convID gp.ConversationID) (err error) {
-	s, err := db.prepare("UPDATE conversation_expirations SET ended = 1 WHERE conversation_id = ?")
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(convID)
 	return
 }
 
