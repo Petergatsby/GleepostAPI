@@ -89,7 +89,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 		"FROM conversation_participants " +
 		"JOIN  `chat_messages` ON conversation_participants.conversation_id = chat_messages.conversation_id " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"WHERE conversation_participants.participant_id = ?" +
+		"WHERE conversation_participants.participant_id = ? " +
 		"AND conversation_participants.deleted =0 " +
 		"AND conversations.group_id IS NULL " +
 		"GROUP BY chat_messages.conversation_id " +
