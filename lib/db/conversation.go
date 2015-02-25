@@ -92,6 +92,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 		"WHERE conversation_participants.participant_id = ? " +
 		"AND conversation_participants.deleted =0 " +
 		"AND conversations.group_id IS NULL " +
+		"AND chat_messages.id > conversation_participants.deletion_threshold " +
 		"GROUP BY chat_messages.conversation_id " +
 		"ORDER BY last_mod DESC " +
 		"LIMIT ? , ? "
