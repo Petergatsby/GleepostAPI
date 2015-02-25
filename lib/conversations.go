@@ -228,18 +228,18 @@ func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.Conversation
 //UserGetConversation returns the conversation convId if userId is allowed to view it; otherwise returns ENOTALLOWED.
 func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	if api.UserCanViewConversation(userID, convID) {
-		return api.GetFullConversation(convID, start, count)
+		return api.GetFullConversation(userID, convID, start, count)
 	}
 	return conv, &ENOTALLOWED
 }
 
 //GetFullConversation returns a full conversation containing up to count messages.
 //TODO(patrick) - clarify this vs getConversation etc
-func (api *API) GetFullConversation(convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
+func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.ID = convID
-	conv.LastActivity, err = api.conversationLastActivity(convID)
-	if err != nil {
-		return
+	lastActivity, err := api.conversationLastActivity(userID, convID)
+	if err == nil {
+		conv.LastActivity = lastActivity
 	}
 	conv.Participants = api.getParticipants(convID, true)
 	conv.Read, err = api.readStatus(convID)
@@ -261,8 +261,8 @@ func (api *API) readStatus(convID gp.ConversationID) (read []gp.Read, err error)
 }
 
 //ConversationLastActivity returns the modification time (ie, creation  or last-message) for this conversation.
-func (api *API) conversationLastActivity(convID gp.ConversationID) (t time.Time, err error) {
-	return api.db.ConversationActivity(convID)
+func (api *API) conversationLastActivity(userID gp.UserID, convID gp.ConversationID) (t time.Time, err error) {
+	return api.db.ConversationActivity(userID, convID)
 }
 
 //GetParticipants returns all participants of this conversation, or omits the `deleted` participants if includeDeleted is false.

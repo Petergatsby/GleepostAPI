@@ -140,13 +140,13 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 }
 
 //ConversationActivity returns the time this conversation last changed.
-func (db *DB) ConversationActivity(convID gp.ConversationID) (t time.Time, err error) {
-	s, err := db.prepare("SELECT last_mod FROM conversations WHERE id = ?")
+func (db *DB) ConversationActivity(userID gp.UserID, convID gp.ConversationID) (t time.Time, err error) {
+	s, err := db.prepare("SELECT MAX(chat_messages.`timestamp`) AS last_mod FROM conversation_participants JOIN chat_messages ON conversation_participants.conversation_id = chat_messages.conversation_id WHERE conversation_participants.participant_id = ? AND conversation_participants.conversation_id = ?")
 	if err != nil {
 		return
 	}
 	var tstring string
-	err = s.QueryRow(convID).Scan(&tstring)
+	err = s.QueryRow(userID, convID).Scan(&tstring)
 	if err != nil {
 		return
 	}
@@ -167,9 +167,9 @@ func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (er
 //GetConversation returns the conversation convId, including up to count messages.
 func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count int) (conversation gp.ConversationAndMessages, err error) {
 	conversation.ID = convID
-	conversation.LastActivity, err = db.ConversationActivity(convID)
-	if err != nil {
-		return
+	lastActivity, err := db.ConversationActivity(userID, convID)
+	if err == nil {
+		conversation.LastActivity = lastActivity
 	}
 	conversation.Participants, err = db.GetParticipants(convID, true)
 	if err != nil {

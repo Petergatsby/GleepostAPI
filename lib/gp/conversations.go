@@ -34,7 +34,7 @@ type RedisMessage struct {
 //Conversation is a container for a bunch of messages.
 type Conversation struct {
 	ID           ConversationID `json:"id"`
-	LastActivity time.Time      `json:"lastActivity"`
+	LastActivity time.Time      `json:"lastActivity,omitempty"`
 	Participants []User         `json:"participants"`   //Participants can send messages to and read from this conversation.
 	Read         []Read         `json:"read,omitempty"` //Read represents the most recent message each user has seen.
 	Unread       int            `json:"unread,omitempty"`
