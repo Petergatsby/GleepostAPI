@@ -14,11 +14,18 @@ var ENOTALLOWED = gp.APIerror{Reason: "You're not allowed to do that!"}
 //UserDeleteConversation removes this conversation from the list; it also terminates it (if it's a live conversation).
 func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
 	if api.UserCanViewConversation(userID, convID) {
+		var primary bool
+		primary, err = api.db.IsPrimaryConversation(convID)
+		if err == nil && primary {
+			err = api.db.SetDeletionThreshold(userID, convID, 999999999999)
+			return
+		}
 		err = api.db.DeleteConversation(userID, convID)
 		if err != nil {
 			return
 		}
 		go api.addSystemMessage(convID, userID, "PARTED")
+		return
 	}
 	return &ENOTALLOWED
 }

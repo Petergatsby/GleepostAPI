@@ -54,7 +54,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary b
 
 //AddConversationParticipants adds these participants to convID, or does nothing if they are already members.
 func (db *DB) AddConversationParticipants(adder gp.UserID, participants []gp.UserID, convID gp.ConversationID) (err error) {
-	s, err := db.prepare("REPLACE INTO conversation_participants (conversation_id, participant_id) VALUES (?, ?)")
+	s, err := db.prepare("REPLACE INTO conversation_participants (conversation_id, participant_id, deleted) VALUES (?, ?, 0)")
 	if err != nil {
 		return
 	}
@@ -161,6 +161,16 @@ func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (er
 		return
 	}
 	_, err = s.Exec(userID, convID)
+	return
+}
+
+//SetDeletionThreshold marks all messages before or equal to this message as "deleted" for this user. Attempting to set a lower threshold does nothing. High thresholds are reinterpreted as the <= message.
+func (db *DB) SetDeletionThreshold(userID gp.UserID, convID gp.ConversationID, threshold gp.MessageID) (err error) {
+	s, err := db.prepare("UPDATE conversation_participants SET deletion_threshold = (SELECT MAX(id) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id <= ?) WHERE conversation_participants.conversation_id = ? AND conversation_participants.participant_id = ? AND conversation_participants.deletion_threshold > ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(convID, threshold, convID, userID, threshold)
 	return
 }
 
@@ -498,4 +508,14 @@ func (db *DB) ConversationGroup(convID gp.ConversationID) (group gp.NetworkID, e
 		return
 	}
 	return gp.NetworkID(_group.Int64), nil //This is OK because a missing group ID will be 0
+}
+
+//IsPrimaryConversation returns true if this is a primary conversation.
+func (db *DB) IsPrimaryConversation(convID gp.ConversationID) (primary bool, err error) {
+	s, err := db.prepare("SELECT primary_conversation FROM conversations WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(convID).Scan(&primary)
+	return
 }
