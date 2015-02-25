@@ -165,14 +165,6 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID) (con
 	return api.db.GetConversation(userID, convID, api.Config.ConversationPageSize)
 }
 
-func (api *API) updateConversation(id gp.ConversationID) (err error) {
-	err = api.db.UpdateConversation(id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 //AddMessage creates a new message from userId in conversation convId, or returns ENOTALLOWED if the user is not a participant.
 func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
 	if !api.UserCanViewConversation(userID, convID) {
@@ -204,7 +196,6 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
-	go api.updateConversation(convID)
 	go api.messagePush(msg, convID)
 	return
 }
@@ -409,7 +400,6 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
-	go api.updateConversation(convID)
 	return
 }
 

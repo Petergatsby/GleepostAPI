@@ -67,20 +67,6 @@ func (db *DB) AddConversationParticipants(adder gp.UserID, participants []gp.Use
 	return nil
 }
 
-//UpdateConversation marks this conversation as modified now.
-func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
-	s, err := db.prepare("UPDATE conversations SET last_mod = NOW() WHERE id = ?")
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(id)
-	log.Println("DB hit: updateConversation convid ")
-	if err != nil {
-		log.Printf("Error: %v", err)
-	}
-	return err
-}
-
 //GetConversations returns this user's conversations;
 func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations = make([]gp.ConversationSmall, 0)
