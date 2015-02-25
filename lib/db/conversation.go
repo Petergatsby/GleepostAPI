@@ -381,8 +381,9 @@ func (db *DB) MarkRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID
 }
 
 //UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
+//TODO(Patrick) - convert this into a single query
 func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
-	qParticipate := "SELECT conversation_id, last_read FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
+	qParticipate := "SELECT conversation_id, last_read, deletion_threshold FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
 	sParticipate, err := db.prepare(qParticipate)
 	if err != nil {
 		return
@@ -393,9 +394,9 @@ func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, 
 	}
 	defer rows.Close()
 
-	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND `system` = 0"
+	qUnreadCount := "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND `system` = 0 AND chat_messages.id > ?"
 	if useThreshold {
-		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) AND `system` = 0"
+		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) AND `system` = 0 AND chat_messages.id > ?"
 
 	}
 	sUnreadCount, err := db.prepare(qUnreadCount)
@@ -404,17 +405,18 @@ func (db *DB) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, 
 	}
 	var convID gp.ConversationID
 	var lastID gp.MessageID
+	var deletedID gp.MessageID
 	for rows.Next() {
-		err = rows.Scan(&convID, &lastID)
+		err = rows.Scan(&convID, &lastID, &deletedID)
 		if err != nil {
 			return
 		}
 		log.Printf("Conversation %d, last read message was %d\n", convID, lastID)
 		_count := 0
 		if !useThreshold {
-			err = sUnreadCount.QueryRow(convID, lastID).Scan(&_count)
+			err = sUnreadCount.QueryRow(convID, lastID, deletedID).Scan(&_count)
 		} else {
-			err = sUnreadCount.QueryRow(convID, lastID, user).Scan(&_count)
+			err = sUnreadCount.QueryRow(convID, lastID, user, deletedID).Scan(&_count)
 		}
 		if err == nil {
 			log.Printf("Conversation %d, unread message count was %d\n", convID, _count)
@@ -450,12 +452,15 @@ func (db *DB) UserConversationUnread(userID gp.UserID, convID gp.ConversationID)
 		"AND chat_messages.id > " +
 		"(SELECT last_read FROM conversation_participants " +
 		"WHERE conversation_id = ? AND participant_id = ?) " +
+		"AND chat_messages.id > " +
+		"(SELECT deletion_threshold FROM conversation_participants " +
+		"WHERE conversation_id = ? AND participant_id = ?) " +
 		"AND `system` = 0 AND conversations.group_id IS NULL"
 	s, err := db.prepare(q)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(convID, convID, userID, convID, userID).Scan(&unread)
+	err = s.QueryRow(convID, convID, userID, convID, userID, convID, userID).Scan(&unread)
 	return
 }
 
