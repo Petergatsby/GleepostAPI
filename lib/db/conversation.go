@@ -85,14 +85,16 @@ func (db *DB) UpdateConversation(id gp.ConversationID) (err error) {
 func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations = make([]gp.ConversationSmall, 0)
 	var s *sql.Stmt
-	var q string
-	q = "SELECT conversation_participants.conversation_id, conversations.last_mod " +
+	q := "SELECT conversation_participants.conversation_id, MAX( chat_messages.`timestamp` ) AS last_mod " +
 		"FROM conversation_participants " +
+		"JOIN  `chat_messages` ON conversation_participants.conversation_id = chat_messages.conversation_id " +
 		"JOIN conversations ON conversation_participants.conversation_id = conversations.id " +
-		"WHERE participant_id = ? " +
-		"AND deleted = 0 " +
+		"WHERE conversation_participants.participant_id = ?" +
+		"AND conversation_participants.deleted =0 " +
 		"AND conversations.group_id IS NULL " +
-		"ORDER BY conversations.last_mod DESC LIMIT ?, ?"
+		"GROUP BY chat_messages.conversation_id " +
+		"ORDER BY last_mod DESC " +
+		"LIMIT ? , ? "
 	s, err = db.prepare(q)
 	if err != nil {
 		return
