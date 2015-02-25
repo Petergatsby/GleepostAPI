@@ -329,7 +329,7 @@ func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, index int6
 			"FROM chat_messages " +
 			"JOIN conversation_participants ON " +
 			"chat_messages.conversation_id = conversation_participants.participant_id " +
-			"WHERE conversation_id = ? " +
+			"WHERE chat_messages.conversation_id = ? " +
 			"AND conversation_participants.participant_id = ? AND id < ? " +
 			"AND chat_messages.id > conversation_participants.deletion_threshold " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
@@ -338,7 +338,7 @@ func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, index int6
 			"FROM chat_messages " +
 			"JOIN conversation_participants ON " +
 			"chat_messages.conversation_id = conversation_participants.participant_id " +
-			"WHERE conversation_id = ? " +
+			"WHERE chat_messages.conversation_id = ? " +
 			"AND conversation_participants.participant_id = ? " +
 			"AND chat_messages.id > conversation_participants.deletion_threshold " +
 			"ORDER BY `timestamp` DESC LIMIT ?, ?"
