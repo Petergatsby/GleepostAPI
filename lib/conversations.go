@@ -20,6 +20,7 @@ func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationI
 			err = api.db.SetDeletionThreshold(userID, convID, 999999999999)
 			return
 		}
+
 		err = api.db.DeleteConversation(userID, convID)
 		if err != nil {
 			return

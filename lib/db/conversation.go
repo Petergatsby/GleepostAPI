@@ -166,7 +166,7 @@ func (db *DB) DeleteConversation(userID gp.UserID, convID gp.ConversationID) (er
 
 //SetDeletionThreshold marks all messages before or equal to this message as "deleted" for this user. Attempting to set a lower threshold does nothing. High thresholds are reinterpreted as the <= message.
 func (db *DB) SetDeletionThreshold(userID gp.UserID, convID gp.ConversationID, threshold gp.MessageID) (err error) {
-	s, err := db.prepare("UPDATE conversation_participants SET deletion_threshold = (SELECT MAX(id) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id <= ?) WHERE conversation_participants.conversation_id = ? AND conversation_participants.participant_id = ? AND conversation_participants.deletion_threshold > ?")
+	s, err := db.prepare("UPDATE conversation_participants SET deletion_threshold = (SELECT MAX(id) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id <= ?) WHERE conversation_participants.conversation_id = ? AND conversation_participants.participant_id = ? AND conversation_participants.deletion_threshold < ?")
 	if err != nil {
 		return
 	}
