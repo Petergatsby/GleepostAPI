@@ -197,7 +197,7 @@ func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count 
 	if err != nil {
 		log.Println(err)
 	}
-	conversation.Messages, err = db.GetMessages(convID, 0, "start", count)
+	conversation.Messages, err = db.GetMessages(userID, convID, 0, "start", count)
 	return
 }
 
@@ -310,7 +310,7 @@ func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string
 //exception.
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
-func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
 	var s *sql.Stmt
 	var q string
@@ -318,24 +318,36 @@ func (db *DB) GetMessages(convID gp.ConversationID, index int64, sel string, cou
 	case sel == "after":
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
-			"WHERE conversation_id = ? AND id > ? " +
+			"JOIN conversation_participants ON " +
+			"chat_messages.conversation_id = conversation_participants.participant_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND conversation_participants.participant_id = ? AND id > ? " +
+			"AND chat_messages.id > conversation_participants.deletion_threshold " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "before":
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
-			"WHERE conversation_id = ? AND id < ? " +
+			"JOIN conversation_participants ON " +
+			"chat_messages.conversation_id = conversation_participants.participant_id " +
+			"WHERE conversation_id = ? " +
+			"AND conversation_participants.participant_id = ? AND id < ? " +
+			"AND chat_messages.id > conversation_participants.deletion_threshold " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "start":
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
+			"JOIN conversation_participants ON " +
+			"chat_messages.conversation_id = conversation_participants.participant_id " +
 			"WHERE conversation_id = ? " +
+			"AND conversation_participants.participant_id = ? " +
+			"AND chat_messages.id > conversation_participants.deletion_threshold " +
 			"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	}
 	s, err = db.prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(convID, index, count)
+	rows, err := s.Query(convID, userID, index, count)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time)")
 	if err != nil {
 		return

@@ -258,7 +258,7 @@ func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		log.Println(err)
 	}
-	conv.Messages, err = api.getMessages(convID, start, "start", count)
+	conv.Messages, err = api.getMessages(userID, convID, start, "start", count)
 	return
 }
 
@@ -290,13 +290,13 @@ func (api *API) getParticipants(convID gp.ConversationID, includeDeleted bool) [
 func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
 	if api.UserCanViewConversation(userID, convID) {
-		return api.getMessages(convID, index, sel, count)
+		return api.getMessages(userID, convID, index, sel, count)
 	}
 	return messages, &ENOTALLOWED
 }
 
-func (api *API) getMessages(convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
-	messages, err = api.db.GetMessages(convID, index, sel, count)
+func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+	messages, err = api.db.GetMessages(userID, convID, index, sel, count)
 	return
 }
 
