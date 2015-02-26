@@ -15,9 +15,9 @@ var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
 	var s *sql.Stmt
 	if group > 0 {
-		s, err = db.prepare("INSERT INTO conversations (initiator, last_mod, primary_conversation, group_id) VALUES (?, NOW(), ?, ?)")
+		s, err = db.prepare("INSERT INTO conversations (initiator, primary_conversation, group_id) VALUES (?, ?, ?)")
 	} else {
-		s, err = db.prepare("INSERT INTO conversations (initiator, last_mod, primary_conversation) VALUES (?, NOW(), ?)")
+		s, err = db.prepare("INSERT INTO conversations (initiator, primary_conversation) VALUES (?, ?)")
 	}
 	if err != nil {
 		return
