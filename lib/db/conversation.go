@@ -304,36 +304,29 @@ func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, index int6
 	case sel == "after":
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
-			"JOIN conversation_participants ON " +
-			"chat_messages.conversation_id = conversation_participants.participant_id " +
 			"WHERE chat_messages.conversation_id = ? " +
-			"AND conversation_participants.participant_id = ? AND id > ? " +
-			"AND chat_messages.id > conversation_participants.deletion_threshold " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"AND id > ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "before":
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
-			"JOIN conversation_participants ON " +
-			"chat_messages.conversation_id = conversation_participants.participant_id " +
 			"WHERE chat_messages.conversation_id = ? " +
-			"AND conversation_participants.participant_id = ? AND id < ? " +
-			"AND chat_messages.id > conversation_participants.deletion_threshold " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"AND id < ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
 	case sel == "start":
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
-			"JOIN conversation_participants ON " +
-			"chat_messages.conversation_id = conversation_participants.participant_id " +
 			"WHERE chat_messages.conversation_id = ? " +
-			"AND conversation_participants.participant_id = ? " +
-			"AND chat_messages.id > conversation_participants.deletion_threshold " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	}
 	s, err = db.prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(convID, userID, index, count)
+	rows, err := s.Query(convID, userID, convID, index, count)
 	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time)")
 	if err != nil {
 		return
