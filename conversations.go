@@ -92,13 +92,14 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
-		if ok && *e == gp.ENOSUCHUSER {
+		switch {
+		case ok && *e == gp.ENOSUCHUSER:
 			go api.Count(1, "gleepost.conversations.get.400")
 			jsonResponse(w, e, 400)
-		} else if *e == lib.ENOTALLOWED {
+		case ok && *e == lib.ENOTALLOWED:
 			go api.Count(1, "gleepost.conversations.get.403")
 			jsonResponse(w, e, 403)
-		} else {
+		default:
 			go api.Count(1, "gleepost.conversations.get.500")
 			jsonErr(w, err, 500)
 		}
