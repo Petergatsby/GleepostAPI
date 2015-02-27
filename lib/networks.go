@@ -36,7 +36,7 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.Grou
 		groups, err = api.db.GetUserNetworks(user, true)
 		return
 	default:
-		shared, err := api.haveSharedNetwork(perspective, user)
+		shared, err := api.sameUniversity(perspective, user)
 		switch {
 		case err != nil:
 			return groups, err
@@ -327,24 +327,17 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 	}
 }
 
-//HaveSharedNetwork returns true if both users a and b are in the same network.
-func (api *API) haveSharedNetwork(a gp.UserID, b gp.UserID) (shared bool, err error) {
-	anets, err := api.getUserNetworks(a)
+//sameUniversity returns true if both users a and b are in the same university.
+func (api *API) sameUniversity(a, b gp.UserID) (shared bool, err error) {
+	unia, err := api.db.GetUserUniversity(a)
 	if err != nil {
 		return
 	}
-	bnets, err := api.getUserNetworks(b)
+	unib, err := api.db.GetUserUniversity(b)
 	if err != nil {
 		return
 	}
-	for _, an := range anets {
-		for _, bn := range bnets {
-			if an.ID == bn.ID {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
+	return unia == unib, nil
 }
 
 //UserGetGroupAdmins returns all the admins of the group, or ENOTALLOWED if the requesting user isn't in that group.

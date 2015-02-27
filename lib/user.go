@@ -27,7 +27,7 @@ func (api *API) UserGetProfile(userID, otherID gp.UserID) (user gp.Profile, err 
 	if userID == otherID {
 		return api.getProfile(userID, otherID)
 	}
-	shared, e := api.haveSharedNetwork(userID, otherID)
+	shared, e := api.sameUniversity(userID, otherID)
 	switch {
 	case e != nil:
 		fallthrough
