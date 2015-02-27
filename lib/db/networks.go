@@ -36,19 +36,18 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
 		"user_network.role_level, network.name, " +
 		"network.cover_img, network.`desc`, network.creator, network.privacy, " +
-		"MAX(chat_messages.`timestamp`) AS last_msg_time, " +
-		"MAX(wall_posts.`time`) AS last_post_time, " +
+		"GREATEST( " +
+		"COALESCE((SELECT MAX(`timestamp`) FROM chat_messages WHERE conversation_id = conversations.id), '0000-00-00 00:00:00'), " +
+		"COALESCE((SELECT MAX(`time`) FROM wall_posts WHERE network_id = user_network.network_id), '0000-00-00 00:00:00') " +
+		") AS last_activity " +
 		"FROM user_network " +
 		"INNER JOIN network ON user_network.network_id = network.id " +
 		"JOIN conversations ON conversations.group_id = network.id " +
-		"JOIN chat_messages ON conversations.id = chat_messages.conversation_id " +
-		"JOIN wall_posts ON wall_posts.network_id = user_network.network_id " +
-		"WHERE user_id = ?"
+		"WHERE user_id = ? "
 	if userGroupsOnly {
-		networkSelect += " AND network.user_group = 1 "
+		networkSelect += "AND network.user_group = 1 "
 	}
-	networkSelect += "GROUP BY chat_messages.conversation_id, wall_posts.network_id " +
-		"ORDER BY CASE WHEN last_post_time > last_msg_time THEN last_post_time ELSE last_msg_time END DESC"
+	networkSelect += "ORDER BY last_activity DESC"
 	s, err := db.prepare(networkSelect)
 	if err != nil {
 		return
