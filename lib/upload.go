@@ -47,19 +47,13 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 		return "", gp.APIerror{Reason: "Unsupported file type"}
 	}
 	//store on s3
-	networks, _ := api.getUserNetworks(id)
+	primary, _ := api.db.GetUserUniversity(id)
 	var s *s3.S3
 	var bucket *s3.Bucket
-	switch {
-	case len(networks) > 0:
-		s = api.getS3(networks[0].ID)
-		if networks[0].ID == 1911 {
-			bucket = s.Bucket("gpcali")
-		} else {
-			bucket = s.Bucket("gpimg")
-		}
-	default:
-		s = api.getS3(1)
+	s = api.getS3(primary.ID)
+	if primary.ID == 1911 {
+		bucket = s.Bucket("gpcali")
+	} else {
 		bucket = s.Bucket("gpimg")
 	}
 	data, err := ioutil.ReadAll(file)

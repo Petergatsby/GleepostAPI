@@ -294,16 +294,12 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 	case !exists && len(url) > 0:
 		return network, &ENOTALLOWED
 	default:
-		var networks []gp.GroupMembership
-		networks, err = api.getUserNetworks(userID)
+		var primary gp.GroupMembership
+		primary, err = api.db.GetUserUniversity(userID)
 		if err != nil {
 			return
 		}
-		var parent gp.NetworkID
-		if len(networks) > 0 {
-			parent = networks[0].ID
-		}
-		network, err = api.db.CreateNetwork(name, parent, url, desc, userID, true, privacy)
+		network, err = api.db.CreateNetwork(name, primary.ID, url, desc, userID, true, privacy)
 		if err != nil {
 			return
 		}

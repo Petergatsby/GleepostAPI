@@ -163,19 +163,13 @@ func (api *API) Upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) 
 }
 
 func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
-	networks, _ := api.getUserNetworks(user)
+	primary, _ := api.db.GetUserUniversity(user)
 	var s *s3.S3
 	var bucket *s3.Bucket
-	switch {
-	case len(networks) > 0:
-		s = api.getS3(networks[0].ID)
-		if networks[0].ID == 1911 {
-			bucket = s.Bucket("gpcali")
-		} else {
-			bucket = s.Bucket("gpimg")
-		}
-	default:
-		s = api.getS3(1)
+	s = api.getS3(primary.ID)
+	if primary.ID == 1911 {
+		bucket = s.Bucket("gpcali")
+	} else {
 		bucket = s.Bucket("gpimg")
 	}
 	return bucket

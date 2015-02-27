@@ -13,29 +13,29 @@ var NoSuchLevelErr = gp.APIerror{Reason: "That's not a valid approval level"}
 
 //ApproveAccess returns this user's access to review / change review level in this network.
 func (api *API) ApproveAccess(userID gp.UserID) (access gp.ApprovePermission, err error) {
-	nets, err := api.getUserNetworks(userID)
+	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.db.ApproveAccess(userID, nets[0].ID)
+	return api.db.ApproveAccess(userID, primary.ID)
 }
 
 //ApproveLevel returns this network's current approval level, or ENOTALLOWED if you aren't allowed to see it.
 func (api *API) ApproveLevel(userID gp.UserID) (level gp.ApproveLevel, err error) {
-	nets, err := api.getUserNetworks(userID)
+	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.db.ApproveLevel(nets[0].ID)
+	return api.db.ApproveLevel(primary.ID)
 }
 
 //SetApproveLevel sets this network's approval level, or returns ENOTALLOWED if you can't.
 func (api *API) SetApproveLevel(userID gp.UserID, level int) (err error) {
-	nets, err := api.getUserNetworks(userID)
+	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	access, err := api.db.ApproveAccess(userID, nets[0].ID)
+	access, err := api.db.ApproveAccess(userID, primary.ID)
 	switch {
 	case err != nil:
 		return err
@@ -44,16 +44,16 @@ func (api *API) SetApproveLevel(userID gp.UserID, level int) (err error) {
 	case level < 0 || level > 3:
 		return NoSuchLevelErr
 	default:
-		current, e := api.db.ApproveLevel(nets[0].ID)
+		current, e := api.db.ApproveLevel(primary.ID)
 		switch {
 		case e != nil:
 			return e
 		case current.Level == level:
 			//noop
 		default:
-			err = api.db.SetApproveLevel(nets[0].ID, level)
+			err = api.db.SetApproveLevel(primary.ID, level)
 			if err == nil {
-				go api.approvalChangePush(nets[0].ID, userID, level)
+				go api.approvalChangePush(primary.ID, userID, level)
 			}
 		}
 		return
@@ -102,31 +102,31 @@ func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level 
 
 //UserGetPending returns all the posts pending review in this user's primary network.
 func (api *API) UserGetPending(userID gp.UserID) (pending []gp.PendingPost, err error) {
-	nets, err := api.getUserNetworks(userID)
+	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.GetNetworkPending(userID, nets[0].ID)
+	return api.GetNetworkPending(userID, primary.ID)
 
 }
 
 //UserGetApproved returns posts that have been approved in this user's primary network.
 func (api *API) UserGetApproved(userID gp.UserID, mode int, index int64, count int) (approved []gp.PendingPost, err error) {
-	nets, err := api.getUserNetworks(userID)
+	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.GetNetworkApproved(userID, nets[0].ID, mode, index, count)
+	return api.GetNetworkApproved(userID, primary.ID, mode, index, count)
 
 }
 
 //UserGetRejected returns posts that have been rejected in this user's primary network.
 func (api *API) UserGetRejected(userID gp.UserID, mode int, index int64, count int) (rejected []gp.PendingPost, err error) {
-	nets, err := api.getUserNetworks(userID)
+	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.GetNetworkRejected(userID, nets[0].ID, mode, index, count)
+	return api.GetNetworkRejected(userID, primary.ID, mode, index, count)
 
 }
 

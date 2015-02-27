@@ -30,6 +30,38 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 	return
 }
 
+//GetUserUniversity returns this user's primary network (ie, their university)
+func (db *DB) GetUserUniversity(id gp.UserID) (network gp.GroupMembership, err error) {
+	s, err := db.prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.conver_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
+	if err != nil {
+		return
+	}
+	var img, desc, privacy sql.NullString
+	var creator sql.NullInt64
+	err = s.QueryRow(id).Scan(&network.ID, &network.Group.Network.Name, &network.Role.Name, &network.Role.Level, &img, &desc, &creator, &privacy)
+	if img.Valid {
+		network.Image = img.String
+	}
+	if desc.Valid {
+		network.Desc = desc.String
+	}
+	if creator.Valid {
+		u, err := db.GetUser(gp.UserID(creator.Int64))
+		if err == nil {
+			network.Creator = &u
+		}
+		network.MemberCount, _ = db.GroupMemberCount(network.ID)
+		//TODO(patrick) - maybe don't display group conversation id if you're not a member.
+		network.Conversation, _ = db.GroupConversation(network.ID)
+		network.UnreadCount, _ = db.UserConversationUnread(id, network.Conversation)
+	}
+	if privacy.Valid {
+		network.Privacy = privacy.String
+	}
+
+	return
+}
+
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
 func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.GroupMembership, err error) {
 	networks = make([]gp.GroupMembership, 0)

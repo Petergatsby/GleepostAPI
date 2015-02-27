@@ -45,7 +45,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 	if err != nil {
 		return
 	}
-	nets, err := api.getUserNetworks(user.ID)
+	user.Network, err = api.db.GetUserUniversity(user.ID)
 	if err != nil {
 		return
 	}
@@ -64,7 +64,6 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.PostCount = postCount
-	user.Network = nets[0]
 	return
 }
 
