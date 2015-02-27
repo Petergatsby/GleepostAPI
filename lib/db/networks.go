@@ -32,7 +32,7 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 
 //GetUserUniversity returns this user's primary network (ie, their university)
 func (db *DB) GetUserUniversity(id gp.UserID) (network gp.GroupMembership, err error) {
-	s, err := db.prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.conver_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
+	s, err := db.prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
 	if err != nil {
 		return
 	}
