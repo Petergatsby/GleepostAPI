@@ -1726,6 +1726,8 @@ token=[token]
 
 This returns a list of all (non-university) groups this user belongs to.
 
+The list is ordered by last activity: most recent post or message first.
+
 Example response: (http 200)
 ```json
 [
