@@ -1272,11 +1272,18 @@ token=[token]
 
 You are only allowed to view a user's profile if they share a network with you. Attempting to access a profile resource of a user you share no networks with will result in a 403 error.
 
+A user (such as an official university account) may have the parameter `official`. This indicates that they are deemed official by the university.
+
+If a user is not official, the parameter will be omitted.
+
+The `official` parameter is visible anywhere you might see a User object.
+
 example responses:
 ```json
 {
 	"id":9,
 	"name":"Patrick",
+	"official":true,
 	"tagline":"I like computers",
 	"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 	"network": { "id":1, "name":"University of Leeds" },
