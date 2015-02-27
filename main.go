@@ -4,9 +4,11 @@ package main
 import (
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 
 	"runtime"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -20,10 +22,20 @@ var (
 func main() {
 	ascii()
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	conf := conf.GetConfig()
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	go api.FeedbackDaemon(60)
+	if !config.DevelopmentMode {
+		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
+	}
+	var futures []conf.PostFuture
+	for _, f := range config.Futures {
+		futures = append(futures, f.ParseDuration())
+	}
+	go api.KeepPostsInFuture(30*time.Minute, futures)
 
 	server := &http.Server{
-		Addr:    ":" + conf.Port,
+		Addr:    ":" + config.Port,
 		Handler: r,
 	}
 	server.ListenAndServe()

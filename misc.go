@@ -17,7 +17,7 @@ import (
 
 var (
 	config = conf.GetConfig()
-	api    = lib.New(*config)
+	api    *lib.API
 )
 
 func init() {
@@ -54,19 +54,6 @@ func ascii() {
 
 func missingParamErr(param string) *gp.APIerror {
 	return &gp.APIerror{Reason: "Missing parameter: " + param}
-}
-
-func init() {
-	go api.FeedbackDaemon(60)
-	if !config.DevelopmentMode {
-		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
-	}
-	var futures []conf.PostFuture
-	for _, f := range config.Futures {
-		futures = append(futures, f.ParseDuration())
-	}
-	go api.KeepPostsInFuture(30*time.Minute, futures)
-
 }
 
 func jsonResponse(w http.ResponseWriter, resp interface{}, code int) {
