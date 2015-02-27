@@ -12,7 +12,7 @@ func (api *API) ReportPost(user gp.UserID, post gp.PostID, reason string) error 
 	if err != nil {
 		return err
 	}
-	in, err := api.userInNetwork(user, p.Network)
+	in, err := api.db.UserInNetwork(user, p.Network)
 	switch {
 	case err != nil:
 		return err

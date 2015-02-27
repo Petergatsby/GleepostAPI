@@ -509,3 +509,13 @@ func (db *DB) GroupConversation(group gp.NetworkID) (conversation gp.Conversatio
 	err = s.QueryRow(group).Scan(&conversation)
 	return
 }
+
+//UserInNetwork returns true iff this user is in this network.
+func (db *DB) UserInNetwork(userID gp.UserID, network gp.NetworkID) (in bool, err error) {
+	s, err := db.prepare("SELECT COUNT(*) FROM user_network WHERE user_id = ? AND network_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, network).Scan(&in)
+	return
+}

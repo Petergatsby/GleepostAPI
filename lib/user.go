@@ -69,7 +69,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 
 //IsAdmin returns true if tis user is a member of the Admin network specified in the config.
 func (api *API) isAdmin(user gp.UserID) (admin bool) {
-	in, err := api.userInNetwork(user, gp.NetworkID(api.Config.Admins))
+	in, err := api.db.UserInNetwork(user, gp.NetworkID(api.Config.Admins))
 	if err == nil && in {
 		return true
 	}

@@ -48,20 +48,6 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.Grou
 	}
 }
 
-//userInNetwork returns true if user id is a member of network, false if not and err when there's a db problem.
-func (api *API) userInNetwork(id gp.UserID, network gp.NetworkID) (in bool, err error) {
-	networks, err := api.db.GetUserNetworks(id, false)
-	if err != nil {
-		return false, err
-	}
-	for _, n := range networks {
-		if n.ID == network {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 //isGroup returns false if this network isn't a group (ie isn't user-created) and error if the group doesn't exist.
 func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
 	return api.db.IsGroup(netID)
@@ -140,7 +126,7 @@ func (api *API) userRole(user gp.UserID, network gp.NetworkID) (role gp.Role, er
 //TODO: Check addee exists
 //TODO: Suppress re-add push notification.
 func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (err error) {
-	in, neterr := api.userInNetwork(adder, group)
+	in, neterr := api.db.UserInNetwork(adder, group)
 	isgroup, grouperr := api.isGroup(group)
 	switch {
 	case neterr != nil:
@@ -220,7 +206,7 @@ func (api *API) userCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, 
 	if err != nil {
 		return
 	}
-	in, err := api.userInNetwork(userID, parent)
+	in, err := api.db.UserInNetwork(userID, parent)
 	if err != nil {
 		return
 	}
@@ -257,7 +243,7 @@ func (api *API) assignNetworks(user gp.UserID, email string) (networks int, err 
 
 //UserGetNetwork returns the information about a network, if userID is a member of it; ENOTALLOWED otherwise.
 func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.GroupMembership, err error) {
-	in, err := api.userInNetwork(userID, netID)
+	in, err := api.db.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
@@ -343,7 +329,7 @@ func (api *API) sameUniversity(a, b gp.UserID) (shared bool, err error) {
 //UserGetGroupAdmins returns all the admins of the group, or ENOTALLOWED if the requesting user isn't in that group.
 func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
-	in, errin := api.userInNetwork(userID, netID)
+	in, errin := api.db.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {
 	case errin != nil:
@@ -360,7 +346,7 @@ func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users 
 //UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
 func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
-	in, errin := api.userInNetwork(userID, netID)
+	in, errin := api.db.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	CanJoin, errJoin := api.userCanJoin(userID, netID)
 	switch {
@@ -402,7 +388,7 @@ func (api *API) UserLeaveGroup(userID gp.UserID, netID gp.NetworkID) (err error)
 //UserInviteEmail sends a group invite from userID to email, or err if something went wrong.
 //If someone has already signed up with email, it just adds them to the group directly.
 func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email string) (err error) {
-	in, neterr := api.userInNetwork(userID, netID)
+	in, neterr := api.db.UserInNetwork(userID, netID)
 	isgroup, grouperr := api.isGroup(netID)
 	switch {
 	case neterr != nil:
