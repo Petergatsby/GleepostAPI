@@ -37,8 +37,13 @@ func New(conf conf.Config) (api *API) {
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.mail = mail.New(conf.Email)
+	return
+}
+
+//Start connects to various services & makes the API ready to go.
+func (api *API) Start() {
 	api.pushers = make(map[string]*push.Pusher)
-	for _, psh := range conf.Pushers {
+	for _, psh := range api.Config.Pushers {
 		log.Println(psh)
 		api.pushers[psh.AppName] = push.New(psh)
 	}
@@ -48,7 +53,6 @@ func New(conf conf.Config) (api *API) {
 	}
 	api.statsd = statsd
 	go api.process(transcodeQueue)
-	return
 }
 
 //Time reports the time for this stat to statsd. (use it with defer)
