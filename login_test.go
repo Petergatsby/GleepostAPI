@@ -1,17 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func TestLogin(t *testing.T) {
-
+	err := initDB()
+	if err != nil {
+		t.Fatalf("Error initializing db: %v\n", err)
+	}
 	//Good user
 	email := "patrick@fakestanford.edu"
 	pass := "TestingPass"
@@ -59,6 +64,27 @@ func TestLogin(t *testing.T) {
 		t.Fatalf("Expected %s, got %s\n", "Bad username/password", errorValue.Reason)
 	}
 
+}
+
+func initDB() error {
+	config := conf.GetConfig()
+	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `network`")
+	if err != nil {
+		return err
+	}
+	stmt, err := db.Prepare("INSERT INTO `network` (`name`, `is_university`, `privacy`, `user_group`) VALUES (?, ?, NULL, ?)")
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec("Fake Stanford", true, true)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func loginRequest(email, pass string) (resp *http.Response, err error) {
