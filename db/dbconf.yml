@@ -9,3 +9,9 @@ production:
         open: $PROD_URL
         import: github.com/go-sql-driver/mysql
         dialect: mysql
+
+local:
+        driver: mysql
+        open: $LOCAL_URL
+        import: github.com/go-sql-driver/mysl
+        dialect: mysql
