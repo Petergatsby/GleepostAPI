@@ -698,7 +698,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `desc` varchar(256) COLLATE utf8_unicode_ci DEFAULT NULL,
   `busy` tinyint(1) NOT NULL DEFAULT '0',
   `official` tinyint(1) NOT NULL DEFAULT '0',
-  `new_message_threshold` datetime NOT NULL,
+  `new_message_threshold` datetime NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=2913 ;
