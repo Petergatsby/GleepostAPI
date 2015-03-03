@@ -294,14 +294,14 @@ func (api *API) recoveryURL(id gp.UserID, token string) (url string) {
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationURL(token)
 	html := "<html><body><a href=\"" + url + "\">Verify your account online here.</a></body></html>"
-	err = api.mail.SendHTML(email, name+", verify your Gleepost account!", html)
+	err = api.Mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
 
 func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (err error) {
 	url := api.recoveryURL(user.ID, token)
 	html := "<html><body><a href=\"" + url + "\">Click here to recover your password.</a></body></html>"
-	err = api.mail.SendHTML(email, user.Name+", recover your Gleepost password!", html)
+	err = api.Mail.SendHTML(email, user.Name+", recover your Gleepost password!", html)
 	return
 }
 

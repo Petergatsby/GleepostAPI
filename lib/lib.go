@@ -23,7 +23,7 @@ type API struct {
 	cache   *cache.Cache
 	db      *db.DB
 	fb      *FB
-	mail    mail.Mailer
+	Mail    mail.Mailer
 	Config  conf.Config
 	pushers map[string]*push.Pusher
 	statsd  g2s.Statter
@@ -36,7 +36,7 @@ func New(conf conf.Config) (api *API) {
 	api.db = db.New(conf.Mysql)
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
-	api.mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
+	api.Mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
 	return
 }
 

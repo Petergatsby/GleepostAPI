@@ -115,7 +115,7 @@ func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, tok
 		"On your phone? <a href=\"" + inviteCampaignIOS + "\">install the app on your iPhone here</a>" +
 		" or <a href=\"" + inviteCampaignAndroid + "\">click here to get the Android app.</a>" +
 		"</body></html>"
-	err = api.mail.SendHTML(email, subject, html)
+	err = api.Mail.SendHTML(email, subject, html)
 	return
 }
 

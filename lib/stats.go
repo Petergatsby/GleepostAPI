@@ -288,7 +288,7 @@ func (api *API) summaryEmail(start time.Time, finish time.Time) {
 		if err != nil {
 			log.Println(err)
 		} else {
-			err = api.mail.SendPlaintext(email, title, text)
+			err = api.Mail.SendPlaintext(email, title, text)
 			if err != nil {
 				log.Println(err)
 			}

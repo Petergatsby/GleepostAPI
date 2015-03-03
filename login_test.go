@@ -10,6 +10,7 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 var baseUrl = "http://localhost:8083/api/v1/"
@@ -20,6 +21,7 @@ func TestInit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+	api.Mail = mail.NewMock()
 	go main()
 	time.Sleep(500 * time.Millisecond) //Time to spin up
 }

@@ -26,7 +26,7 @@ Curing FOMO one day at a time, The Gleepost Team.</body></html>`
 	}
 	count := 0
 	for _, email := range emails {
-		err = api.mail.SendHTML(email, subject, body)
+		err = api.Mail.SendHTML(email, subject, body)
 		if err != nil {
 			log.Println(err)
 		} else {
