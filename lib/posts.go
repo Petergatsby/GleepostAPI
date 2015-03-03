@@ -8,14 +8,14 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//EBADTIME happens when you don't provide a well-formed time when looking for live posts.
-var EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
-
-//CommentTooShort happens if you try to post an empty comment.
-var CommentTooShort = gp.APIerror{Reason: "Comment too short"}
-
-//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
-var NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
+var (
+	//EBADTIME happens when you don't provide a well-formed time when looking for live posts.
+	EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
+	//CommentTooShort happens if you try to post an empty comment.
+	CommentTooShort = gp.APIerror{Reason: "Comment too short"}
+	//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
+	NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
+)
 
 //GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {

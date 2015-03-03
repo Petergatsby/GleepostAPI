@@ -20,19 +20,6 @@ type FacebookToken struct {
 	Scopes []string  `facebook:"scopes"`
 }
 
-//debugToken logs the response from facebook's /debug_token.
-func debugToken(token string) {
-	res, err := facebook.Get("/debug_token", facebook.Params{
-		"access_token": token,
-	})
-	fmt.Println(res["app_id"])
-	fmt.Println(res["expires_at"])
-	fmt.Println(res["is_valid"])
-	fmt.Printf("%v", res["scopes"])
-	fmt.Printf("%v", res)
-	fmt.Printf("%v", err)
-}
-
 //FB contains the configuration specific to this facebook app.
 type FB struct {
 	config conf.FacebookConfig
@@ -48,6 +35,19 @@ var (
 	//FBNoEmail = the email supplied by the user is too short.
 	FBNoEmail = gp.APIerror{Reason: "Email required"}
 )
+
+//debugToken logs the response from facebook's /debug_token.
+func debugToken(token string) {
+	res, err := facebook.Get("/debug_token", facebook.Params{
+		"access_token": token,
+	})
+	fmt.Println(res["app_id"])
+	fmt.Println(res["expires_at"])
+	fmt.Println(res["is_valid"])
+	fmt.Printf("%v", res["scopes"])
+	fmt.Printf("%v", res)
+	fmt.Printf("%v", err)
+}
 
 //fBValidateToken takes a client-supplied facebook access token and returns a FacebookToken, or an error if the token is invalid in some way
 //ie, expired or for another app.

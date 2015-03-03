@@ -32,26 +32,22 @@ type Bucket struct {
 //Stat is a type of event.
 type Stat string
 
-//LIKES - nubmer of likes a given entity has received.
-const LIKES Stat = "likes"
-
-//COMMENTS - nubmer of comments a given entity has received.
-const COMMENTS Stat = "comments"
-
-//POSTS - nubmer of posts a given entity has created.
-const POSTS Stat = "posts"
-
-//VIEWS - number of views a given entity has received:w
-const VIEWS Stat = "views"
-
-//RSVPS - Number of people who have attended events.
-const RSVPS Stat = "rsvps"
-
-//INTERACTIONS - Sum(LIKES, COMMENTS, RSVPS)
-const INTERACTIONS Stat = "interactions"
-
-//OVERVIEW - all the available stats together.
-const OVERVIEW Stat = "overview"
+const (
+	//LIKES - nubmer of likes a given entity has received.
+	LIKES Stat = "likes"
+	//COMMENTS - nubmer of comments a given entity has received.
+	COMMENTS Stat = "comments"
+	//POSTS - nubmer of posts a given entity has created.
+	POSTS Stat = "posts"
+	//VIEWS - number of views a given entity has received:w
+	VIEWS Stat = "views"
+	//RSVPS - Number of people who have attended events.
+	RSVPS Stat = "rsvps"
+	//INTERACTIONS - Sum(LIKES, COMMENTS, RSVPS)
+	INTERACTIONS Stat = "interactions"
+	//OVERVIEW - all the available stats together.
+	OVERVIEW Stat = "overview"
+)
 
 //Used for OVERVIEW
 var Stats = []Stat{LIKES, COMMENTS, VIEWS, RSVPS, POSTS}

@@ -29,6 +29,16 @@ type API struct {
 	statsd  g2s.Statter
 }
 
+const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
+const inviteCampaignAndroid = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
+
+var (
+	//You'll get this when your password is too week (ie, less than 5 chars at the moment)
+	ETOOWEAK = gp.APIerror{Reason: "Password too weak!"}
+	//EBADREC means you tried to recover your password with an invalid or missing password reset token.
+	EBADREC = gp.APIerror{Reason: "Bad password recovery token."}
+)
+
 //New creates an API from a gp.Config
 func New(conf conf.Config) (api *API) {
 	api = new(API)
@@ -78,15 +88,6 @@ func (api *API) Count(count int, bucket string) {
 		api.statsd.Counter(1.0, api.statsdPrefix()+bucket, count)
 	}
 }
-
-//You'll get this when your password is too week (ie, less than 5 chars at the moment)
-var ETOOWEAK = gp.APIerror{Reason: "Password too weak!"}
-
-//EBADREC means you tried to recover your password with an invalid or missing password reset token.
-var EBADREC = gp.APIerror{Reason: "Bad password recovery token."}
-
-const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
-const inviteCampaignAndroid = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
 
 //RandomString generates a long, random string (currently hex encoded, for some unknown reason.)
 //TODO: base64 url-encode instead.

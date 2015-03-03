@@ -13,11 +13,12 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-//ErrNoUsers happens when you try to DuplicateUsers with no users.
-var ErrNoUsers = errors.New("must supply at least one user to be duplicated")
-
-//ErrNoPosts happens when you try to DuplicatePosts with no posts.
-var ErrNoPosts = errors.New("must supply at least one post to be duplicated")
+var (
+	//ErrNoUsers happens when you try to DuplicateUsers with no users.
+	ErrNoUsers = errors.New("must supply at least one user to be duplicated")
+	//ErrNoPosts happens when you try to DuplicatePosts with no posts.
+	ErrNoPosts = errors.New("must supply at least one post to be duplicated")
+)
 
 //DuplicateUsers takes a list of users and copies them into another network, with a random email address and the password "TestingPass".
 func (api *API) duplicateUsers(into gp.NetworkID, users ...gp.UserID) (copiedUsers []gp.UserID, err error) {

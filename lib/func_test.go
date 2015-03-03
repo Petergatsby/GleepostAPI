@@ -9,10 +9,6 @@ const (
 	testDb = "testdb"
 )
 
-func init() {
-
-}
-
 func TestCreateToken(t *testing.T) {
 	token := createToken(9)
 	if token.UserID != 9 {
