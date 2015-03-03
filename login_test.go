@@ -14,59 +14,71 @@ import (
 
 var baseUrl = "http://localhost:8083/api/v1/"
 
-func TestLoginBadPass(t *testing.T) {
+func TestLogin(t *testing.T) {
 	err := initDB()
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
-	resp, err := loginRequest("patrick@fakestanford.edu", "bad pass")
-	if err != nil {
-		t.Fatalf("Error logging in: %v\n", err)
+	type loginTest struct {
+		Email              string
+		Pass               string
+		ExpectedStatusCode int
+		ExpectedType       string
+		ExpectedError      string
 	}
-	if resp.StatusCode != 400 {
-		t.Fatalf("Got status code %d, expected %d\n", resp.StatusCode, 400)
+	badLogin := loginTest{
+		Email:              "patrick@fakestanford.edu",
+		Pass:               "bad pass",
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedType:       "Error",
+		ExpectedError:      "Bad username/password",
 	}
-	errorValue := gp.APIerror{}
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&errorValue)
-	if err != nil {
-		t.Fatalf("Error parsing error: %v\n", err)
+	goodLogin := loginTest{
+		Email:              "patrick@fakestanford.edu",
+		Pass:               "TestingPass",
+		ExpectedStatusCode: http.StatusOK,
+		ExpectedType:       "Token",
 	}
-	if errorValue.Reason != "Bad username/password" {
-		t.Fatalf("Expected %s, got %s\n", "Bad username/password", errorValue.Reason)
-	}
-}
-
-func TestLoginGood(t *testing.T) {
-	//Good user
-	email := "patrick@fakestanford.edu"
-	pass := "TestingPass"
-
-	resp, err := loginRequest(email, pass)
-	if err != nil {
-		t.Fatalf("Error logging in: %v\n", err)
-	}
-	if resp.StatusCode != 200 {
-		t.Fatalf("Got status code %d, expected %d\n", resp.StatusCode, 200)
-	}
-	token := gp.Token{}
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&token)
-	if err != nil {
-		t.Fatalf("Error parsing token: %v\n", err)
-	}
-	if token.UserID != 2909 {
-		t.Fatalf("Got user %d, was expecting %d\n", token.UserID, 2909)
-	}
-	if len(token.Token) != 64 {
-		t.Fatalf("Token too short: expected %d but got %d\n", 64, len(token.Token))
-	}
-	if token.Expiry.AddDate(-1, 0, 0).After(time.Now().Add(1 * time.Minute)) {
-		t.Fatalf("Token expiration longer than it should be!")
-	}
-	if token.Expiry.AddDate(-1, 0, 0).Before(time.Now().Add(-1 * time.Minute)) {
-		t.Fatalf("Token expiration shorter than it should be!")
+	tests := []loginTest{badLogin, goodLogin}
+	for _, lt := range tests {
+		resp, err := loginRequest(lt.Email, lt.Pass)
+		if err != nil {
+			t.Fatalf("Error logging in: %v\n", err)
+		}
+		if resp.StatusCode != lt.ExpectedStatusCode {
+			t.Fatalf("Got status code %d, expected %d\n", resp.StatusCode, lt.ExpectedStatusCode)
+		}
+		dec := json.NewDecoder(resp.Body)
+		switch {
+		case lt.ExpectedType == "Error":
+			errorValue := gp.APIerror{}
+			err = dec.Decode(&errorValue)
+			if err != nil {
+				t.Fatalf("Error parsing error: %v\n", err)
+			}
+			if errorValue.Reason != lt.ExpectedError {
+				t.Fatalf("Expected %s, got %s\n", lt.ExpectedError, errorValue.Reason)
+			}
+		case lt.ExpectedType == "Token":
+			token := gp.Token{}
+			err = dec.Decode(&token)
+			if err != nil {
+				t.Fatalf("Error parsing %s: %v", lt.ExpectedType, err)
+			}
+			if token.UserID <= 0 {
+				t.Fatalf("User ID is not valid: got %d\n", token.UserID)
+			}
+			if len(token.Token) != 64 {
+				t.Fatalf("Token too short: expected %d but got %d\n", 64, len(token.Token))
+			}
+			if token.Expiry.AddDate(-1, 0, 0).After(time.Now().Add(1 * time.Minute)) {
+				t.Fatalf("Token expiration longer than it should be!")
+			}
+			if token.Expiry.AddDate(-1, 0, 0).Before(time.Now().Add(-1 * time.Minute)) {
+				t.Fatalf("Token expiration shorter than it should be!")
+			}
+		}
 	}
 }
 

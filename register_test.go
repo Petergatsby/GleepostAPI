@@ -14,7 +14,7 @@ import (
 func init() {
 	api.Mail = mail.NewMock()
 	go main()
-	time.Sleep(200 * time.Millisecond) //Time to spin up
+	time.Sleep(100 * time.Millisecond) //Time to spin up
 }
 
 func TestRegister(t *testing.T) {
@@ -33,6 +33,8 @@ func TestRegister(t *testing.T) {
 		Last               string
 		ExpectedStatusCode int
 		ExpectedReturnType string
+		ExpectedError      string
+		ExpectedRegStatus  string
 	}
 	testGood := registrationTest{
 		Email:              "patrick@fakestanford.edu",
@@ -41,9 +43,18 @@ func TestRegister(t *testing.T) {
 		Last:               "Molgaard",
 		ExpectedStatusCode: http.StatusCreated,
 		ExpectedReturnType: "NewUser",
+		ExpectedRegStatus:  "unverified",
 	}
-
-	tests := []registrationTest{testGood}
+	testNoEmail := registrationTest{
+		Email:              "",
+		Pass:               "TestingPass",
+		First:              "Patrick",
+		Last:               "Molgaard",
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedReturnType: "Error",
+		ExpectedError:      "Missing parameter: email",
+	}
+	tests := []registrationTest{testGood, testNoEmail}
 
 	for _, r := range tests {
 		data := make(url.Values)
@@ -66,8 +77,17 @@ func TestRegister(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error parsing registration response as %s: %v\n", r.ExpectedReturnType, err)
 			}
-			if created.Status != "unverified" {
-				t.Fatalf("Status should be 'unverified', but is actually: %s\n", created.Status)
+			if created.Status != r.ExpectedRegStatus {
+				t.Fatalf("Status should be %s, but is actually: %s\n", r.ExpectedRegStatus, created.Status)
+			}
+		case r.ExpectedReturnType == "Error":
+			errorResp := gp.APIerror{}
+			err = dec.Decode(&errorResp)
+			if err != nil {
+				t.Fatalf("Error parsing registration response as %s: %v\n", r.ExpectedReturnType, err)
+			}
+			if errorResp.Reason != r.ExpectedError {
+				t.Fatalf("Saw error: %s, was expecting: %s\n", errorResp.Reason, r.ExpectedError)
 			}
 		}
 	}
