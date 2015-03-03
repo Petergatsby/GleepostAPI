@@ -2,6 +2,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
@@ -21,18 +22,24 @@ var (
 func main() {
 	ascii()
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	log.Println("Getting config")
 	config := conf.GetConfig()
+	log.Println("Starting API")
 	api.Start()
+	log.Println("Starting APNS feedback daemons")
 	go api.FeedbackDaemon(60)
 	if !config.DevelopmentMode {
+		log.Println("Starting stats summary email daemon")
 		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))
 	}
+	log.Println("Keeping posts in future")
 	var futures []conf.PostFuture
 	for _, f := range config.Futures {
 		futures = append(futures, f.ParseDuration())
 	}
 	go api.KeepPostsInFuture(30*time.Minute, futures)
 
+	log.Println("Starting HTTP server")
 	server := &http.Server{
 		Addr:    ":" + config.Port,
 		Handler: r,
