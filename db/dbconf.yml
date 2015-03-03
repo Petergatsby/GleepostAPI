@@ -13,5 +13,5 @@ production:
 local:
         driver: mysql
         open: $LOCAL_URL
-        import: github.com/go-sql-driver/mysl
+        import: github.com/go-sql-driver/mysql
         dialect: mysql
