@@ -26,6 +26,7 @@ func TestLogin(t *testing.T) {
 		ExpectedStatusCode int
 		ExpectedType       string
 		ExpectedError      string
+		ExpectedStatus     string
 	}
 	badLogin := loginTest{
 		Email:              "patrick@fakestanford.edu",
@@ -40,7 +41,14 @@ func TestLogin(t *testing.T) {
 		ExpectedStatusCode: http.StatusOK,
 		ExpectedType:       "Token",
 	}
-	tests := []loginTest{badLogin, goodLogin}
+	unverifiedLogin := loginTest{
+		Email:              "beetlebum@fakestanford.edu",
+		Pass:               "TestingPass",
+		ExpectedStatusCode: http.StatusForbidden,
+		ExpectedType:       "Status",
+		ExpectedStatus:     "unverified",
+	}
+	tests := []loginTest{badLogin, goodLogin, unverifiedLogin}
 	for _, lt := range tests {
 		resp, err := loginRequest(lt.Email, lt.Pass)
 		if err != nil {
@@ -77,6 +85,15 @@ func TestLogin(t *testing.T) {
 			}
 			if token.Expiry.AddDate(-1, 0, 0).Before(time.Now().Add(-1 * time.Minute)) {
 				t.Fatalf("Token expiration shorter than it should be!")
+			}
+		case lt.ExpectedType == "Status":
+			status := gp.Status{}
+			err = dec.Decode(&status)
+			if err != nil {
+				t.Fatalf("Error parsing status: %v\n", err)
+			}
+			if status.Status != lt.ExpectedStatus {
+				t.Fatalf("Expected %s, got %s", lt.ExpectedStatus, status.Status)
 			}
 		}
 	}
@@ -121,6 +138,10 @@ func initDB() error {
 		return err
 	}
 	_, err = db.Exec("INSERT INTO `users` (`password`, `email`, `verified`, `firstname`, `lastname`) VALUES ('$2a$10$xLUmQbvrHAAOGuv4.uHAY.NmoLGEuEObENPiQ8kkh.Miyvdzhyge6', 'patrick@fakestanford.edu', 1, 'Patrick', 'Molgaard')")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("INSERT INTO `users` (`password`, `email`, `verified`, `firstname`, `lastname`) VALUES ('$2a$10$xLUmQbvrHAAOGuv4.uHAY.NmoLGEuEObENPiQ8kkh.Miyvdzhyge6', 'beetlebum@fakestanford.edu', 0, 'Beetle', 'Bum')")
 	if err != nil {
 		return err
 	}
