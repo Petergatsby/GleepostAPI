@@ -54,7 +54,16 @@ func TestRegister(t *testing.T) {
 		ExpectedReturnType: "Error",
 		ExpectedError:      "Missing parameter: email",
 	}
-	tests := []registrationTest{testGood, testNoEmail}
+	testExistingUser := registrationTest{
+		Email:              "beetlebum@fakestanford.edu",
+		Pass:               "TestingPass",
+		First:              "Beetle",
+		Last:               "Bum",
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedReturnType: "Error",
+		ExpectedError:      "Username or email address already taken",
+	}
+	tests := []registrationTest{testGood, testNoEmail, testExistingUser}
 
 	for _, r := range tests {
 		data := make(url.Values)
