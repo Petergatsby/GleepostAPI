@@ -11,7 +11,10 @@ Specifically, you need a ~/go folder in (eg) your home directory, and you need t
 ###2. Get the GleepostAPI repository
 If you have installed Go and set $GOPATH correctly, you should just be able to type `go get github.com/draaglom/GleepostAPI` and it will be installed to your $GOPATH.
 
-You may need to install version control systems for some dependencies (mercurial, bzr). On OSX you can install them with Homebrew.
+You may need to install version control systems for some dependencies (mercurial, bzr). On OSX you can install them with [Homebrew](http://brew.sh/). 
+
+`brew install hg`
+`brew install bzr`
 
 ###3. Get the external dependencies
 The API requires an instance of MySQL and Redis to run. You can install these with homebrew.
