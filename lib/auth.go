@@ -273,6 +273,7 @@ func checkPassStrength(pass string) (err error) {
 func (api *API) verificationURL(token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = "https://dev.gleepost.com/verification.html?token=" + token
+		return
 	}
 	url = "https://gleepost.com/verification.html?token=" + token
 	return
@@ -285,6 +286,7 @@ func (api *API) appVerificationURL(token string) (url string) {
 func (api *API) recoveryURL(id gp.UserID, token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = fmt.Sprintf("https://dev.gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
+		return
 	}
 	url = fmt.Sprintf("https://gleepost.com/reset_password.html?user-id=%d&t=%s", id, token)
 	return
