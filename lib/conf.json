@@ -2,7 +2,6 @@
 	"UrlBase":"/api/v0.23",
 	"Port":"8080",
 	"LoginOverride":false,
-	"RegisterOverride":true,
 	"MessageCache":1000,
 	"PostCache":5000,
 	"CommentCache":100,

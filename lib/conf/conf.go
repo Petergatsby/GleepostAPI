@@ -125,7 +125,6 @@ type Config struct {
 	DevelopmentMode      bool
 	Port                 string
 	LoginOverride        bool
-	RegisterOverride     bool
 	MessagePageSize      int
 	PostPageSize         int
 	CommentPageSize      int
