@@ -37,10 +37,10 @@ func TestRegister(t *testing.T) {
 		ExpectedRegStatus  string
 	}
 	testGood := registrationTest{
-		Email:              "patrick@fakestanford.edu",
+		Email:              "dominic@fakestanford.edu",
 		Pass:               "TestingPass",
-		First:              "Patrick",
-		Last:               "Molgaard",
+		First:              "Dominic",
+		Last:               "Mortlock",
 		ExpectedStatusCode: http.StatusCreated,
 		ExpectedReturnType: "NewUser",
 		ExpectedRegStatus:  "unverified",
