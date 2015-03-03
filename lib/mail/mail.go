@@ -6,26 +6,35 @@ import (
 	"net/mail"
 	"net/smtp"
 	"time"
-
-	"github.com/draaglom/GleepostAPI/lib/conf"
 )
 
+//mailer is able to send email.
+type mailer struct {
+	fromHeader string
+	from       string
+	smtpUser   string
+	smtpPass   string
+	smtpServer string
+	smtpPort   int
+}
+
 //Mailer is able to send email.
-type Mailer struct {
-	config conf.EmailConfig
+type Mailer interface {
+	SendPlaintext(to, subject, body string) error
+	SendHTML(to, subject, body string) error
 }
 
 //NewHeader generates a Header with from and date pre-populated.
-func (m *Mailer) NewHeader() mail.Header {
+func (m *mailer) newHeader() mail.Header {
 	h := mail.Header{}
-	h["From"] = []string{m.config.FromHeader}
+	h["From"] = []string{m.fromHeader}
 	h["Date"] = []string{time.Now().Format(time.RFC1123Z)}
 	return h
 }
 
 //New creates a Mailer.
-func New(config conf.EmailConfig) *Mailer {
-	return &Mailer{config: config}
+func New(fromHeader, from, smtpUser, smtpPass, smtpServer string, smtpPort int) Mailer {
+	return &mailer{fromHeader: fromHeader, from: from, smtpUser: smtpUser, smtpPass: smtpPass, smtpServer: smtpServer, smtpPort: smtpPort}
 }
 
 func toBytes(h mail.Header) []byte {
@@ -39,24 +48,24 @@ func toBytes(h mail.Header) []byte {
 }
 
 //Send an old fashioned (ascii) email to "to"
-func (m *Mailer) Send(to string, subject string, body string) (err error) {
-	header := m.NewHeader()
+func (m *mailer) SendPlaintext(to string, subject string, body string) (err error) {
+	header := m.newHeader()
 	header["To"] = []string{to}
 	header["Subject"] = []string{subject}
-	auth := smtp.PlainAuth("", m.config.User, m.config.Pass, m.config.Server)
-	err = smtp.SendMail(fmt.Sprintf("%s:%d", m.config.Server, m.config.Port), auth, m.config.From, []string{to}, append(toBytes(header), []byte(body)...))
+	auth := smtp.PlainAuth("", m.smtpUser, m.smtpPass, m.smtpServer)
+	err = smtp.SendMail(fmt.Sprintf("%s:%d", m.smtpServer, m.smtpPort), auth, m.from, []string{to}, append(toBytes(header), []byte(body)...))
 	log.Println(err)
 	return
 }
 
 //SendHTML - Send, but with HTML
-func (m *Mailer) SendHTML(to string, subject string, body string) (err error) {
-	header := m.NewHeader()
+func (m *mailer) SendHTML(to string, subject string, body string) (err error) {
+	header := m.newHeader()
 	header["Content-Type"] = []string{"text/html; charset=\"UTF-8\""}
 	header["To"] = []string{to}
 	header["Subject"] = []string{subject}
-	auth := smtp.PlainAuth("", m.config.User, m.config.Pass, m.config.Server)
-	err = smtp.SendMail(fmt.Sprintf("%s:%d", m.config.Server, m.config.Port), auth, m.config.From, []string{to}, append(toBytes(header), []byte(body)...))
+	auth := smtp.PlainAuth("", m.smtpUser, m.smtpPass, m.smtpServer)
+	err = smtp.SendMail(fmt.Sprintf("%s:%d", m.smtpServer, m.smtpPort), auth, m.from, []string{to}, append(toBytes(header), []byte(body)...))
 	log.Println(err)
 	return
 
