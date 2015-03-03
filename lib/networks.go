@@ -221,21 +221,17 @@ func (api *API) setNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {
 }
 
 func (api *API) assignNetworks(user gp.UserID, email string) (networks int, err error) {
-	if api.Config.RegisterOverride {
-		api.setNetwork(user, 1911) //Highlands and Islands :D
-	} else {
-		rules, e := api.db.GetRules()
-		if e != nil {
-			return 0, e
-		}
-		for _, rule := range rules {
-			if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
-				e := api.setNetwork(user, rule.NetworkID)
-				if e != nil {
-					return networks, e
-				}
-				networks++
+	rules, e := api.db.GetRules()
+	if e != nil {
+		return 0, e
+	}
+	for _, rule := range rules {
+		if rule.Type == "email" && strings.HasSuffix(email, rule.Value) {
+			e := api.setNetwork(user, rule.NetworkID)
+			if e != nil {
+				return networks, e
 			}
+			networks++
 		}
 	}
 	return
