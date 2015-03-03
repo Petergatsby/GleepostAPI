@@ -10,49 +10,16 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 var baseUrl = "http://localhost:8083/api/v1/"
 
-func TestInit(t *testing.T) {
-	//Init
+func TestLoginBadPass(t *testing.T) {
 	err := initDB()
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
-	api.Mail = mail.NewMock()
-	go main()
-	time.Sleep(500 * time.Millisecond) //Time to spin up
-}
 
-func TestRegister(t *testing.T) {
-	data := make(url.Values)
-	client := &http.Client{}
-	data["email"] = []string{"patrick@fakestanford.edu"}
-	data["pass"] = []string{"TestingPass"}
-	data["first"] = []string{"Patrick"}
-	data["last"] = []string{"Molgaard"}
-	resp, err := client.PostForm(baseUrl+"register", data)
-	if err != nil {
-		t.Fatalf("Error making http request: %v\n", err)
-	}
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("Wrong status code: Got %v but was expecting %v", resp.StatusCode, http.StatusCreated)
-	}
-	created := gp.NewUser{}
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&created)
-	if err != nil {
-		t.Fatalf("Error parsing registration response: %v\n", err)
-	}
-	if created.Status != "unverified" {
-		t.Fatalf("Status should be 'unverified', but is actually: %s\n", created.Status)
-	}
-}
-
-func TestLoginBadPass(t *testing.T) {
-	//Bad password
 	resp, err := loginRequest("patrick@fakestanford.edu", "bad pass")
 	if err != nil {
 		t.Fatalf("Error logging in: %v\n", err)
