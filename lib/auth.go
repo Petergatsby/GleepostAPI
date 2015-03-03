@@ -126,7 +126,7 @@ func (api *API) AttemptRegister(email, pass, first, last, invite string) (create
 		err = InvalidEmail
 		return
 	}
-	return api.RegisterUser(pass, email, first, last, invite)
+	return api.registerUser(pass, email, first, last, invite)
 }
 
 //ValidateEmail returns true if this email (a) looks vaguely well-formed and (b) belongs to a domain who is allowed to sign up.
@@ -152,7 +152,7 @@ func (api *API) testEmail(email string, rules []gp.Rule) bool {
 
 //RegisterUser accepts a password, email address, firstname and lastname. It will return an error if email isn't unique, or if pass is too short.
 //If the optional "invite" is set and corresponds to email, it will skip the verification step.
-func (api *API) RegisterUser(pass, email, first, last, invite string) (newUser gp.NewUser, err error) {
+func (api *API) registerUser(pass, email, first, last, invite string) (newUser gp.NewUser, err error) {
 	email = normalizeEmail(email)
 	userID, err := api.createUser(first, last, pass, email)
 	if err != nil {
@@ -270,6 +270,7 @@ func checkPassStrength(pass string) (err error) {
 	}
 	return nil
 }
+
 func (api *API) verificationURL(token string) (url string) {
 	if api.Config.DevelopmentMode {
 		url = "https://dev.gleepost.com/verification.html?token=" + token
