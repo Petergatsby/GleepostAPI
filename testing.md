@@ -16,14 +16,22 @@ You may need to install version control systems for some dependencies (mercurial
 `brew install hg`
 `brew install bzr`
 
-###3. Get the external dependencies
-The API requires an instance of MySQL and Redis to run. You can install these with homebrew.
+###3. Use the dev version of APNS
+At this point the build might fail; if so you need to use the development version of APNS:
+`cd $GOHOME/src/github.com/draaglom/apns`
+`git checkout connection`
+`go build`
 
-###4. Initialize the database
+###4. Get the external dependencies
+The API requires an instance of MySQL and Redis to run. You can install these with homebrew.
+`brew install mysql`
+`brew install redis`
+
+###5. Initialize the database
 There is an up to date db structure available at `GleepostAPI/lib/db/example.sql`. 
 
-###5. Edit your configuration file
+###6. Edit your configuration file
 There is a blank config file at `GleepostAPI/lib/conf.json`; copy that into the /GleepostAPI/ directory and set the appropriate variables for your installation of MySQL and Redis.
 
-###6. Run the tests!
+###7. Run the tests!
 `go test .`. If that fails, contact me because something is missing from this guide.
