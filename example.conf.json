@@ -1,10 +1,7 @@
 {
-	"UrlBase":"/api/v1",
-	"Version":"v0.35",
 	"DevelopmentMode":true,
-	"Port":"8080",
-	"LoginOverride":false,
-	"RegisterOverride":true,
+	"Port":"8083",
+	"NewPushEnabled":true,
 	"MessageCache":1000,
 	"PostCache":5000,
 	"CommentCache":100,
@@ -16,34 +13,53 @@
 	"Expiry":600,
 	"Mysql": {
 		"MaxConns":100,
-		"User":"gp",
-		"Pass":"PnOaw3XzP6Tlq6fWvvVv",
+		"User":"root",
+		"Pass":"",
 		"Host":"localhost",
 		"Port":"3306"
 	},
 	"Redis": {
 		"Proto":"tcp",
-		"Address":"146.185.138.53:6379"
+		"Address":"localhost:6379"
 	},
 	"AWS": {
 		"KeyId":"",
 		"SecretKey":""
 	},
-	"APNS": {
-		"CertFile":"",
-		"KeyFile":"",
-		"Production":false
-	},
+	"Pushers": [
+		{
+			"AppName":"gleepost",
+			"APNS": {
+				"CertFile":"gleepost.pem",
+				"KeyFile":"gleepost.com.key",
+				"Production":false
+			},
+			"GCM": {
+				"APIKey":""
+			}
+		},
+		{
+			"AppName":"approve",
+			"APNS": {
+				"CertFile":"gleepost-approve.dev.pem",
+				"KeyFile":"gleepost-approve.dev.key",
+				"Production":false
+			}
+		}
+	],
 	"Email": {
-		"User":"",
+		"User":"contact@gleepost.com",
 		"Pass":"",
-		"Server":"",
-		"Port":,
-		"From":"",
-		"FromHeader":""
+		"Server":"mail.gleepost.com",
+		"Port":587,
+		"From":"contact@gleepost.com",
+		"FromHeader":"Gleepost <contact@gleepost.com>"
 	},
 	"Facebook": {
 		"AppId":"",
 		"AppSecret":""
-	}	
+	},
+	"Futures":[
+	],
+	"Statsd":""
 }
