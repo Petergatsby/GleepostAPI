@@ -68,5 +68,22 @@ func (m *mailer) SendHTML(to string, subject string, body string) (err error) {
 	err = smtp.SendMail(fmt.Sprintf("%s:%d", m.smtpServer, m.smtpPort), auth, m.from, []string{to}, append(toBytes(header), []byte(body)...))
 	log.Println(err)
 	return
+}
 
+//NewMock returns a Mailer which won't actually send mail.
+func NewMock() Mailer {
+	return &stubMailer{}
+}
+
+type stubMailer struct {
+}
+
+func (s *stubMailer) SendPlaintext(to, subject, body string) error {
+	log.Println("Sending plaintext:", to, subject, body)
+	return nil
+}
+
+func (s *stubMailer) SendHTML(to, subject, body string) error {
+	log.Println("Sending html email:", to, subject, body)
+	return nil
 }
