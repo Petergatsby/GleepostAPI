@@ -2,3 +2,4 @@
 *.swo
 *.out
 GleepostAPI
+conf.json
