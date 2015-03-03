@@ -60,8 +60,9 @@ func (api *API) Start() {
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {
 		log.Printf("Statsd failed: %s\nMake sure you have the right address in your conf.json\n", err)
+	} else {
+		api.statsd = statsd
 	}
-	api.statsd = statsd
 	go api.process(transcodeQueue)
 }
 
