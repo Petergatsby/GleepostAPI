@@ -54,6 +54,15 @@ func TestRegister(t *testing.T) {
 		ExpectedReturnType: "Error",
 		ExpectedError:      "Missing parameter: email",
 	}
+	testInvalidEmail := registrationTest{
+		Email:              "cheese@realstanford.edu",
+		Pass:               "TestingPass",
+		First:              "Cheese",
+		Last:               "Pizza",
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedReturnType: "Error",
+		ExpectedError:      "Invalid Email",
+	}
 	testExistingUser := registrationTest{
 		Email:              "beetlebum@fakestanford.edu",
 		Pass:               "TestingPass",
@@ -63,7 +72,16 @@ func TestRegister(t *testing.T) {
 		ExpectedReturnType: "Error",
 		ExpectedError:      "Username or email address already taken",
 	}
-	tests := []registrationTest{testGood, testNoEmail, testExistingUser}
+	testWeakPass := registrationTest{
+		Email:              "cow@fakestanford.edu",
+		Pass:               "pass",
+		First:              "Cow",
+		Last:               "Beef",
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedReturnType: "Error",
+		ExpectedError:      "Password too weak!",
+	}
+	tests := []registrationTest{testGood, testNoEmail, testInvalidEmail, testExistingUser, testWeakPass}
 
 	for _, r := range tests {
 		data := make(url.Values)
