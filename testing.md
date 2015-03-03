@@ -30,6 +30,16 @@ The API requires an instance of MySQL and Redis to run. You can install these wi
 ###5. Initialize the database
 There is an up to date db structure available at `GleepostAPI/lib/db/example.sql`. 
 
+`mysql.server start`
+
+`mysql -u root`
+
+`CREATE DATABASE gleepost;`
+
+`exit;`
+
+`mysql -u root gleepost < lib/db/example.sql`
+
 ###6. Edit your configuration file
 There is a blank config file at `GleepostAPI/lib/conf.json`; copy that into the /GleepostAPI/ directory and set the appropriate variables for your installation of MySQL and Redis.
 
