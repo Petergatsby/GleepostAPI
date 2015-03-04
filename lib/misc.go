@@ -1,9 +1,18 @@
 package lib
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 //ContactFormRequest records a request for contact and emails it out to someone.
 func (api *API) ContactFormRequest(fullName, college, email, phoneNo string) (err error) {
+	if len(fullName) < 3 || len(college) < 3 || len(phoneNo) < 6 {
+		return errors.New("Invalid input")
+	}
+	if !looksLikeEmail(email) {
+		return InvalidEmail
+	}
 	err = api.db.ContactFormRequest(fullName, college, email, phoneNo)
 	if err != nil {
 		return
