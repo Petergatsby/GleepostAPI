@@ -378,6 +378,10 @@ func (api *API) ChangePass(userID gp.UserID, oldPass, newPass string) (err error
 	if err != nil {
 		return
 	}
+	err = checkPassStrength(newPass)
+	if err != nil {
+		return
+	}
 	hash, err = bcrypt.GenerateFromPassword([]byte(newPass), 10)
 	if err != nil {
 		return
