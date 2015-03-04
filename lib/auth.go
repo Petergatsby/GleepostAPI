@@ -15,6 +15,8 @@ import (
 var (
 	//BadLogin = guess...
 	BadLogin = gp.APIerror{Reason: "Bad username/password"}
+	//BadPassword = you are trying to change your password but haven't given the correct old password.
+	BadPassword = gp.APIerror{Reason: "The password you have provided is incorrect"}
 	//MissingParamFirst = your first name wasn't long enough
 	MissingParamFirst = gp.APIerror{Reason: "Missing parameter: first"}
 	//MissingParamLast = your last name wasn't long enough
@@ -376,6 +378,7 @@ func (api *API) ChangePass(userID gp.UserID, oldPass, newPass string) (err error
 	}
 	err = bcrypt.CompareHashAndPassword(hash, passBytes)
 	if err != nil {
+		err = BadPassword
 		return
 	}
 	err = checkPassStrength(newPass)
