@@ -48,7 +48,7 @@ func TestChangePass(t *testing.T) {
 		NewPass:            "TestingPassword",
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedType:       "Error",
-		ExpectedError:      "crypto/bcrypt: hashedPassword is not the hash of the given password",
+		ExpectedError:      "The password you have provided is incorrect",
 	}
 
 	tests := []changePassTest{testGood, testWeakPass, testWrongOldPass}
