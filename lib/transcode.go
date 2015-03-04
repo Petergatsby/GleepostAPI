@@ -68,7 +68,7 @@ func (api *API) pipeline(inProgress gp.UploadStatus) {
 	//Upload
 	inProgress.Status = "transferring"
 	api.setUploadStatus(inProgress)
-	uploaded, err := api.Upload(inProgress)
+	uploaded, err := api.upload(inProgress)
 	if err != nil {
 		log.Println("Upload error:", err)
 	}
@@ -135,7 +135,7 @@ func transientStoreFile(f multipart.File, ext string) (location string, err erro
 }
 
 //Upload sends all versions and thumbnails of a Video to the bucket b.
-func (api *API) Upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) {
+func (api *API) upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) {
 	b := api.getBucket(v.Owner)
 	v.MP4, err = upload(v.MP4, "video/mp4", b)
 	if err != nil {
