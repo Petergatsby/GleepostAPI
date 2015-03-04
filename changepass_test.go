@@ -53,8 +53,8 @@ func TestChangePass(t *testing.T) {
 
 	tests := []changePassTest{testGood, testWeakPass, testWrongOldPass}
 
-	for _, lt := range tests {
-		loginResp, err := loginRequest(lt.Email, lt.Pass)
+	for _, cpt := range tests {
+		loginResp, err := loginRequest(cpt.Email, cpt.Pass)
 		if err != nil {
 			t.Fatalf("Error logging in: %v\n", err)
 		}
@@ -69,15 +69,15 @@ func TestChangePass(t *testing.T) {
 			t.Fatalf("Error decoding login %v\n", err)
 		}
 
-		resp, err := changePassRequest(loginToken, lt.OldPass, lt.NewPass)
+		resp, err := changePassRequest(loginToken, cpt.OldPass, cpt.NewPass)
 		switch {
-		case lt.ExpectedStatusCode == http.StatusNoContent:
-			if lt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", lt.ExpectedStatusCode, resp.StatusCode)
+		case cpt.ExpectedStatusCode == http.StatusNoContent:
+			if cpt.ExpectedStatusCode != resp.StatusCode {
+				t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
 			}
-		case lt.ExpectedType == "Error":
-			if lt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", lt.ExpectedStatusCode, resp.StatusCode)
+		case cpt.ExpectedType == "Error":
+			if cpt.ExpectedStatusCode != resp.StatusCode {
+				t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
 			}
 			dec = json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
@@ -85,8 +85,8 @@ func TestChangePass(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error parsing error: %v\n", err)
 			}
-			if errorValue.Reason != lt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", lt.ExpectedError, errorValue.Reason)
+			if errorValue.Reason != cpt.ExpectedError {
+				t.Fatalf("Expected %s, got %s\n", cpt.ExpectedError, errorValue.Reason)
 			}
 		}
 	}
