@@ -3,10 +3,12 @@ package lib
 import (
 	"errors"
 	"fmt"
+	"log"
 )
 
 //ContactFormRequest records a request for contact and emails it out to someone.
-func (api *API) ContactFormRequest(fullName, college, email, phoneNo string) (err error) {
+func (api *API) ContactFormRequest(fullName, college, email, phoneNo, ip string) (err error) {
+	log.Println("Contact form request from:", ip, "email:", email)
 	if len(fullName) < 3 || len(college) < 3 || len(phoneNo) < 6 {
 		return errors.New("Invalid input")
 	}
