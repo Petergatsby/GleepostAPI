@@ -274,7 +274,7 @@ func (api *API) summaryEmail(start time.Time, finish time.Time) {
 	} else {
 		text = "There were no signups in this period :(\n"
 	}
-	users, err := api.db.GetNetworkUsers(gp.NetworkID(api.Config.Admins))
+	users, err := api.getGlobalAdmins()
 	if err != nil {
 		log.Println(err)
 		return

@@ -163,3 +163,36 @@ func (db *DB) UserWithEmail(email string) (id gp.UserID, err error) {
 	err = s.QueryRow(email).Scan(&id)
 	return
 }
+
+//UserIsAdmin returns true if this user is a Gleepost Administrator
+func (db *DB) UserIsAdmin(id gp.UserID) (admin bool, err error) {
+	s, err := db.prepare("SELECT is_admin FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&admin)
+	return
+}
+
+func (db *DB) GetGlobalAdmins() (users []gp.User, err error) {
+	users = make([]gp.User, 0)
+	s, err := db.prepare("SELECT id, firstname, avatar, official FROM users WHERE is_admin = 1")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var u gp.User
+		var av sql.NullString
+		err = rows.Scan(&u.ID, &u.Name, &av, &u.Official)
+		if err != nil {
+			log.Println("GetGlobalAdmins: Problem scanning:", err)
+			continue
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
