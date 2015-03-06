@@ -470,3 +470,18 @@ func (api *API) acceptAllInvites(email string) (err error) {
 func (api *API) acceptAllFBInvites(facebook uint64) (err error) {
 	return api.db.AcceptAllFBInvites(facebook)
 }
+
+//AdminCreateUniversity creates a new university with this name, accepting users registered with emails in these domains.
+func (api *API) AdminCreateUniversity(userID gp.UserID, name string, domains ...string) (university gp.Network, err error) {
+	admin := api.isAdmin(userID)
+	if !admin {
+		err = ENOTALLOWED
+		return
+	}
+	network, err := api.db.CreateUniversity(name)
+	if err != nil {
+		return
+	}
+	err = api.db.AddNetworkRules(network.ID, domains...)
+	return
+}

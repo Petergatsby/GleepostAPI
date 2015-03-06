@@ -116,11 +116,12 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		if privacy != "public" && privacy != "private" && privacy != "secret" {
 			privacy = "private"
 		}
+		university, err := strconv.ParseBool(r.FormValue("university"))
 		switch {
 		case len(name) == 0:
 			go api.Count(1, url+".400")
 			jsonResponse(w, missingParamErr("name"), 400)
-		default:
+		case err != nil || !university:
 			network, err := api.CreateGroup(userID, name, url, desc, privacy)
 			if err != nil {
 				e, ok := err.(*gp.APIerror)
@@ -135,6 +136,20 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 			}
 			go api.Count(1, url+".201")
 			jsonResponse(w, network, 201)
+		default:
+			domains := strings.Split(r.FormValue("domains"), ",")
+			network, err := api.AdminCreateUniversity(userID, name, domains...)
+			switch {
+			case err == lib.ENOTALLOWED:
+				go api.Count(1, url+".403")
+				jsonResponse(w, err, 403)
+			case err != nil:
+				go api.Count(1, url+".500")
+				jsonErr(w, err, 500)
+			default:
+				go api.Count(1, url+".201")
+				jsonResponse(w, network, 201)
+			}
 		}
 	default:
 		jsonResponse(w, &EUNSUPPORTED, 405)

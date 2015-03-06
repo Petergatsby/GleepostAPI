@@ -519,3 +519,37 @@ func (db *DB) UserInNetwork(userID gp.UserID, network gp.NetworkID) (in bool, er
 	err = s.QueryRow(userID, network).Scan(&in)
 	return
 }
+
+//CreateUniversity creates a new university network with this name.
+func (db *DB) CreateUniversity(name string) (network gp.Network, err error) {
+	s, err := db.prepare("INSERT INTO network (name, is_university, user_group) VALUES (?, 1, 0)")
+	if err != nil {
+		return
+	}
+	res, err := s.Exec(name)
+	if err != nil {
+		return
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return
+	}
+	network.ID = gp.NetworkID(id)
+	network.Name = name
+	return
+}
+
+//AddNetworkRules adds filters to this network: people registering with emails in these domains will be automatically filtered into this network.
+func (db *DB) AddNetworkRules(netID gp.NetworkID, domains ...string) (err error) {
+	s, err := db.prepare("INSERT INTO net_rules (network_id, rule_type, rule_value) VALUES (?, 'email', ?)")
+	if err != nil {
+		return
+	}
+	for _, d := range domains {
+		_, err = s.Exec(netID, d)
+		if err != nil {
+			return
+		}
+	}
+	return nil
+}
