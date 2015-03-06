@@ -132,7 +132,6 @@ type Config struct {
 	OnlineTimeout        int
 	Expiry               int
 	NewPushEnabled       bool
-	Admins               int
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig
