@@ -51,9 +51,7 @@ func (api *API) ValidateToken(id gp.UserID, token string) bool {
 	//If the api.db is down, this will fail for everyone who doesn't have a api.cached
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
-	if api.Config.LoginOverride {
-		return true
-	} else if api.cache.TokenExists(id, token) {
+	if api.cache.TokenExists(id, token) {
 		return true
 	} else {
 		return api.db.TokenExists(id, token)

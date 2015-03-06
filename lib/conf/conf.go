@@ -124,7 +124,6 @@ type FacebookConfig struct {
 type Config struct {
 	DevelopmentMode      bool
 	Port                 string
-	LoginOverride        bool
 	MessagePageSize      int
 	PostPageSize         int
 	CommentPageSize      int
