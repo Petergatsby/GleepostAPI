@@ -54,22 +54,12 @@ func TestChangePass(t *testing.T) {
 	tests := []changePassTest{testGood, testWeakPass, testWrongOldPass}
 
 	for _, cpt := range tests {
-		loginResp, err := loginRequest(cpt.Email, cpt.Pass)
+		token, err := testingGetSession(cpt.Email, cpt.Pass)
 		if err != nil {
-			t.Fatalf("Error logging in: %v\n", err)
-		}
-		if loginResp.StatusCode != http.StatusOK {
-			t.Fatalf("Got status code %d, expected %d\n", loginResp.StatusCode, http.StatusOK)
+			t.Fatalf("Error logging in:", err)
 		}
 
-		dec := json.NewDecoder(loginResp.Body)
-		loginToken := gp.Token{}
-		err = dec.Decode(&loginToken)
-		if err != nil {
-			t.Fatalf("Error decoding login %v\n", err)
-		}
-
-		resp, err := changePassRequest(loginToken, cpt.OldPass, cpt.NewPass)
+		resp, err := changePassRequest(token, cpt.OldPass, cpt.NewPass)
 		switch {
 		case cpt.ExpectedStatusCode == http.StatusNoContent:
 			if cpt.ExpectedStatusCode != resp.StatusCode {
@@ -79,7 +69,7 @@ func TestChangePass(t *testing.T) {
 			if cpt.ExpectedStatusCode != resp.StatusCode {
 				t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
 			}
-			dec = json.NewDecoder(resp.Body)
+			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
@@ -100,5 +90,19 @@ func changePassRequest(token gp.Token, oldPass string, newPass string) (resp *ht
 	data["old"] = []string{oldPass}
 	data["new"] = []string{newPass}
 	resp, err = client.PostForm(baseUrl+"profile/change_pass", data)
+	return
+}
+
+func testingGetSession(email, pass string) (token gp.Token, err error) {
+	data := make(url.Values)
+	client := &http.Client{}
+	data["email"] = []string{email}
+	data["pass"] = []string{pass}
+	resp, err := client.PostForm(baseUrl+"login", data)
+	if err != nil {
+		return
+	}
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&token)
 	return
 }

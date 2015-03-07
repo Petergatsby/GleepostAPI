@@ -478,10 +478,10 @@ func (api *API) AdminCreateUniversity(userID gp.UserID, name string, domains ...
 		err = ENOTALLOWED
 		return
 	}
-	network, err := api.db.CreateUniversity(name)
+	university, err = api.db.CreateUniversity(name)
 	if err != nil {
 		return
 	}
-	err = api.db.AddNetworkRules(network.ID, domains...)
+	err = api.db.AddNetworkRules(university.ID, domains...)
 	return
 }
