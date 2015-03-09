@@ -64,58 +64,58 @@ func TestCreateNetwork(t *testing.T) {
 	}
 
 	tests := []netCreationTest{testAdmin, testNonAdmin, testGroup}
-	for _, uct := range tests {
-		token, err := testingGetSession(uct.Email, uct.Pass)
+	for _, nct := range tests {
+		token, err := testingGetSession(nct.Email, nct.Pass)
 		if err != nil {
 			t.Fatal("Error logging in:", err)
 		}
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
 		data["token"] = []string{token.Token}
-		data["university"] = []string{fmt.Sprintf("%t", uct.University)}
-		data["name"] = []string{uct.Name}
+		data["university"] = []string{fmt.Sprintf("%t", nct.University)}
+		data["name"] = []string{nct.Name}
 		resp, err := client.PostForm(baseURL+"networks", data)
 		if err != nil {
 			t.Fatal("Error making request:", err)
 		}
-		if resp.StatusCode != uct.ExpectedStatusCode {
-			t.Fatalf("Expected status code %d, got %d\n", uct.ExpectedStatusCode, resp.StatusCode)
+		if resp.StatusCode != nct.ExpectedStatusCode {
+			t.Fatalf("Expected status code %d, got %d\n", nct.ExpectedStatusCode, resp.StatusCode)
 		}
 		dec := json.NewDecoder(resp.Body)
 		switch {
-		case uct.ExpectedType == "Network":
+		case nct.ExpectedType == "Network":
 			network := gp.Network{}
 			err = dec.Decode(&network)
 			log.Println(network)
 			if err != nil {
-				t.Fatalf("Failed to decode as %s: %v\n", uct.ExpectedType, err)
+				t.Fatalf("Failed to decode as %s: %v\n", nct.ExpectedType, err)
 			}
 			if network.ID < 1 {
 				t.Fatalf("Network.ID must be nonzero (%d)\n", network.ID)
 			}
-			if network.Name != uct.Name {
-				t.Fatalf("Network name was not as expected: %s vs %s\n", network.Name, uct.Name)
+			if network.Name != nct.Name {
+				t.Fatalf("Network name was not as expected: %s vs %s\n", network.Name, nct.Name)
 			}
-		case uct.ExpectedType == "Group":
+		case nct.ExpectedType == "Group":
 			group := gp.Group{}
 			err = dec.Decode(&group)
 			if err != nil {
-				t.Fatalf("Failed to decode as %s: %v\n", uct.ExpectedType, err)
+				t.Fatalf("Failed to decode as %s: %v\n", nct.ExpectedType, err)
 			}
 			if group.ID < 1 {
 				t.Fatalf("Group.ID must be nonzero (%d)\n", group.ID)
 			}
-			if group.Name != uct.Name {
-				t.Fatalf("Group name was not as expected: %s vs %s\n", group.Name, uct.Name)
+			if group.Name != nct.Name {
+				t.Fatalf("Group name was not as expected: %s vs %s\n", group.Name, nct.Name)
 			}
-		case uct.ExpectedType == "Error":
+		case nct.ExpectedType == "Error":
 			errorResp := gp.APIerror{}
 			err = dec.Decode(&errorResp)
 			if err != nil {
-				t.Fatalf("Failed to decode as %s: %v\n", uct.ExpectedType, err)
+				t.Fatalf("Failed to decode as %s: %v\n", nct.ExpectedType, err)
 			}
-			if errorResp.Reason != uct.ExpectedError {
-				t.Fatalf("Wrong error: Expected %s but got %s\n", uct.ExpectedError, errorResp.Reason)
+			if errorResp.Reason != nct.ExpectedError {
+				t.Fatalf("Wrong error: Expected %s but got %s\n", nct.ExpectedError, errorResp.Reason)
 			}
 		}
 	}
