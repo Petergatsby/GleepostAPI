@@ -44,7 +44,26 @@ func TestCreateNetwork(t *testing.T) {
 		ExpectedStatusCode: http.StatusCreated,
 		ExpectedType:       "Network",
 	}
-	tests := []netCreationTest{testAdmin}
+	testNonAdmin := netCreationTest{
+		Email:              "bonnie@fakestanford.edu",
+		Pass:               "TestingPass",
+		Name:               "University of I'm 3 yo, I just wanna watch Octonauts.",
+		University:         true,
+		Domains:            "gremlin.ac.uk",
+		ExpectedStatusCode: http.StatusForbidden,
+		ExpectedType:       "Error",
+		ExpectedError:      "You're not allowed to do that!",
+	}
+	testGroup := netCreationTest{
+		Email:              "patrick@fakestanford.edu",
+		Pass:               "TestingPass",
+		Name:               "Cool Group",
+		University:         false,
+		ExpectedStatusCode: http.StatusCreated,
+		ExpectedType:       "Group",
+	}
+
+	tests := []netCreationTest{testAdmin, testNonAdmin, testGroup}
 	for _, uct := range tests {
 		token, err := testingGetSession(uct.Email, uct.Pass)
 		if err != nil {
@@ -77,7 +96,27 @@ func TestCreateNetwork(t *testing.T) {
 			if network.Name != uct.Name {
 				t.Fatalf("Network name was not as expected: %s vs %s\n", network.Name, uct.Name)
 			}
-		default:
+		case uct.ExpectedType == "Group":
+			group := gp.Group{}
+			err = dec.Decode(&group)
+			if err != nil {
+				t.Fatalf("Failed to decode as %s: %v\n", uct.ExpectedType, err)
+			}
+			if group.ID < 1 {
+				t.Fatalf("Group.ID must be nonzero (%d)\n", group.ID)
+			}
+			if group.Name != uct.Name {
+				t.Fatalf("Group name was not as expected: %s vs %s\n", group.Name, uct.Name)
+			}
+		case uct.ExpectedType == "Error":
+			errorResp := gp.APIerror{}
+			err = dec.Decode(&errorResp)
+			if err != nil {
+				t.Fatalf("Failed to decode as %s: %v\n", uct.ExpectedType, err)
+			}
+			if errorResp.Reason != uct.ExpectedError {
+				t.Fatalf("Wrong error: Expected %s but got %s\n", uct.ExpectedError, errorResp.Reason)
+			}
 		}
 	}
 }
@@ -89,5 +128,9 @@ func initAdmin() error {
 		return err
 	}
 	_, err = db.Exec("UPDATE users SET is_admin = 1 WHERE email = 'patrick@fakestanford.edu'")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("INSERT INTO `users` (`password`, `email`, `verified`, `firstname`, `lastname`) VALUES ('$2a$10$xLUmQbvrHAAOGuv4.uHAY.NmoLGEuEObENPiQ8kkh.Miyvdzhyge6', 'bonnie@fakestanford.edu', 1, 'Bonnie', 'Molgaard')")
 	return err
 }
