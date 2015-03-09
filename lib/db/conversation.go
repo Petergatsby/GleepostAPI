@@ -275,7 +275,7 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 
 //AddMessage records this message in the database. System represents whether this is a system- or user-generated message.
 func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string, system bool) (id gp.MessageID, err error) {
-	log.Printf("Adding message to db: %d, %d %s", convID, userID, text, system)
+	log.Printf("Adding message to db: %d, %d %s, system: %v\n", convID, userID, text, system)
 	s, err := db.prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`, `system`) VALUES (?,?,?,?)")
 	if err != nil {
 		return
