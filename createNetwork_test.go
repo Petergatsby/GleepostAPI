@@ -55,7 +55,7 @@ func TestCreateUniversity(t *testing.T) {
 		data["token"] = []string{token.Token}
 		data["university"] = []string{fmt.Sprintf("%t", uct.University)}
 		data["name"] = []string{uct.Name}
-		resp, err := client.PostForm(baseUrl+"networks", data)
+		resp, err := client.PostForm(baseURL+"networks", data)
 		if err != nil {
 			t.Fatal("Error making request:", err)
 		}

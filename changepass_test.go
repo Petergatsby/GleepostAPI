@@ -89,7 +89,7 @@ func changePassRequest(token gp.Token, oldPass string, newPass string) (resp *ht
 	data["token"] = []string{token.Token}
 	data["old"] = []string{oldPass}
 	data["new"] = []string{newPass}
-	resp, err = client.PostForm(baseUrl+"profile/change_pass", data)
+	resp, err = client.PostForm(baseURL+"profile/change_pass", data)
 	return
 }
 
@@ -98,7 +98,7 @@ func testingGetSession(email, pass string) (token gp.Token, err error) {
 	client := &http.Client{}
 	data["email"] = []string{email}
 	data["pass"] = []string{pass}
-	resp, err := client.PostForm(baseUrl+"login", data)
+	resp, err := client.PostForm(baseURL+"login", data)
 	if err != nil {
 		return
 	}

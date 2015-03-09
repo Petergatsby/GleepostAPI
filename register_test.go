@@ -89,7 +89,7 @@ func TestRegister(t *testing.T) {
 		data["pass"] = []string{r.Pass}
 		data["first"] = []string{r.First}
 		data["last"] = []string{r.Last}
-		resp, err := client.PostForm(baseUrl+"register", data)
+		resp, err := client.PostForm(baseURL+"register", data)
 		if err != nil {
 			t.Fatalf("Error making http request: %v\n", err)
 		}

@@ -12,7 +12,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-var baseUrl = "http://localhost:8083/api/v1/"
+var baseURL = "http://localhost:8083/api/v1/"
 
 func TestLogin(t *testing.T) {
 	err := initDB()
@@ -154,6 +154,6 @@ func loginRequest(email, pass string) (resp *http.Response, err error) {
 	client := &http.Client{}
 	data["email"] = []string{email}
 	data["pass"] = []string{pass}
-	resp, err = client.PostForm(baseUrl+"login", data)
+	resp, err = client.PostForm(baseURL+"login", data)
 	return
 }
