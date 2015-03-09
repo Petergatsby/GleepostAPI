@@ -53,9 +53,8 @@ func (api *API) ValidateToken(id gp.UserID, token string) bool {
 	//I'm calling that a "feature" for now.
 	if api.cache.TokenExists(id, token) {
 		return true
-	} else {
-		return api.db.TokenExists(id, token)
 	}
+	return api.db.TokenExists(id, token)
 }
 
 //ValidatePass returns the id of the user with this email:pass pair, or err if the comparison is not valid.

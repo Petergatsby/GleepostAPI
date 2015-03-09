@@ -33,7 +33,7 @@ const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMe
 const inviteCampaignAndroid = "http://ad.apps.fm/WOIqfW3iWi3krjT_Y-U5uq5px440Px0vtrw1ww5B54zsDQMwj9gVfW3tCxpkeXdizYtt678Ci7Y3djqLAxIATdBAW28aYabvxh6AeQ1YLF8"
 
 var (
-	//You'll get this when your password is too week (ie, less than 5 chars at the moment)
+	//ETOOWEAK - You'll get this when your password is too week (ie, less than 5 chars at the moment)
 	ETOOWEAK = gp.APIerror{Reason: "Password too weak!"}
 	//EBADREC means you tried to recover your password with an invalid or missing password reset token.
 	EBADREC = gp.APIerror{Reason: "Bad password recovery token."}

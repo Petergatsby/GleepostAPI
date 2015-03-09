@@ -174,6 +174,7 @@ func (db *DB) UserIsAdmin(id gp.UserID) (admin bool, err error) {
 	return
 }
 
+//GetGlobalAdmins returns all users who are gleepost company admins.
 func (db *DB) GetGlobalAdmins() (users []gp.User, err error) {
 	users = make([]gp.User, 0)
 	s, err := db.prepare("SELECT id, firstname, avatar, official FROM users WHERE is_admin = 1")
