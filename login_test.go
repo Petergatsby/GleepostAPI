@@ -80,8 +80,9 @@ func TestLogin(t *testing.T) {
 			if len(token.Token) != 64 {
 				t.Fatalf("Token too short: expected %d but got %d\n", 64, len(token.Token))
 			}
-			if token.Expiry.AddDate(-1, 0, 0).After(time.Now().Add(1 * time.Minute)) {
-				t.Fatalf("Token expiration longer than it should be!")
+			expectedMaxExpiry := time.Now().AddDate(1, 0, 0).Add(1 * time.Minute)
+			if token.Expiry.After(expectedMaxExpiry) {
+				t.Fatalf("Token expiration longer than it should be: %v is after %v\n", token.Expiry, expectedMaxExpiry)
 			}
 			if token.Expiry.AddDate(-1, 0, 0).Before(time.Now().Add(-1 * time.Minute)) {
 				t.Fatalf("Token expiration shorter than it should be!")
