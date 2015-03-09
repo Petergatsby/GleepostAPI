@@ -13,7 +13,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-func TestCreateUniversity(t *testing.T) {
+func TestCreateNetwork(t *testing.T) {
 	err := initDB()
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
@@ -25,7 +25,7 @@ func TestCreateUniversity(t *testing.T) {
 
 	client := &http.Client{}
 
-	type uniCreationTest struct {
+	type netCreationTest struct {
 		Email              string //To get a session
 		Pass               string //To get a session
 		Name               string //Name of new network
@@ -35,7 +35,7 @@ func TestCreateUniversity(t *testing.T) {
 		ExpectedType       string
 		ExpectedError      string
 	}
-	testAdmin := uniCreationTest{
+	testAdmin := netCreationTest{
 		Email:              "patrick@fakestanford.edu",
 		Pass:               "TestingPass",
 		Name:               "University of Leeds",
@@ -44,7 +44,7 @@ func TestCreateUniversity(t *testing.T) {
 		ExpectedStatusCode: http.StatusCreated,
 		ExpectedType:       "Network",
 	}
-	tests := []uniCreationTest{testAdmin}
+	tests := []netCreationTest{testAdmin}
 	for _, uct := range tests {
 		token, err := testingGetSession(uct.Email, uct.Pass)
 		if err != nil {
