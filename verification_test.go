@@ -27,6 +27,8 @@ func TestVerification(t *testing.T) {
 		Pass               string
 		First              string
 		Last               string
+		VerifyTwice        bool
+		TestValidToken     bool
 		ExpectedStatusCode int
 	}
 	testGood := verificationTest{
@@ -34,9 +36,29 @@ func TestVerification(t *testing.T) {
 		Pass:               "TestingPass",
 		First:              "Verification",
 		Last:               "Test1",
-		ExpectedStatusCode: http.StatusCreated,
+		VerifyTwice:        false,
+		TestValidToken:     true,
+		ExpectedStatusCode: http.StatusOK,
 	}
-	tests := []verificationTest{testGood}
+	testTwice := verificationTest{
+		Email:              "verification_test2@fakestanford.edu",
+		Pass:               "TestingPass",
+		First:              "Verification",
+		Last:               "Test2",
+		VerifyTwice:        true,
+		TestValidToken:     true,
+		ExpectedStatusCode: http.StatusOK,
+	}
+	testBad := verificationTest{
+		Email:              "verification_test3@fakestanford.edu",
+		Pass:               "TestingPass",
+		First:              "Verification",
+		Last:               "Test3",
+		VerifyTwice:        true,
+		TestValidToken:     false,
+		ExpectedStatusCode: http.StatusNotFound,
+	}
+	tests := []verificationTest{testGood, testTwice, testBad}
 	for _, vt := range tests {
 
 		data := make(url.Values)
@@ -49,30 +71,49 @@ func TestVerification(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error making http request: %v\n", err)
 		}
-		if resp.StatusCode != vt.ExpectedStatusCode {
-			t.Fatalf("Wrong status code: Got %v but was expecting %v", resp.StatusCode, vt.ExpectedStatusCode)
-		}
 
-		var token string = ""
-		err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", vt.Email).Scan(&token)
+		if vt.TestValidToken {
+			var token string = ""
+			err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", vt.Email).Scan(&token)
 
-		if err != nil {
-			t.Fatalf("Error finding token: %v\n", err)
-		}
-		if token == "" {
-			t.Fatalf("Incorrect token retrieved: %v\n", token)
-		}
+			if err != nil {
+				t.Fatalf("Error finding token: %v\n", err)
+			}
+			if token == "" {
+				t.Fatalf("Incorrect token retrieved: %v\n", token)
+			}
 
-		resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
-		if err != nil {
-			t.Fatalf("Error with verification request: %v\n", err)
+			resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
+			if err != nil {
+				t.Fatalf("Error with verification request: %v\n", err)
+			}
+			if vt.VerifyTwice {
+				resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
+				if err != nil {
+					t.Fatalf("Error with verification request: %v\n", err)
+				}
+			}
+		} else {
+			resp, err = client.PostForm(baseURL+"verify/12345lolololtest", make(url.Values))
+			if err != nil {
+				t.Fatalf("Error with verification request: %v\n", err)
+			}
 		}
 
 		switch {
-		case vt.ExpectedStatusCode == http.StatusNoContent:
+		case vt.ExpectedStatusCode == http.StatusOK:
 			if vt.ExpectedStatusCode != resp.StatusCode {
 				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
 			}
+		case vt.ExpectedStatusCode == http.StatusNotFound:
+			if vt.ExpectedStatusCode != resp.StatusCode {
+				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
+			}
+		}
+
+		_, err = testingGetSession(vt.Email, vt.Pass)
+		if err != nil {
+			t.Fatalf("Error logging in: %v\n", err)
 		}
 	}
 }
