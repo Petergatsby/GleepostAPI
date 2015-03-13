@@ -108,7 +108,7 @@ func TestVerification(t *testing.T) {
 		if err != nil && vt.TestValidToken {
 			t.Fatalf("Error logging in: %v\n", err)
 		} else if err == nil && !vt.TestValidToken {
-			t.Fatalf("Should not have been able to log in:", resp)
+			t.Fatalf("Should not have been able to log in.")
 		}
 	}
 }
