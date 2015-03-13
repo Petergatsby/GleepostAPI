@@ -18,7 +18,7 @@ var EBADTOKEN = gp.APIerror{Reason: "Invalid credentials"}
 func init() {
 	base.Handle("/login", timeHandler(api, http.HandlerFunc(loginHandler)))
 	base.Handle("/register", timeHandler(api, http.HandlerFunc(registerHandler)))
-	base.Handle("/verify/{token:[a-fA-F0-9]+}", timeHandler(api, http.HandlerFunc(verificationHandler)))
+	base.Handle("/verify/{token}", timeHandler(api, http.HandlerFunc(verificationHandler)))
 	base.Handle("/profile/request_reset", timeHandler(api, http.HandlerFunc(requestResetHandler)))
 	base.Handle("/profile/reset/{id:[0-9]+}/{token}", timeHandler(api, http.HandlerFunc(resetPassHandler)))
 	base.Handle("/resend_verification", timeHandler(api, http.HandlerFunc(resendVerificationHandler)))

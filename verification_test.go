@@ -56,7 +56,7 @@ func TestVerification(t *testing.T) {
 		Last:               "Test3",
 		VerifyTwice:        true,
 		TestValidToken:     false,
-		ExpectedStatusCode: http.StatusNotFound,
+		ExpectedStatusCode: http.StatusBadRequest,
 	}
 	tests := []verificationTest{testGood, testTwice, testBad}
 	for _, vt := range tests {
@@ -105,7 +105,7 @@ func TestVerification(t *testing.T) {
 			if vt.ExpectedStatusCode != resp.StatusCode {
 				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
 			}
-		case vt.ExpectedStatusCode == http.StatusNotFound:
+		case vt.ExpectedStatusCode == http.StatusBadRequest:
 			if vt.ExpectedStatusCode != resp.StatusCode {
 				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
 			}
