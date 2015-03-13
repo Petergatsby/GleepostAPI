@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -104,5 +105,8 @@ func testingGetSession(email, pass string) (token gp.Token, err error) {
 	}
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&token)
+	if token.UserID <= 0 || len(token.Token) != 64 {
+		err = errors.New("Invalid token")
+	}
 	return
 }

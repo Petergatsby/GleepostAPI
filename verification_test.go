@@ -105,8 +105,10 @@ func TestVerification(t *testing.T) {
 		}
 
 		_, err = testingGetSession(vt.Email, vt.Pass)
-		if err != nil {
+		if err != nil && vt.TestValidToken {
 			t.Fatalf("Error logging in: %v\n", err)
+		} else if err == nil && !vt.TestValidToken {
+			t.Fatalf("Should not have been able to log in:", resp)
 		}
 	}
 }
