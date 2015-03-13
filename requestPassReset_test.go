@@ -105,7 +105,7 @@ func TestRequestPassReset(t *testing.T) {
 		resp, err := client.PostForm(baseURL+"profile/request_reset", resetData)
 
 		switch {
-		case rprt.ExpectedStatusCode == http.StatusOK:
+		case rprt.ExpectedStatusCode == http.StatusNoContent:
 			if rprt.ExpectedStatusCode != resp.StatusCode {
 				t.Fatalf("Expected %v, got %v\n", rprt.ExpectedStatusCode, resp.StatusCode)
 			}
