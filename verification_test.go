@@ -73,7 +73,7 @@ func TestVerification(t *testing.T) {
 		}
 
 		if vt.TestValidToken {
-			var token string = ""
+			var token string
 			err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", vt.Email).Scan(&token)
 
 			if err != nil {
@@ -100,15 +100,8 @@ func TestVerification(t *testing.T) {
 			}
 		}
 
-		switch {
-		case vt.ExpectedStatusCode == http.StatusOK:
-			if vt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
-			}
-		case vt.ExpectedStatusCode == http.StatusBadRequest:
-			if vt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
-			}
+		if vt.ExpectedStatusCode != resp.StatusCode {
+			t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
 		}
 
 		_, err = testingGetSession(vt.Email, vt.Pass)
