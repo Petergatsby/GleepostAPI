@@ -2,11 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func TestVerification(t *testing.T) {
@@ -30,6 +32,7 @@ func TestVerification(t *testing.T) {
 		VerifyTwice        bool
 		TestValidToken     bool
 		ExpectedStatusCode int
+		ExpectedError      string
 	}
 	testGood := verificationTest{
 		Email:              "verification_test1@fakestanford.edu",
@@ -57,6 +60,7 @@ func TestVerification(t *testing.T) {
 		VerifyTwice:        true,
 		TestValidToken:     false,
 		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedError:      "Bad verification token",
 	}
 	tests := []verificationTest{testGood, testTwice, testBad}
 	for _, vt := range tests {
@@ -100,8 +104,25 @@ func TestVerification(t *testing.T) {
 			}
 		}
 
-		if vt.ExpectedStatusCode != resp.StatusCode {
-			t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
+		switch {
+		case vt.ExpectedStatusCode == http.StatusOK:
+			if vt.ExpectedStatusCode != resp.StatusCode {
+				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
+			}
+		case vt.ExpectedStatusCode == http.StatusBadRequest:
+			if vt.ExpectedStatusCode != resp.StatusCode {
+				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
+			}
+
+			dec := json.NewDecoder(resp.Body)
+			errorValue := gp.APIerror{}
+			err = dec.Decode(&errorValue)
+			if err != nil {
+				t.Fatalf("Error parsing error: %v\n", err)
+			}
+			if errorValue.Reason != vt.ExpectedError {
+				t.Fatalf("Expected %s, got %s\n", vt.ExpectedError, errorValue.Reason)
+			}
 		}
 
 		_, err = testingGetSession(vt.Email, vt.Pass)
