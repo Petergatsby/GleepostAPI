@@ -123,6 +123,8 @@ func TestRequestPassReset(t *testing.T) {
 			if errorValue.Reason != rprt.ExpectedError {
 				t.Fatalf("Expected %s, got %s\n", rprt.ExpectedError, errorValue.Reason)
 			}
+		default:
+			t.Fatalf("Something completely unexpected happened")
 		}
 	}
 }

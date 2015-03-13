@@ -96,6 +96,8 @@ func TestLogin(t *testing.T) {
 			if status.Status != lt.ExpectedStatus {
 				t.Fatalf("Expected %s, got %s", lt.ExpectedStatus, status.Status)
 			}
+		default:
+			t.Fatalf("Something completely unexpected happened")
 		}
 	}
 }

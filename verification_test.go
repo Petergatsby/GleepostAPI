@@ -123,6 +123,8 @@ func TestVerification(t *testing.T) {
 			if errorValue.Reason != vt.ExpectedError {
 				t.Fatalf("Expected %s, got %s\n", vt.ExpectedError, errorValue.Reason)
 			}
+		default:
+			t.Fatalf("Something completely unexpected happened")
 		}
 
 		_, err = testingGetSession(vt.Email, vt.Pass)

@@ -79,6 +79,8 @@ func TestChangePass(t *testing.T) {
 			if errorValue.Reason != cpt.ExpectedError {
 				t.Fatalf("Expected %s, got %s\n", cpt.ExpectedError, errorValue.Reason)
 			}
+		default:
+			t.Fatalf("Something completely unexpected happened")
 		}
 	}
 }

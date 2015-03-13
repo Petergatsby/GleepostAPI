@@ -117,6 +117,8 @@ func TestCreateNetwork(t *testing.T) {
 			if errorResp.Reason != nct.ExpectedError {
 				t.Fatalf("Wrong error: Expected %s but got %s\n", nct.ExpectedError, errorResp.Reason)
 			}
+		default:
+			t.Fatalf("Something completely unexpected happened")
 		}
 	}
 }

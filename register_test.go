@@ -116,6 +116,8 @@ func TestRegister(t *testing.T) {
 			if errorResp.Reason != r.ExpectedError {
 				t.Fatalf("Saw error: %s, was expecting: %s\n", errorResp.Reason, r.ExpectedError)
 			}
+		default:
+			t.Fatalf("Something completely unexpected happened")
 		}
 	}
 }
