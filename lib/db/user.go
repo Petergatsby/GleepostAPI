@@ -161,6 +161,9 @@ func (db *DB) UserWithEmail(email string) (id gp.UserID, err error) {
 		return
 	}
 	err = s.QueryRow(email).Scan(&id)
+	if err == sql.ErrNoRows {
+		err = NoSuchUser
+	}
 	return
 }
 

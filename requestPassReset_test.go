@@ -48,7 +48,7 @@ func TestRequestPassReset(t *testing.T) {
 		RegisterAccount:    false,
 		VerifyAccount:      false,
 		ExpectedStatusCode: http.StatusBadRequest,
-		ExpectedError:      "sql: no rows in result set",
+		ExpectedError:      "That user does not exist.",
 	}
 	testMixedCap := requestPassResetTest{
 		Email:              "reQUeSt_pASS_ResET_teSt1@fakesTanFORD.eDu",
