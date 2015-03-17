@@ -431,6 +431,10 @@ func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err e
 		return
 	}
 	err = api.db.PassUpdate(userID, hash)
+	if err != nil {
+		return
+	}
+	err = api.db.DeletePasswordRecovery(userID, token)
 	return
 }
 
