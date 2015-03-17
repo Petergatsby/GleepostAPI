@@ -422,6 +422,10 @@ func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err e
 		err = EBADREC
 		return
 	}
+	err = checkPassStrength(newPass)
+	if err != nil {
+		return
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPass), 10)
 	if err != nil {
 		return

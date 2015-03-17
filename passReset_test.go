@@ -75,7 +75,7 @@ func TestPassReset(t *testing.T) {
 		VerifyAccount:      true,
 		BadResetToken:      false,
 		ExpectedStatusCode: http.StatusBadRequest,
-		ExpectedError:      "Weak password",
+		ExpectedError:      "Password too weak!",
 	}
 	tests := []passResetTest{testGood, testBad, testUnverified, testWeakPass}
 
