@@ -101,7 +101,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		if err != nil {
 			return
 		}
-		t, e := time.Parse(lastActivity, mysqlTime)
+		t, e := time.Parse(mysqlTime, lastActivity)
 		if e == nil {
 			network.LastActivity = t
 		}
