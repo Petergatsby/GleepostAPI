@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -100,7 +101,10 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		if err != nil {
 			return
 		}
-		log.Println("Last activity: ", lastActivity)
+		t, e := time.Parse(lastActivity, mysqlTime)
+		if e == nil {
+			network.LastActivity = t
+		}
 		if img.Valid {
 			network.Image = img.String
 		}

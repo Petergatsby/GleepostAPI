@@ -1,5 +1,7 @@
 package gp
 
+import "time"
+
 //NetworkID is the id of a network (which Groups are a subset of).
 type NetworkID uint64
 
@@ -29,8 +31,9 @@ type Group struct {
 //GroupMembership is a group and a user's membership status in that group.
 type GroupMembership struct {
 	Group
-	UnreadCount int `json:"unread,omitempty"`
-	Role        `json:"role"`
+	UnreadCount  int `json:"unread,omitempty"`
+	Role         `json:"role"`
+	LastActivity time.Time `json:"last_activity,omitempty"`
 }
 
 //Rule represents a condition that makes a user part of a particular Network. At the moment the only possible Rule.Type is "email";
