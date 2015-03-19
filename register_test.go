@@ -14,7 +14,7 @@ import (
 func init() {
 	api.Mail = mail.NewMock()
 	go main()
-	time.Sleep(100 * time.Millisecond) //Time to spin up
+	time.Sleep(150 * time.Millisecond) //Time to spin up
 }
 
 func TestRegister(t *testing.T) {
