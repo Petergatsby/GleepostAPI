@@ -103,7 +103,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		}
 		t, e := time.Parse(mysqlTime, lastActivity)
 		if e == nil {
-			network.LastActivity = t
+			network.LastActivity = &t
 		}
 		if img.Valid {
 			network.Image = img.String
