@@ -11,14 +11,6 @@ import (
 	"regexp"
 )
 
-var (
-	firstName  string = "firstColour"
-	secondName string = "secondColour"
-	thirdName  string = "thirdColour"
-	fourthName string = "fourthColour"
-	fifthName  string = "fifthColour"
-)
-
 func main() {
 	//Take user input
 	flag.Parse()
