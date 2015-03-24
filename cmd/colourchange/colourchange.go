@@ -13,36 +13,93 @@ import (
 
 func main() {
 	//Take user input
+	var primary = flag.String("primary", "", "The app's primary colour")
+	var leftNav = flag.String("leftnav", "", "The left nav-bar colour")
+	var rightNav = flag.String("rightnav", "", "The right nav-bar colour")
+	var navBackground = flag.String("navbar", "", "The nav-bar background colour")
+	var wallTitle = flag.String("walltitle", "", "The campus wall title colour")
+	var navBarTitle = flag.String("navtitle", "", "The general title colour")
 	flag.Parse()
 	args := flag.Args()
-	if len(args) < 6 {
-		fmt.Println("Not enough colours supplied.")
-		os.Exit(-1)
-	}
 	filename := args[0]
 	colours := make(map[string]color.RGBA)
-	for i, arg := range args[1:] {
-		var name string
-		c, err := fromHex(arg)
+	if *primary != "" {
+		c, err := fromHex(*primary)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		switch {
-		case i == 0:
-			name = "firstAutoColour"
-		case i == 1:
-			name = "secondAutoColour"
-		case i == 2:
-			name = "thirdAutoColour"
-		case i == 3:
-			name = "fourthAutoColour"
-		case i == 4:
-			name = "fifthAutoColour"
-		case i == 5:
-			name = "sixthAutoColour"
+		colours["firstAutoColour"] = c
+	}
+	if *leftNav != "" {
+		c, err := fromHex(*leftNav)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
 		}
-		colours[name] = c
+		colours["secondAutoColour"] = c
+	}
+	if *rightNav != "" {
+		c, err := fromHex(*rightNav)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		colours["thirdAutoColour"] = c
+	}
+	if *navBackground != "" {
+		c, err := fromHex(*navBackground)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		colours["fourthAutoColour"] = c
+	}
+	if *wallTitle != "" {
+		c, err := fromHex(*wallTitle)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		colours["fifthAutoColour"] = c
+	}
+	if *navBarTitle != "" {
+		c, err := fromHex(*navBarTitle)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+		colours["sixthAutoColour"] = c
+
+	}
+	switch {
+	case len(colours) == 0 && len(args) < 2:
+		fmt.Println("Not enough colours supplied.")
+		os.Exit(-1)
+	case len(colours) == 0 && len(args) >= 2:
+		for i, arg := range args[1:] {
+			var name string
+			c, err := fromHex(arg)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(-1)
+			}
+			switch {
+			case i == 0:
+				name = "firstAutoColour"
+			case i == 1:
+				name = "secondAutoColour"
+			case i == 2:
+				name = "thirdAutoColour"
+			case i == 3:
+				name = "fourthAutoColour"
+			case i == 4:
+				name = "fifthAutoColour"
+			case i == 5:
+				name = "sixthAutoColour"
+			}
+			colours[name] = c
+		}
 	}
 	AppearanceHelper, err := ioutil.ReadFile(filename)
 	if err != nil {
