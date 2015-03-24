@@ -19,7 +19,13 @@ func Up_20141118154734(txn *sql.Tx) {
 		txn.Rollback()
 		return
 	}
-	_, err = txn.Query("ALTER TABLE users ALTER COLUMN firstname VARCHAR NOT NULL DROP DEFAULT")
+	_, err = txn.Query("ALTER TABLE users MODIFY COLUMN firstname VARCHAR(64) NOT NULL")
+	if err != nil {
+		log.Println(err)
+		txn.Rollback()
+		return
+	}
+	_, err = txn.Query("ALTER TABLE users ALTER COLUMN firstname DROP DEFAULT")
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()
