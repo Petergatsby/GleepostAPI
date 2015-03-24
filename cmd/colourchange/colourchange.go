@@ -28,50 +28,52 @@ func main() {
 		os.Exit(-1)
 	}
 	filename := args[0]
-	cols := make([]color.RGBA, 0)
-	for _, arg := range args[1:] {
+	colours := make(map[string]color.RGBA)
+	for i, arg := range args[1:] {
+		var name string
 		c, err := fromHex(arg)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(-1)
 		}
-		cols = append(cols, c)
+		switch {
+		case i == 0:
+			name = "firstAutoColour"
+		case i == 1:
+			name = "secondAutoColour"
+		case i == 2:
+			name = "thirdAutoColour"
+		case i == 3:
+			name = "fourthAutoColour"
+		case i == 4:
+			name = "fifthAutoColour"
+		case i == 5:
+			name = "sixthAutoColour"
+		}
+		colours[name] = c
 	}
 	AppearanceHelper, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	re := regexp.MustCompile("\\+ \\(UIColor \\*\\)(\\w+)AutoColour\n{\n    return \\[UIColor colorWithR:\\d+ withG:\\d+ andB:\\d+\\];\n}")
-	replacer := func(cols []color.RGBA) func([]byte) []byte {
-		i := 0
-		return func([]byte) []byte {
-			var name string
-			switch {
-			case i == 0:
-				name = "firstAutoColour"
-			case i == 1:
-				name = "secondAutoColour"
-			case i == 2:
-				name = "thirdAutoColour"
-			case i == 3:
-				name = "fourthAutoColour"
-			case i == 4:
-				name = "fifthAutoColour"
-			case i == 5:
-				name = "sixthAutoColour"
-			}
-			result := []byte(colourM(cols[i], name))
-			i++
-			return result
-		}
+	for name, col := range colours {
+		AppearanceHelper, err = setColour(AppearanceHelper, name, col)
 	}
-	result := re.ReplaceAllFunc(AppearanceHelper, replacer(cols))
-	err = ioutil.WriteFile(filename, result, 0644)
+	err = ioutil.WriteFile(filename, AppearanceHelper, 0644)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+}
+
+func setColour(file []byte, colourName string, colour color.RGBA) ([]byte, error) {
+	re, err := regexp.Compile(fmt.Sprintf("\\+ \\(UIColor \\*\\)%s\n{\n    return \\[UIColor colorWithR:\\d+ withG:\\d+ andB:\\d+\\];\n}", colourName))
+	if err != nil {
+		return file, err
+	}
+	replaced := re.ReplaceAll(file, []byte(colourM(colour, colourName)))
+	return replaced, nil
 }
 
 func colourM(c color.RGBA, name string) string {
