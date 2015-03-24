@@ -78,10 +78,6 @@ func colourM(c color.RGBA, name string) string {
 	return fmt.Sprintf("+ (UIColor *)%s\n{\n    return [UIColor colorWithR:%d withG:%d andB:%d];\n}", name, c.R, c.G, c.B)
 }
 
-func colourH(name string) string {
-	return fmt.Sprintf("+ (UIColor *)%s;\n", name)
-}
-
 func fromHex(col string) (c color.RGBA, err error) {
 	if len(col) < 6 {
 		return c, errors.New("Invalid colour")
