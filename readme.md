@@ -289,7 +289,7 @@ example responses:
 			"id":9,
 			"name":"Patrick",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
-		}
+		},
 		"timestamp":"2013-09-05T13:09:38Z",
 		"text":"This is a cool post for cool people!",
 		"categories":[{"id":1, "tag":"some_category", "name":"This is a category"}],
@@ -307,13 +307,13 @@ example responses:
 		"views":123,
 		"likes":[{"by": {
 				"id":545,
-				"name":"SomeoneElse"
+				"name":"SomeoneElse",
 				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 				},
 			"timestamp":"2013-09-05T13:09:38Z"},
 			{"by": {
 				"id":545,
-				"name":"SomeoneElse"
+				"name":"SomeoneElse",
 				"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 				},
 			"timestamp":"2013-09-05T13:09:38Z"}
@@ -331,7 +331,7 @@ example responses:
 		"id":1,
 		"by": {
 			"id":23,
-			"name":"PeterGatsby"
+			"name":"PeterGatsby",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
