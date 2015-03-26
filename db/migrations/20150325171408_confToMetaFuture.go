@@ -17,7 +17,7 @@ func Up_20150325171408(txn *sql.Tx) {
 		return
 	}
 	for _, f := range config.Futures {
-		err = s.Exec(f.Post, "meta-future", f.Future)
+		_, err = s.Exec(f.Post, "meta-future", f.Future)
 		if err != nil {
 			log.Println(err)
 			txn.Rollback()
@@ -28,7 +28,7 @@ func Up_20150325171408(txn *sql.Tx) {
 
 // Down is executed when this migration is rolled back
 func Down_20150325171408(txn *sql.Tx) {
-	err := txn.Query("DELETE FROM post_attribs WHERE attrib = 'meta-future'")
+	_, err := txn.Query("DELETE FROM post_attribs WHERE attrib = 'meta-future'")
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()
