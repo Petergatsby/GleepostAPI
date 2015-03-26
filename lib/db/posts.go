@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -59,8 +58,12 @@ const (
 	orderChronologicalAttend = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
 )
 
-//EBADORDER means you tried to order a post query in an unexpected way.
-var EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
+var (
+	//EBADORDER means you tried to order a post query in an unexpected way.
+	EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
+	//InvalidVideo = You tried to post with an invalid video
+	InvalidVideo = gp.APIerror{Reason: "That is not a valid video"}
+)
 
 func (db *DB) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
@@ -270,24 +273,18 @@ func (db *DB) ClearPostVideos(postID gp.PostID) (err error) {
 
 //AddPostVideo adds this video URL to a post.
 func (db *DB) AddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
-	s, err := db.prepare("SELECT user_id FROM uploads WHERE upload_id = ?")
-
+	s, err := db.prepare("INSERT INTO post_videos (post_id, video_id) SELECT ?, upload_id FROM uploads WHERE upload_id = ? AND user_id = ?")
 	if err != nil {
 		return
 	}
-
-	var videoUserID string
-	_ = s.QueryRow(videoID).Scan(&videoUserID)
-
-	if videoUserID == fmt.Sprintf("%t", userID) {
-		p, err2 := db.prepare("INSERT INTO post_videos (post_id, video_id) VALUES (?, ?)")
-		_, err2 = p.Exec(postID, videoID)
-		err = err2
-
-	} else {
-		err = gp.APIerror{Reason: "That is not a valid video"}
+	result, err := s.Exec(postID, videoID, userID)
+	if err != nil {
+		return
 	}
-
+	rowsAffected, err := result.RowsAffected()
+	if rowsAffected <= 0 {
+		err = InvalidVideo
+	}
 	return
 }
 
