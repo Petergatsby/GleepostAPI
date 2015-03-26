@@ -165,14 +165,14 @@ func TestPassReset(t *testing.T) {
 			t.Fatalf("Error making http request: %v\n", err)
 		}
 
-		var userId string
-		err = db.QueryRow("SELECT users.id FROM users WHERE users.email = ?", prt.Email).Scan(&userId)
+		var userID string
+		err = db.QueryRow("SELECT users.id FROM users WHERE users.email = ?", prt.Email).Scan(&userID)
 		if err != nil {
 			t.Fatalf("Error finding reset token: %v\n", err)
 		}
 
 		var resetToken string
-		err = db.QueryRow("SELECT token FROM password_recovery WHERE password_recovery.user = ?", userId).Scan(&resetToken)
+		err = db.QueryRow("SELECT token FROM password_recovery WHERE password_recovery.user = ?", userID).Scan(&resetToken)
 		if err != nil {
 			t.Fatalf("Error finding reset token: %v\n", err)
 		}
@@ -192,18 +192,18 @@ func TestPassReset(t *testing.T) {
 		}
 
 		resetData := make(url.Values)
-		resetData["user-id"] = []string{userId}
+		resetData["user-id"] = []string{userID}
 		resetData["reset-token"] = []string{resetToken}
 		resetData["pass"] = []string{prt.NewPass}
 
-		resp, err := client.PostForm(baseURL+"profile/reset/"+userId+"/"+resetToken, resetData)
+		resp, err := client.PostForm(baseURL+"profile/reset/"+userID+"/"+resetToken, resetData)
 		if err != nil {
 			t.Fatalf("Error with reset request: %v\n", err)
 		}
 
 		if prt.ResetTwice {
 			resetData["pass"] = []string{prt.Pass}
-			resp, err = client.PostForm(baseURL+"profile/reset/"+userId+"/"+resetToken, resetData)
+			resp, err = client.PostForm(baseURL+"profile/reset/"+userID+"/"+resetToken, resetData)
 			if err != nil {
 				t.Fatalf("Error with reset request: %v\n", err)
 			}
