@@ -488,12 +488,15 @@ func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, er
 		}
 		switch {
 		case attrib == "event-time":
-			log.Println("event-time")
 			var unix int64
 			unix, err = strconv.ParseInt(val, 10, 64)
 			if err == nil {
-				log.Println("no error")
 				attribs[attrib] = time.Unix(unix, 0)
+			}
+		case attrib == "meta-future":
+			d, err := time.ParseDuration(val)
+			if err == nil {
+				attribs["event-time"] = time.Now().UTC().Add(d)
 			}
 		default:
 			attribs[attrib] = val
