@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -440,7 +441,11 @@ func (api *API) addPostImage(postID gp.PostID, url string) (err error) {
 
 //AddPostVideo attaches a URL of a video file to a post.
 func (api *API) addPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
-	return api.db.AddPostVideo(userID, postID, videoID)
+	err = api.db.AddPostVideo(userID, postID, videoID)
+	if err == db.InvalidVideo {
+		err = InvalidVideo
+	}
+	return
 }
 
 //UserAddPostVideo attaches a video to a post, or errors if the user isn't allowed.
