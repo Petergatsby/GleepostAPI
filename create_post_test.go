@@ -39,7 +39,7 @@ func TestCreatePost(t *testing.T) {
 		Image              string
 		Video              string
 		UseCorrectToken    bool
-		UseCorrectId       bool
+		UseCorrectID       bool
 		ExpectedStatusCode int
 		ExpectedError      string
 	}
@@ -47,7 +47,7 @@ func TestCreatePost(t *testing.T) {
 		TestNumber:         1,
 		Text:               "Hello my name is Patrick, how are you?",
 		UseCorrectToken:    true,
-		UseCorrectId:       true,
+		UseCorrectID:       true,
 		ExpectedStatusCode: http.StatusCreated,
 	}
 	badPost := createPostTest{
@@ -59,7 +59,7 @@ func TestCreatePost(t *testing.T) {
 		TestNumber:         3,
 		Text:               "Hey my name is Patrick, what up?",
 		UseCorrectToken:    false,
-		UseCorrectId:       true,
+		UseCorrectID:       true,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "incorrect login",
 	}
@@ -67,7 +67,7 @@ func TestCreatePost(t *testing.T) {
 		TestNumber:         4,
 		Text:               "Yo yo me name's Pat, sup?",
 		UseCorrectToken:    false,
-		UseCorrectId:       true,
+		UseCorrectID:       true,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "incorrect login",
 	}
@@ -75,7 +75,7 @@ func TestCreatePost(t *testing.T) {
 		TestNumber:         5,
 		Image:              "https://www.fakeimage.com/lololol.jpg",
 		UseCorrectToken:    true,
-		UseCorrectId:       true,
+		UseCorrectID:       true,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "That is not a valid image",
 	}
@@ -83,7 +83,7 @@ func TestCreatePost(t *testing.T) {
 		TestNumber:         6,
 		Video:              "12341",
 		UseCorrectToken:    true,
-		UseCorrectId:       true,
+		UseCorrectID:       true,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "That is not a valid video",
 	}
@@ -91,7 +91,7 @@ func TestCreatePost(t *testing.T) {
 	for _, cpt := range tests {
 
 		var userToken string
-		var userId string
+		var userID string
 
 		if cpt.UseCorrectToken {
 			userToken = token.Token
@@ -99,15 +99,15 @@ func TestCreatePost(t *testing.T) {
 			userToken = "ajnewfoi2b3br09b0r9bg013b4g981b34g98b"
 		}
 
-		if cpt.UseCorrectId {
-			userId = fmt.Sprintf("%d", token.UserID)
+		if cpt.UseCorrectID {
+			userID = fmt.Sprintf("%d", token.UserID)
 		} else {
-			userId = "2134213"
+			userID = "2134213"
 		}
 
 		data := make(url.Values)
 		data["token"] = []string{userToken}
-		data["id"] = []string{userId}
+		data["id"] = []string{userID}
 		data["text"] = []string{cpt.Text}
 		data["tags"] = []string{cpt.Tags}
 		data["url"] = []string{cpt.Image}
