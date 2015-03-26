@@ -154,6 +154,8 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
 				jsonResponse(w, e, 403)
+			} else if err == lib.PostNoContent || err == lib.InvalidImage || err == lib.InvalidVideo {
+				jsonResponse(w, err, 400)
 			} else {
 				jsonErr(w, err, 500)
 			}
