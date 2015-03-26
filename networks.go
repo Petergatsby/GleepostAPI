@@ -12,22 +12,31 @@ import (
 )
 
 func init() {
-	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(getPosts))).Methods("GET")
-	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(postPosts))).Methods("POST")
+	base.Handle("/networks", timeHandler(api, http.HandlerFunc(postNetworks))).Methods("POST")
+	base.Handle("/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(getNetwork))).Methods("GET")
 	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(putNetwork))).Methods("PUT")
 	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(getPosts))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(postPosts))).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(postNetworkUsers))).Methods("POST")
 	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(getNetworkUsers))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(postNetworkAdmins))).Methods("POST")
 	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(getNetworkAdmins))).Methods("GET")
+	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteNetworkAdmins))).Methods("DELETE")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
-	base.Handle("/networks", timeHandler(api, http.HandlerFunc(postNetworks))).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 
-	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(getGroups)))
+	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(getGroups))).Methods("GET")
+	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/networks/posts", timeHandler(api, http.HandlerFunc(getGroupPosts))).Methods("GET")
+	base.Handle("/profile/networks/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteUserNetwork))).Methods("DELETE")
+	base.Handle("/profile/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +44,7 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		var otherID gp.UserID
 		vars := mux.Vars(r)
 		_id, ok := vars["id"]
@@ -60,8 +69,6 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".200")
 		jsonResponse(w, networks, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -73,7 +80,7 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 16)
 		if err != nil {
 			go api.Count(1, url+".400")
@@ -95,8 +102,6 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".200")
 		jsonResponse(w, network, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -107,7 +112,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		name := r.FormValue("name")
 		url := r.FormValue("url")
 		desc := r.FormValue("desc")
@@ -151,8 +156,6 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, network, 201)
 			}
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -166,7 +169,7 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			go api.Count(1, url+".400")
@@ -243,8 +246,6 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".204")
 		w.WriteHeader(204)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -375,7 +376,7 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			go api.Count(1, url+".400")
@@ -396,8 +397,6 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".200")
 		jsonResponse(w, users, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -409,7 +408,7 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 		if err != nil {
 			start = 0
@@ -450,8 +449,6 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".200")
 		jsonResponse(w, posts, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -463,7 +460,7 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "PUT":
+	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			go api.Count(1, url+".400")
@@ -498,8 +495,6 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".200")
 		jsonResponse(w, group, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -511,7 +506,7 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "DELETE":
+	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			go api.Count(1, url+".400")
@@ -532,7 +527,5 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, url+".204")
 		w.WriteHeader(204)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }

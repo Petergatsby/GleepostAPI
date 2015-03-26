@@ -9,9 +9,10 @@ import (
 )
 
 func init() {
-	base.Handle("/devices/{id}", timeHandler(api, http.HandlerFunc(deleteDevice)))
-	base.Handle("/devices/{id}/", timeHandler(api, http.HandlerFunc(deleteDevice)))
-	base.Handle("/devices", timeHandler(api, http.HandlerFunc(postDevice)))
+	base.Handle("/devices/{id}", timeHandler(api, http.HandlerFunc(deleteDevice))).Methods("DELETE")
+	base.Handle("/devices/{id}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/devices", timeHandler(api, http.HandlerFunc(postDevice))).Methods("POST")
+	base.Handle("/devices", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func postDevice(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +21,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, "gleepost.devices.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		deviceType := r.FormValue("type")
 		deviceID := r.FormValue("device_id")
 		application := r.FormValue("application")
@@ -37,10 +38,6 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 			go api.Count(1, "gleepost.devices.post.201")
 			jsonResponse(w, device, 201)
 		}
-	case r.Method == "GET":
-		//implement getting tokens
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -53,7 +50,7 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, EBADTOKEN, 400)
-	case r.Method == "DELETE":
+	default:
 		err := api.DeleteDevice(userID, vars["id"])
 		if err != nil {
 			go api.Count(1, url+".500")
@@ -63,8 +60,6 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 		go api.Count(1, url+".204")
 		w.WriteHeader(204)
 		return
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 
 }

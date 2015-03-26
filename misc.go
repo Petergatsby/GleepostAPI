@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	base.Handle("/invite_message", timeHandler(api, http.HandlerFunc(inviteMessageHandler)))
+	base.Handle("/invite_message", timeHandler(api, http.HandlerFunc(inviteMessageHandler))).Methods("GET")
 	base.Handle("/contact_form", timeHandler(api, http.HandlerFunc(contactFormHandler))).Methods("POST")
 	base.Handle("/", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 }
@@ -80,15 +80,10 @@ func jsonErr(w http.ResponseWriter, err error, code int) {
 	}
 }
 func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
-	switch {
-	case r.Method == "GET":
-		resp := struct {
-			Message string `json:"message"`
-		}{"Check out gleepost! https://gleepost.com"}
-		jsonResponse(w, resp, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
-	}
+	resp := struct {
+		Message string `json:"message"`
+	}{"Check out gleepost! https://gleepost.com"}
+	jsonResponse(w, resp, 200)
 }
 
 func contactFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -129,4 +124,8 @@ func authenticatedHandler(api *lib.API, next http.Handler) http.Handler {
 func statsdMetricName(r *http.Request) string {
 	metric := "gleepost." + strings.Replace(r.URL.Path, "/", ".", -1) + "." + strings.ToLower(r.Method)
 	return metric
+}
+
+func unsupportedHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResponse(w, &EUNSUPPORTED, 405)
 }

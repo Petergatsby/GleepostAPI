@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	r    = mux.NewRouter()
+	r    = mux.NewRouter().StrictSlash(true)
 	base = r.PathPrefix("/api/{version}").Subrouter()
 )
 

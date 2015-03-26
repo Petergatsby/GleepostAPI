@@ -11,7 +11,9 @@ import (
 
 func init() {
 	base.Handle("/search/users/{query}", timeHandler(api, http.HandlerFunc(searchUsers))).Methods("GET")
+	base.Handle("/search/users/{query}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/search/groups/{query}", timeHandler(api, http.HandlerFunc(searchGroups))).Methods("GET")
+	base.Handle("/search/groups/{query}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func searchUsers(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +21,7 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		vars := mux.Vars(r)
 		query := strings.Split(vars["query"], " ")
 		for i := range query {
@@ -41,8 +43,6 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, users, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -51,7 +51,7 @@ func searchGroups(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		vars := mux.Vars(r)
 		query := vars["query"]
 		groups, err := api.UserSearchGroups(userID, query)
@@ -60,7 +60,5 @@ func searchGroups(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, groups, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }

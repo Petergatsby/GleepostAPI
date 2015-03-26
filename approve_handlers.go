@@ -10,13 +10,18 @@ import (
 
 func init() {
 	base.Handle("/approve/access", timeHandler(api, http.HandlerFunc(permissionHandler))).Methods("GET")
+	base.Handle("/approve/access", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/approve/level", timeHandler(api, http.HandlerFunc(getApproveSettings))).Methods("GET")
 	base.Handle("/approve/level", timeHandler(api, http.HandlerFunc(postApproveSettings))).Methods("POST")
+	base.Handle("/approve/level", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/approve/pending", timeHandler(api, http.HandlerFunc(getApprovePending))).Methods("GET")
+	base.Handle("/approve/pending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/approve/approved", timeHandler(api, http.HandlerFunc(postApproveApproved))).Methods("POST")
 	base.Handle("/approve/approved", timeHandler(api, http.HandlerFunc(getApproveApproved))).Methods("GET")
+	base.Handle("/approve/approved", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/approve/rejected", timeHandler(api, http.HandlerFunc(postApproveRejected))).Methods("POST")
 	base.Handle("/approve/rejected", timeHandler(api, http.HandlerFunc(getApproveRejected))).Methods("GET")
+	base.Handle("/approve/rejected", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func permissionHandler(w http.ResponseWriter, r *http.Request) {

@@ -21,22 +21,24 @@ var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipi
 func init() {
 	base.Handle("/conversations/live", timeHandler(api, http.HandlerFunc(goneHandler)))
 	base.Handle("/conversations/read_all", timeHandler(api, http.HandlerFunc(readAll))).Methods("POST")
-	base.Handle("/conversations/read_all/", timeHandler(api, http.HandlerFunc(readAll))).Methods("POST")
+	base.Handle("/conversations/read_all", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/mute_badges", timeHandler(api, http.HandlerFunc(muteBadges))).Methods("POST")
-	base.Handle("/conversations/mute_badges/", timeHandler(api, http.HandlerFunc(muteBadges))).Methods("POST")
+	base.Handle("/conversations/mute_badges", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(getConversations))).Methods("GET")
 	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(postConversations))).Methods("POST")
+	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
-	base.Handle("/conversations/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(goneHandler))).Methods("PUT")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteSpecificConversation))).Methods("DELETE")
+	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(getMessages))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(postMessages))).Methods("POST")
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(putMessages))).Methods("PUT")
-	base.Handle("/conversations/", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
-	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
-	base.Handle("/conversations/{id}/messages", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}/participants", timeHandler(api, http.HandlerFunc(postParticipants))).Methods("POST")
+	base.Handle("/conversations/{id:[0-9]+}/participants", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func getConversations(w http.ResponseWriter, r *http.Request) {
@@ -309,7 +311,7 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, "gleepost.conversations.read_all.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		err = api.MarkAllConversationsSeen(userID)
 		if err != nil {
 			go api.Count(1, "gleepost.conversations.read_all.post.500")
@@ -318,8 +320,6 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, "gleepost.conversations.read_all.post.204")
 		w.WriteHeader(204)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -329,7 +329,7 @@ func muteBadges(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		go api.Count(1, "gleepost.conversations.mute_badges.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		t := time.Now().UTC()
 		err = api.UserMuteBadges(userID, t)
 		if err != nil {
@@ -339,8 +339,6 @@ func muteBadges(w http.ResponseWriter, r *http.Request) {
 		}
 		go api.Count(1, "gleepost.conversations.mute_badges.post.204")
 		w.WriteHeader(204)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 

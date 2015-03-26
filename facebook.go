@@ -7,8 +7,10 @@ import (
 )
 
 func init() {
-	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(facebookAssociate)))
-	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(facebookHandler)))
+	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(facebookAssociate))).Methods("POST")
+	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(facebookHandler))).Methods("POST")
+	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func facebookAssociate(w http.ResponseWriter, r *http.Request) {
@@ -19,10 +21,6 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 	userID, autherr := authenticate(r)
 	var err error
 	switch {
-	case r.Method != "POST":
-		go api.Count(1, "gleepost.profile.facebook.post.405")
-		jsonResponse(w, &EUNSUPPORTED, 405)
-		return
 	case autherr == nil:
 		//Note to self: The existence of this branch means that a gleepost token is now a password equivalent.
 		err = api.AssociateFB(userID, _fbToken)
@@ -45,43 +43,39 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 }
 
 func facebookHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		_fbToken := r.FormValue("token")
-		email := r.FormValue("email")
-		invite := r.FormValue("invite")
-		token, _, status, err := api.FacebookLogin(_fbToken, email, invite)
-		switch {
-		case err == lib.BadFBToken:
-			fallthrough
-		case err == lib.InvalidEmail:
-			fallthrough
-		case err == lib.FBNoEmail:
-			go api.Count(1, "gleepost.facebook.post.400")
-			jsonResponse(w, err, 400)
-			return
-		case err != nil:
-			go api.Count(1, "gleepost.facebook.post.500")
-			jsonErr(w, err, 500)
-			return
-		case status.Status == "registered":
-			//The invite wasn't valid; this means that this user is already registered but the fb user wasn't able to prove they are this gleepost user.
-			go api.Count(1, "gleepost.facebook.post.200")
-			jsonResponse(w, status, 200)
-		case status.Status == "unverified":
-			go api.Count(1, "gleepost.facebook.post.201")
-			jsonResponse(w, status, 201)
-			return
-		case token.UserID > 0:
-			go api.Count(1, "gleepost.facebook.post.200")
-			jsonResponse(w, token, 200)
-			return
-		case err == nil:
-			//If there's an associated user, they're verified already so there's no need to check.
-			go api.Count(1, "gleepost.facebook.post.201")
-			jsonResponse(w, token, 201)
-			return
-		}
-	} else {
-		jsonResponse(w, &EUNSUPPORTED, 405)
+	_fbToken := r.FormValue("token")
+	email := r.FormValue("email")
+	invite := r.FormValue("invite")
+	token, _, status, err := api.FacebookLogin(_fbToken, email, invite)
+	switch {
+	case err == lib.BadFBToken:
+		fallthrough
+	case err == lib.InvalidEmail:
+		fallthrough
+	case err == lib.FBNoEmail:
+		go api.Count(1, "gleepost.facebook.post.400")
+		jsonResponse(w, err, 400)
+		return
+	case err != nil:
+		go api.Count(1, "gleepost.facebook.post.500")
+		jsonErr(w, err, 500)
+		return
+	case status.Status == "registered":
+		//The invite wasn't valid; this means that this user is already registered but the fb user wasn't able to prove they are this gleepost user.
+		go api.Count(1, "gleepost.facebook.post.200")
+		jsonResponse(w, status, 200)
+	case status.Status == "unverified":
+		go api.Count(1, "gleepost.facebook.post.201")
+		jsonResponse(w, status, 201)
+		return
+	case token.UserID > 0:
+		go api.Count(1, "gleepost.facebook.post.200")
+		jsonResponse(w, token, 200)
+		return
+	case err == nil:
+		//If there's an associated user, they're verified already so there's no need to check.
+		go api.Count(1, "gleepost.facebook.post.201")
+		jsonResponse(w, token, 201)
+		return
 	}
 }

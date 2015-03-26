@@ -12,8 +12,11 @@ import (
 
 func init() {
 	base.Handle("/admin/massmail", timeHandler(api, http.HandlerFunc(mm))).Methods("POST")
+	base.Handle("/admin/massmail", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/admin/masspush", timeHandler(api, http.HandlerFunc(newVersionNotificationHandler))).Methods("POST")
+	base.Handle("/admin/masspush", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/admin/posts/duplicate", timeHandler(api, http.HandlerFunc(postDuplicate))).Methods("POST")
+	base.Handle("/admin/posts/duplicate", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 //MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
@@ -25,8 +28,6 @@ func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		count, err := api.SendUpdateNotification(userID, r.FormValue("message"), r.FormValue("version"), r.FormValue("type"))
 		switch {
@@ -46,8 +47,6 @@ func mm(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		err = api.Massmail(userID)
 		switch {
@@ -67,8 +66,6 @@ func postUsers(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		_netID, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
 		if err != nil {
@@ -94,8 +91,6 @@ func postDuplicate(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "POST":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		_netID, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
 		if err != nil {

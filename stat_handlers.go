@@ -13,7 +13,9 @@ import (
 
 func init() {
 	base.Handle("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(postsStatsHandler))).Methods("GET")
+	base.Handle("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(individualPostStats))).Methods("GET")
+	base.Handle("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,8 +23,6 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "GET":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		vars := mux.Vars(r)
 		var bucket time.Duration
@@ -76,8 +76,6 @@ func individualPostStats(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method != "GET":
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	default:
 		vars := mux.Vars(r)
 		var bucket time.Duration

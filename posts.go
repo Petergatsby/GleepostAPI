@@ -15,21 +15,27 @@ import (
 func init() {
 	base.Handle("/posts", timeHandler(api, http.HandlerFunc(getPosts))).Methods("GET").Name("posts")
 	base.Handle("/posts", timeHandler(api, http.HandlerFunc(postPosts))).Methods("POST")
+	base.Handle("/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/comments", timeHandler(api, http.HandlerFunc(getComments))).Methods("GET")
 	base.Handle("/posts/{id:[0-9]+}/comments", timeHandler(api, http.HandlerFunc(postComments))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/comments", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getPost))).Methods("GET")
-	base.Handle("/posts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(getPost))).Methods("GET")
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(putPost))).Methods("PUT")
-	base.Handle("/posts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(putPost))).Methods("PUT")
-	base.Handle("/posts/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(deletePost))).Methods("DELETE")
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deletePost))).Methods("DELETE")
+	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/images", timeHandler(api, http.HandlerFunc(postImages))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/images", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/videos", timeHandler(api, http.HandlerFunc(postVideos))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/videos", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/likes", timeHandler(api, http.HandlerFunc(postLikes))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/likes", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(getAttendees))).Methods("GET")
 	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(putAttendees))).Methods("PUT")
-	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(attendHandler)))
-	base.Handle("/live", timeHandler(api, http.HandlerFunc(liveHandler)))
+	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(attendHandler))).Methods("POST", "DELETE")
+	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/live", timeHandler(api, http.HandlerFunc(liveHandler))).Methods("GET")
+	base.Handle("/live", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func ignored(key string) bool {
@@ -361,7 +367,7 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		after := r.FormValue("after")
 		posts, err := api.UserGetLive(userID, after, api.Config.PostPageSize)
 		if err != nil {
@@ -373,8 +379,6 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, posts, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -388,8 +392,6 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
-		//Implement
 	case r.Method == "POST":
 		//For now, assume that err is because the user specified a bad post.
 		//Could also be a db error.
@@ -406,8 +408,6 @@ func attendHandler(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, err, 400)
 		}
 		w.WriteHeader(204)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 

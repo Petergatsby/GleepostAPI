@@ -13,10 +13,14 @@ import (
 var NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
 
 func init() {
-	base.Handle("/upload", timeHandler(api, http.HandlerFunc(uploadHandler)))
-	base.Handle("/upload/{id}", timeHandler(api, http.HandlerFunc(getUpload)))
+	base.Handle("/upload", timeHandler(api, http.HandlerFunc(uploadHandler))).Methods("POST")
+	base.Handle("/upload", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/upload/{id}", timeHandler(api, http.HandlerFunc(getUpload))).Methods("GET")
+	base.Handle("/upload/{id}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/videos", timeHandler(api, http.HandlerFunc(postVideoUpload))).Methods("POST")
+	base.Handle("/videos", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(getVideos))).Methods("GET")
+	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func postVideoUpload(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +28,7 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		shouldRotate, _ := strconv.ParseBool(r.FormValue("rotate"))
 		log.Println("Entering upload handler")
 		file, header, err := r.FormFile("video")
@@ -41,8 +45,6 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, videoStatus, 201)
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -51,7 +53,7 @@ func getVideos(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		vars := mux.Vars(r)
 		_id, err := strconv.ParseUint(vars["id"], 10, 64)
 		if err != nil {
@@ -64,8 +66,6 @@ func getVideos(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, upload, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -74,7 +74,7 @@ func getUpload(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		vars := mux.Vars(r)
 		_id, err := strconv.ParseUint(vars["id"], 10, 64)
 		if err != nil {
@@ -87,8 +87,6 @@ func getUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, upload, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -97,7 +95,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		file, header, err := r.FormFile("image")
 		if err != nil {
 			file, header, err = r.FormFile("video")
@@ -113,7 +111,5 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, gp.URLCreated{URL: url}, 201)
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }

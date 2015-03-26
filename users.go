@@ -14,26 +14,38 @@ var EBADINPUT = gp.APIerror{Reason: "Missing parameter: first / last"}
 
 func init() {
 	base.Handle("/user/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getUser))).Methods("GET")
-	base.Handle("/user/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(getUser))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/user/{id:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(getUserPosts))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/user/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(getUserAttending))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/user/{id:[0-9]+}/networks", timeHandler(api, http.HandlerFunc(getGroups))).Methods("GET")
-	base.Handle("/user/{id:[0-9]+}/unread", timeHandler(api, http.HandlerFunc(unread)))
+	base.Handle("/user/{id:[0-9]+}/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/user/{id:[0-9]+}/unread", timeHandler(api, http.HandlerFunc(unread))).Methods("GET")
+	base.Handle("/user/{id:[0-9]+}/unread", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/user/{id:[0-9]+}/total_live", timeHandler(api, http.HandlerFunc(goneHandler)))
-	base.Handle("/user/", timeHandler(api, http.HandlerFunc(postUsers)))
-	base.Handle("/user", timeHandler(api, http.HandlerFunc(postUsers)))
+	base.Handle("/user", timeHandler(api, http.HandlerFunc(postUsers))).Methods("POST")
+	base.Handle("/user", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	//profile stuff
-	base.Handle("/profile/profile_image", timeHandler(api, http.HandlerFunc(profileImageHandler)))
-	base.Handle("/profile/name", timeHandler(api, http.HandlerFunc(changeNameHandler)))
+	base.Handle("/profile/profile_image", timeHandler(api, http.HandlerFunc(profileImageHandler))).Methods("POST")
+	base.Handle("/profile/profile_image", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/profile/name", timeHandler(api, http.HandlerFunc(changeNameHandler))).Methods("POST")
+	base.Handle("/profile/name", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/tagline", timeHandler(api, http.HandlerFunc(postProfileTagline))).Methods("POST")
-	base.Handle("/profile/change_pass", timeHandler(api, http.HandlerFunc(changePassHandler)))
-	base.Handle("/profile/busy", timeHandler(api, http.HandlerFunc(busyHandler)))
-	base.Handle("/profile/attending", timeHandler(api, http.HandlerFunc(userAttending)))
+	base.Handle("/profile/tagline", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/profile/change_pass", timeHandler(api, http.HandlerFunc(changePassHandler))).Methods("POST")
+	base.Handle("/profile/change_pass", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/profile/busy", timeHandler(api, http.HandlerFunc(busyHandler))).Methods("POST", "GET")
+	base.Handle("/profile/busy", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/profile/attending", timeHandler(api, http.HandlerFunc(userAttending))).Methods("GET")
+	base.Handle("/profile/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	//notifications
 	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(notificationHandler))).Methods("PUT", "GET")
 	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	//Approval
 	base.Handle("/profile/pending", timeHandler(api, http.HandlerFunc(pendingPosts))).Methods("GET")
+	base.Handle("/profile/pending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +130,7 @@ func changeNameHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		firstName := r.FormValue("first")
 		lastName := r.FormValue("last")
 		err := api.SetUserName(userID, firstName, lastName)
@@ -127,8 +139,6 @@ func changeNameHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(204)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -155,8 +165,6 @@ func busyHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, &gp.BusyStatus{Busy: status}, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -165,7 +173,7 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "POST":
+	default:
 		url := r.FormValue("url")
 		err = api.UserSetProfileImage(userID, url)
 		switch {
@@ -180,8 +188,6 @@ func profileImageHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			jsonResponse(w, user, 200)
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -216,8 +222,6 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			jsonResponse(w, notifications, 200)
 		}
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 
@@ -226,7 +230,7 @@ func getUserAttending(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
-	case r.Method == "GET":
+	default:
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		otherID := gp.UserID(_id)
@@ -262,8 +266,6 @@ func getUserAttending(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, events, 200)
-	default:
-		jsonResponse(w, &EUNSUPPORTED, 405)
 	}
 }
 

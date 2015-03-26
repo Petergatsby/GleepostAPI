@@ -9,6 +9,7 @@ import (
 
 func init() {
 	base.Handle("/views/posts", timeHandler(api, http.HandlerFunc(postPostViews))).Methods("POST")
+	base.Handle("/views/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func postPostViews(w http.ResponseWriter, r *http.Request) {
