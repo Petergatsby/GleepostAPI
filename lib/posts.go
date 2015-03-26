@@ -15,6 +15,12 @@ var (
 	CommentTooShort = gp.APIerror{Reason: "Comment too short"}
 	//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
 	NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
+	//PostNoContent = You tried to create a post that does not contain any content
+	PostNoContent = gp.APIerror{Reason: "Post contains no content"}
+	//InvalidImage = You tried to post with an invalid image
+	InvalidImage = gp.APIerror{Reason: "That is not a valid image"}
+	//InvalidVideo = You tried to post with an invalid video
+	InvalidVideo = gp.APIerror{Reason: "That is not a valid video"}
 )
 
 //GetPost returns a particular Post
@@ -433,8 +439,8 @@ func (api *API) addPostImage(postID gp.PostID, url string) (err error) {
 }
 
 //AddPostVideo attaches a URL of a video file to a post.
-func (api *API) addPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
-	return api.db.AddPostVideo(postID, videoID)
+func (api *API) addPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
+	return api.db.AddPostVideo(userID, postID, videoID)
 }
 
 //UserAddPostVideo attaches a video to a post, or errors if the user isn't allowed.
@@ -450,7 +456,7 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 	case !in:
 		return nil, &ENOTALLOWED
 	default:
-		err = api.addPostVideo(postID, videoID)
+		err = api.addPostVideo(userID, postID, videoID)
 		if err == nil {
 			return api.getPostVideos(postID), nil
 		}
@@ -500,8 +506,10 @@ func (api *API) UserAddPostToNetwork(userID gp.UserID, netID gp.NetworkID, text 
 		return api.addPostWithVideo(userID, netID, text, attribs, video, tags...)
 	case len(imageURL) > 5:
 		return api.addPostWithImage(userID, netID, text, attribs, allowUnowned, imageURL, tags...)
-	default:
+	case len(text) > 0 || len(attribs["title"]) > 1:
 		return api.addPost(userID, netID, text, attribs, tags...)
+	default:
+		return postID, pending, PostNoContent
 	}
 }
 
@@ -571,6 +579,8 @@ func (api *API) addPostWithImage(userID gp.UserID, netID gp.NetworkID, text stri
 		if err != nil {
 			return
 		}
+	} else {
+		err = InvalidImage
 	}
 	return
 }
@@ -581,8 +591,9 @@ func (api *API) addPostWithVideo(userID gp.UserID, netID gp.NetworkID, text stri
 	if err != nil {
 		return
 	}
+
 	if video > 0 {
-		err = api.addPostVideo(postID, video)
+		err = api.addPostVideo(userID, postID, video)
 	}
 	return
 }

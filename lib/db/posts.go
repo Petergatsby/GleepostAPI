@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -268,12 +269,25 @@ func (db *DB) ClearPostVideos(postID gp.PostID) (err error) {
 }
 
 //AddPostVideo adds this video URL to a post.
-func (db *DB) AddPostVideo(postID gp.PostID, videoID gp.VideoID) (err error) {
-	s, err := db.prepare("INSERT INTO post_videos (post_id, video_id) VALUES (?, ?)")
+func (db *DB) AddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
+	s, err := db.prepare("SELECT user_id FROM uploads WHERE upload_id = ?")
+
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(postID, videoID)
+
+	var videoUserID string
+	_ = s.QueryRow(videoID).Scan(&videoUserID)
+
+	if videoUserID == fmt.Sprintf("%t", userID) {
+		p, err2 := db.prepare("INSERT INTO post_videos (post_id, video_id) VALUES (?, ?)")
+		_, err2 = p.Exec(postID, videoID)
+		err = err2
+
+	} else {
+		err = gp.APIerror{Reason: "That is not a valid video"}
+	}
+
 	return
 }
 
