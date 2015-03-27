@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-//Up_20150205160341 is executed when this migration is applied
-func Up_20150205160341(txn *sql.Tx) {
+//Up20150205160341 is executed when this migration is applied
+func Up20150205160341(txn *sql.Tx) {
 	_, err := txn.Query("INSERT INTO conversations (initiator, last_mod, primary_conversation, group_id) SELECT creator, NOW(), false, id FROM network WHERE creator IS NOT NULL")
 	if err != nil {
 		log.Println(err)
@@ -20,8 +20,8 @@ func Up_20150205160341(txn *sql.Tx) {
 
 }
 
-//Down_20150205160341 is executed when this migration is rolled back
-func Down_20150205160341(txn *sql.Tx) {
+//Down20150205160341 is executed when this migration is rolled back
+func Down20150205160341(txn *sql.Tx) {
 	_, err := txn.Query("DELETE FROM conversation_participants WHERE conversation_id IN (SELECT id FROM conversations WHERE group_id IS NOT NULL")
 	if err != nil {
 		log.Println(err)

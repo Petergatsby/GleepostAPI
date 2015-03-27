@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-//Up_20150130201806 is executed when this migration is applied
-func Up_20150130201806(txn *sql.Tx) {
+//Up20150130201806 is executed when this migration is applied
+func Up20150130201806(txn *sql.Tx) {
 	log.Println("Adding primary_conversation flag")
 	_, err := txn.Query("ALTER TABLE conversations ADD primary_conversation BOOLEAN NOT NULL DEFAULT 0")
 	if err != nil {
@@ -28,8 +28,8 @@ func Up_20150130201806(txn *sql.Tx) {
 	}
 }
 
-//Down_20150130201806 is executed when this migration is rolled back
-func Down_20150130201806(txn *sql.Tx) {
+//Down20150130201806 is executed when this migration is rolled back
+func Down20150130201806(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE conversations DROP COLUMN primary_conversation")
 	if err != nil {
 		txn.Rollback()
