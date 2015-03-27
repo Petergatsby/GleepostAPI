@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20150224145928 is executed when this migration is applied
 func Up_20150224145928(txn *sql.Tx) {
 	_, err := txn.Query("DELETE FROM chat_messages WHERE conversation_id IN (SELECT conversation_id FROM conversation_expirations)")
 	if err != nil {

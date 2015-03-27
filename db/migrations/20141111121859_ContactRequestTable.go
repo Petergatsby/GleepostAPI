@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141111121859 is executed when this migration is applied
 func Up_20141111121859(txn *sql.Tx) {
 	q := "CREATE TABLE `contact_requests` ( " +
 		"`id` int(10) unsigned NOT NULL AUTO_INCREMENT, " +

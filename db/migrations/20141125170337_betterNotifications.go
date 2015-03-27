@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141125170337 is executed when this migration is applied
 func Up_20141125170337(txn *sql.Tx) {
 	_, err := txn.Query("UPDATE notifications SET post_id = location_id WHERE post_id IS NULL AND type IN ('commented', 'liked', 'approved_post', 'rejected_post')")
 	if err != nil {

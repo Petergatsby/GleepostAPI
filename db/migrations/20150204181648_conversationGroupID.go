@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20150204181648 is executed when this migration is applied
 func Up_20150204181648(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE conversations ADD group_id INT(10) UNSIGNED NULL")
 	if err != nil {

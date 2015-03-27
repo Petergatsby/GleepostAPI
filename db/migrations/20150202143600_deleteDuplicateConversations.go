@@ -8,7 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-// Up is executed when this migration is applied
+//Up_20150202143600 is executed when this migration is applied
 func Up_20150202143600(txn *sql.Tx) {
 	//Merge all duplicate conversations between user pairs into one
 	log.Println("Retrieving all 2-person conversations")

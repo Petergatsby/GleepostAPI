@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141104165143 is executed when this migration is applied
 func Up_20141104165143(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE network ADD approval_level INT(5) UNSIGNED NOT NULL DEFAULT 0")
 	if err != nil {

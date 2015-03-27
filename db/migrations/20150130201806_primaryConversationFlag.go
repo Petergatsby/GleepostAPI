@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20150130201806 is executed when this migration is applied
 func Up_20150130201806(txn *sql.Tx) {
 	log.Println("Adding primary_conversation flag")
 	_, err := txn.Query("ALTER TABLE conversations ADD primary_conversation BOOLEAN NOT NULL DEFAULT 0")

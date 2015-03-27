@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141107160321 is executed when this migration is applied
 func Up_20141107160321(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE devices ADD application VARCHAR(100) NOT NULL DEFAULT 'gleepost'")
 	if err != nil {

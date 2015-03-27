@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20150122160128 is executed when this migration is applied
 func Up_20150122160128(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE users ADD new_message_threshold DATETIME NOT NULL")
 	if err != nil {

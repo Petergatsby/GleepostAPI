@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20150128152252 is executed when this migration is applied
 func Up_20150128152252(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE chat_messages ADD system BOOLEAN NOT NULL DEFAULT 0")
 	if err != nil {

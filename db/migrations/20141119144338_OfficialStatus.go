@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141119144338 is executed when this migration is applied
 func Up_20141119144338(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE users ADD official BOOLEAN NOT NULL DEFAULT 0")
 	if err != nil {

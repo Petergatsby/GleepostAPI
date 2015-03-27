@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141120163306 is executed when this migration is applied
 func Up_20141120163306(txn *sql.Tx) {
 	_, err := txn.Query("UPDATE network SET cover_img = CONCAT('http://d2tc2ce3464r63.cloudfront.net', SUBSTR(cover_img, 41)) WHERE cover_img LIKE '%gpimg%'")
 	if err != nil {

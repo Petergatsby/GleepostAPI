@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141120154940 is executed when this migration is applied
 func Up_20141120154940(txn *sql.Tx) {
 	_, err := txn.Query("UPDATE users SET avatar = CONCAT('http://d2tc2ce3464r63.cloudfront.net', SUBSTR(avatar, 41)) WHERE avatar LIKE '%gpimg%'")
 	if err != nil {

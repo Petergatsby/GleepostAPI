@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20141118154734 is executed when this migration is applied
 func Up_20141118154734(txn *sql.Tx) {
 	_, err := txn.Query("UPDATE users SET firstname = name WHERE firstname IS NULL")
 	if err != nil {

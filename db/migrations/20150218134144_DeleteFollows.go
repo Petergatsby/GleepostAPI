@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20150218134144 is executed when this migration is applied
 func Up_20150218134144(txn *sql.Tx) {
 	_, err := txn.Query("DROP TABLE follows")
 	if err != nil {

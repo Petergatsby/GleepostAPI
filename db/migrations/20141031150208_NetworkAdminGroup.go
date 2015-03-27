@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141031150208 is executed when this migration is applied
 func Up_20141031150208(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE network ADD master_group INT(10) UNSIGNED NULL")
 	if err != nil {

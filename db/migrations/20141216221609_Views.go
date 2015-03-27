@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20141216221609 is executed when this migration is applied
 func Up_20141216221609(txn *sql.Tx) {
 	q := "CREATE TABLE `post_views` ( "
 	q += "`user_id` int(10) unsigned NOT NULL, "

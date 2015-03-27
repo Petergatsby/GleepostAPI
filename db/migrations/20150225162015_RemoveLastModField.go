@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20150225162015 is executed when this migration is applied
 func Up_20150225162015(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE conversations DROP COLUMN last_mod")
 	if err != nil {

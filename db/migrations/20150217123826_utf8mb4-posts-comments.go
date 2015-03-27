@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20150217123826 is executed when this migration is applied
 func Up_20150217123826(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE wall_posts charset=utf8mb4, MODIFY COLUMN `text` VARCHAR(1024) CHARACTER SET utf8mb4")
 	if err != nil {

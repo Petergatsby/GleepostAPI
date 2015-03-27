@@ -7,7 +7,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/conf"
 )
 
-// Up is executed when this migration is applied
+//Up_20150325171408 is executed when this migration is applied
 func Up_20150325171408(txn *sql.Tx) {
 	config := conf.GetConfig()
 	s, err := txn.Prepare("INSERT INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")

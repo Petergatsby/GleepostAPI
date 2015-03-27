@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
+//Up_20150205160341 is executed when this migration is applied
 func Up_20150205160341(txn *sql.Tx) {
 	_, err := txn.Query("INSERT INTO conversations (initiator, last_mod, primary_conversation, group_id) SELECT creator, NOW(), false, id FROM network WHERE creator IS NOT NULL")
 	if err != nil {

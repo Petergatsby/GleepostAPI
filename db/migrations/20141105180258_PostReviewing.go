@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
+//Up_20141105180258 is executed when this migration is applied
 func Up_20141105180258(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE wall_posts ADD pending BOOLEAN NOT NULL DEFAULT 0")
 	if err != nil {
