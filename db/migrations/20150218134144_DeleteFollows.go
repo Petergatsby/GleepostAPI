@@ -14,7 +14,7 @@ func Up_20150218134144(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150218134144 is executed when this migration is rolled back
 func Down_20150218134144(txn *sql.Tx) {
 	q := "CREATE TABLE `follows` ( " +
 		"`leader` int(10) unsigned NOT NULL, " +

@@ -15,7 +15,7 @@ func Up_20150224174100(txn *sql.Tx) {
 
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150224174100 is executed when this migration is rolled back
 func Down_20150224174100(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE conversation_participants DROP COLUMN deletion_threshold")
 	if err != nil {

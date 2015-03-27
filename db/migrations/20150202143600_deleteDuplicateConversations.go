@@ -130,7 +130,7 @@ func Up_20150202143600(txn *sql.Tx) {
 	log.Println("Merged:", count, "of:", len(conversations))
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150202143600 is executed when this migration is rolled back
 func Down_20150202143600(txn *sql.Tx) {
 
 }

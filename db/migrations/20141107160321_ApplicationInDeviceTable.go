@@ -12,7 +12,7 @@ func Up_20141107160321(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20141107160321 is executed when this migration is rolled back
 func Down_20141107160321(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE devices DROP COLUMN application")
 	if err != nil {

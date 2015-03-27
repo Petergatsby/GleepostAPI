@@ -19,7 +19,7 @@ func Up_20150217123826(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150217123826 is executed when this migration is rolled back
 func Down_20150217123826(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE post_comments charset=utf8, MODIFY COLUMN `text` VARCHAR(1024) CHARACTER SET utf8")
 	if err != nil {

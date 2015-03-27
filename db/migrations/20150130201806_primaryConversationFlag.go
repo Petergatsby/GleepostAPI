@@ -28,7 +28,7 @@ func Up_20150130201806(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150130201806 is executed when this migration is rolled back
 func Down_20150130201806(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE conversations DROP COLUMN primary_conversation")
 	if err != nil {

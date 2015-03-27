@@ -21,7 +21,7 @@ func Up_20141106120249(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20141106120249 is executed when this migration is rolled back
 func Down_20141106120249(txn *sql.Tx) {
 	_, err := txn.Query("DROP TABLE post_reviews")
 	if err != nil {

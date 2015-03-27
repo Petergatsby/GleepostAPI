@@ -26,7 +26,7 @@ func Up_20150325171408(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150325171408 is executed when this migration is rolled back
 func Down_20150325171408(txn *sql.Tx) {
 	_, err := txn.Query("DELETE FROM post_attribs WHERE attrib = 'meta-future'")
 	if err != nil {

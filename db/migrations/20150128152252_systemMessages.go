@@ -13,7 +13,7 @@ func Up_20150128152252(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150128152252 is executed when this migration is rolled back
 func Down_20150128152252(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE chat_messages DROP COLUMN system")
 	if err != nil {

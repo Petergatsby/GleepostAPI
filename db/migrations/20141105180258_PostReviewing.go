@@ -12,7 +12,7 @@ func Up_20141105180258(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20141105180258 is executed when this migration is rolled back
 func Down_20141105180258(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE wall_posts DROP COLUMN pending")
 	if err != nil {

@@ -15,7 +15,7 @@ func Up_20150218132731(txn *sql.Tx) {
 
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150218132731 is executed when this migration is rolled back
 func Down_20150218132731(txn *sql.Tx) {
 	q := "CREATE TABLE `comments` ( " +
 		"`id` int(10) unsigned NOT NULL AUTO_INCREMENT, " +

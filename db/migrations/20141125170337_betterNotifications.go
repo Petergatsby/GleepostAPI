@@ -33,7 +33,7 @@ func Up_20141125170337(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20141125170337 is executed when this migration is rolled back
 func Down_20141125170337(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE notifications ADD location_id INT(10) UNSIGNED NULL")
 	if err != nil {

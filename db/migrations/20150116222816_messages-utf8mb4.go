@@ -14,7 +14,7 @@ func Up_20150116222816(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150116222816 is executed when this migration is rolled back
 func Down_20150116222816(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE chat_messages charset=utf8, MODIFY COLUMN `text` VARCHAR(1024) CHARACTER SET utf8")
 	if err != nil {

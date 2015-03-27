@@ -20,7 +20,7 @@ func Up_20150205160341(txn *sql.Tx) {
 
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150205160341 is executed when this migration is rolled back
 func Down_20150205160341(txn *sql.Tx) {
 	_, err := txn.Query("DELETE FROM conversation_participants WHERE conversation_id IN (SELECT id FROM conversations WHERE group_id IS NOT NULL")
 	if err != nil {

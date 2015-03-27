@@ -18,7 +18,7 @@ func Up_20141120154940(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20141120154940 is executed when this migration is rolled back
 func Down_20141120154940(txn *sql.Tx) {
 	_, err := txn.Query("UPDATE users SET avatar = CONCAT('https://s3-eu-west-1.amazonaws.com/gpimg', SUBSTR(avatar, 37)) WHERE avatar LIKE '%d2tc2ce3464r63%'")
 	if err != nil {

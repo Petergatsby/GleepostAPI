@@ -14,7 +14,7 @@ func Up_20150225162015(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150225162015 is executed when this migration is rolled back
 func Down_20150225162015(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE conversations ADD last_mod TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP")
 	if err != nil {

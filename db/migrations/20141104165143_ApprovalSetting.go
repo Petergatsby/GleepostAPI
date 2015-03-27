@@ -17,7 +17,7 @@ func Up_20141104165143(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20141104165143 is executed when this migration is rolled back
 func Down_20141104165143(txn *sql.Tx) {
 	_, err := txn.Query("ALTER TABLE network DROP COLUMN approval_level")
 	if err != nil {

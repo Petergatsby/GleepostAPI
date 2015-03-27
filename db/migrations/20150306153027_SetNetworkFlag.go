@@ -24,7 +24,7 @@ func Up_20150306153027(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150306153027 is executed when this migration is rolled back
 func Down_20150306153027(txn *sql.Tx) {
 	_, err := txn.Query("UPDATE users SET is_admin = 0")
 	if err != nil {

@@ -27,7 +27,7 @@ func Up_20150224145928(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
+//Down_20150224145928 is executed when this migration is rolled back
 func Down_20150224145928(txn *sql.Tx) {
 	q := "CREATE TABLE IF NOT EXISTS `conversation_expirations` ( " +
 		"`conversation_id` int(10) unsigned NOT NULL, " +
