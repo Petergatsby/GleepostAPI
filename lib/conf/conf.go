@@ -8,6 +8,9 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
+
+	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 var (
@@ -134,6 +137,7 @@ type Config struct {
 	Pushers              []PusherConfig
 	Email                EmailConfig
 	Facebook             FacebookConfig
+	Futures              []ConfigFuture
 	Statsd               string
 }
 
@@ -142,4 +146,28 @@ type PusherConfig struct {
 	AppName string
 	APNS    APNSConfig
 	GCM     GCMConfig
+}
+
+//PostFuture represents a commitment to keeping an event's event-time in the future by a specified duration.
+type PostFuture struct {
+	Post   gp.PostID     `json:"id"`
+	Future time.Duration `json:"future"`
+}
+
+//ConfigFuture is PostFuture but without the duration because json can't unmarshal it apparently.
+type ConfigFuture struct {
+	Post   gp.PostID `json:"id"`
+	Future string    `json:"future"`
+}
+
+//ParseDuration converts a ConfigFuture into a PostFuture
+func (c ConfigFuture) ParseDuration() (pf PostFuture) {
+	pf.Post = c.Post
+	duration, err := time.ParseDuration(c.Future)
+	if err != nil {
+		log.Println("Error parsing duration:", err)
+		return
+	}
+	pf.Future = duration
+	return pf
 }

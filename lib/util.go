@@ -2,12 +2,14 @@ package lib
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -128,4 +130,35 @@ func (api *API) duplicatePosts(into gp.NetworkID, copyUsers bool, regEx, replace
 		duplicates = append(duplicates, id)
 	}
 	return
+}
+
+//KeepPostsInFuture checks a list of posts every PollInterval and pushes them into the future if neccessary
+func (api *API) KeepPostsInFuture(pollInterval time.Duration, futures []conf.PostFuture) {
+	t := time.Tick(pollInterval)
+	for {
+		for _, future := range futures {
+			post, err := api.GetPost(future.Post)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			t, ok := post.Attribs["event-time"]
+			if ok {
+				eventTime, ok := t.(time.Time)
+				if ok {
+					if eventTime.Sub(time.Now()) > future.Future {
+						continue
+					}
+				}
+			}
+			newEventTime := time.Now().Add(future.Future)
+			attribs := make(map[string]string)
+			attribs["event-time"] = strconv.FormatInt(newEventTime.Unix(), 10)
+			err = api.db.SetPostAttribs(post.ID, attribs)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		<-t
+	}
 }
