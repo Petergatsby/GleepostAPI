@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-// Up is executed when this migration is applied
-func Up_20150218134144(txn *sql.Tx) {
+//Up20150218134144 is executed when this migration is applied
+func Up20150218134144(txn *sql.Tx) {
 	_, err := txn.Query("DROP TABLE follows")
 	if err != nil {
 		log.Println(err)
@@ -14,8 +14,8 @@ func Up_20150218134144(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
-func Down_20150218134144(txn *sql.Tx) {
+//Down20150218134144 is executed when this migration is rolled back
+func Down20150218134144(txn *sql.Tx) {
 	q := "CREATE TABLE `follows` ( " +
 		"`leader` int(10) unsigned NOT NULL, " +
 		"`follower` int(10) unsigned NOT NULL, " +

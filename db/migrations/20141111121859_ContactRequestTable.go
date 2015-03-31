@@ -4,8 +4,8 @@ import (
 	"database/sql"
 )
 
-// Up is executed when this migration is applied
-func Up_20141111121859(txn *sql.Tx) {
+//Up20141111121859 is executed when this migration is applied
+func Up20141111121859(txn *sql.Tx) {
 	q := "CREATE TABLE `contact_requests` ( " +
 		"`id` int(10) unsigned NOT NULL AUTO_INCREMENT, " +
 		"`full_name` varchar(255) COLLATE utf8_bin NOT NULL, " +
@@ -21,8 +21,8 @@ func Up_20141111121859(txn *sql.Tx) {
 	}
 }
 
-// Down is executed when this migration is rolled back
-func Down_20141111121859(txn *sql.Tx) {
+//Down20141111121859 is executed when this migration is rolled back
+func Down20141111121859(txn *sql.Tx) {
 	_, err := txn.Query("DROP TABLE contact_requests")
 	if err != nil {
 		txn.Rollback()

@@ -557,3 +557,14 @@ func (db *DB) AddNetworkRules(netID gp.NetworkID, domains ...string) (err error)
 	}
 	return nil
 }
+
+//NetworkDomain returns this network's domain.
+func (db *DB) NetworkDomain(netID gp.NetworkID) (domain string, err error) {
+	s, err := db.prepare("SELECT rule_value FROM net_rules WHERE rule_type = 'email' AND network_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netID).Scan(&domain)
+
+	return
+}

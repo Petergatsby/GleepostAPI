@@ -8,8 +8,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-// Up is executed when this migration is applied
-func Up_20150202143600(txn *sql.Tx) {
+//Up20150202143600 is executed when this migration is applied
+func Up20150202143600(txn *sql.Tx) {
 	//Merge all duplicate conversations between user pairs into one
 	log.Println("Retrieving all 2-person conversations")
 	rows, err := txn.Query("SELECT conversation_id, participant_id, conversations.last_mod FROM conversation_participants JOIN conversations ON conversation_id = conversations.id WHERE primary_conversation = 1 ORDER BY conversation_id ASC")
@@ -130,7 +130,7 @@ func Up_20150202143600(txn *sql.Tx) {
 	log.Println("Merged:", count, "of:", len(conversations))
 }
 
-// Down is executed when this migration is rolled back
-func Down_20150202143600(txn *sql.Tx) {
+//Down20150202143600 is executed when this migration is rolled back
+func Down20150202143600(txn *sql.Tx) {
 
 }
