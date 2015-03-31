@@ -877,3 +877,32 @@ func (db *DB) SubjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (cou
 	err = s.QueryRow(perspective, otherID).Scan(&count)
 	return
 }
+
+//KeepPostsInFuture returns all the posts which should be kept in the future
+func (db *DB) KeepPostsInFuture() (err error) {
+	s, err := db.prepare("SELECT post_id, value FROM post_attribs WHERE attrib = 'meta-future'")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PostID
+		var tstring string
+		err := rows.Scan(&post, &tstring)
+		d, err := time.ParseDuration(tstring)
+		if err != nil {
+			return err
+		}
+		attribs := make(map[string]string)
+		attribs["event-time"] = strconv.FormatInt(time.Now().UTC().Add(d).Unix(), 10)
+		err = db.SetPostAttribs(post, attribs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
