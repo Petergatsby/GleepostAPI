@@ -4,7 +4,7 @@ import "github.com/draaglom/GleepostAPI/lib/gp"
 
 //CreateTemplate saves this post template to the db, as part of template-set group, returning its id.
 func (db *DB) CreateTemplate(group gp.TemplateGroupID, template string) (id gp.TemplateID, err error) {
-	s, err := db.prepare("INSERT INTO post_templates (set, template) VALUES (?, ?)")
+	s, err := db.prepare("INSERT INTO post_templates (`set`, template) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -32,7 +32,7 @@ func (db *DB) GetTemplate(id gp.TemplateID) (template string, err error) {
 
 //GetTemplateSet returns all the post templates in this set.
 func (db *DB) GetTemplateSet(set gp.TemplateGroupID) (templates []string, err error) {
-	s, err := db.prepare("SELECT template FROM post_templates WHERE set = ?")
+	s, err := db.prepare("SELECT template FROM post_templates WHERE `set` = ?")
 	if err != nil {
 		return
 	}
@@ -54,7 +54,7 @@ func (db *DB) GetTemplateSet(set gp.TemplateGroupID) (templates []string, err er
 
 //UpdateTemplate saves a new Template
 func (db *DB) UpdateTemplate(id gp.TemplateID, group gp.TemplateGroupID, template string) (err error) {
-	s, err := db.prepare("REPLACE INTO post_templates (id, set, template) VALUES (?, ?, ?)")
+	s, err := db.prepare("REPLACE INTO post_templates (id, `set`, template) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
