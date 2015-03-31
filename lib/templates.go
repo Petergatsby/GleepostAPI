@@ -10,8 +10,17 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+//AdminCreateTemplateFromPost saves a Post as a Template, so it can be used again.
+func (api *API) AdminCreateTemplateFromPost(admin gp.UserID, post gp.PostFull) (templateID gp.TemplateID, err error) {
+	if !api.isAdmin(admin) {
+		err = ENOTALLOWED
+		return
+	}
+	return api.createTemplateFromPost(post)
+}
+
 //CreateTemplateFromPost saves a Post as a Template, so it can be used again.
-func (api *API) CreateTemplateFromPost(post gp.PostFull) (templateID gp.TemplateID, err error) {
+func (api *API) createTemplateFromPost(post gp.PostFull) (templateID gp.TemplateID, err error) {
 	template, err := json.MarshalIndent(post, "", "\t")
 	templateID, err = api.db.CreateTemplate(1, string(template))
 	return

@@ -17,6 +17,8 @@ func init() {
 	base.Handle("/admin/masspush", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/admin/posts/duplicate", timeHandler(api, http.HandlerFunc(postDuplicate))).Methods("POST")
 	base.Handle("/admin/posts/duplicate", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(prefillNetwork))).Methods("POST")
+	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 //MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
