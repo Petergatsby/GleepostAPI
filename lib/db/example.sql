@@ -33,6 +33,23 @@ CREATE TABLE IF NOT EXISTS `categories` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=13 ;
 
+--
+-- Dumping data for table `categories`
+--
+
+INSERT INTO `categories` (`id`, `tag`, `name`) VALUES
+(2, 'news', 'News'),
+(3, 'for-sale', 'For Sale'),
+(4, 'question', 'Questions'),
+(5, 'event', 'Event'),
+(6, 'jobs', 'Jobs'),
+(7, 'editors-pick', 'Editor''s Pick'),
+(8, 'speaker', 'Speakers'),
+(9, 'music', 'Music'),
+(10, 'theater', 'Theater'),
+(11, 'sports', 'Sports'),
+(12, 'party', 'Parties');
+
 -- --------------------------------------------------------
 
 --
