@@ -11,12 +11,16 @@ import (
 )
 
 //AdminCreateTemplateFromPost saves a Post as a Template, so it can be used again.
-func (api *API) AdminCreateTemplateFromPost(admin gp.UserID, post gp.PostFull) (templateID gp.TemplateID, err error) {
+func (api *API) AdminCreateTemplateFromPost(admin gp.UserID, post gp.PostID) (templateID gp.TemplateID, err error) {
 	if !api.isAdmin(admin) {
 		err = ENOTALLOWED
 		return
 	}
-	return api.createTemplateFromPost(post)
+	p, err := api.getPostFull(admin, post)
+	if err != nil {
+		return
+	}
+	return api.createTemplateFromPost(p)
 }
 
 //CreateTemplateFromPost saves a Post as a Template, so it can be used again.

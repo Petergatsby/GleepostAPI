@@ -19,11 +19,17 @@ func init() {
 	base.Handle("/admin/posts/duplicate", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(prefillNetwork))).Methods("POST")
 	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/admin/templates", timeHandler(api, http.HandlerFunc(createTemplate))).Methods("POST")
+	base.Handle("/admin/templates", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 //MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
 //{"error":"Missing parameter: network"}
 var MissingParameterNetwork = gp.APIerror{Reason: "Missing parameter: network"}
+
+//MissingParameterNetwork is the error you'll get if you don't give a network when you're manually creating a user.
+//{"error":"Missing parameter: network"}
+var MissingParameterPost = gp.APIerror{Reason: "Missing parameter: post"}
 
 func newVersionNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
@@ -144,6 +150,30 @@ func prefillNetwork(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, err, 500)
 		default:
 			w.WriteHeader(204)
+		}
+	}
+}
+
+func createTemplate(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_postID, err := strconv.ParseUint(r.FormValue("post"), 10, 64)
+		if err != nil {
+			jsonResponse(w, MissingParameterPost, 400)
+			return
+		}
+		postID := gp.PostID(_postID)
+		id, err := api.AdminCreateTemplateFromPost(userID, postID)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err != nil:
+			jsonResponse(w, err, 500)
+		default:
+			jsonResponse(w, id, 201)
 		}
 	}
 }
