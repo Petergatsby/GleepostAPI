@@ -120,3 +120,28 @@ func postDuplicate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func prefillNetwork(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_netID, err := strconv.ParseUint(r.FormValue("network"), 10, 64)
+		if err != nil {
+			jsonResponse(w, MissingParameterNetwork, 400)
+			return
+		}
+		netID := gp.NetworkID(_netID)
+		name := r.FormValue("name")
+		err = api.AdminPrefillUniversity(userID, netID, name)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err != nil:
+			jsonResponse(w, err, 500)
+		default:
+			w.WriteHeader(204)
+		}
+	}
+}
