@@ -105,7 +105,7 @@ func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateG
 			return
 		}
 		if len(post.Videos) > 0 {
-			api.addPostVideo(id, post.Videos[0].ID)
+			api.addPostVideo(user, id, post.Videos[0].ID)
 		}
 	}
 	return nil
