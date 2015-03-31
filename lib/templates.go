@@ -58,7 +58,7 @@ func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateG
 	if err != nil {
 		return
 	}
-	up := userPool{network: network, networkDomain: domain, api: api}
+	up := userPool{users: make(map[gp.UserID]gp.UserID), network: network, networkDomain: domain, api: api}
 	for _, tpl := range templates {
 		post := gp.PostFull{}
 		err = json.Unmarshal([]byte(tpl), &post)
@@ -120,6 +120,7 @@ func (up *userPool) DuplicateUser(userID gp.UserID) (u gp.UserID, err error) {
 	if ok {
 		return u, nil
 	}
+	//TODO(patrick): Add check here if this email address already exists. Maybe change the map to email[userID]
 	var userProfile gp.Profile
 	userProfile, err = up.api.getProfile(userID, userID)
 	if err != nil {
