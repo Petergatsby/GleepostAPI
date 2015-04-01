@@ -118,13 +118,14 @@ func (api *API) duplicatePosts(into gp.NetworkID, copyUsers bool, regEx, replace
 		if len(post.Images) > 0 {
 			image = post.Images[0]
 		}
+		var video gp.VideoID
+		if len(post.Videos) > 0 {
+			video = post.Videos[0].ID
+		}
 		var id gp.PostID
-		id, _, err = api.addPostWithImage(userID, into, post.Text, attribs, true, image, tags...)
+		id, _, err = api.UserAddPost(userID, into, post.Text, attribs, video, true, image, tags...)
 		if err != nil {
 			return
-		}
-		if len(post.Videos) > 0 {
-			api.addPostVideo(id, post.Videos[0].ID)
 		}
 		duplicates = append(duplicates, id)
 	}

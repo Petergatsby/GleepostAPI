@@ -154,7 +154,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			network = gp.NetworkID(_network)
-			postID, pending, err = api.UserAddPostToNetwork(userID, network, text, attribs, videoID, false, url, ts...)
+			postID, pending, err = api.UserAddPost(userID, network, text, attribs, videoID, false, url, ts...)
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)

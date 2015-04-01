@@ -490,23 +490,11 @@ func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[
 	if err != nil {
 		return
 	}
-	return api.UserAddPostToNetwork(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, tags...)
+	return api.UserAddPost(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, tags...)
 }
 
-//UserAddPostToNetwork creates a post in the given network.
-func (api *API) UserAddPostToNetwork(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	switch {
-	case video > 0:
-		return api.addPostWithVideo(userID, netID, text, attribs, video, tags...)
-	case len(imageURL) > 5:
-		return api.addPostWithImage(userID, netID, text, attribs, allowUnowned, imageURL, tags...)
-	default:
-		return api.addPost(userID, netID, text, attribs, tags...)
-	}
-}
-
-//AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
-func (api *API) addPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, pending bool, err error) {
+//UserAddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID. If imageURL is set, the post will be created with this image. If allowUnowned, it will allow the post to be created without checking if the user "owns" this image. If video > 0, the post will be created with this video.
+func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.db.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
@@ -526,6 +514,22 @@ func (api *API) addPost(userID gp.UserID, netID gp.NetworkID, text string, attri
 			}
 			if len(attribs) > 0 {
 				err = api.setPostAttribs(postID, attribs)
+				if err != nil {
+					return
+				}
+			}
+			if len(imageURL) > 0 {
+				var exists bool
+				exists, err = api.userUploadExists(userID, imageURL)
+				if allowUnowned || (exists && err == nil) {
+					err = api.addPostImage(postID, imageURL)
+					if err != nil {
+						return
+					}
+				}
+			}
+			if video > 0 {
+				err = api.addPostVideo(postID, video)
 				if err != nil {
 					return
 				}
@@ -555,34 +559,6 @@ func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.Pos
 		if u.ID != by {
 			api.createNotification("group_post", by, u.ID, post, group, "")
 		}
-	}
-	return
-}
-
-//AddPostWithImage creates a post and adds an image in a single step (if the image is one that has been uploaded to gleepost.) If allowUnowned, images will not be checked for ownership.
-func (api *API) addPostWithImage(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, allowUnowned bool, image string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	postID, pending, err = api.addPost(userID, netID, text, attribs, tags...)
-	if err != nil {
-		return
-	}
-	exists, err := api.userUploadExists(userID, image)
-	if allowUnowned || (exists && err == nil) {
-		err = api.addPostImage(postID, image)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
-//AddPostWithVideo creates a post and attaches a video in a single step.
-func (api *API) addPostWithVideo(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, tags ...string) (postID gp.PostID, pending bool, err error) {
-	postID, pending, err = api.addPost(userID, netID, text, attribs, tags...)
-	if err != nil {
-		return
-	}
-	if video > 0 {
-		err = api.addPostVideo(postID, video)
 	}
 	return
 }
