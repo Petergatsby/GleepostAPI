@@ -8,6 +8,7 @@ import (
 )
 
 //Up20150306153027 is executed when this migration is applied
+//Must be executed at commit bb57bd7aedf58c687d78318ab47b36a8d0a75bdf or before (before admins were deleted from conf)
 func Up20150306153027(txn *sql.Tx) {
 	conf := conf.GetConfig()
 	s, err := txn.Prepare("UPDATE users SET is_admin = 1 WHERE id IN (SELECT user_id FROM user_network WHERE network_id = ?)")
