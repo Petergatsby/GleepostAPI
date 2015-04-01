@@ -8,6 +8,7 @@ import (
 )
 
 //Up20150325171408 is executed when this migration is applied
+// Must be performed at commit 08a985040eb776a279753d6ed758776e8200c78a
 func Up20150325171408(txn *sql.Tx) {
 	config := conf.GetConfig()
 	s, err := txn.Prepare("INSERT INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
