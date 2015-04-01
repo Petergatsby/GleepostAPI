@@ -44,15 +44,26 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedStatusCode: 201,
 		ExpectedType:       "CreatedPost",
 	}
+	testMissingExpiry := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Categories:         []string{"poll"},
+		PollOptions:        []string{"Option 1", "Another option", "Nothing"},
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Missing parameter: poll-expiry",
+	}
 
-	tests := []createPollTest{testGood}
+	tests := []createPollTest{testGood, testMissingExpiry}
 	for _, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
 		data["token"] = []string{cpt.Token.Token}
 		data["text"] = []string{cpt.Text}
 		data["poll-options"] = []string{strings.Join(cpt.PollOptions, ",")}
-		data["poll-expiry"] = []string{cpt.PollExpiry}
+		if len(cpt.PollExpiry) > 0 {
+			data["poll-expiry"] = []string{cpt.PollExpiry}
+		}
 		data["categories"] = cpt.Categories
 
 		resp, err := client.PostForm(baseURL+"posts", data)
@@ -75,6 +86,15 @@ func TestCreatePoll(t *testing.T) {
 			}
 			if post.Pending == true {
 				t.Fatalf("Post should not be pending")
+			}
+		case cpt.ExpectedType == "Error":
+			errorResp := gp.APIerror{}
+			err = dec.Decode(&errorResp)
+			if err != nil {
+				t.Fatalf("Failed to decode as %s: %v\n", cpt.ExpectedType, err)
+			}
+			if cpt.ExpectedError != errorResp.Reason {
+				t.Fatalf("Expected error: %s but got: %s\n", cpt.ExpectedError, errorResp.Reason)
 			}
 		}
 	}
