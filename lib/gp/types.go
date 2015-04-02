@@ -68,14 +68,6 @@ type ApproveLevel struct {
 	Categories []string `json:"categories"`
 }
 
-//PostCore is the minimal representation of a post.
-type PostCore struct {
-	ID   PostID    `json:"id"`
-	By   User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-	Text string    `json:"text"`
-}
-
 //Post represents a slightlly fuller representation of a post, containing everything about a post but its potentially limitless number of comments / likes.
 type Post struct {
 	Network    NetworkID              `json:"-"`

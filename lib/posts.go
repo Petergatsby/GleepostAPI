@@ -240,37 +240,6 @@ func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.P
 	return processed, nil
 }
 
-//PostSmall turns a PostCore (minimal detail Post) into a PostSmall (full detail but omitting comments).
-func (api *API) postSmall(p gp.PostCore) (post gp.PostSmall, err error) {
-	post.ID = p.ID
-	post.By = p.By
-	post.Time = p.Time
-	post.Text = p.Text
-	post.Images = api.getPostImages(p.ID)
-	post.Videos = api.getPostVideos(p.ID)
-	post.CommentCount = api.getCommentCount(p.ID)
-	post.Categories, err = api.postCategories(p.ID)
-	if err != nil {
-		return
-	}
-	post.Attribs, err = api.getPostAttribs(p.ID)
-	if err != nil {
-		return
-	}
-	post.LikeCount, post.Likes, err = api.likesAndCount(p.ID)
-	if err != nil {
-		return
-	}
-	for _, c := range post.Categories {
-		if c.Tag == "event" {
-			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(post.ID)
-			break
-		}
-	}
-	return
-}
-
 //getComments returns comments for this post, chronologically ordered starting from the start-th.
 func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
 	comments = make([]gp.Comment, 0)
