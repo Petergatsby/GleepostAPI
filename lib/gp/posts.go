@@ -54,3 +54,47 @@ type CreatedPost struct {
 	ID      PostID `json:"id"`
 	Pending bool   `json:"pending,omitempty"`
 }
+
+//CategoryID identifies a particular post category/tag.
+type CategoryID uint64
+
+//PostCategory represents a particular post category.
+type PostCategory struct {
+	ID   CategoryID `json:"id"`
+	Tag  string     `json:"tag"`
+	Name string     `json:"name"`
+}
+
+//Comment is a comment on a Post.
+type Comment struct {
+	ID   CommentID `json:"id"`
+	Post PostID    `json:"-"`
+	By   User      `json:"by"`
+	Time time.Time `json:"timestamp"`
+	Text string    `json:"text"`
+}
+
+//Like represents a user who has liked a post at a particular time.
+type Like struct {
+	UserID UserID
+	Time   time.Time
+}
+
+//LikeFull is the same as a like but contains a whole user object rather than an ID.
+type LikeFull struct {
+	User User      `json:"by"`
+	Time time.Time `json:"timestamp"`
+}
+
+//Liked represents a particular post and whether you've liked it.
+type Liked struct {
+	Post  PostID `json:"post"`
+	Liked bool   `json:"liked"`
+}
+
+//AttendeeSummary comprises a list of attending users, a total attendee count (which may not be len(attendees)) and an arbitrary "popularity" score
+type AttendeeSummary struct {
+	Popularity    int    `json:"popularity"`
+	AttendeeCount int    `json:"attendee_count"`
+	Attendees     []User `json:"attendees,omitempty"`
+}

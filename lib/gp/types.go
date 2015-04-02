@@ -71,27 +71,6 @@ type ReviewEvent struct {
 	At     time.Time `json:"at"`
 }
 
-//Comment is a comment on a Post.
-type Comment struct {
-	ID   CommentID `json:"id"`
-	Post PostID    `json:"-"`
-	By   User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-	Text string    `json:"text"`
-}
-
-//Like represents a user who has liked a post at a particular time.
-type Like struct {
-	UserID UserID
-	Time   time.Time
-}
-
-//LikeFull is the same as a like but contains a whole user object rather than an ID.
-type LikeFull struct {
-	User User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-}
-
 //Device is a particular (iOS|Android) device owned by a particular user.
 type Device struct {
 	User UserID `json:"user"`
@@ -123,22 +102,6 @@ type URLCreated struct {
 //BusyStatus is an indication of whether the user is Busy (accepting random chats) or not.
 type BusyStatus struct {
 	Busy bool `json:"busy"`
-}
-
-//Liked represents a particular post and whether you've liked it.
-type Liked struct {
-	Post  PostID `json:"post"`
-	Liked bool   `json:"liked"`
-}
-
-//CategoryID identifies a particular post category/tag.
-type CategoryID uint64
-
-//PostCategory represents a particular post category.
-type PostCategory struct {
-	ID   CategoryID `json:"id"`
-	Tag  string     `json:"tag"`
-	Name string     `json:"name"`
 }
 
 //Error - implements the error interface.
@@ -189,11 +152,4 @@ type UploadStatus struct {
 	ShouldRotate bool   `json:"-"`
 	Status       string `json:"status"`
 	Video
-}
-
-//AttendeeSummary comprises a list of attending users, a total attendee count (which may not be len(attendees)) and an arbitrary "popularity" score
-type AttendeeSummary struct {
-	Popularity    int    `json:"popularity"`
-	AttendeeCount int    `json:"attendee_count"`
-	Attendees     []User `json:"attendees,omitempty"`
 }
