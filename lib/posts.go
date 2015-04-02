@@ -454,16 +454,16 @@ func (api *API) needsReview(netID gp.NetworkID, categories ...string) (needsRevi
 }
 
 //UserAddPostToPrimary creates a post in the user's university.
-func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, tags ...string) (postID gp.PostID, pending bool, err error) {
+func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.UserAddPost(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, tags...)
+	return api.UserAddPost(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, pollExpiry, pollOptions, tags...)
 }
 
 //UserAddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID. If imageURL is set, the post will be created with this image. If allowUnowned, it will allow the post to be created without checking if the user "owns" this image. If video > 0, the post will be created with this video.
-func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, tags ...string) (postID gp.PostID, pending bool, err error) {
+func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.db.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:

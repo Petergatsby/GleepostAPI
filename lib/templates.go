@@ -103,7 +103,8 @@ func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateG
 		for _, cat := range post.Categories {
 			tags = append(tags, cat.Tag)
 		}
-		_, _, err = api.UserAddPost(user, network, post.Text, attribs, video, true, image, tags...)
+		//TODO(patrick) -- come back here and add the polling stuff
+		_, _, err = api.UserAddPost(user, network, post.Text, attribs, video, true, image, "", []string{}, tags...)
 		if err != nil {
 			return
 		}

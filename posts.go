@@ -128,7 +128,9 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		text := r.FormValue("text")
 		url := r.FormValue("url")
-		tags := r.FormValue("tags")
+		ts := strings.Split(r.FormValue("tags"), ",")
+		pollExpiry := r.FormValue("poll-expiry")
+		pollOptions := strings.Split(r.FormValue("poll-options"), ",")
 		attribs := make(map[string]string)
 		for k, v := range r.Form {
 			if !ignored(k) {
@@ -136,17 +138,13 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		var postID gp.PostID
-		var ts []string
-		if len(tags) > 1 {
-			ts = strings.Split(tags, ",")
-		}
 		n, ok := vars["network"]
 		var network gp.NetworkID
 		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
 		videoID := gp.VideoID(_vID)
 		var pending bool
 		if !ok {
-			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, ts...)
+			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		} else {
 			_network, err := strconv.ParseUint(n, 10, 64)
 			if err != nil {
@@ -154,7 +152,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			network = gp.NetworkID(_network)
-			postID, pending, err = api.UserAddPost(userID, network, text, attribs, videoID, false, url, ts...)
+			postID, pending, err = api.UserAddPost(userID, network, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
