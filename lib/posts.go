@@ -504,63 +504,67 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 	default:
 		//If the post matches one of the filters for this network, we want to hide it for now
 		pending, err = api.needsReview(netID, tags...)
+		if err != nil {
+			return
+		}
 		postID, err = api.db.AddPost(userID, text, netID, pending)
-		if err == nil {
-			if len(tags) > 0 {
-				err = api.tagPost(postID, tags...)
+		if err != nil {
+			return
+		}
+		if len(tags) > 0 {
+			err = api.tagPost(postID, tags...)
+			if err != nil {
+				return
+			}
+		}
+		if len(attribs) > 0 {
+			err = api.setPostAttribs(postID, attribs)
+			if err != nil {
+				return
+			}
+		}
+		if len(imageURL) > 0 {
+			var exists bool
+			exists, err = api.userUploadExists(userID, imageURL)
+			if allowUnowned || (exists && err == nil) {
+				err = api.addPostImage(postID, imageURL)
 				if err != nil {
 					return
 				}
 			}
-			if len(attribs) > 0 {
-				err = api.setPostAttribs(postID, attribs)
-				if err != nil {
-					return
-				}
+		}
+		if video > 0 {
+			err = api.addPostVideo(postID, video)
+			if err != nil {
+				return
 			}
-			if len(imageURL) > 0 {
-				var exists bool
-				exists, err = api.userUploadExists(userID, imageURL)
-				if allowUnowned || (exists && err == nil) {
-					err = api.addPostImage(postID, imageURL)
-					if err != nil {
-						return
-					}
-				}
-			}
-			if video > 0 {
-				err = api.addPostVideo(postID, video)
-				if err != nil {
-					return
-				}
-			}
-			_, err := api.db.GetUser(userID)
-			if err == nil {
-				creator, err := api.userIsNetworkOwner(userID, netID)
-				if err == nil && creator && !pending {
-					go api.notifyGroupNewPost(userID, netID, postID)
-				}
-			}
-			if pending {
-				api.postsToApproveNotification(userID, netID)
-			}
+		}
+		api.maybeNotifiyGroupNewPost(userID, netID, postID, pending)
+		if pending {
+			api.postsToApproveNotification(userID, netID)
 		}
 		return
 	}
 }
 
-func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID) {
-	users, err := api.db.GetNetworkUsers(group)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	for _, u := range users {
-		if u.ID != by {
-			api.createNotification("group_post", by, u.ID, post, group, "")
+func (api *API) maybeNotifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID, pending bool) {
+	_, err := api.db.GetUser(userID)
+	if err == nil {
+		creator, err := api.userIsNetworkOwner(userID, netID)
+		if err == nil && creator && !pending {
+			users, err := api.db.GetNetworkUsers(group)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			for _, u := range users {
+				if u.ID != by {
+					api.createNotification("group_post", by, u.ID, post, group, "")
+				}
+			}
+			return
 		}
 	}
-	return
 }
 
 //TagPost adds these tags/categories to the post if they're not already.
