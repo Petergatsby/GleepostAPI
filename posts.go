@@ -152,11 +152,9 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
-				jsonResponse(w, e, 403)
-				return
-			}
 			switch {
+			case ok && *e == lib.ENOTALLOWED:
+				jsonResponse(w, e, 403)
 			case err == lib.MissingParameterPollExpiry:
 				fallthrough
 			case err == lib.EndingTooLate:
