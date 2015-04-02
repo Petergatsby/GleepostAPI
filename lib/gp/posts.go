@@ -65,6 +65,9 @@ type PostCategory struct {
 	Name string     `json:"name"`
 }
 
+//CommentID identifies a comment on a post.
+type CommentID uint64
+
 //Comment is a comment on a Post.
 type Comment struct {
 	ID   CommentID `json:"id"`

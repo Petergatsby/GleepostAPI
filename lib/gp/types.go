@@ -6,9 +6,6 @@ import "time"
 //UserID is self explanatory.
 type UserID uint64
 
-//CommentID identifies a comment on a post.
-type CommentID uint64
-
 const (
 	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
 	OSTART = iota
