@@ -1825,7 +1825,11 @@ required parameters: id, token
 
 optional parameters: include_seen = (true|false)
 
-Returns all unread notifications for user [id], and includes the read ones if include_seen is true.
+Returns all unread notifications for user [id]
+
+If include_seen is false, then only the notifications which have not been seen yet will be returned. This is the default behaviour if include_seen is unspecified.
+
+If include_seen is true, the notifications that you have already marked as "seen" will also be visible; they will have the attribute `seen` = `true`.
 
 example responses:
 HTTP 200
