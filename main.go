@@ -4,13 +4,11 @@ package main
 import (
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"time"
 
 	"runtime"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
