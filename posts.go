@@ -146,11 +146,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		} else {
-			_network, err := strconv.ParseUint(n, 10, 64)
-			if err != nil {
-				jsonErr(w, err, 400)
-				return
-			}
+			_network, _ := strconv.ParseUint(n, 10, 64)
 			network = gp.NetworkID(_network)
 			postID, pending, err = api.UserAddPost(userID, network, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		}
