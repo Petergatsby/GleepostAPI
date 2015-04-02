@@ -39,7 +39,7 @@ func init() {
 }
 
 func ignored(key string) bool {
-	keys := []string{"id", "token", "text", "url", "tags", "popularity", "video"}
+	keys := []string{"id", "token", "text", "url", "tags", "popularity", "video", "poll-expiry", "poll-options"}
 	for _, v := range keys {
 		if key == v {
 			return true
