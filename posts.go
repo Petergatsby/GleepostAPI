@@ -154,18 +154,6 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case ok && e == lib.ENOTALLOWED:
 				jsonResponse(w, e, 403)
-			case err == lib.MissingParameterPollExpiry:
-				fallthrough
-			case err == lib.EndingTooLate:
-				fallthrough
-			case err == lib.EndingInPast:
-				fallthrough
-			case err == lib.EndingTooSoon:
-				fallthrough
-			case err == lib.TooFewOptions:
-				fallthrough
-			case err == lib.TooManyOptions:
-				jsonResponse(w, err, 400)
 			case ok:
 				jsonResponse(w, err, 400)
 			default:
