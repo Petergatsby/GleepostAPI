@@ -102,6 +102,22 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func BenchmarkLogin(b *testing.B) {
+	b.ReportAllocs()
+	err := initDB()
+	if err != nil {
+		b.FailNow()
+	}
+	email := "patrick@fakestanford.edu"
+	pass := "TestingPass"
+	for i := 0; i < b.N; i++ {
+		_, err := loginRequest(email, pass)
+		if err != nil {
+			b.FailNow()
+		}
+	}
+}
+
 func initDB() error {
 	config := conf.GetConfig()
 	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
