@@ -10,6 +10,9 @@ import (
 //ENoRole is given when you try to specify a role which doesn't exist.
 var ENoRole = gp.APIerror{Reason: "Invalid role"}
 
+//NobodyAdded is returned when you call UserAddToGroup with no arguments.
+var NobodyAdded = gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}
+
 var levels = map[string]int{
 	"creator":       9,
 	"administrator": 8,
@@ -51,6 +54,38 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.Grou
 //isGroup returns false if this network isn't a group (ie isn't user-created) and error if the group doesn't exist.
 func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
 	return api.db.IsGroup(netID)
+}
+
+//UserAddToGroup adds these gleepost users to this group (if you're allowed) and invites the rest via facebook / email.
+func (api *API) UserAddToGroup(adder gp.UserID, group gp.NetworkID, addees []gp.UserID, fbinvites []uint64, emailInvites []string) (err error) {
+	added := false
+	if len(addees) > 0 {
+		added = true
+		_, err = api.UserAddUsersToGroup(adder, addees, group)
+		if err != nil {
+			return
+		}
+	}
+	if len(fbinvites) > 0 {
+		added = true
+		_, err = api.UserAddFBUsersToGroup(adder, fbinvites, group)
+		if err != nil {
+			return
+		}
+	}
+	if len(emailInvites) > 0 {
+		added = true
+		for _, email := range emailInvites {
+			err = api.UserInviteEmail(adder, group, email)
+			if err != nil {
+				return
+			}
+		}
+	}
+	if !added {
+		return NobodyAdded
+	}
+	return nil
 }
 
 //UserAddUsersToGroup adds all addees to the group until the first error.

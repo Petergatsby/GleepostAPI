@@ -193,55 +193,19 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 				fbusers = append(fbusers, fbuser)
 			}
 		}
-		var added = false
-		if len(users) > 0 {
-			added = true
-			_, err = api.UserAddUsersToGroup(userID, users, netID)
-			if err != nil {
-				e, ok := err.(*gp.APIerror)
-				if ok && *e == lib.ENOTALLOWED {
-					go api.Count(1, url+".403")
-					jsonResponse(w, e, 403)
-				} else {
-					go api.Count(1, url+".500")
-					jsonErr(w, err, 500)
-				}
-				return
+		err = api.UserAddToGroup(userID, netID, users, fbusers, []string{r.FormValue("email")})
+		if err != nil {
+			e, ok := err.(*gp.APIerror)
+			if ok && *e == lib.ENOTALLOWED {
+				go api.Count(1, url+".403")
+				jsonResponse(w, e, 403)
+			} else if err == lib.NobodyAdded {
+				go api.Count(1, url+".400")
+				jsonResponse(w, err, 400)
+			} else {
+				go api.Count(1, url+".500")
+				jsonErr(w, err, 500)
 			}
-		}
-		if len(fbusers) > 0 {
-			added = true
-			_, err = api.UserAddFBUsersToGroup(userID, fbusers, netID)
-			if err != nil {
-				e, ok := err.(*gp.APIerror)
-				if ok && *e == lib.ENOTALLOWED {
-					go api.Count(1, url+".403")
-					jsonResponse(w, e, 403)
-				} else {
-					go api.Count(1, url+".500")
-					jsonErr(w, err, 500)
-				}
-				return
-			}
-		}
-		if len(r.FormValue("email")) > 5 {
-			added = true
-			err = api.UserInviteEmail(userID, netID, r.FormValue("email"))
-			if err != nil {
-				e, ok := err.(*gp.APIerror)
-				if ok && *e == lib.ENOTALLOWED {
-					go api.Count(1, url+".403")
-					jsonResponse(w, e, 403)
-				} else {
-					go api.Count(1, url+".500")
-					jsonErr(w, err, 500)
-				}
-				return
-			}
-		}
-		if !added {
-			go api.Count(1, url+".400")
-			jsonResponse(w, gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}, 400)
 			return
 		}
 		go api.Count(1, url+".204")
