@@ -609,7 +609,25 @@ func (api *API) DelLike(user gp.UserID, post gp.PostID) (err error) {
 }
 
 //setPostAttribs associates a set of key, value pairs with a particular post
+//At the moment, it doesn't check if these attributes are at all reasonable;
+//the onus is on the viewer of the attributes to look for just the ones which make sense,
+//and on the caller of this function to ensure that the values conform to a particular format.
 func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
+	for attrib, value := range attribs {
+		//How could I be so foolish to store time strings rather than unix timestamps...
+		if attrib == "event-time" {
+			t, e := time.Parse(value, time.RFC3339)
+			if e != nil {
+				unixt, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return e
+				}
+				t = time.Unix(unixt, 0)
+			}
+			unix := t.Unix()
+			attribs[attrib] = strconv.FormatInt(unix, 10)
+		}
+	}
 	return api.db.SetPostAttribs(post, attribs)
 }
 
