@@ -161,6 +161,10 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			case err == lib.EndingInPast:
 				fallthrough
 			case err == lib.EndingTooSoon:
+				fallthrough
+			case err == lib.TooFewOptions:
+				fallthrough
+			case err == lib.TooManyOptions:
 				jsonResponse(w, err, 400)
 			default:
 				jsonErr(w, err, 500)

@@ -23,6 +23,10 @@ var (
 	EndingTooLate = gp.APIerror{Reason: "Poll ending too late"}
 	//MissingParameterPollExpiry means you didn't give an expiry when you should have.
 	MissingParameterPollExpiry = gp.APIerror{Reason: "Missing parameter: poll-expiry"}
+	//TooFewOptions means you specified less than 2 options in a poll.
+	TooFewOptions = gp.APIerror{Reason: "Poll: too few options"}
+	//TooManyOptions means you specified more than 4 options in a poll.
+	TooManyOptions = gp.APIerror{Reason: "Poll: too many options"}
 )
 
 //GetPost returns a particular Post
@@ -491,6 +495,10 @@ func validatePollInput(tags []string, pollExpiry string, pollOptions []string) e
 		return EndingTooSoon
 	case t.After(time.Now().AddDate(0, 1, 1)):
 		return EndingTooLate
+	case len(pollOptions) < 2:
+		return TooFewOptions
+	case len(pollOptions) > 4:
+		return TooManyOptions
 	}
 	return nil
 }

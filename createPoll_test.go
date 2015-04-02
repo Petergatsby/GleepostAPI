@@ -63,8 +63,48 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "Poll ending in the past",
 	}
+	testTooSoon := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1", "Another option", "Nothing"},
+		PollExpiry:         time.Now().Add(10 * time.Second).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Poll ending too soon",
+	}
+	testTooLate := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1", "Another option", "Nothing"},
+		PollExpiry:         time.Now().AddDate(1, 0, 0).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Poll ending too late",
+	}
+	testFewOptions := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1"},
+		PollExpiry:         time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Poll: too few options",
+	}
+	testManyOptions := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1", "Another option", "Lrrr", "Zaphod Beeblebrox", "Norton Juster"},
+		PollExpiry:         time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Poll: too many options",
+	}
 
-	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast}
+	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions}
 	for _, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
