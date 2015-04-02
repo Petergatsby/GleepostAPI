@@ -26,5 +26,4 @@ func Down20150402174034(txn *sql.Tx) {
 		log.Println(err)
 		txn.Rollback()
 	}
-
 }

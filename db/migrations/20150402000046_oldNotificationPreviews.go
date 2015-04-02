@@ -53,7 +53,7 @@ func Up20150402000046(txn *sql.Tx) {
 	}
 	//Now we can iterate through the comments and notifications, and since they're in the same order and none of either are deleted (hopefully??)
 	//they'll match up.
-	nts := make([]notificationText, 0)
+	var nts []notificationText
 	for pb := range commentBag {
 		log.Printf("Getting comments for post:user %d:%d\n", pb.post, pb.commentBy)
 		log.Println("We have:", len(commentBag[pb]), "notifications to account for")
