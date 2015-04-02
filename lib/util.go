@@ -124,7 +124,7 @@ func (api *API) duplicatePosts(into gp.NetworkID, copyUsers bool, regEx, replace
 			return
 		}
 		if len(post.Videos) > 0 {
-			api.addPostVideo(id, post.Videos[0].ID)
+			api.addPostVideo(userID, id, post.Videos[0].ID)
 		}
 		duplicates = append(duplicates, id)
 	}
