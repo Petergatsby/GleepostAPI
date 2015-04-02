@@ -150,9 +150,9 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		}
 		if err != nil {
-			e, ok := err.(*gp.APIerror)
+			e, ok := err.(gp.APIerror)
 			switch {
-			case ok && *e == lib.ENOTALLOWED:
+			case ok && e == lib.ENOTALLOWED:
 				jsonResponse(w, e, 403)
 			case err == lib.MissingParameterPollExpiry:
 				fallthrough
@@ -165,6 +165,8 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			case err == lib.TooFewOptions:
 				fallthrough
 			case err == lib.TooManyOptions:
+				jsonResponse(w, err, 400)
+			case ok:
 				jsonResponse(w, err, 400)
 			default:
 				jsonErr(w, err, 500)

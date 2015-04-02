@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -28,6 +29,10 @@ var (
 	//TooManyOptions means you specified more than 4 options in a poll.
 	TooManyOptions = gp.APIerror{Reason: "Poll: too many options"}
 )
+
+func optionTooAdjective(adj string, n int) gp.APIerror {
+	return gp.APIerror{Reason: fmt.Sprintf("Option too %s: %d", adj, n)}
+}
 
 //GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
@@ -500,6 +505,14 @@ func validatePollInput(tags []string, pollExpiry string, pollOptions []string) e
 	case len(pollOptions) > 4:
 		return TooManyOptions
 	}
+	for n, opt := range pollOptions {
+		if len(opt) < 3 {
+			return optionTooAdjective("short", n)
+		}
+		if len(opt) > 50 {
+			return optionTooAdjective("long", n)
+		}
+	}
 	return nil
 }
 
@@ -510,7 +523,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 	case err != nil:
 		return
 	case !in:
-		return postID, false, &ENOTALLOWED
+		return postID, false, ENOTALLOWED
 	default:
 		err = validatePollInput(tags, pollExpiry, pollOptions)
 		if err != nil {

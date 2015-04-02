@@ -103,8 +103,28 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "Poll: too many options",
 	}
+	testShort := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1", "A", "Lrrr", "Zaphod Beeblebrox"},
+		PollExpiry:         time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Option too short: 1",
+	}
+	testLong := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1", "A really really really really really really really really really really long option.", "Really"},
+		PollExpiry:         time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Option too long: 1",
+	}
 
-	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions}
+	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong}
 	for _, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
