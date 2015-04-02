@@ -102,10 +102,10 @@ func Up20150402000046(txn *sql.Tx) {
 		}
 
 	}
-	var cnt int
-	err = txn.QueryRow("SELECT COUNT(*) FROM notifications WHERE type = 'commented' AND preview_text IS NULL").Scan(&cnt)
-	if cnt > 0 {
-		log.Println("There are some preview-less comments left over")
+	//Finally, for the notifications we can't work out...
+	_, err = txn.Exec("UPDATE notifications SET preview_text = '...' WHERE type = 'commented' AND preview_text IS NULL")
+	if err != nil {
+		log.Println(err)
 		txn.Rollback()
 	}
 	return
