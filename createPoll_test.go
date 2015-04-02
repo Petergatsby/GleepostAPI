@@ -53,8 +53,18 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "Missing parameter: poll-expiry",
 	}
+	testExpiryPast := createPollTest{
+		Token:              token,
+		Text:               "Which is the best option?",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Option 1", "Another option", "Nothing"},
+		PollExpiry:         time.Now().Add(-24 * time.Hour).Format(time.RFC3339),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Poll ending in the past",
+	}
 
-	tests := []createPollTest{testGood, testMissingExpiry}
+	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast}
 	for _, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}

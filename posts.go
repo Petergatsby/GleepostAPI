@@ -138,17 +138,16 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		var postID gp.PostID
-		n, ok := vars["network"]
-		var network gp.NetworkID
+		n := vars["network"]
+		_network, _ := strconv.ParseUint(n, 10, 64)
+		network := gp.NetworkID(_network)
 		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
 		videoID := gp.VideoID(_vID)
 		var pending bool
-		if !ok {
-			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
-		} else {
-			_network, _ := strconv.ParseUint(n, 10, 64)
-			network = gp.NetworkID(_network)
+		if network > 0 {
 			postID, pending, err = api.UserAddPost(userID, network, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
+		} else {
+			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		}
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
