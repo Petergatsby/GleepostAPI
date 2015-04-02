@@ -539,7 +539,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 				return
 			}
 		}
-		api.maybeNotifiyGroupNewPost(userID, netID, postID, pending)
+		api.maybeNotifyGroupNewPost(userID, netID, postID, pending)
 		if pending {
 			api.postsToApproveNotification(userID, netID)
 		}
@@ -548,9 +548,9 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 }
 
 func (api *API) maybeNotifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID, pending bool) {
-	_, err := api.db.GetUser(userID)
+	_, err := api.db.GetUser(by)
 	if err == nil {
-		creator, err := api.userIsNetworkOwner(userID, netID)
+		creator, err := api.userIsNetworkOwner(by, group)
 		if err == nil && creator && !pending {
 			users, err := api.db.GetNetworkUsers(group)
 			if err != nil {
