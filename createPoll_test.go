@@ -28,7 +28,7 @@ func TestCreatePoll(t *testing.T) {
 	type createPollTest struct {
 		Token              gp.Token
 		Text               string
-		Categories         []string
+		Tags               []string
 		PollOptions        []string
 		PollExpiry         string
 		ExpectedStatusCode int
@@ -38,7 +38,7 @@ func TestCreatePoll(t *testing.T) {
 	testGood := createPollTest{
 		Token:              token,
 		Text:               "Which is the best option?",
-		Categories:         []string{"poll"},
+		Tags:               []string{"poll"},
 		PollOptions:        []string{"Option 1", "Another option", "Nothing"},
 		PollExpiry:         time.Now().Add(24 * time.Hour).Format(time.RFC3339),
 		ExpectedStatusCode: 201,
@@ -47,7 +47,7 @@ func TestCreatePoll(t *testing.T) {
 	testMissingExpiry := createPollTest{
 		Token:              token,
 		Text:               "Which is the best option?",
-		Categories:         []string{"poll"},
+		Tags:               []string{"poll"},
 		PollOptions:        []string{"Option 1", "Another option", "Nothing"},
 		ExpectedStatusCode: 400,
 		ExpectedType:       "Error",
@@ -64,7 +64,7 @@ func TestCreatePoll(t *testing.T) {
 		if len(cpt.PollExpiry) > 0 {
 			data["poll-expiry"] = []string{cpt.PollExpiry}
 		}
-		data["categories"] = cpt.Categories
+		data["tags"] = cpt.Tags
 
 		resp, err := client.PostForm(baseURL+"posts", data)
 		if err != nil {

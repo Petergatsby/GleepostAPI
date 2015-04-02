@@ -15,6 +15,14 @@ var (
 	CommentTooShort = gp.APIerror{Reason: "Comment too short"}
 	//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
 	NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
+	//EndingTooSoon means you tried to start a poll with a very short expiry.
+	EndingTooSoon = gp.APIerror{Reason: "Poll ending too soon"}
+	//EndingInPast means you tried to start a poll with an expiry in the past.
+	EndingInPast = gp.APIerror{Reason: "Poll ending in the past"}
+	//EndingTooLate means you tried to start a poll with a very long expiry.
+	EndingTooLate = gp.APIerror{Reason: "Poll ending too late"}
+	//MissingParameterPollExpiry means you didn't give an expiry when you should have.
+	MissingParameterPollExpiry = gp.APIerror{Reason: "Missing parameter: poll-expiry"}
 )
 
 //GetPost returns a particular Post
@@ -462,6 +470,31 @@ func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[
 	return api.UserAddPost(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, pollExpiry, pollOptions, tags...)
 }
 
+func validatePollInput(tags []string, pollExpiry string, pollOptions []string) error {
+	poll := false
+	for _, t := range tags {
+		if t == "poll" {
+			poll = true
+			break
+		}
+	}
+	if !poll {
+		return nil
+	}
+	t, err := time.Parse(time.RFC3339, pollExpiry)
+	switch {
+	case err != nil:
+		return MissingParameterPollExpiry
+	case t.Before(time.Now()):
+		return EndingInPast
+	case t.Before(time.Now().Add(15 * time.Minute)):
+		return EndingTooSoon
+	case t.After(time.Now().AddDate(0, 1, 1)):
+		return EndingTooLate
+	}
+	return nil
+}
+
 //UserAddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID. If imageURL is set, the post will be created with this image. If allowUnowned, it will allow the post to be created without checking if the user "owns" this image. If video > 0, the post will be created with this video.
 func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.db.UserInNetwork(userID, netID)
@@ -471,6 +504,10 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 	case !in:
 		return postID, false, &ENOTALLOWED
 	default:
+		err = validatePollInput(tags, pollExpiry, pollOptions)
+		if err != nil {
+			return
+		}
 		//If the post matches one of the filters for this network, we want to hide it for now
 		pending, err = api.needsReview(netID, tags...)
 		if err != nil {
