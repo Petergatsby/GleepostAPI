@@ -148,7 +148,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		} else {
 			_network, err := strconv.ParseUint(n, 10, 64)
 			if err != nil {
-				jsonErr(w, err, 500)
+				jsonErr(w, err, 400)
 				return
 			}
 			network = gp.NetworkID(_network)
