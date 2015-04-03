@@ -68,7 +68,8 @@ func (db *DB) GetPollOptions(postID gp.PostID) (options []string, err error) {
 
 //GetPollVotes returns a map of option-name:vote count for this poll, or err if this is not a poll.
 func (db *DB) GetPollVotes(postID gp.PostID) (votes map[string]int, err error) {
-	s, err := db.prepare("SELECT COUNT(*) as votes, `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = 2817 AND poll_votes.post_id = poll_options.post_id GROUP BY poll_votes.option_id")
+	votes = make(map[string]int)
+	s, err := db.prepare("SELECT COUNT(*) as votes, `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id GROUP BY poll_votes.option_id")
 	if err != nil {
 		return
 	}
@@ -78,6 +79,23 @@ func (db *DB) GetPollVotes(postID gp.PostID) (votes map[string]int, err error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var option string
+		var count int
+		err = rows.Scan(&count, &option)
+		if err != nil {
+			return
+		}
+		votes[option] = count
 	}
+	return
+}
+
+//GetUserVote returns the way this user voted in this poll.
+func (db *DB) GetUserVote(userID gp.UserID, postID gp.PostID) (vote string, err error) {
+	s, err := db.prepare("SELECT option FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id AND poll_votes.user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(postID, userID).Scan(&vote)
 	return
 }
