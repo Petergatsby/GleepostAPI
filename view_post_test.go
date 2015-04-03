@@ -21,18 +21,7 @@ func TestViewPost(t *testing.T) {
 
 	client := &http.Client{}
 
-	loginResp, err := loginRequest("patrick@fakestanford.edu", "TestingPass")
-	if err != nil {
-		t.Fatalf("Error logging in: %v\n", err)
-	}
-
-	dec := json.NewDecoder(loginResp.Body)
-
-	token := gp.Token{}
-	err = dec.Decode(&token)
-	if err != nil {
-		t.Fatalf("Error getting login token: %v", err)
-	}
+	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 
 	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
 	if err != nil {
@@ -44,89 +33,88 @@ func TestViewPost(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
-	file, err := os.Open("testdata/test_post1.json")
-	dec = json.NewDecoder(file)
-	expectedValue := gp.PostSmall{}
-	err = dec.Decode(&expectedValue)
-	if err != nil {
-		t.Fatalf("Error parsing expected data: %v", err)
-	}
-
 	type viewPostTest struct {
 		TestNumber         int
-		ExpectedPost       gp.PostSmall
-		UseCorrectToken    bool
-		UseCorrectID       bool
+		ExpectedPost       string
+		Token              string
+		UserID             gp.UserID
 		ExpectedStatusCode int
 		ExpectedError      string
 	}
 	goodTest := viewPostTest{
 		TestNumber:         0,
-		ExpectedPost:       expectedValue,
-		UseCorrectToken:    true,
-		UseCorrectID:       true,
+		ExpectedPost:       "testdata/test_post1.json",
+		Token:              token.Token,
+		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusOK,
 	}
-	badTest := viewPostTest{
+	badTag := viewPostTest{
 		TestNumber:         1,
-		UseCorrectToken:    false,
-		UseCorrectID:       false,
+		ExpectedPost:       "testdata/test_post2.json",
+		Token:              token.Token,
+		UserID:             token.UserID,
+		ExpectedStatusCode: http.StatusOK,
+		ExpectedError:      "Tag mismatch",
+	}
+	badImage := viewPostTest{
+		TestNumber:         2,
+		ExpectedPost:       "testdata/test_post3.json",
+		Token:              token.Token,
+		UserID:             token.UserID,
+		ExpectedStatusCode: http.StatusOK,
+		ExpectedError:      "Image mismatch",
+	}
+	badTest := viewPostTest{
+		TestNumber:         3,
+		ExpectedPost:       "testdata/test_post1.json",
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badToken := viewPostTest{
-		TestNumber:         2,
-		UseCorrectToken:    false,
-		UseCorrectID:       true,
+		TestNumber:         4,
+		ExpectedPost:       "testdata/test_post1.json",
+		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badID := viewPostTest{
-		TestNumber:         3,
-		UseCorrectToken:    false,
-		UseCorrectID:       true,
+		TestNumber:         5,
+		ExpectedPost:       "testdata/test_post1.json",
+		Token:              token.Token,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
-
-	tests := []viewPostTest{goodTest, badTest, badToken, badID}
+	tests := []viewPostTest{goodTest, badTag, badImage, badTest, badToken, badID}
 	for _, vpt := range tests {
+
+		file, err := os.Open(vpt.ExpectedPost)
+		dec := json.NewDecoder(file)
+		expectedValue := gp.PostSmall{}
+		err = dec.Decode(&expectedValue)
+		if err != nil {
+			t.Fatalf("Test%v: Error parsing expected data: %v", vpt.TestNumber, err)
+		}
 
 		var tags string
 
-		for _, tag := range vpt.ExpectedPost.Categories {
+		for _, tag := range expectedValue.Categories {
 			tags += tag.Tag + ", "
 		}
 
 		data := make(url.Values)
 		data["token"] = []string{token.Token}
 		data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
-		data["text"] = []string{vpt.ExpectedPost.Text}
-		data["url"] = vpt.ExpectedPost.Images
+		data["text"] = []string{expectedValue.Text}
+		data["url"] = expectedValue.Images
 		data["tags"] = []string{tags}
 
 		_, err = client.PostForm(baseURL+"posts", data)
 		if err != nil {
-			t.Fatalf("Test%v: Error with post request: %v", err)
-		}
-
-		var userToken string
-		var userID string
-
-		if vpt.UseCorrectToken {
-			userToken = token.Token
-		} else {
-			userToken = "aasdfjan02t11adv0a9va9v2"
-		}
-
-		if vpt.UseCorrectID {
-			userID = fmt.Sprintf("%d", token.UserID)
-		} else {
-			userID = "914783"
+			t.Fatalf("Test%v: Error with post request: %v", vpt.TestNumber, err)
 		}
 
 		req, err := http.NewRequest("GET", baseURL+"posts", nil)
-		req.Header.Set("X-GP-Auth", userID+"-"+userToken)
+		req.Header.Set("X-GP-Auth", fmt.Sprintf("%d", vpt.UserID)+"-"+vpt.Token)
 
 		if err != nil {
 			t.Fatalf("Test%v: Error with get request: %v", vpt.TestNumber, err)
@@ -141,57 +129,92 @@ func TestViewPost(t *testing.T) {
 		switch {
 		case vpt.ExpectedStatusCode == http.StatusOK:
 			if vpt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", vpt.ExpectedStatusCode, resp.StatusCode)
+				t.Fatalf("Test%v: Expected %v, got %v\n", vpt.TestNumber, vpt.ExpectedStatusCode, resp.StatusCode)
 			}
 
 			dec := json.NewDecoder(resp.Body)
 			respValue := []gp.PostSmall{}
 			err = dec.Decode(&respValue)
 			if err != nil {
-				t.Fatalf("Error parsing response: %v\n", err)
+				t.Fatalf("Test%v: Error parsing response: %v\n", vpt.TestNumber, err)
 			}
-			fmt.Println(respValue[vpt.TestNumber])
-			if respValue[vpt.TestNumber].By.ID != token.UserID {
-				t.Fatalf("Wrong user found. Expecting: %v, Got: %v\n", token.UserID, respValue[vpt.TestNumber].By.ID)
-			} else if respValue[vpt.TestNumber].Text != vpt.ExpectedPost.Text {
-				t.Fatalf("Wrong value found. Expecting: %v, Got: %v\n", vpt.ExpectedPost.Text, respValue[vpt.TestNumber].Text)
-			} else if len(respValue[vpt.TestNumber].Images) > 0 || len(vpt.ExpectedPost.Images) > 0 {
-				if len(respValue[vpt.TestNumber].Images) != len(vpt.ExpectedPost.Images) {
-					t.Fatalf("Wrong images found. Expecting: %v, Got: %v\n", vpt.ExpectedPost.Images, respValue[vpt.TestNumber].Images)
-				} else {
-					for index, image := range respValue[vpt.TestNumber].Images {
-						if image != vpt.ExpectedPost.Images[index] {
-							t.Fatalf("Wrong image found. Expecting: %v, Got: %v\n", vpt.ExpectedPost.Images, respValue[vpt.TestNumber].Images)
-						}
-					}
+			fmt.Println(respValue[0])
+			if respValue[0].By.ID != token.UserID {
+				t.Fatalf("Test%v: Wrong user found. Expecting: %v, Got: %v\n", vpt.TestNumber, token.UserID, respValue[0].By.ID)
+			}
+
+			if respValue[0].Text != expectedValue.Text {
+				t.Fatalf("Test%v: Wrong value found. Expecting: %v, Got: %v\n", vpt.TestNumber, expectedValue.Text, respValue[0].Text)
+			}
+
+			err = testPostImageMatch(respValue[0].Images, expectedValue.Images)
+			if vpt.ExpectedError == "Image mismatch" {
+				if err == nil || err.Error() != "Image mismatch" {
+					t.Fatalf("Test%v: Expected image mismatch, but did not get error", vpt.TestNumber)
 				}
-			} else if len(respValue[vpt.TestNumber].Categories) > 0 || len(vpt.ExpectedPost.Categories) > 0 {
-				if len(respValue[vpt.TestNumber].Categories) != len(vpt.ExpectedPost.Categories) {
-					t.Fatalf("Wrong tags found. Expecting: %v, Got: %v\n", vpt.ExpectedPost.Categories, respValue[vpt.TestNumber].Categories)
-				} else {
-					for index, category := range respValue[vpt.TestNumber].Categories {
-						if category.Tag != vpt.ExpectedPost.Categories[index].Tag {
-							t.Fatalf("Wrong tag found. Expecting: %v, Got: %v\n", vpt.ExpectedPost.Categories, respValue[vpt.TestNumber].Categories)
-						}
-					}
+			} else {
+				if err != nil {
+					t.Fatalf("Test%v: Error with images: %v", vpt.TestNumber, err)
 				}
 			}
+
+			err = testPostTagMatch(respValue[0].Categories, expectedValue.Categories)
+			if vpt.ExpectedError == "Tag mismatch" {
+				if err == nil || err.Error() != "Tag mismatch" {
+					t.Fatalf("Test%v: Expected tag mismatch, but did not get error", vpt.TestNumber)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Test%v: Error with tags: %v", vpt.TestNumber, err)
+				}
+			}
+
 		case vpt.ExpectedStatusCode == http.StatusBadRequest:
 			if vpt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", vpt.ExpectedStatusCode, resp.StatusCode)
+				t.Fatalf("Test%v: Expected %v, got %v\n", vpt.TestNumber, vpt.ExpectedStatusCode, resp.StatusCode)
 			}
 
 			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
-				t.Fatalf("Error parsing error: %v\n", err)
+				t.Fatalf("Test%v: Error parsing error: %v\n", vpt.TestNumber, err)
 			}
 			if errorValue.Reason != vpt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", vpt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %s, got %s\n", vpt.TestNumber, vpt.ExpectedError, errorValue.Reason)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened")
 		}
 	}
+}
+
+func testPostTagMatch(currentValue []gp.PostCategory, expectedValue []gp.PostCategory) (err error) {
+	if len(currentValue) > 0 || len(expectedValue) > 0 {
+		if len(currentValue) != len(expectedValue) {
+			return gp.APIerror{Reason: "Tag mismatch"}
+		} else {
+			for index, category := range currentValue {
+				if category.Tag != expectedValue[index].Tag {
+					return gp.APIerror{Reason: "Tag mistmatch"}
+				}
+			}
+		}
+	}
+	return
+}
+
+func testPostImageMatch(currentValue []string, expectedValue []string) (err error) {
+	if len(currentValue) > 0 || len(expectedValue) > 0 {
+		if len(currentValue) != len(expectedValue) {
+			return gp.APIerror{Reason: "Image mismatch"}
+		} else {
+			for index, image := range currentValue {
+				if image != expectedValue[index] {
+					return gp.APIerror{Reason: "Image mistmatch"}
+				}
+			}
+		}
+	}
+	return
 }
