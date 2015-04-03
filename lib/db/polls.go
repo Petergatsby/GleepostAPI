@@ -28,3 +28,56 @@ func (db *DB) SavePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []str
 	}
 	return
 }
+
+//GetPollExpiry returns this poll's expiry time -- or err if this is not a poll.
+func (db *DB) GetPollExpiry(postID gp.PostID) (expiry time.Time, err error) {
+	s, err := db.prepare("SELECT expiry_time FROM post_polls WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	var t string
+	err = s.QueryRow(postID).Scan(&t)
+	if err != nil {
+		return
+	}
+	expiry, err = time.Parse(mysqlTime, t)
+	return
+}
+
+//GetPollOptions returns this poll's options -- or err if this is not a poll.
+func (db *DB) GetPollOptions(postID gp.PostID) (options []string, err error) {
+	s, err := db.prepare("SELECT `option` FROM poll_options WHERE post_id = ? ORDER BY option_id ASC")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var opt string
+		err = rows.Scan(&opt)
+		if err != nil {
+			return
+		}
+		options = append(options, opt)
+	}
+	return
+}
+
+//GetPollVotes returns a map of option-name:vote count for this poll, or err if this is not a poll.
+func (db *DB) GetPollVotes(postID gp.PostID) (votes map[string]int, err error) {
+	s, err := db.prepare("SELECT COUNT(*) as votes, `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = 2817 AND poll_votes.post_id = poll_options.post_id GROUP BY poll_votes.option_id")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+	}
+	return
+}

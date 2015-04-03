@@ -101,3 +101,10 @@ type AttendeeSummary struct {
 	AttendeeCount int    `json:"attendee_count"`
 	Attendees     []User `json:"attendees,omitempty"`
 }
+
+//Poll contains all the visible information about a poll.
+type Poll struct {
+	Options []string       `json:"options"`
+	Votes   map[string]int `json:"votes"`
+	Expiry  time.Time      `json:"expires-at"`
+}

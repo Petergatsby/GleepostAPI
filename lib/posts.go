@@ -875,3 +875,16 @@ func (api *API) clearPostImages(postID gp.PostID) (err error) {
 func (api *API) subjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
 	return api.db.SubjectiveRSVPCount(perspective, otherID)
 }
+
+func (api *API) getPoll(postID gp.PostID) (poll gp.Poll, err error) {
+	poll.Expiry, err = api.db.GetPollExpiry(postID)
+	if err != nil {
+		return
+	}
+	poll.Options, err = api.db.GetPollOptions(postID)
+	if err != nil {
+		return
+	}
+	poll.Votes, err = api.db.GetPollVotes(postID)
+	return
+}
