@@ -479,8 +479,8 @@ func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[
 	return api.UserAddPost(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, pollExpiry, pollOptions, tags...)
 }
 
-func validatePollInput(tags []string, pollExpiry string, pollOptions []string) error {
-	poll := false
+func validatePollInput(tags []string, pollExpiry string, pollOptions []string) (poll bool, expiry time.Time, err error) {
+	poll = false
 	for _, t := range tags {
 		if t == "poll" {
 			poll = true
@@ -488,32 +488,32 @@ func validatePollInput(tags []string, pollExpiry string, pollOptions []string) e
 		}
 	}
 	if !poll {
-		return nil
+		return
 	}
-	t, err := time.Parse(time.RFC3339, pollExpiry)
+	expiry, err = time.Parse(time.RFC3339, pollExpiry)
 	switch {
 	case err != nil:
-		return MissingParameterPollExpiry
-	case t.Before(time.Now()):
-		return EndingInPast
-	case t.Before(time.Now().Add(15 * time.Minute)):
-		return EndingTooSoon
-	case t.After(time.Now().AddDate(0, 1, 1)):
-		return EndingTooLate
+		err = MissingParameterPollExpiry
+	case expiry.Before(time.Now()):
+		err = EndingInPast
+	case expiry.Before(time.Now().Add(15 * time.Minute)):
+		err = EndingTooSoon
+	case expiry.After(time.Now().AddDate(0, 1, 1)):
+		err = EndingTooLate
 	case len(pollOptions) < 2:
-		return TooFewOptions
+		err = TooFewOptions
 	case len(pollOptions) > 4:
-		return TooManyOptions
+		err = TooManyOptions
 	}
 	for n, opt := range pollOptions {
 		if len(opt) < 3 {
-			return optionTooAdjective("short", n)
+			err = optionTooAdjective("short", n)
 		}
 		if len(opt) > 50 {
-			return optionTooAdjective("long", n)
+			err = optionTooAdjective("long", n)
 		}
 	}
-	return nil
+	return
 }
 
 //UserAddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID. If imageURL is set, the post will be created with this image. If allowUnowned, it will allow the post to be created without checking if the user "owns" this image. If video > 0, the post will be created with this video.
@@ -525,7 +525,9 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 	case !in:
 		return postID, false, ENOTALLOWED
 	default:
-		err = validatePollInput(tags, pollExpiry, pollOptions)
+		var poll bool
+		var expiry time.Time
+		poll, expiry, err = validatePollInput(tags, pollExpiry, pollOptions)
 		if err != nil {
 			return
 		}
@@ -562,6 +564,12 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 		}
 		if video > 0 {
 			err = api.addPostVideo(postID, video)
+			if err != nil {
+				return
+			}
+		}
+		if poll {
+			err = api.db.SavePoll(postID, expiry, pollOptions)
 			if err != nil {
 				return
 			}
@@ -674,6 +682,7 @@ func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, 
 			attribs[attrib] = val
 		}
 	}
+	return
 }
 
 //UserAttend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.

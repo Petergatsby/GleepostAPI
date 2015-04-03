@@ -7,7 +7,7 @@ import (
 )
 
 //SavePoll adds this poll to this post.
-func (db *DB) SavePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []string) {
+func (db *DB) SavePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []string) (err error) {
 	s, err := db.prepare("INSERT INTO post_polls (post_id, expiry_time) VALUES (?, ?)")
 	if err != nil {
 		return
@@ -16,7 +16,7 @@ func (db *DB) SavePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []str
 	if err != nil {
 		return
 	}
-	s, err = db.prepare("INSERT INTO poll_options (post_id, option_id, option) VALUES (?, ?, ?)")
+	s, err = db.prepare("INSERT INTO poll_options (post_id, option_id, `option`) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
@@ -26,4 +26,5 @@ func (db *DB) SavePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []str
 			return
 		}
 	}
+	return
 }

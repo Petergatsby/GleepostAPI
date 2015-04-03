@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -141,6 +142,10 @@ func TestCreatePoll(t *testing.T) {
 			t.Fatal("Error making request:", err)
 		}
 		if resp.StatusCode != cpt.ExpectedStatusCode {
+			d := json.NewDecoder(resp.Body)
+			errResp := gp.APIerror{}
+			d.Decode(&errResp)
+			log.Println(errResp.Reason)
 			t.Fatalf("Expected status code %d, got %d\n", cpt.ExpectedStatusCode, resp.StatusCode)
 		}
 		dec := json.NewDecoder(resp.Body)
