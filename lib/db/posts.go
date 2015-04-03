@@ -453,7 +453,7 @@ func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err err
 }
 
 //GetPostAttribs returns a map of all attributes associated with post.
-func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
+func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]string, err error) {
 	s, err := db.prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
 	if err != nil {
 		return
@@ -463,25 +463,14 @@ func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, er
 		return
 	}
 	defer rows.Close()
-	attribs = make(map[string]interface{})
+	attribs = make(map[string]string)
 	for rows.Next() {
 		var attrib, val string
 		err = rows.Scan(&attrib, &val)
 		if err != nil {
 			return
 		}
-		switch {
-		case attrib == "event-time":
-			log.Println("event-time")
-			var unix int64
-			unix, err = strconv.ParseInt(val, 10, 64)
-			if err == nil {
-				log.Println("no error")
-				attribs[attrib] = time.Unix(unix, 0)
-			}
-		default:
-			attribs[attrib] = val
-		}
+		attribs[attrib] = val
 	}
 	return
 }

@@ -660,7 +660,20 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 
 //getPostAttribs returns all the custom attributes of a post.
 func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
-	return api.db.GetPostAttribs(post)
+	attribs = make(map[string]interface{})
+	atts, err := api.db.GetPostAttribs(post)
+	for attrib, val := range atts {
+		switch {
+		case attrib == "event-time":
+			var unix int64
+			unix, err = strconv.ParseInt(val, 10, 64)
+			if err == nil {
+				attribs[attrib] = time.Unix(unix, 0)
+			}
+		default:
+			attribs[attrib] = val
+		}
+	}
 }
 
 //UserAttend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
