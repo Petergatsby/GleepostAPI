@@ -643,7 +643,7 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 	for attrib, value := range attribs {
 		//How could I be so foolish to store time strings rather than unix timestamps...
 		if attrib == "event-time" {
-			t, e := time.Parse(value, time.RFC3339)
+			t, e := time.Parse(time.RFC3339, value)
 			if e != nil {
 				unixt, e := strconv.ParseInt(value, 10, 64)
 				if e != nil {
