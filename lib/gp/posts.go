@@ -108,3 +108,9 @@ type Poll struct {
 	Votes   map[string]int `json:"votes"`
 	Expiry  time.Time      `json:"expires-at"`
 }
+
+//SubjectivePoll is a poll which also contains your vote.
+type SubjectivePoll struct {
+	Poll
+	YourVote string `json:"your-vote,omitempty"`
+}

@@ -888,3 +888,12 @@ func (api *API) getPoll(postID gp.PostID) (poll gp.Poll, err error) {
 	poll.Votes, err = api.db.GetPollVotes(postID)
 	return
 }
+
+func (api *API) userGetPoll(userID gp.UserID, postID gp.PostID) (poll gp.SubjectivePoll, err error) {
+	poll.Poll, err = api.getPoll(postID)
+	if err != nil {
+		return
+	}
+	poll.YourVote, err = api.db.GetUserVote(userID, postID)
+	return
+}
