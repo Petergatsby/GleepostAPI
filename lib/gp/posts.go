@@ -24,6 +24,7 @@ type Post struct {
 	Group      *Group                 `json:"network,omitempty"`
 	Views      int                    `json:"views,omitempty"`
 	Attending  bool                   `json:"attending,omitempty"`
+	Poll       *SubjectivePoll        `json:"poll,omitempty"`
 }
 
 //PostSmall enhances a Post with a comment count, a like count, and all the users who've liked the post.

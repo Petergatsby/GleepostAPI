@@ -109,6 +109,11 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		log.Println(err)
 		err = nil
 	}
+	poll, err := api.userGetPoll(userID, postID)
+	if err == nil {
+		post.Poll = &poll
+	}
+	err = nil
 	return
 }
 
@@ -254,6 +259,10 @@ func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.P
 		err = nil
 	}
 	processed.Attending, err = api.db.IsAttending(userID, processed.ID)
+	poll, err := api.userGetPoll(userID, processed.ID)
+	if err == nil {
+		processed.Poll = &poll
+	}
 	return processed, nil
 }
 
@@ -894,6 +903,9 @@ func (api *API) userGetPoll(userID gp.UserID, postID gp.PostID) (poll gp.Subject
 	if err != nil {
 		return
 	}
-	poll.YourVote, err = api.db.GetUserVote(userID, postID)
-	return
+	vote, err := api.db.GetUserVote(userID, postID)
+	if err == nil {
+		poll.YourVote = vote
+	}
+	return poll, nil
 }
