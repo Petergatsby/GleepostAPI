@@ -99,3 +99,13 @@ func (db *DB) GetUserVote(userID gp.UserID, postID gp.PostID) (vote string, err 
 	err = s.QueryRow(postID, userID).Scan(&vote)
 	return
 }
+
+//UserCastVode records this user's vote in this poll.
+func (db *DB) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (err error) {
+	s, err := db.prepare("INSERT INTO poll_votes (post_id, option_id, user_id) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, option, userID)
+	return
+}
