@@ -34,6 +34,8 @@ func init() {
 	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(attendHandler))).Methods("POST", "DELETE")
 	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/posts/{id:[0-9]+}/votes", timeHandler(api, http.HandlerFunc(postVotes))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/votes", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/live", timeHandler(api, http.HandlerFunc(liveHandler))).Methods("GET")
 	base.Handle("/live", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
@@ -492,4 +494,26 @@ func paginationHeaders(baseURL string, posts []gp.PostSmall) (header string) {
 	next := fmt.Sprintf("<%s?before=%d>; rel=\"next\"", baseURL, oldest)
 	header = prev + ",\n" + next
 	return
+}
+
+func postVotes(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postID := gp.PostID(_postID)
+		option, _ := strconv.ParseInt(r.FormValue("option"), 10, 64)
+		err := api.UserCastVote(userID, postID, int(option))
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			w.WriteHeader(204)
+		}
+	}
 }
