@@ -1,15 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -173,4 +176,100 @@ func TestCreatePoll(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestVote(t *testing.T) {
+	err := initDB()
+	if err != nil {
+		t.Fatalf("Error initializing db: %v\n", err)
+	}
+
+	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
+	if err != nil {
+		t.Fatalf("Couldn't log in: %v\n", err)
+	}
+
+	client := &http.Client{}
+
+	type voteTest struct {
+		Token              gp.Token
+		Post               gp.PostID
+		Option             string
+		ExpectedStatusCode int
+		ExpectedType       string
+		ExpectedError      string
+	}
+	testNoSuchPost := voteTest{
+		Token:              token,
+		Option:             strconv.Itoa(1),
+		Post:               12341234214123423421,
+		ExpectedStatusCode: 403,
+		ExpectedType:       "Error",
+		ExpectedError:      "You're not allowed to do that",
+	}
+	tests := []voteTest{testNoSuchPost}
+	for _, vt := range tests {
+		data := make(url.Values)
+		data["id"] = []string{fmt.Sprintf("%d", vt.Token.UserID)}
+		data["token"] = []string{vt.Token.Token}
+		data["option"] = []string{vt.Option}
+
+		resp, err := client.PostForm(fmt.Sprintf("%sposts/%d/votes", baseURL, vt.Post), data)
+		if err != nil {
+			t.Fatal("Error making request:", err)
+		}
+		if resp.StatusCode != vt.ExpectedStatusCode {
+			d := json.NewDecoder(resp.Body)
+			errResp := gp.APIerror{}
+			d.Decode(&errResp)
+			log.Println(errResp.Reason)
+			t.Fatalf("Expected status code %d, got %d\n", vt.ExpectedStatusCode, resp.StatusCode)
+		}
+
+	}
+}
+
+func initPolls() error {
+	config := conf.GetConfig()
+	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `wall_posts`")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `post_categories`")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `post_attribs`")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `post_polls`")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `poll_options`")
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("TRUNCATE TABLE `poll_votes`")
+	if err != nil {
+		return err
+	}
+	res, err := db.Exec("INSERT INTO wall_posts (`by`, text, network_id) VALUES(1, 'test poll', 1)")
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec("INSERT INTO post_categories(post_id, category_id) VALUES(?, 15)", id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
