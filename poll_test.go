@@ -184,9 +184,9 @@ func TestVote(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
-	id, expired, err := initPolls()
+	err = initPolls()
 	if err != nil {
-		t.Fatalf("Error initializing poll data: %v\n", err)
+		t.Fatalf("Error clearing poll tables: %v\n", err)
 	}
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
@@ -211,11 +211,19 @@ func TestVote(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "You're not allowed to do that!",
 	}
+	id, err := createPoll(token.UserID, "Test Poll", 1, time.Now().UTC().Add(24*time.Hour), []string{"Option A", "Option 2", "Option Gamma"})
+	if err != nil {
+		t.Fatalf("Error creating test poll: %v\n", err)
+	}
 	testVote := voteTest{
 		Token:              token,
 		Option:             strconv.Itoa(1),
 		Post:               gp.PostID(id),
 		ExpectedStatusCode: 204,
+	}
+	expired, err := createPoll(token.UserID, "Another Poll", 1, time.Now().UTC().Add(-1*time.Hour), []string{"Option Foo", "Option Bar", "Option Baz"})
+	if err != nil {
+		t.Fatalf("Error creating test poll: %v\n", err)
 	}
 	testExpired := voteTest{
 		Token:              token,
@@ -225,7 +233,27 @@ func TestVote(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "Poll has already ended",
 	}
-	tests := []voteTest{testNoSuchPost, testVote, testExpired}
+	testVoteTwice := voteTest{
+		Token:              token,
+		Option:             strconv.Itoa(0),
+		Post:               gp.PostID(id),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "You already voted",
+	}
+	another, err := createPoll(token.UserID, "Third poll", 1, time.Now().UTC().Add(24*time.Hour), []string{"Alien Kang", "Alien Kodos", "Richard Nixon's Head"})
+	if err != nil {
+		t.Fatalf("Error creating test poll: %v\n", err)
+	}
+	testBadOption := voteTest{
+		Token:              token,
+		Option:             strconv.Itoa(3),
+		Post:               gp.PostID(another),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Invalid option",
+	}
+	tests := []voteTest{testNoSuchPost, testVote, testExpired, testVoteTwice, testBadOption}
 	for _, vt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", vt.Token.UserID)}
@@ -259,7 +287,7 @@ func TestVote(t *testing.T) {
 	}
 }
 
-func initPolls() (goodID int64, expiredID int64, err error) {
+func initPolls() (err error) {
 	config := conf.GetConfig()
 	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
 	if err != nil {
@@ -289,11 +317,20 @@ func initPolls() (goodID int64, expiredID int64, err error) {
 	if err != nil {
 		return
 	}
-	res, err := db.Exec("INSERT INTO wall_posts (`by`, text, network_id) VALUES(1, 'test poll', 1)")
+	return err
+}
+
+func createPoll(user gp.UserID, text string, netID gp.NetworkID, expiry time.Time, options []string) (id int64, err error) {
+	config := conf.GetConfig()
+	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
 	if err != nil {
 		return
 	}
-	id, err := res.LastInsertId()
+	res, err := db.Exec("INSERT INTO wall_posts (`by`, text, network_id) VALUES(?, ?, ?)", user, text, netID)
+	if err != nil {
+		return
+	}
+	id, err = res.LastInsertId()
 	if err != nil {
 		return
 	}
@@ -301,7 +338,7 @@ func initPolls() (goodID int64, expiredID int64, err error) {
 	if err != nil {
 		return
 	}
-	_, err = db.Exec("INSERT INTO post_polls(post_id, expiry_time) VALUES (?, ?)", id, time.Now().UTC().AddDate(0, 0, 1))
+	_, err = db.Exec("INSERT INTO post_polls(post_id, expiry_time) VALUES (?, ?)", id, expiry)
 	if err != nil {
 		return
 	}
@@ -309,39 +346,11 @@ func initPolls() (goodID int64, expiredID int64, err error) {
 	if err != nil {
 		return
 	}
-	options := []string{"Option 1", "Option B", "Option Gamma"}
 	for i, o := range options {
 		_, err = s.Exec(id, i, o)
 		if err != nil {
 			return
 		}
 	}
-	res, err = db.Exec("INSERT INTO wall_posts (`by`, text, network_id) VALUES(1, 'test poll 2', 1)")
-	if err != nil {
-		return
-	}
-	id2, err := res.LastInsertId()
-	if err != nil {
-		return
-	}
-	_, err = db.Exec("INSERT INTO post_categories(post_id, category_id) VALUES(?, 15)", id2)
-	if err != nil {
-		return
-	}
-	_, err = db.Exec("INSERT INTO post_polls(post_id, expiry_time) VALUES (?, ?)", id2, time.Now().UTC().Add(-1*time.Second))
-	if err != nil {
-		return
-	}
-	s, err = db.Prepare("INSERT INTO poll_options(post_id, option_id, `option`) VALUES(?, ?, ?)")
-	if err != nil {
-		return
-	}
-	options = []string{"Option Foo", "Option Baz", "Option Quux"}
-	for i, o := range options {
-		_, err = s.Exec(id2, i, o)
-		if err != nil {
-			return
-		}
-	}
-	return id, id2, err
+	return
 }

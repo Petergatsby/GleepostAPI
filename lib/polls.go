@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -107,11 +108,15 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 		//Assuming error means not a poll, but could in fact be eg. db down
 		return NotAPoll
 	}
-	if option < 0 || option > len(poll.Options) {
+	if option < 0 || option > len(poll.Options)-1 {
 		return InvalidOption
 	}
 	if time.Now().After(poll.Expiry) {
 		return PollExpired
 	}
-	return api.db.UserCastVote(userID, postID, option)
+	err = api.db.UserCastVote(userID, postID, option)
+	if err == db.AlreadyVoted {
+		err = AlreadyVoted
+	}
+	return
 }

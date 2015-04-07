@@ -4,6 +4,12 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/go-sql-driver/mysql"
+)
+
+var (
+	//AlreadyVoted means you tried to vote in a poll that you already voted in.
+	AlreadyVoted = gp.APIerror{Reason: "You already voted"}
 )
 
 //SavePoll adds this poll to this post.
@@ -107,5 +113,12 @@ func (db *DB) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (err 
 		return
 	}
 	_, err = s.Exec(postID, option, userID)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok {
+			if err.Number == 1062 {
+				return AlreadyVoted
+			}
+		}
+	}
 	return
 }

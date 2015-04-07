@@ -510,6 +510,10 @@ func postVotes(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case err == lib.ENOTALLOWED:
 			jsonResponse(w, err, 403)
+		case err == lib.InvalidOption:
+			fallthrough
+		case err == lib.AlreadyVoted:
+			fallthrough
 		case err == lib.PollExpired:
 			jsonResponse(w, err, 400)
 		case err != nil:
