@@ -184,6 +184,10 @@ func TestVote(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
+	id, err := initPolls()
+	if err != nil {
+		t.Fatalf("Error initializing poll data: %v\n", err)
+	}
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
 		t.Fatalf("Couldn't log in: %v\n", err)
@@ -205,9 +209,15 @@ func TestVote(t *testing.T) {
 		Post:               12341234214123423421,
 		ExpectedStatusCode: 403,
 		ExpectedType:       "Error",
-		ExpectedError:      "You're not allowed to do that",
+		ExpectedError:      "You're not allowed to do that!",
 	}
-	tests := []voteTest{testNoSuchPost}
+	testVote := voteTest{
+		Token:              token,
+		Option:             strconv.Itoa(1),
+		Post:               gp.PostID(id),
+		ExpectedStatusCode: 204,
+	}
+	tests := []voteTest{testNoSuchPost, testVote}
 	for _, vt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", vt.Token.UserID)}
@@ -225,51 +235,75 @@ func TestVote(t *testing.T) {
 			log.Println(errResp.Reason)
 			t.Fatalf("Expected status code %d, got %d\n", vt.ExpectedStatusCode, resp.StatusCode)
 		}
-
+		switch {
+		case vt.ExpectedStatusCode == http.StatusNoContent:
+		case vt.ExpectedType == "Error":
+			dec := json.NewDecoder(resp.Body)
+			errResp := gp.APIerror{}
+			err = dec.Decode(&errResp)
+			if err != nil {
+				t.Fatalf("Couldn't parse error: %v\n", err)
+			}
+			if errResp.Reason != vt.ExpectedError {
+				t.Fatalf("Expected error %s, but got %d\n", vt.ExpectedError, errResp.Reason)
+			}
+		}
 	}
 }
 
-func initPolls() error {
+func initPolls() (id int64, err error) {
 	config := conf.GetConfig()
 	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("TRUNCATE TABLE `wall_posts`")
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("TRUNCATE TABLE `post_categories`")
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("TRUNCATE TABLE `post_attribs`")
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("TRUNCATE TABLE `post_polls`")
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("TRUNCATE TABLE `poll_options`")
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("TRUNCATE TABLE `poll_votes`")
 	if err != nil {
-		return err
+		return
 	}
 	res, err := db.Exec("INSERT INTO wall_posts (`by`, text, network_id) VALUES(1, 'test poll', 1)")
 	if err != nil {
-		return err
+		return
 	}
-	id, err := res.LastInsertId()
+	id, err = res.LastInsertId()
 	if err != nil {
-		return err
+		return
 	}
 	_, err = db.Exec("INSERT INTO post_categories(post_id, category_id) VALUES(?, 15)", id)
 	if err != nil {
-		return err
+		return
 	}
-	return nil
+	_, err = db.Exec("INSERT INTO post_polls(post_id, expiry_time) VALUES (?, ?)", id, time.Now().UTC().AddDate(0, 0, 1))
+	if err != nil {
+		return
+	}
+	s, err := db.Prepare("INSERT INTO poll_options(post_id, option_id, `option`) VALUES(?, ?, ?)")
+	if err != nil {
+		return
+	}
+	options := []string{"Option 1", "Option B", "Option Gamma"}
+	for i, o := range options {
+		_, err = s.Exec(id, i, o)
+	}
+	return
 }

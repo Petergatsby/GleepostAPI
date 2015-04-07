@@ -24,6 +24,10 @@ var (
 	NotAPoll = gp.APIerror{Reason: "Not a poll"}
 	//InvalidOption means you tried to give an invalid poll option.
 	InvalidOption = gp.APIerror{Reason: "Invalid option"}
+	//PollExpired means you tried to vote in a poll that has already finished.
+	PollExpired = gp.APIerror{Reason: "Poll has already ended"}
+	//AlreadyVoted means you tried to vote in a poll that you already voted in.
+	AlreadyVoted = gp.APIerror{Reason: "You already voted"}
 )
 
 func optionTooAdjective(adj string, n int) gp.APIerror {
@@ -105,6 +109,9 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 	}
 	if option < 0 || option > len(poll.Options) {
 		return InvalidOption
+	}
+	if time.Now().After(poll.Expiry) {
+		return PollExpired
 	}
 	return api.db.UserCastVote(userID, postID, option)
 }
