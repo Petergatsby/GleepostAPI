@@ -184,7 +184,7 @@ func TestVote(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
-	id, err := initPolls()
+	id, expired, err := initPolls()
 	if err != nil {
 		t.Fatalf("Error initializing poll data: %v\n", err)
 	}
@@ -217,7 +217,15 @@ func TestVote(t *testing.T) {
 		Post:               gp.PostID(id),
 		ExpectedStatusCode: 204,
 	}
-	tests := []voteTest{testNoSuchPost, testVote}
+	testExpired := voteTest{
+		Token:              token,
+		Option:             strconv.Itoa(2),
+		Post:               gp.PostID(expired),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "Poll has already ended",
+	}
+	tests := []voteTest{testNoSuchPost, testVote, testExpired}
 	for _, vt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", vt.Token.UserID)}
@@ -245,13 +253,13 @@ func TestVote(t *testing.T) {
 				t.Fatalf("Couldn't parse error: %v\n", err)
 			}
 			if errResp.Reason != vt.ExpectedError {
-				t.Fatalf("Expected error %s, but got %d\n", vt.ExpectedError, errResp.Reason)
+				t.Fatalf("Expected error %s, but got %s\n", vt.ExpectedError, errResp.Reason)
 			}
 		}
 	}
 }
 
-func initPolls() (id int64, err error) {
+func initPolls() (goodID int64, expiredID int64, err error) {
 	config := conf.GetConfig()
 	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
 	if err != nil {
@@ -285,7 +293,7 @@ func initPolls() (id int64, err error) {
 	if err != nil {
 		return
 	}
-	id, err = res.LastInsertId()
+	id, err := res.LastInsertId()
 	if err != nil {
 		return
 	}
@@ -304,6 +312,36 @@ func initPolls() (id int64, err error) {
 	options := []string{"Option 1", "Option B", "Option Gamma"}
 	for i, o := range options {
 		_, err = s.Exec(id, i, o)
+		if err != nil {
+			return
+		}
 	}
-	return
+	res, err = db.Exec("INSERT INTO wall_posts (`by`, text, network_id) VALUES(1, 'test poll 2', 1)")
+	if err != nil {
+		return
+	}
+	id2, err := res.LastInsertId()
+	if err != nil {
+		return
+	}
+	_, err = db.Exec("INSERT INTO post_categories(post_id, category_id) VALUES(?, 15)", id2)
+	if err != nil {
+		return
+	}
+	_, err = db.Exec("INSERT INTO post_polls(post_id, expiry_time) VALUES (?, ?)", id2, time.Now().UTC().Add(-1*time.Second))
+	if err != nil {
+		return
+	}
+	s, err = db.Prepare("INSERT INTO poll_options(post_id, option_id, `option`) VALUES(?, ?, ?)")
+	if err != nil {
+		return
+	}
+	options = []string{"Option Foo", "Option Baz", "Option Quux"}
+	for i, o := range options {
+		_, err = s.Exec(id2, i, o)
+		if err != nil {
+			return
+		}
+	}
+	return id, id2, err
 }
