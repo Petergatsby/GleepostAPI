@@ -6,15 +6,6 @@ import "time"
 //UserID is self explanatory.
 type UserID uint64
 
-//PostID uniquely identifies a post (which Events are a subset of).
-type PostID uint64
-
-//NoSuchPost is returned when trying to get a post that doesn't exist (from your perspective)
-var NoSuchPost = APIerror{Reason: "No such post"}
-
-//CommentID identifies a comment on a post.
-type CommentID uint64
-
 const (
 	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
 	OSTART = iota
@@ -68,46 +59,6 @@ type ApproveLevel struct {
 	Categories []string `json:"categories"`
 }
 
-//PostCore is the minimal representation of a post.
-type PostCore struct {
-	ID   PostID    `json:"id"`
-	By   User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-	Text string    `json:"text"`
-}
-
-//Post represents a slightlly fuller representation of a post, containing everything about a post but its potentially limitless number of comments / likes.
-type Post struct {
-	Network    NetworkID              `json:"-"`
-	ID         PostID                 `json:"id"`
-	By         User                   `json:"by"`
-	Time       time.Time              `json:"timestamp"`
-	Text       string                 `json:"text"`
-	Images     []string               `json:"images"`
-	Videos     []Video                `json:"videos,omitempty"`
-	Categories []PostCategory         `json:"categories,omitempty"`
-	Attribs    map[string]interface{} `json:"attribs,omitempty"`
-	Popularity int                    `json:"popularity,omitempty"`
-	Attendees  int                    `json:"attendee_count,omitempty"`
-	Group      *Group                 `json:"network,omitempty"`
-	Views      int                    `json:"views,omitempty"`
-	Attending  bool                   `json:"attending,omitempty"`
-}
-
-//PostSmall enhances a Post with a comment count, a like count, and all the users who've liked the post.
-type PostSmall struct {
-	Post
-	CommentCount int        `json:"comment_count"`
-	LikeCount    int        `json:"like_count"`
-	Likes        []LikeFull `json:"likes,omitempty"`
-}
-
-//PendingPost adds review data to a PostSmall
-type PendingPost struct {
-	PostSmall
-	ReviewHistory []ReviewEvent `json:"review_history,omitempty"`
-}
-
 //ReviewEvent records something that has happened to a post in review.
 type ReviewEvent struct {
 	PostID `json:"-"`
@@ -115,43 +66,6 @@ type ReviewEvent struct {
 	By     User      `json:"by"`
 	Reason string    `json:"reason,omitempty"`
 	At     time.Time `json:"at"`
-}
-
-//PostFull enhances a Post with comments and likes.
-type PostFull struct {
-	PendingPost
-	CommentCount int        `json:"comment_count"`
-	LikeCount    int        `json:"like_count"`
-	Comments     []Comment  `json:"comments"`
-	Likes        []LikeFull `json:"likes"`
-}
-
-//Comment is a comment on a Post.
-type Comment struct {
-	ID   CommentID `json:"id"`
-	Post PostID    `json:"-"`
-	By   User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-	Text string    `json:"text"`
-}
-
-//Like represents a user who has liked a post at a particular time.
-type Like struct {
-	UserID UserID
-	Time   time.Time
-}
-
-//LikeFull is the same as a like but contains a whole user object rather than an ID.
-type LikeFull struct {
-	User User      `json:"by"`
-	Time time.Time `json:"timestamp"`
-}
-
-//Device is a particular (iOS|Android) device owned by a particular user.
-type Device struct {
-	User UserID `json:"user"`
-	Type string `json:"type"`
-	ID   string `json:"id"`
 }
 
 //APIerror is a JSON-ified error.
@@ -162,12 +76,6 @@ type APIerror struct {
 //Created is a convenience structure for when you just want to indicate the id of some created resource.
 type Created struct {
 	ID uint64 `json:"id"`
-}
-
-//CreatedPost indicates the ID of a post that's been created, and optionally if it is pending or not.
-type CreatedPost struct {
-	ID      PostID `json:"id"`
-	Pending bool   `json:"pending,omitempty"`
 }
 
 //NewUser represents the status of a user as part of the registration process.
@@ -184,22 +92,6 @@ type URLCreated struct {
 //BusyStatus is an indication of whether the user is Busy (accepting random chats) or not.
 type BusyStatus struct {
 	Busy bool `json:"busy"`
-}
-
-//Liked represents a particular post and whether you've liked it.
-type Liked struct {
-	Post  PostID `json:"post"`
-	Liked bool   `json:"liked"`
-}
-
-//CategoryID identifies a particular post category/tag.
-type CategoryID uint64
-
-//PostCategory represents a particular post category.
-type PostCategory struct {
-	ID   CategoryID `json:"id"`
-	Tag  string     `json:"tag"`
-	Name string     `json:"name"`
 }
 
 //Error - implements the error interface.
@@ -250,11 +142,4 @@ type UploadStatus struct {
 	ShouldRotate bool   `json:"-"`
 	Status       string `json:"status"`
 	Video
-}
-
-//AttendeeSummary comprises a list of attending users, a total attendee count (which may not be len(attendees)) and an arbitrary "popularity" score
-type AttendeeSummary struct {
-	Popularity    int    `json:"popularity"`
-	AttendeeCount int    `json:"attendee_count"`
-	Attendees     []User `json:"attendees,omitempty"`
 }

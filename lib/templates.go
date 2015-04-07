@@ -94,18 +94,19 @@ func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateG
 		if len(post.Images) > 0 {
 			image = post.Images[0]
 		}
+		var video gp.VideoID
+		if len(post.Videos) > 0 {
+			video = post.Videos[0].ID
+		}
 		//Get tags in a usable form
 		var tags []string
 		for _, cat := range post.Categories {
 			tags = append(tags, cat.Tag)
 		}
-		var id gp.PostID
-		id, _, err = api.addPostWithImage(user, network, post.Text, attribs, true, image, tags...)
+		//TODO(patrick) -- come back here and add the polling stuff
+		_, _, err = api.UserAddPost(user, network, post.Text, attribs, video, true, image, "", []string{}, tags...)
 		if err != nil {
 			return
-		}
-		if len(post.Videos) > 0 {
-			api.addPostVideo(id, post.Videos[0].ID)
 		}
 	}
 	return nil

@@ -92,6 +92,11 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		log.Println(err)
 		err = nil
 	}
+	poll, err := api.userGetPoll(userID, postID)
+	if err == nil {
+		post.Poll = &poll
+	}
+	err = nil
 	return
 }
 
@@ -237,38 +242,11 @@ func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.P
 		err = nil
 	}
 	processed.Attending, err = api.db.IsAttending(userID, processed.ID)
+	poll, err := api.userGetPoll(userID, processed.ID)
+	if err == nil {
+		processed.Poll = &poll
+	}
 	return processed, nil
-}
-
-//PostSmall turns a PostCore (minimal detail Post) into a PostSmall (full detail but omitting comments).
-func (api *API) postSmall(p gp.PostCore) (post gp.PostSmall, err error) {
-	post.ID = p.ID
-	post.By = p.By
-	post.Time = p.Time
-	post.Text = p.Text
-	post.Images = api.getPostImages(p.ID)
-	post.Videos = api.getPostVideos(p.ID)
-	post.CommentCount = api.getCommentCount(p.ID)
-	post.Categories, err = api.postCategories(p.ID)
-	if err != nil {
-		return
-	}
-	post.Attribs, err = api.getPostAttribs(p.ID)
-	if err != nil {
-		return
-	}
-	post.LikeCount, post.Likes, err = api.likesAndCount(p.ID)
-	if err != nil {
-		return
-	}
-	for _, c := range post.Categories {
-		if c.Tag == "event" {
-			//Squelch the error, since the best way to handle it is for Popularity to be 0 anyway...
-			post.Popularity, post.Attendees, _ = api.db.GetEventPopularity(post.ID)
-			break
-		}
-	}
-	return
 }
 
 //getComments returns comments for this post, chronologically ordered starting from the start-th.
@@ -485,106 +463,98 @@ func (api *API) needsReview(netID gp.NetworkID, categories ...string) (needsRevi
 }
 
 //UserAddPostToPrimary creates a post in the user's university.
-func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, tags ...string) (postID gp.PostID, pending bool, err error) {
+func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	primary, err := api.db.GetUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.UserAddPostToNetwork(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, tags...)
+	return api.UserAddPost(userID, primary.ID, text, attribs, video, allowUnowned, imageURL, pollExpiry, pollOptions, tags...)
 }
 
-//UserAddPostToNetwork creates a post in the given network.
-func (api *API) UserAddPostToNetwork(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	switch {
-	case video > 0:
-		return api.addPostWithVideo(userID, netID, text, attribs, video, tags...)
-	case len(imageURL) > 5:
-		return api.addPostWithImage(userID, netID, text, attribs, allowUnowned, imageURL, tags...)
-	default:
-		return api.addPost(userID, netID, text, attribs, tags...)
-	}
-}
-
-//AddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID.
-func (api *API) addPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, tags ...string) (postID gp.PostID, pending bool, err error) {
+//UserAddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID. If imageURL is set, the post will be created with this image. If allowUnowned, it will allow the post to be created without checking if the user "owns" this image. If video > 0, the post will be created with this video.
+func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	in, err := api.db.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
 	case !in:
-		return postID, false, &ENOTALLOWED
+		return postID, false, ENOTALLOWED
 	default:
-		//If the post matches one of the filters for this network, we want to hide it for now
-		pending, err = api.needsReview(netID, tags...)
-		postID, err = api.db.AddPost(userID, text, netID, pending)
-		if err == nil {
-			if len(tags) > 0 {
-				err = api.tagPost(postID, tags...)
-				if err != nil {
-					return
-				}
-			}
-			if len(attribs) > 0 {
-				err = api.setPostAttribs(postID, attribs)
-				if err != nil {
-					return
-				}
-			}
-			_, err := api.db.GetUser(userID)
-			if err == nil {
-				creator, err := api.userIsNetworkOwner(userID, netID)
-				if err == nil && creator && !pending {
-					go api.notifyGroupNewPost(userID, netID, postID)
-				}
-			}
-			if pending {
-				api.postsToApproveNotification(userID, netID)
-			}
-		}
-		return
-	}
-}
-
-func (api *API) notifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID) {
-	users, err := api.db.GetNetworkUsers(group)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	for _, u := range users {
-		if u.ID != by {
-			api.createNotification("group_post", by, u.ID, post, group, "")
-		}
-	}
-	return
-}
-
-//AddPostWithImage creates a post and adds an image in a single step (if the image is one that has been uploaded to gleepost.) If allowUnowned, images will not be checked for ownership.
-func (api *API) addPostWithImage(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, allowUnowned bool, image string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	postID, pending, err = api.addPost(userID, netID, text, attribs, tags...)
-	if err != nil {
-		return
-	}
-	exists, err := api.userUploadExists(userID, image)
-	if allowUnowned || (exists && err == nil) {
-		err = api.addPostImage(postID, image)
+		var poll bool
+		var expiry time.Time
+		poll, expiry, err = validatePollInput(tags, pollExpiry, pollOptions)
 		if err != nil {
 			return
 		}
-	}
-	return
-}
-
-//AddPostWithVideo creates a post and attaches a video in a single step.
-func (api *API) addPostWithVideo(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, tags ...string) (postID gp.PostID, pending bool, err error) {
-	postID, pending, err = api.addPost(userID, netID, text, attribs, tags...)
-	if err != nil {
+		//If the post matches one of the filters for this network, we want to hide it for now
+		pending, err = api.needsReview(netID, tags...)
+		if err != nil {
+			return
+		}
+		postID, err = api.db.AddPost(userID, text, netID, pending)
+		if err != nil {
+			return
+		}
+		if len(tags) > 0 {
+			err = api.tagPost(postID, tags...)
+			if err != nil {
+				return
+			}
+		}
+		if len(attribs) > 0 {
+			err = api.setPostAttribs(postID, attribs)
+			if err != nil {
+				return
+			}
+		}
+		if len(imageURL) > 0 {
+			var exists bool
+			exists, err = api.userUploadExists(userID, imageURL)
+			if allowUnowned || (exists && err == nil) {
+				err = api.addPostImage(postID, imageURL)
+				if err != nil {
+					return
+				}
+			}
+		}
+		if video > 0 {
+			err = api.addPostVideo(postID, video)
+			if err != nil {
+				return
+			}
+		}
+		if poll {
+			err = api.db.SavePoll(postID, expiry, pollOptions)
+			if err != nil {
+				return
+			}
+		}
+		api.maybeNotifyGroupNewPost(userID, netID, postID, pending)
+		if pending {
+			api.postsToApproveNotification(userID, netID)
+		}
 		return
 	}
-	if video > 0 {
-		err = api.addPostVideo(postID, video)
+}
+
+func (api *API) maybeNotifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID, pending bool) {
+	_, err := api.db.GetUser(by)
+	if err == nil {
+		creator, err := api.userIsNetworkOwner(by, group)
+		if err == nil && creator && !pending {
+			users, err := api.db.GetNetworkUsers(group)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			for _, u := range users {
+				if u.ID != by {
+					api.createNotification("group_post", by, u.ID, post, group, "")
+				}
+			}
+			return
+		}
 	}
-	return
 }
 
 //TagPost adds these tags/categories to the post if they're not already.
@@ -629,13 +599,45 @@ func (api *API) DelLike(user gp.UserID, post gp.PostID) (err error) {
 }
 
 //setPostAttribs associates a set of key, value pairs with a particular post
+//At the moment, it doesn't check if these attributes are at all reasonable;
+//the onus is on the viewer of the attributes to look for just the ones which make sense,
+//and on the caller of this function to ensure that the values conform to a particular format.
 func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
+	for attrib, value := range attribs {
+		//How could I be so foolish to store time strings rather than unix timestamps...
+		if attrib == "event-time" {
+			t, e := time.Parse(time.RFC3339, value)
+			if e != nil {
+				unixt, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					return e
+				}
+				t = time.Unix(unixt, 0)
+			}
+			unix := t.Unix()
+			attribs[attrib] = strconv.FormatInt(unix, 10)
+		}
+	}
 	return api.db.SetPostAttribs(post, attribs)
 }
 
 //getPostAttribs returns all the custom attributes of a post.
 func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
-	return api.db.GetPostAttribs(post)
+	attribs = make(map[string]interface{})
+	atts, err := api.db.GetPostAttribs(post)
+	for attrib, val := range atts {
+		switch {
+		case attrib == "event-time":
+			var unix int64
+			unix, err = strconv.ParseInt(val, 10, 64)
+			if err == nil {
+				attribs[attrib] = time.Unix(unix, 0)
+			}
+		default:
+			attribs[attrib] = val
+		}
+	}
+	return
 }
 
 //UserAttend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.

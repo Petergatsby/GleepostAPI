@@ -34,12 +34,14 @@ func init() {
 	base.Handle("/posts/{id:[0-9]+}/attendees", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(attendHandler))).Methods("POST", "DELETE")
 	base.Handle("/posts/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/posts/{id:[0-9]+}/votes", timeHandler(api, http.HandlerFunc(postVotes))).Methods("POST")
+	base.Handle("/posts/{id:[0-9]+}/votes", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/live", timeHandler(api, http.HandlerFunc(liveHandler))).Methods("GET")
 	base.Handle("/live", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func ignored(key string) bool {
-	keys := []string{"id", "token", "text", "url", "tags", "popularity", "video"}
+	keys := []string{"id", "token", "text", "url", "tags", "popularity", "video", "poll-expiry", "poll-options"}
 	for _, v := range keys {
 		if key == v {
 			return true
@@ -128,7 +130,9 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		text := r.FormValue("text")
 		url := r.FormValue("url")
-		tags := r.FormValue("tags")
+		ts := strings.Split(r.FormValue("tags"), ",")
+		pollExpiry := r.FormValue("poll-expiry")
+		pollOptions := strings.Split(r.FormValue("poll-options"), ",")
 		attribs := make(map[string]string)
 		for k, v := range r.Form {
 			if !ignored(k) {
@@ -136,31 +140,25 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		var postID gp.PostID
-		var ts []string
-		if len(tags) > 1 {
-			ts = strings.Split(tags, ",")
-		}
-		n, ok := vars["network"]
-		var network gp.NetworkID
+		n := vars["network"]
+		_network, _ := strconv.ParseUint(n, 10, 64)
+		network := gp.NetworkID(_network)
 		_vID, _ := strconv.ParseUint(r.FormValue("video"), 10, 64)
 		videoID := gp.VideoID(_vID)
 		var pending bool
-		if !ok {
-			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, ts...)
+		if network > 0 {
+			postID, pending, err = api.UserAddPost(userID, network, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		} else {
-			_network, err := strconv.ParseUint(n, 10, 64)
-			if err != nil {
-				jsonErr(w, err, 500)
-				return
-			}
-			network = gp.NetworkID(_network)
-			postID, pending, err = api.UserAddPostToNetwork(userID, network, text, attribs, videoID, false, url, ts...)
+			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		}
 		if err != nil {
-			e, ok := err.(*gp.APIerror)
-			if ok && *e == lib.ENOTALLOWED {
+			e, ok := err.(gp.APIerror)
+			switch {
+			case ok && e == lib.ENOTALLOWED:
 				jsonResponse(w, e, 403)
-			} else {
+			case ok:
+				jsonResponse(w, err, 400)
+			default:
 				jsonErr(w, err, 500)
 			}
 		} else {
@@ -496,4 +494,32 @@ func paginationHeaders(baseURL string, posts []gp.PostSmall) (header string) {
 	next := fmt.Sprintf("<%s?before=%d>; rel=\"next\"", baseURL, oldest)
 	header = prev + ",\n" + next
 	return
+}
+
+func postVotes(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		_postID, _ := strconv.ParseUint(vars["id"], 10, 64)
+		postID := gp.PostID(_postID)
+		option, _ := strconv.ParseInt(r.FormValue("option"), 10, 64)
+		err := api.UserCastVote(userID, postID, int(option))
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonResponse(w, err, 403)
+		case err == lib.InvalidOption:
+			fallthrough
+		case err == lib.AlreadyVoted:
+			fallthrough
+		case err == lib.PollExpired:
+			jsonResponse(w, err, 400)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			w.WriteHeader(204)
+		}
+	}
 }

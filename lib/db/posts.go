@@ -438,28 +438,12 @@ func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
 }
 
 //SetPostAttribs associates all the attribute:value pairs in attrib with post.
-//At the moment, it doesn't check if these attributes are at all reasonable;
-//the onus is on the viewer of the attributes to look for just the ones which make sense,
-//and on the caller of this function to ensure that the values conform to a particular format.
 func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
 	s, err := db.prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
 	for attrib, value := range attribs {
-		//How could I be so foolish to store time strings rather than unix timestamps...
-		if attrib == "event-time" {
-			t, e := time.Parse(value, time.RFC3339)
-			if e != nil {
-				unixt, e := strconv.ParseInt(value, 10, 64)
-				if e != nil {
-					return e
-				}
-				t = time.Unix(unixt, 0)
-			}
-			unix := t.Unix()
-			value = strconv.FormatInt(unix, 10)
-		}
 		_, err = s.Exec(post, attrib, value)
 		if err != nil {
 			return
@@ -469,7 +453,7 @@ func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err err
 }
 
 //GetPostAttribs returns a map of all attributes associated with post.
-func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
+func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]string, err error) {
 	s, err := db.prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
 	if err != nil {
 		return
@@ -479,25 +463,14 @@ func (db *DB) GetPostAttribs(post gp.PostID) (attribs map[string]interface{}, er
 		return
 	}
 	defer rows.Close()
-	attribs = make(map[string]interface{})
+	attribs = make(map[string]string)
 	for rows.Next() {
 		var attrib, val string
 		err = rows.Scan(&attrib, &val)
 		if err != nil {
 			return
 		}
-		switch {
-		case attrib == "event-time":
-			log.Println("event-time")
-			var unix int64
-			unix, err = strconv.ParseInt(val, 10, 64)
-			if err == nil {
-				log.Println("no error")
-				attribs[attrib] = time.Unix(unix, 0)
-			}
-		default:
-			attribs[attrib] = val
-		}
+		attribs[attrib] = val
 	}
 	return
 }
