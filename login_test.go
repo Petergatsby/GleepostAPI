@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -124,7 +125,7 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
-	_, err = db.Exec("TRUNCATE TABLE `network`")
+	err = truncate("network", "net_rules", "users", "user_network")
 	if err != nil {
 		return err
 	}
@@ -140,23 +141,11 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
-	_, err = db.Exec("TRUNCATE TABLE `net_rules`")
-	if err != nil {
-		return err
-	}
 	stmt, err = db.Prepare("INSERT INTO `net_rules` (network_id, rule_type, rule_value) VALUES (?, ?, ?)")
 	if err != nil {
 		return err
 	}
 	_, err = stmt.Exec(id, "email", "fakestanford.edu")
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec("TRUNCATE TABLE `users`")
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec("TRUNCATE TABLE `user_network`")
 	if err != nil {
 		return err
 	}
@@ -175,6 +164,24 @@ func initDB() error {
 	_, err = db.Exec("INSERT INTO `user_network` (`user_id`, `network_id`) VALUES (?, ?)", uid, id)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func truncate(tables ...string) error {
+	config := conf.GetConfig()
+	db, err := sql.Open("mysql", config.Mysql.ConnectionString())
+	if err != nil {
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	for _, t := range tables {
+		_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE `%s`", t))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
