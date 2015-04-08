@@ -12,12 +12,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//ETOOFEW = You tried to create a conversation with 0 other participants (or you gave all invalid participants)
-var ETOOFEW = gp.APIerror{Reason: "Must have at least one valid recipient."}
-
-//ETOOMANY = You tried to create a conversation with a whole bunch of participants
-var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipients"}
-
 func init() {
 	base.Handle("/conversations/live", timeHandler(api, http.HandlerFunc(goneHandler)))
 	base.Handle("/conversations/read_all", timeHandler(api, http.HandlerFunc(readAll))).Methods("POST")
@@ -78,34 +72,22 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 			userIds = append(userIds, gp.UserID(id))
 		}
 	}
+	conversation, err = api.CreateConversationWith(userID, userIds)
+	e, ok := err.(*gp.APIerror)
 	switch {
-	case len(userIds) < 1:
+	case ok && *e == gp.ENOSUCHUSER:
 		go api.Count(1, "gleepost.conversations.get.400")
-		jsonResponse(w, &ETOOFEW, 400)
-		return
-	case len(userIds) > 50:
+		jsonResponse(w, e, 400)
+	case ok && *e == lib.ENOTALLOWED:
+		go api.Count(1, "gleepost.conversations.get.403")
+		jsonResponse(w, e, 403)
+	case err != nil && (err == lib.ETOOMANY || err == lib.ETOOFEW):
 		go api.Count(1, "gleepost.conversations.get.400")
-		jsonResponse(w, &ETOOMANY, 400)
-		return
-	case len(userIds) == 1:
-		conversation, err = api.CreateConversationWith(userID, true, userIds)
+		jsonResponse(w, e, 400)
+	case err != nil:
+		go api.Count(1, "gleepost.conversations.get.500")
+		jsonErr(w, err, 500)
 	default:
-		conversation, err = api.CreateConversationWith(userID, false, userIds)
-	}
-	if err != nil {
-		e, ok := err.(*gp.APIerror)
-		switch {
-		case ok && *e == gp.ENOSUCHUSER:
-			go api.Count(1, "gleepost.conversations.get.400")
-			jsonResponse(w, e, 400)
-		case ok && *e == lib.ENOTALLOWED:
-			go api.Count(1, "gleepost.conversations.get.403")
-			jsonResponse(w, e, 403)
-		default:
-			go api.Count(1, "gleepost.conversations.get.500")
-			jsonErr(w, err, 500)
-		}
-	} else {
 		go api.Count(1, "gleepost.conversations.get.201")
 		jsonResponse(w, conversation, 201)
 	}

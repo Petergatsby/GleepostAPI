@@ -11,6 +11,12 @@ import (
 //ENOTALLOWED is returned when a user attempts an action that they shouldn't.
 var ENOTALLOWED = gp.APIerror{Reason: "You're not allowed to do that!"}
 
+//ETOOFEW = You tried to create a conversation with 0 other participants (or you gave all invalid participants)
+var ETOOFEW = gp.APIerror{Reason: "Must have at least one valid recipient."}
+
+//ETOOMANY = You tried to create a conversation with a whole bunch of participants
+var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipients"}
+
 //UserDeleteConversation removes this conversation from the list; it also terminates it (if it's a live conversation).
 func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
 	if api.UserCanViewConversation(userID, convID) {
@@ -75,7 +81,18 @@ func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, 
 }
 
 //CreateConversationWith generates a new conversation with a particular group of participants. If reuse is true, it will return the existing "primary" conversation with those users, creating one only if necessary.
-func (api *API) CreateConversationWith(initiator gp.UserID, reuse bool, with []gp.UserID) (conversation gp.ConversationAndMessages, err error) {
+func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (conversation gp.ConversationAndMessages, err error) {
+	reuse := false
+	switch {
+	case len(with) > 50:
+		err = ETOOMANY
+		return
+	case len(with) < 1:
+		err = ETOOFEW
+		return
+	case len(with) == 1:
+		reuse = true
+	}
 	var participants []gp.User
 	user, err := api.getUser(initiator)
 	if err != nil {
