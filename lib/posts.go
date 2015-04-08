@@ -546,32 +546,29 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 				return
 			}
 		}
-		api.maybeNotifyGroupNewPost(userID, netID, postID, pending)
-		if pending {
-			api.postsToApproveNotification(userID, netID)
-		}
+		api.maybeNotify(userID, netID, postID, pending)
 		return
 	}
 }
 
-func (api *API) maybeNotifyGroupNewPost(by gp.UserID, group gp.NetworkID, post gp.PostID, pending bool) {
-	_, err := api.db.GetUser(by)
-	if err == nil {
-		creator, err := api.userIsNetworkOwner(by, group)
-		if err == nil && creator && !pending {
-			users, err := api.db.GetNetworkUsers(group)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			for _, u := range users {
-				if u.ID != by {
-					api.createNotification("group_post", by, u.ID, post, group, "")
-				}
-			}
+func (api *API) maybeNotify(by gp.UserID, group gp.NetworkID, post gp.PostID, pending bool) {
+	creator, err := api.userIsNetworkOwner(by, group)
+	if err == nil && creator && !pending {
+		users, err := api.db.GetNetworkUsers(group)
+		if err != nil {
+			log.Println(err)
 			return
 		}
+		for _, u := range users {
+			if u.ID != by {
+				api.createNotification("group_post", by, u.ID, post, group, "")
+			}
+		}
 	}
+	if pending {
+		api.postsToApproveNotification(by, group)
+	}
+	return
 }
 
 //TagPost adds these tags/categories to the post if they're not already.
