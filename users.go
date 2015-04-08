@@ -82,34 +82,7 @@ func getUserPosts(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		otherID := gp.UserID(_id)
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		var index int64
-		var mode int
-		switch {
-		case after > 0:
-			mode = gp.OAFTER
-			index = after
-		case before > 0:
-			mode = gp.OBEFORE
-			index = before
-		default:
-			mode = gp.OSTART
-			index = start
-		}
-		if err != nil {
-			after = 0
-		}
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		posts, err := api.GetUserPosts(otherID, userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			jsonErr(w, err, 500)
@@ -235,31 +208,7 @@ func getUserAttending(w http.ResponseWriter, r *http.Request) {
 		_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 		otherID := gp.UserID(_id)
 		category := r.FormValue("filter")
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		var mode int
-		var index int64
-		switch {
-		case after > 0:
-			mode = gp.OAFTER
-			index = after
-		case before > 0:
-			mode = gp.OBEFORE
-			index = before
-		default:
-			mode = gp.OSTART
-			index = start
-		}
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		events, err := api.UserEvents(userID, otherID, category, mode, index, 20)
 		if err != nil {
 			jsonResponse(w, err, 500)

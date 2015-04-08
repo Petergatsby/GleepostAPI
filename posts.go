@@ -56,34 +56,9 @@ func getPosts(w http.ResponseWriter, req *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		start, err := strconv.ParseInt(req.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		before, err := strconv.ParseInt(req.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		after, err := strconv.ParseInt(req.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		filter := req.FormValue("filter")
 		vars := mux.Vars(req)
-		//First: which paging scheme are we using
-		var mode int
-		var index int64
-		switch {
-		case after > 0:
-			mode = gp.OAFTER
-			index = after
-		case before > 0:
-			mode = gp.OBEFORE
-			index = before
-		default:
-			mode = gp.OSTART
-			index = start
-		}
+		mode, index := interpretPagination(req.FormValue("start"), req.FormValue("before"), req.FormValue("after"))
+		filter := req.FormValue("filter")
 		id, ok := vars["network"]
 		var network gp.NetworkID
 		var posts []gp.PostSmall

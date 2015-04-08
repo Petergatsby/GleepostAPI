@@ -124,31 +124,7 @@ func getApproveApproved(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		var mode int
-		var index int64
-		switch {
-		case after > 0:
-			mode = gp.OAFTER
-			index = after
-		case before > 0:
-			mode = gp.OBEFORE
-			index = before
-		default:
-			mode = gp.OSTART
-			index = start
-		}
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		approved, err := api.UserGetApproved(userID, mode, index, api.Config.PostPageSize)
 		switch {
 		case err == nil:
@@ -160,6 +136,33 @@ func getApproveApproved(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
+}
+
+func interpretPagination(startString, beforeString, afterString string) (mode int, index int64) {
+	start, err := strconv.ParseInt(startString, 10, 64)
+	if err != nil {
+		start = 0
+	}
+	before, err := strconv.ParseInt(beforeString, 10, 64)
+	if err != nil {
+		before = 0
+	}
+	after, err := strconv.ParseInt(afterString, 10, 64)
+	if err != nil {
+		after = 0
+	}
+	switch {
+	case after > 0:
+		mode = gp.OAFTER
+		index = after
+	case before > 0:
+		mode = gp.OBEFORE
+		index = before
+	default:
+		mode = gp.OSTART
+		index = start
+	}
+	return
 }
 
 func postApproveRejected(w http.ResponseWriter, r *http.Request) {
