@@ -33,3 +33,39 @@ func (api *API) createNotification(ntype string, by gp.UserID, recipient gp.User
 func NotificationChannelKey(id gp.UserID) (channel string) {
 	return fmt.Sprintf("n:%d", id)
 }
+
+type NotificationObserver struct {
+	events chan NotificationEvent
+	api    *API
+}
+
+func (n NotificationObserver) Notify(e NotificationEvent) {
+	n.events <- e
+}
+
+type NotificationEvent interface {
+}
+
+func NewObserver() NotificationObserver {
+	events := make(chan NotificationEvent)
+	n := NotificationObserver{events: events}
+	go n.spin()
+	return n
+}
+
+func (n NotificationObserver) spin() {
+	for {
+		event := <-n.events
+		switch e := event.(type) {
+		case postEvent:
+			n.api.maybeNotify(e.userID, e.netID, e.postID, e.pending)
+		}
+	}
+}
+
+type postEvent struct {
+	userID  gp.UserID
+	netID   gp.NetworkID
+	postID  gp.PostID
+	pending bool
+}
