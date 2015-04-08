@@ -18,17 +18,9 @@ func TestCreatePost(t *testing.T) {
 
 	client := &http.Client{}
 
-	loginResp, err := loginRequest("patrick@fakestanford.edu", "TestingPass")
+	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
 		t.Fatalf("Error logging in: %v\n", err)
-	}
-
-	dec := json.NewDecoder(loginResp.Body)
-
-	token := gp.Token{}
-	err = dec.Decode(&token)
-	if err != nil {
-		t.Fatalf("Error getting login token: %v", err)
 	}
 
 	type createPostTest struct {
@@ -105,17 +97,16 @@ func TestCreatePost(t *testing.T) {
 
 		if cpt.ExpectedStatusCode != postResp.StatusCode {
 			errorValue := gp.APIerror{}
-			dec = json.NewDecoder(postResp.Body)
+			dec := json.NewDecoder(postResp.Body)
 			err = dec.Decode(&errorValue)
 			t.Fatalf("Test%v: Expected %v, got %v: %v\n", cpt.TestNumber, cpt.ExpectedStatusCode, postResp.StatusCode, errorValue.Reason)
 		} else if cpt.ExpectedStatusCode == http.StatusBadRequest {
 			errorValue := gp.APIerror{}
-			dec = json.NewDecoder(postResp.Body)
+			dec := json.NewDecoder(postResp.Body)
 			err = dec.Decode(&errorValue)
 			if cpt.ExpectedError != errorValue.Reason {
 				t.Fatalf("Test%v: Expected %v, got %v\n", cpt.TestNumber, cpt.ExpectedError, errorValue.Reason)
 			}
 		}
 	}
-
 }
