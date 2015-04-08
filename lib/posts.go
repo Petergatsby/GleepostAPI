@@ -510,17 +510,13 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 		if err != nil {
 			return
 		}
-		if len(tags) > 0 {
-			err = api.tagPost(postID, tags...)
-			if err != nil {
-				return
-			}
+		err = api.tagPost(postID, tags...)
+		if err != nil {
+			return
 		}
-		if len(attribs) > 0 {
-			err = api.setPostAttribs(postID, attribs)
-			if err != nil {
-				return
-			}
+		err = api.setPostAttribs(postID, attribs)
+		if err != nil {
+			return
 		}
 		if len(imageURL) > 0 {
 			var exists bool
@@ -532,6 +528,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 				}
 			} else {
 				err = InvalidImage
+				return
 			}
 		}
 		if video > 0 {

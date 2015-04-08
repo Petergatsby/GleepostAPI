@@ -450,6 +450,9 @@ func (db *DB) GetPost(postID gp.PostID) (post gp.Post, err error) {
 
 //SetPostAttribs associates all the attribute:value pairs in attrib with post.
 func (db *DB) SetPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
+	if len(attribs) == 0 {
+		return
+	}
 	s, err := db.prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
 	if err != nil {
 		return
@@ -688,6 +691,9 @@ func (db *DB) CategoryList() (categories []gp.PostCategory, err error) {
 
 //TagPost accepts a post id and any number of string tags. Any of the tags that exist will be added to the post.
 func (db *DB) TagPost(post gp.PostID, tags ...string) (err error) {
+	if len(tags) == 0 {
+		return
+	}
 	s, err := db.prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
 	if err != nil {
 		return
