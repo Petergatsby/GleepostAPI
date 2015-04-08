@@ -574,11 +574,6 @@ func (api *API) maybeNotify(by gp.UserID, group gp.NetworkID, post gp.PostID, pe
 //TagPost adds these tags/categories to the post if they're not already.
 func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
 	//TODO: Only allow the post owner to tag
-	return api._tagPost(post, tags...)
-}
-
-func (api *API) _tagPost(post gp.PostID, tags ...string) (err error) {
-	//TODO: Stick this shit in cache
 	return api.db.TagPost(post, tags...)
 }
 
