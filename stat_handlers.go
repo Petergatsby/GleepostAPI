@@ -25,17 +25,7 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
-		var bucket time.Duration
-		switch {
-		case vars["period"] == "hour":
-			bucket = time.Duration(time.Hour)
-		case vars["period"] == "day":
-			bucket = time.Duration(24 * time.Hour)
-		case vars["period"] == "week":
-			bucket = time.Duration(168 * time.Hour)
-		default:
-			bucket = time.Duration(24 * time.Hour)
-		}
+		bucket := getBucketLength(vars["period"])
 		start, err := time.Parse(time.RFC3339, vars["start"])
 		if err != nil {
 			log.Println("Error parsing start time:", err)
@@ -69,6 +59,20 @@ func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, stats, 200)
 	}
+}
+
+func getBucketLength(period string) (bucket time.Duration) {
+	switch {
+	case period == "hour":
+		bucket = time.Duration(time.Hour)
+	case period == "day":
+		bucket = time.Duration(24 * time.Hour)
+	case period == "week":
+		bucket = time.Duration(168 * time.Hour)
+	default:
+		bucket = time.Duration(24 * time.Hour)
+	}
+	return bucket
 }
 
 func individualPostStats(w http.ResponseWriter, r *http.Request) {
