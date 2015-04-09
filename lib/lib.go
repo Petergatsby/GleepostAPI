@@ -48,7 +48,6 @@ func New(conf conf.Config) (api *API) {
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.Mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
-	api.notifObserver = NewObserver(api.db, api.cache, api.pushers["gleepost"])
 	return
 }
 

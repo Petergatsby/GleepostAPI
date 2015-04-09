@@ -8,6 +8,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/push"
+	"github.com/draaglom/apns"
+	"github.com/draaglom/gcm"
 )
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
@@ -161,22 +163,22 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 	for _, device := range devices {
 		switch {
 		case device.Type == "ios":
-			pn, err := api.toIOS(notification, recipient, device.ID, api.Config.NewPushEnabled)
+			pn, err := n.toIOS(notification, recipient, device.ID, true)
 			if err != nil {
 				log.Println("Error generating push notification:", err)
 			}
-			err = api.pushers["gleepost"].IOSPush(pn)
+			err = n.pusher.IOSPush(pn)
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
 				count++
 			}
 		case device.Type == "android":
-			pn, err := api.toAndroid(notification, recipient, device.ID, api.Config.NewPushEnabled)
+			pn, err := n.toAndroid(notification, recipient, device.ID, true)
 			if err != nil {
 				log.Println("Error generating push notification:", err)
 			}
-			err = api.pushers["gleepost"].AndroidPush(pn)
+			err = n.pusher.AndroidPush(pn)
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
@@ -189,4 +191,141 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 	} else {
 		log.Printf("Failed to send some notifications (%d of %d were successes) to %d\n", count, len(devices), recipient)
 	}
+}
+
+func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.UserID, device string, newPush bool) (pn *apns.PushNotification, err error) {
+	alert := true
+	payload := apns.NewPayload()
+	d := apns.NewAlertDictionary()
+	pn = apns.NewPushNotification()
+	pn.DeviceToken = device
+	badge, err := n.badgeCount(recipient)
+	if err != nil {
+		log.Println("Error getting badge:", err)
+	} else {
+		payload.Badge = badge
+	}
+	switch {
+	case notification.Type == "added_group" || notification.Type == "group_post":
+		var group gp.Group
+		group, err = n.db.GetNetwork(notification.Group)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		d.LocArgs = []string{notification.By.Name, group.Name}
+		pn.Set("group-id", group.ID)
+		switch {
+		case notification.Type == "group_post":
+			d.LocKey = "group_post"
+		default:
+			d.LocKey = "GROUP"
+		}
+	case notification.Type == "accepted_you":
+		d.LocKey = "accepted_you"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("accepter-id", notification.By.ID)
+	case notification.Type == "added_you":
+		d.LocKey = "added_you"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("adder-id", notification.By.ID)
+	case notification.Type == "liked" && newPush:
+		d.LocKey = "liked"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("liker-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	case notification.Type == "commented" && newPush:
+		d.LocKey = "commented"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("commenter-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	case notification.Type == "approved_post" && newPush:
+		d.LocKey = "approved_post"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("approver-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	case notification.Type == "rejected_post" && newPush:
+		d.LocKey = "rejected_post"
+		d.LocArgs = []string{notification.By.Name}
+		pn.Set("rejecter-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
+	default:
+		alert = false
+	}
+	if alert {
+		payload.Alert = d
+		payload.Sound = "default"
+	}
+	pn.AddPayload(payload)
+	log.Println(pn)
+	return
+}
+
+func (not NotificationObserver) toAndroid(n gp.Notification, recipient gp.UserID, device string, newPush bool) (msg *gcm.Message, err error) {
+	unknown := false
+	var CollapseKey string
+	var data map[string]interface{}
+	switch {
+	case n.Type == "added_group" || n.Type == "group_post":
+		var group gp.Group
+		group, err = not.db.GetNetwork(n.Group)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		switch {
+		case n.Type == "group_post":
+			data = map[string]interface{}{"type": "group_post", "poster": n.By.Name, "group-id": n.Group, "group-name": group.Name, "for": recipient}
+			CollapseKey = "Somoene posted in your group."
+		default:
+			data = map[string]interface{}{"type": "GROUP", "adder": n.By.Name, "group-id": n.Group, "group-name": group.Name, "for": recipient}
+			CollapseKey = "You've been added to a group"
+		}
+	case n.Type == "added_you":
+		data = map[string]interface{}{"type": "added_you", "adder": n.By.Name, "adder-id": n.By.ID, "for": recipient}
+		CollapseKey = "Someone added you to their contacts."
+	case n.Type == "accepted_you":
+		data = map[string]interface{}{"type": "accepted_you", "accepter": n.By.Name, "accepter-id": n.By.ID, "for": recipient}
+		CollapseKey = "Someone accepted your contact request."
+	case n.Type == "liked" && newPush:
+		data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient, "post-id": n.Post}
+		CollapseKey = "Someone liked your post."
+	case n.Type == "commented" && newPush:
+		data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient, "post-id": n.Post}
+		CollapseKey = "Someone commented on your post."
+	default:
+		unknown = true
+	}
+	if unknown {
+		var count int
+		count, err = not.badgeCount(recipient)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		data = map[string]interface{}{"count": count, "for": recipient}
+		CollapseKey = "New Notification"
+	}
+	msg = gcm.NewMessage(data, device)
+	msg.CollapseKey = CollapseKey
+	msg.TimeToLive = 0
+	log.Println(msg)
+	return
+}
+
+func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) {
+	notifications, err := n.db.GetUserNotifications(user, false)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	count = len(notifications)
+	unread, e := n.db.UnreadMessageCount(user, true)
+	if e == nil {
+		count += unread
+	} else {
+		log.Println(e)
+	}
+	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, count, unread)
+	return
 }

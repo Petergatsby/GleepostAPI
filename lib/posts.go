@@ -370,11 +370,6 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	default:
 		commID, err = api.db.CreateComment(postID, userID, text)
 		if err == nil {
-			user, e := api.getUser(userID)
-			if e != nil {
-				return commID, e
-			}
-			comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
 			api.notifObserver.Notify(commentEvent{userID: userID, recipientID: post.By.ID, postID: postID, text: text})
 		}
 		return commID, err
