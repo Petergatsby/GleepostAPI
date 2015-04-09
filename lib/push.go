@@ -10,29 +10,6 @@ import (
 	"github.com/draaglom/gcm"
 )
 
-func (api *API) notify(user gp.UserID) {
-	payload := apns.NewPayload()
-	payload.Alert = "Sup"
-	payload.Badge = 1337
-	payload.Sound = "default"
-
-	devices, err := api.GetDevices(user, "gleepost")
-	if err != nil {
-		log.Println(err)
-	}
-	for _, device := range devices {
-		if device.Type == "ios" {
-			pn := apns.NewPushNotification()
-			pn.DeviceToken = device.ID
-			pn.AddPayload(payload)
-			err := api.pushers["gleepost"].IOSPush(pn)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	}
-}
-
 func (api *API) notificationPush(user gp.UserID) {
 	badge, err := api.badgeCount(user)
 	if err != nil {
@@ -413,45 +390,4 @@ func (api *API) toAndroid(n gp.Notification, recipient gp.UserID, device string,
 	msg.TimeToLive = 0
 	log.Println(msg)
 	return
-}
-
-//Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
-func (api *API) push(notification gp.Notification, recipient gp.UserID) {
-	devices, err := api.GetDevices(recipient, "gleepost")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	count := 0
-	for _, device := range devices {
-		switch {
-		case device.Type == "ios":
-			pn, err := api.toIOS(notification, recipient, device.ID, api.Config.NewPushEnabled)
-			if err != nil {
-				log.Println("Error generating push notification:", err)
-			}
-			err = api.pushers["gleepost"].IOSPush(pn)
-			if err != nil {
-				log.Println("Error sending push notification:", err)
-			} else {
-				count++
-			}
-		case device.Type == "android":
-			pn, err := api.toAndroid(notification, recipient, device.ID, api.Config.NewPushEnabled)
-			if err != nil {
-				log.Println("Error generating push notification:", err)
-			}
-			err = api.pushers["gleepost"].AndroidPush(pn)
-			if err != nil {
-				log.Println("Error sending push notification:", err)
-			} else {
-				count++
-			}
-		}
-	}
-	if count == len(devices) {
-		log.Printf("Successfully sent %d notifications to %d\n", count, recipient)
-	} else {
-		log.Printf("Failed to send some notifications (%d of %d were successes) to %d\n", count, len(devices), recipient)
-	}
 }

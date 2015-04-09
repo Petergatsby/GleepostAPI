@@ -173,11 +173,8 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 	default:
 		err = api.setNetwork(addee, group)
 		if err == nil {
-			e := api.createNotification("added_group", adder, addee, 0, group, "")
-			if e != nil {
-				log.Println("Error creating notification:", e)
-			}
-			e = api.groupAddConvParticipants(adder, addee, group)
+			api.notifObserver.Notify(addedGroupEvent{userID: adder, addeeID: addee, netID: group})
+			e := api.groupAddConvParticipants(adder, addee, group)
 			if e != nil {
 				log.Println("Error adding new group members to conversation:", e)
 			}

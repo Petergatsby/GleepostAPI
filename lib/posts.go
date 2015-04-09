@@ -375,10 +375,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 				return commID, e
 			}
 			comment := gp.Comment{ID: commID, Post: postID, By: user, Time: time.Now().UTC(), Text: text}
-			if userID != post.By.ID {
-				go api.createNotification("commented", userID, post.By.ID, postID, 0, text)
-			}
-			go api.cache.AddComment(postID, comment)
+			api.notifObserver.Notify(commentEvent{userID: userID, recipientID: post.By.ID, postID: postID, text: text})
 		}
 		return commID, err
 	}
@@ -546,29 +543,12 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 				return
 			}
 		}
-		api.maybeNotify(userID, netID, postID, pending)
+		api.notifObserver.Notify(postEvent{userID: userID, netID: netID, postID: postID, pending: pending})
+		if pending {
+			api.postsToApproveNotification(userID, netID)
+		}
 		return
 	}
-}
-
-func (api *API) maybeNotify(by gp.UserID, group gp.NetworkID, post gp.PostID, pending bool) {
-	creator, err := api.userIsNetworkOwner(by, group)
-	if err == nil && creator && !pending {
-		users, err := api.db.GetNetworkUsers(group)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		for _, u := range users {
-			if u.ID != by {
-				api.createNotification("group_post", by, u.ID, post, group, "")
-			}
-		}
-	}
-	if pending {
-		api.postsToApproveNotification(by, group)
-	}
-	return
 }
 
 //TagPost adds these tags/categories to the post if they're not already.
@@ -595,9 +575,7 @@ func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
 		if err != nil {
 			return
 		}
-		if user != post.By.ID {
-			api.createNotification("liked", user, post.By.ID, postID, 0, "")
-		}
+		api.notifObserver.Notify(likeEvent{userID: user, recipientID: post.By.ID, postID: postID})
 		return
 	}
 }
