@@ -20,13 +20,14 @@ import (
 
 //API contains all the configuration and sub-modules the Gleepost API requires to function.
 type API struct {
-	cache   *cache.Cache
-	db      *db.DB
-	fb      *FB
-	Mail    mail.Mailer
-	Config  conf.Config
-	pushers map[string]*push.Pusher
-	statsd  g2s.Statter
+	cache         *cache.Cache
+	db            *db.DB
+	fb            *FB
+	Mail          mail.Mailer
+	Config        conf.Config
+	pushers       map[string]*push.Pusher
+	statsd        g2s.Statter
+	notifObserver NotificationObserver
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -54,8 +55,11 @@ func New(conf conf.Config) (api *API) {
 func (api *API) Start() {
 	api.pushers = make(map[string]*push.Pusher)
 	for _, psh := range api.Config.Pushers {
-		log.Println(psh)
 		api.pushers[psh.AppName] = push.New(psh)
+	}
+	gp, ok := api.pushers["gleepost"]
+	if ok {
+		api.notifObserver = NewObserver(api.db, api.cache, gp)
 	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {
