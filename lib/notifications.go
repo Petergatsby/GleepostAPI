@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -11,6 +12,15 @@ import (
 	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
 )
+
+func toLocKey(notificationType string) (locKey string) {
+	switch {
+	case notificationType == "added_group":
+		return "GROUP"
+	default:
+		return notificationType
+	}
+}
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
 func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []gp.Notification, err error) {
@@ -194,122 +204,93 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 }
 
 func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.UserID, device string) (pn *apns.PushNotification, err error) {
-	alert := true
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
 	pn = apns.NewPushNotification()
 	pn.DeviceToken = device
 	badge, err := n.badgeCount(recipient)
 	if err != nil {
-		log.Println("Error getting badge:", err)
-	} else {
-		payload.Badge = badge
+		return
 	}
+	payload.Badge = badge
+	d.LocKey = toLocKey(notification.Type)
+	d.LocArgs = []string{notification.By.Name}
 	switch {
 	case notification.Type == "added_group" || notification.Type == "group_post":
 		var group gp.Group
 		group, err = n.db.GetNetwork(notification.Group)
 		if err != nil {
-			log.Println(err)
 			return
 		}
-		d.LocArgs = []string{notification.By.Name, group.Name}
+		d.LocArgs = append(d.LocArgs, group.Name)
 		pn.Set("group-id", group.ID)
-		switch {
-		case notification.Type == "group_post":
-			d.LocKey = "group_post"
-		default:
-			d.LocKey = "GROUP"
-		}
 	case notification.Type == "accepted_you":
-		d.LocKey = "accepted_you"
-		d.LocArgs = []string{notification.By.Name}
 		pn.Set("accepter-id", notification.By.ID)
 	case notification.Type == "added_you":
-		d.LocKey = "added_you"
-		d.LocArgs = []string{notification.By.Name}
 		pn.Set("adder-id", notification.By.ID)
 	case notification.Type == "liked":
-		d.LocKey = "liked"
-		d.LocArgs = []string{notification.By.Name}
 		pn.Set("liker-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
 	case notification.Type == "commented":
-		d.LocKey = "commented"
-		d.LocArgs = []string{notification.By.Name}
 		pn.Set("commenter-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
 	case notification.Type == "approved_post":
-		d.LocKey = "approved_post"
-		d.LocArgs = []string{notification.By.Name}
 		pn.Set("approver-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
 	case notification.Type == "rejected_post":
-		d.LocKey = "rejected_post"
-		d.LocArgs = []string{notification.By.Name}
 		pn.Set("rejecter-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
-	default:
-		alert = false
-	}
-	if alert {
-		payload.Alert = d
-		payload.Sound = "default"
 	}
 	pn.AddPayload(payload)
-	log.Println(pn)
 	return
 }
 
 func (not NotificationObserver) toAndroid(n gp.Notification, recipient gp.UserID, device string) (msg *gcm.Message, err error) {
-	unknown := false
 	var CollapseKey string
-	var data map[string]interface{}
+	data := make(map[string]interface{})
+	data["type"] = toLocKey(n.Type)
+	data["for"] = recipient
 	switch {
 	case n.Type == "added_group" || n.Type == "group_post":
 		var group gp.Group
 		group, err = not.db.GetNetwork(n.Group)
 		if err != nil {
-			log.Println(err)
 			return
 		}
+		data["group-id"] = n.Group
+		data["group-name"] = group.Name
 		switch {
 		case n.Type == "group_post":
-			data = map[string]interface{}{"type": "group_post", "poster": n.By.Name, "group-id": n.Group, "group-name": group.Name, "for": recipient}
+			data["poster"] = n.By.Name
 			CollapseKey = "Somoene posted in your group."
 		default:
-			data = map[string]interface{}{"type": "GROUP", "adder": n.By.Name, "group-id": n.Group, "group-name": group.Name, "for": recipient}
+			data["adder"] = n.By.Name
 			CollapseKey = "You've been added to a group"
 		}
 	case n.Type == "added_you":
-		data = map[string]interface{}{"type": "added_you", "adder": n.By.Name, "adder-id": n.By.ID, "for": recipient}
+		data["adder"] = n.By.Name
+		data["adder-id"] = n.By.ID
 		CollapseKey = "Someone added you to their contacts."
 	case n.Type == "accepted_you":
-		data = map[string]interface{}{"type": "accepted_you", "accepter": n.By.Name, "accepter-id": n.By.ID, "for": recipient}
+		data["accepter"] = n.By.Name
+		data["accepter-id"] = n.By.ID
 		CollapseKey = "Someone accepted your contact request."
 	case n.Type == "liked":
-		data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient, "post-id": n.Post}
+		data["liker"] = n.By.Name
+		data["liker-id"] = n.By.ID
+		data["post-id"] = n.Post
 		CollapseKey = "Someone liked your post."
 	case n.Type == "commented":
-		data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient, "post-id": n.Post}
+		data["commenter"] = n.By.Name
+		data["commenter-id"] = n.By.ID
+		data["post-id"] = n.Post
 		CollapseKey = "Someone commented on your post."
 	default:
-		unknown = true
-	}
-	if unknown {
-		var count int
-		count, err = not.badgeCount(recipient)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		data = map[string]interface{}{"count": count, "for": recipient}
-		CollapseKey = "New Notification"
+		return nil, errors.New("Unknown notification type")
 	}
 	msg = gcm.NewMessage(data, device)
 	msg.CollapseKey = CollapseKey
 	msg.TimeToLive = 0
-	log.Println(msg)
 	return
 }
 
