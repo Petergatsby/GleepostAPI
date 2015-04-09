@@ -127,7 +127,6 @@ type Config struct {
 	ConversationPageSize int
 	OnlineTimeout        int
 	Expiry               int
-	NewPushEnabled       bool
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig

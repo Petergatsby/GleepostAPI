@@ -163,7 +163,7 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 	for _, device := range devices {
 		switch {
 		case device.Type == "ios":
-			pn, err := n.toIOS(notification, recipient, device.ID, true)
+			pn, err := n.toIOS(notification, recipient, device.ID)
 			if err != nil {
 				log.Println("Error generating push notification:", err)
 			}
@@ -174,7 +174,7 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 				count++
 			}
 		case device.Type == "android":
-			pn, err := n.toAndroid(notification, recipient, device.ID, true)
+			pn, err := n.toAndroid(notification, recipient, device.ID)
 			if err != nil {
 				log.Println("Error generating push notification:", err)
 			}
@@ -193,7 +193,7 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 	}
 }
 
-func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.UserID, device string, newPush bool) (pn *apns.PushNotification, err error) {
+func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.UserID, device string) (pn *apns.PushNotification, err error) {
 	alert := true
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -229,22 +229,22 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 		d.LocKey = "added_you"
 		d.LocArgs = []string{notification.By.Name}
 		pn.Set("adder-id", notification.By.ID)
-	case notification.Type == "liked" && newPush:
+	case notification.Type == "liked":
 		d.LocKey = "liked"
 		d.LocArgs = []string{notification.By.Name}
 		pn.Set("liker-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
-	case notification.Type == "commented" && newPush:
+	case notification.Type == "commented":
 		d.LocKey = "commented"
 		d.LocArgs = []string{notification.By.Name}
 		pn.Set("commenter-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
-	case notification.Type == "approved_post" && newPush:
+	case notification.Type == "approved_post":
 		d.LocKey = "approved_post"
 		d.LocArgs = []string{notification.By.Name}
 		pn.Set("approver-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
-	case notification.Type == "rejected_post" && newPush:
+	case notification.Type == "rejected_post":
 		d.LocKey = "rejected_post"
 		d.LocArgs = []string{notification.By.Name}
 		pn.Set("rejecter-id", notification.By.ID)
@@ -261,7 +261,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	return
 }
 
-func (not NotificationObserver) toAndroid(n gp.Notification, recipient gp.UserID, device string, newPush bool) (msg *gcm.Message, err error) {
+func (not NotificationObserver) toAndroid(n gp.Notification, recipient gp.UserID, device string) (msg *gcm.Message, err error) {
 	unknown := false
 	var CollapseKey string
 	var data map[string]interface{}
@@ -287,10 +287,10 @@ func (not NotificationObserver) toAndroid(n gp.Notification, recipient gp.UserID
 	case n.Type == "accepted_you":
 		data = map[string]interface{}{"type": "accepted_you", "accepter": n.By.Name, "accepter-id": n.By.ID, "for": recipient}
 		CollapseKey = "Someone accepted your contact request."
-	case n.Type == "liked" && newPush:
+	case n.Type == "liked":
 		data = map[string]interface{}{"type": "liked", "liker": n.By.Name, "liker-id": n.By.ID, "for": recipient, "post-id": n.Post}
 		CollapseKey = "Someone liked your post."
-	case n.Type == "commented" && newPush:
+	case n.Type == "commented":
 		data = map[string]interface{}{"type": "commented", "commenter": n.By.Name, "commenter-id": n.By.ID, "for": recipient, "post-id": n.Post}
 		CollapseKey = "Someone commented on your post."
 	default:
