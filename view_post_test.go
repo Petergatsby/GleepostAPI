@@ -33,9 +33,15 @@ func TestViewPost(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
+	_, err = db.Exec("INSERT INTO uploads (user_id, url, mp4_url, webm_url, upload_id, status) VALUES (?, ?, ?, ?, ?, ?)", token.UserID, "https://s3-us-west-1.amazonaws.com/gpcali/6e6162b65b83262df79da102bbdbdb824f0cc4149cc51507631eecd53c7635a7.jpg", "https://s3-us-west-1.amazonaws.com/gpcali/038c00d4c7b335f20f793b899a753ba0767324edfec74685fd189d81d76334ec.mp4", "https://s3-us-west-1.amazonaws.com/gpcali/bd4ad39805768915de8a50b8e1cfae8ac518f206d031556de7886612f5e8dd3e.webm", 9989, "ready")
+	if err != nil {
+		t.Fatalf("Error initializing db: %v\n", err)
+	}
+
 	type viewPostTest struct {
 		TestNumber         int
 		ExpectedPost       string
+		VideoID            string
 		Token              string
 		UserID             gp.UserID
 		ExpectedStatusCode int
@@ -64,27 +70,35 @@ func TestViewPost(t *testing.T) {
 		ExpectedStatusCode: http.StatusOK,
 		ExpectedError:      "Image mismatch",
 	}
-	badTest := viewPostTest{
+	goodTestVideo := viewPostTest{
 		TestNumber:         3,
+		ExpectedPost:       "testdata/test_post4.json",
+		VideoID:            "9989",
+		Token:              token.Token,
+		UserID:             token.UserID,
+		ExpectedStatusCode: http.StatusOK,
+	}
+	badTest := viewPostTest{
+		TestNumber:         4,
 		ExpectedPost:       "testdata/test_post1.json",
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badToken := viewPostTest{
-		TestNumber:         4,
+		TestNumber:         5,
 		ExpectedPost:       "testdata/test_post1.json",
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badID := viewPostTest{
-		TestNumber:         5,
+		TestNumber:         6,
 		ExpectedPost:       "testdata/test_post1.json",
 		Token:              token.Token,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
-	tests := []viewPostTest{goodTest, badTag, badImage, badTest, badToken, badID}
+	tests := []viewPostTest{goodTest, badTag, badImage, goodTestVideo, badTest, badToken, badID}
 	for _, vpt := range tests {
 
 		file, err := os.Open(vpt.ExpectedPost)
@@ -107,6 +121,7 @@ func TestViewPost(t *testing.T) {
 		data["text"] = []string{expectedValue.Text}
 		data["url"] = expectedValue.Images
 		data["tags"] = []string{tags}
+		data["video"] = []string{vpt.VideoID}
 
 		_, err = client.PostForm(baseURL+"posts", data)
 		if err != nil {
@@ -155,6 +170,17 @@ func TestViewPost(t *testing.T) {
 			} else {
 				if err != nil {
 					t.Fatalf("Test%v: Error with images: %v", vpt.TestNumber, err)
+				}
+			}
+
+			err = testPostVideoMatch(respValue[0].Videos, expectedValue.Videos)
+			if vpt.ExpectedError == "Video mismatch" {
+				if err == nil || err.Error() != "Video mismatch" {
+					t.Fatalf("Test%v: Expected video mismatch, but did not get error", vpt.TestNumber)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Test%v: Error with videos: %v", vpt.TestNumber, err)
 				}
 			}
 
@@ -212,6 +238,34 @@ func testPostImageMatch(currentValue []string, expectedValue []string) (err erro
 			for index, image := range currentValue {
 				if image != expectedValue[index] {
 					return gp.APIerror{Reason: "Image mistmatch"}
+				}
+			}
+		}
+	}
+	return
+}
+
+func testPostVideoMatch(currentValue []gp.Video, expectedValue []gp.Video) (err error) {
+	if len(currentValue) > 0 || len(expectedValue) > 0 {
+		if len(currentValue) != len(expectedValue) {
+			fmt.Println("current %v, expected %v", len(currentValue), len(expectedValue))
+			return gp.APIerror{Reason: "Video mismatch"}
+		} else {
+			for index, video := range currentValue {
+				if video.ID != expectedValue[index].ID {
+					return gp.APIerror{Reason: "Video mismatch"}
+				} else if video.MP4 != expectedValue[index].MP4 {
+					return gp.APIerror{Reason: "Video mismatch"}
+				} else if video.WebM != expectedValue[index].WebM {
+					return gp.APIerror{Reason: "Video mismatch"}
+				} else if len(video.Thumbs) != len(expectedValue[index].Thumbs) {
+					return gp.APIerror{Reason: "Video mismatch"}
+				} else if len(video.Thumbs) == len(expectedValue[index].Thumbs) {
+					for thumbIndex, thumbnail := range video.Thumbs {
+						if thumbnail != expectedValue[index].Thumbs[thumbIndex] {
+							return gp.APIerror{Reason: "Video mismatch"}
+						}
+					}
 				}
 			}
 		}

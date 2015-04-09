@@ -144,6 +144,10 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
+	_, err = db.Exec("TRUNCATE TABLE `uploads`")
+	if err != nil {
+		return err
+	}
 	res, err = db.Exec("INSERT INTO `users` (`password`, `email`, `verified`, `firstname`, `lastname`) VALUES ('$2a$10$xLUmQbvrHAAOGuv4.uHAY.NmoLGEuEObENPiQ8kkh.Miyvdzhyge6', 'patrick@fakestanford.edu', 1, 'Patrick', 'Molgaard')")
 	if err != nil {
 		return err
