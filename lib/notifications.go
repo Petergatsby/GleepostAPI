@@ -50,6 +50,7 @@ func NotificationChannelKey(id gp.UserID) (channel string) {
 	return fmt.Sprintf("n:%d", id)
 }
 
+//NotificationObserver has the responsibility of producing Notifications for users.
 type NotificationObserver struct {
 	events chan NotificationEvent
 	db     *db.DB
@@ -57,14 +58,17 @@ type NotificationObserver struct {
 	pusher *push.Pusher
 }
 
+//Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
 func (n NotificationObserver) Notify(e NotificationEvent) {
 	n.events <- e
 }
 
+//NotificationEvent is any event which might trigger a notification.
 type NotificationEvent interface {
 	notify(NotificationObserver) error
 }
 
+//NewObserver creates a NotificationObserver
 func NewObserver(db *db.DB, cache *cache.Cache, pusher *push.Pusher) NotificationObserver {
 	events := make(chan NotificationEvent)
 	n := NotificationObserver{events: events, db: db, cache: cache, pusher: pusher}
@@ -245,45 +249,45 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	return
 }
 
-func (not NotificationObserver) toAndroid(n gp.Notification, recipient gp.UserID, device string) (msg *gcm.Message, err error) {
+func (n NotificationObserver) toAndroid(notification gp.Notification, recipient gp.UserID, device string) (msg *gcm.Message, err error) {
 	var CollapseKey string
 	data := make(map[string]interface{})
-	data["type"] = toLocKey(n.Type)
+	data["type"] = toLocKey(notification.Type)
 	data["for"] = recipient
 	switch {
-	case n.Type == "added_group" || n.Type == "group_post":
+	case notification.Type == "added_group" || notification.Type == "group_post":
 		var group gp.Group
-		group, err = not.db.GetNetwork(n.Group)
+		group, err = n.db.GetNetwork(notification.Group)
 		if err != nil {
 			return
 		}
-		data["group-id"] = n.Group
+		data["group-id"] = notification.Group
 		data["group-name"] = group.Name
 		switch {
-		case n.Type == "group_post":
-			data["poster"] = n.By.Name
+		case notification.Type == "group_post":
+			data["poster"] = notification.By.Name
 			CollapseKey = "Somoene posted in your group."
 		default:
-			data["adder"] = n.By.Name
+			data["adder"] = notification.By.Name
 			CollapseKey = "You've been added to a group"
 		}
-	case n.Type == "added_you":
-		data["adder"] = n.By.Name
-		data["adder-id"] = n.By.ID
+	case notification.Type == "added_you":
+		data["adder"] = notification.By.Name
+		data["adder-id"] = notification.By.ID
 		CollapseKey = "Someone added you to their contacts."
-	case n.Type == "accepted_you":
-		data["accepter"] = n.By.Name
-		data["accepter-id"] = n.By.ID
+	case notification.Type == "accepted_you":
+		data["accepter"] = notification.By.Name
+		data["accepter-id"] = notification.By.ID
 		CollapseKey = "Someone accepted your contact request."
-	case n.Type == "liked":
-		data["liker"] = n.By.Name
-		data["liker-id"] = n.By.ID
-		data["post-id"] = n.Post
+	case notification.Type == "liked":
+		data["liker"] = notification.By.Name
+		data["liker-id"] = notification.By.ID
+		data["post-id"] = notification.Post
 		CollapseKey = "Someone liked your post."
-	case n.Type == "commented":
-		data["commenter"] = n.By.Name
-		data["commenter-id"] = n.By.ID
-		data["post-id"] = n.Post
+	case notification.Type == "commented":
+		data["commenter"] = notification.By.Name
+		data["commenter-id"] = notification.By.ID
+		data["post-id"] = notification.Post
 		CollapseKey = "Someone commented on your post."
 	default:
 		return nil, errors.New("Unknown notification type")
