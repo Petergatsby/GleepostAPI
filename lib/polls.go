@@ -2,8 +2,10 @@ package lib
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -117,6 +119,12 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 	err = api.db.UserCastVote(userID, postID, option)
 	if err == db.AlreadyVoted {
 		err = AlreadyVoted
+	}
+	if err == nil {
+		poll, err = api.getPoll(postID)
+		if err == nil {
+			go api.cache.PublishEvent("vote", "/posts/"+strconv.Itoa(int(postID)), poll, []string{cache.PostChannel(postID)})
+		}
 	}
 	return
 }

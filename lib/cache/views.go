@@ -16,7 +16,7 @@ func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	defer conn.Close()
 	log.Println(counts)
 	for _, cnt := range counts {
-		viewChan := PostViewChannel(cnt.Post)
+		viewChan := PostChannel(cnt.Post)
 		event := gp.Event{Type: "views", Location: "/posts/" + strconv.Itoa(int(cnt.Post))}
 		event.Data = cnt
 		JSONview, _ := json.Marshal(event)
@@ -24,7 +24,7 @@ func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
 	}
 }
 
-//PostViewChannel returns the namme of the channel for this post's events
-func PostViewChannel(post gp.PostID) string {
+//PostChannel returns the namme of the channel for this post's events
+func PostChannel(post gp.PostID) string {
 	return fmt.Sprintf("posts.%d.views", post)
 }

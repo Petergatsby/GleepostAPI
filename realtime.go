@@ -70,7 +70,7 @@ func websocketReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) {
 		}
 		var chans []string
 		for _, i := range postChans {
-			chans = append(chans, cache.PostViewChannel(i))
+			chans = append(chans, cache.PostChannel(i))
 		}
 		log.Println(c)
 		log.Println(chans)
@@ -159,7 +159,7 @@ func gWebsocketReader(ws *gwebsocket.Conn, events gp.MsgQueue, userID gp.UserID)
 		}
 		var chans []string
 		for _, i := range postChans {
-			chans = append(chans, cache.PostViewChannel(i))
+			chans = append(chans, cache.PostChannel(i))
 		}
 		log.Println(c)
 		log.Println(chans)
