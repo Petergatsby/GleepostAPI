@@ -166,6 +166,22 @@ func (l likeEvent) notify(n NotificationObserver) (err error) {
 	return err
 }
 
+type voteEvent struct {
+	userID gp.UserID
+	postID gp.PostID
+}
+
+func (v voteEvent) notify(n NotificationObserver) (err error) {
+	post, err := n.db.GetPost(v.postID)
+	if err != nil {
+		return
+	}
+	if v.userID != post.By.ID {
+		err = n.createNotification("poll_vote", v.userID, post.By.ID, v.postID, 0, "")
+	}
+	return
+}
+
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (n NotificationObserver) push(notification gp.Notification, recipient gp.UserID) {
 	devices, err := n.db.GetDevices(recipient, "gleepost")
@@ -244,6 +260,9 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	case notification.Type == "rejected_post":
 		pn.Set("rejecter-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
+	case notification.Type == "poll_vote":
+		pn.Set("voter-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
 	}
 	pn.AddPayload(payload)
 	return
@@ -289,6 +308,11 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		data["commenter-id"] = notification.By.ID
 		data["post-id"] = notification.Post
 		CollapseKey = "Someone commented on your post."
+	case notification.Type == "poll_vote":
+		data["voter"] = notification.By.Name
+		data["voter-id"] = notification.By.ID
+		data["post-id"] = notification.Post
+		CollapseKey = "Someone voted in your poll."
 	default:
 		return nil, errors.New("Unknown notification type")
 	}

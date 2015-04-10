@@ -125,6 +125,7 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 		if err == nil {
 			go api.cache.PublishEvent("vote", "/posts/"+strconv.Itoa(int(postID)), poll, []string{cache.PostChannel(postID)})
 		}
+		api.notifObserver.Notify(voteEvent{userID: userID, postID: postID})
 	}
 	return
 }
