@@ -209,16 +209,13 @@ func TestPassReset(t *testing.T) {
 			}
 		}
 
+		if prt.ExpectedStatusCode != resp.StatusCode {
+			t.Fatalf("%v: Expected %v, got %v\n", prt.Last, prt.ExpectedStatusCode, resp.StatusCode)
+		}
 		switch {
 		case prt.ExpectedStatusCode == http.StatusNoContent:
-			if prt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("%v: Expected %v, got %v\n", prt.Last, prt.ExpectedStatusCode, resp.StatusCode)
-			}
+			//Nothing to do
 		case prt.ExpectedStatusCode == http.StatusBadRequest:
-			if prt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("%v: Expected %v, got %v\n", prt.Last, prt.ExpectedStatusCode, resp.StatusCode)
-			}
-
 			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
