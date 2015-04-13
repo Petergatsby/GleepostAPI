@@ -331,7 +331,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 			return
 		}
 		var conversation gp.Conversation
-		conversation, err = api.CreateConversation(userID, []gp.User{user}, false, network.ID)
+		conversation, err = api.createConversation(userID, []gp.User{user}, false, network.ID)
 		if err == nil {
 			network.Conversation = conversation.ID
 		} else {

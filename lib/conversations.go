@@ -72,7 +72,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 }
 
 //CreateConversation generates a new conversation involving initiator and participants. If primary is true, it is the only permitted conversation between this set of participants. If group != 0, this is the conversation for that network.
-func (api *API) CreateConversation(initiator gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
+func (api *API) createConversation(initiator gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
 	conversation, err = api.db.CreateConversation(initiator, participants, primary, group)
 	if err == nil {
 		go api.newConversationEvent(conversation)
@@ -122,7 +122,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 			return
 		}
 	}
-	conv, err := api.CreateConversation(initiator, participants, len(with) == 1, 0)
+	conv, err := api.createConversation(initiator, participants, len(with) == 1, 0)
 	if err != nil {
 		return
 	}
