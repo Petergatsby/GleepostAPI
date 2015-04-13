@@ -4,6 +4,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/apns"
 )
@@ -44,21 +45,15 @@ func (api *API) SetApproveLevel(userID gp.UserID, level int) (err error) {
 	case level < 0 || level > 3:
 		return NoSuchLevelErr
 	default:
-		current, e := api.db.ApproveLevel(primary.ID)
-		switch {
-		case e != nil:
-			return e
-		case current.Level == level:
-			//noop
-		default:
-			err = api.db.SetApproveLevel(primary.ID, level)
-			if err == nil {
-				go api.approvalChangePush(primary.ID, userID, level)
-			}
+		err = api.db.SetApproveLevel(primary.ID, level)
+		if err == nil {
+			go api.approvalChangePush(primary.ID, userID, level)
+		}
+		if err == db.NotChanged {
+			err = nil
 		}
 		return
 	}
-
 }
 
 func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level int) (err error) {

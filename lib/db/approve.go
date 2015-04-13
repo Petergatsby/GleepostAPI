@@ -37,6 +37,9 @@ func (db *DB) ApproveAccess(userID gp.UserID, netID gp.NetworkID) (perm gp.Appro
 //NoSuchGroup is returned when a lookup of a group's master-group fails.
 var NoSuchGroup = gp.APIerror{Reason: "No such group"}
 
+//NotChanged indicates that the approve level was set equal to its existing value.
+var NotChanged = gp.APIerror{Reason: "Level not changed"}
+
 //MasterGroup returns the id of the group which administrates this network, or NoSuchGroup if there is none.
 func (db *DB) MasterGroup(netID gp.NetworkID) (master gp.NetworkID, err error) {
 	q := "SELECT master_group FROM network WHERE id = ? AND master_group IS NOT NULL"
@@ -91,7 +94,17 @@ func (db *DB) SetApproveLevel(netID gp.NetworkID, level int) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(level, categories, netID)
+	res, err := s.Exec(level, categories, netID)
+	if err != nil {
+		return
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return
+	}
+	if affected == 0 {
+		return NotChanged
+	}
 	return
 }
 
