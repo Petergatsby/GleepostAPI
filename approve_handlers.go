@@ -192,32 +192,8 @@ func getApproveRejected(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		var mode int
-		var index int64
-		switch {
-		case after > 0:
-			mode = gp.OAFTER
-			index = after
-		case before > 0:
-			mode = gp.OBEFORE
-			index = before
-		default:
-			mode = gp.OSTART
-			index = start
-		}
 		rejected, err := api.UserGetRejected(userID, mode, index, api.Config.PostPageSize)
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		switch {
 		case err == nil:
 			jsonResponse(w, rejected, 200)
