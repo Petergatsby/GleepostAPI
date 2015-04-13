@@ -70,7 +70,8 @@ type ReviewEvent struct {
 
 //APIerror is a JSON-ified error.
 type APIerror struct {
-	Reason string `json:"error"`
+	Reason     string `json:"error"`
+	StatusCode int    `json:"-"`
 }
 
 //Created is a convenience structure for when you just want to indicate the id of some created resource.
@@ -100,7 +101,7 @@ func (e APIerror) Error() string {
 }
 
 //ENOSUCHUSER is the error that should be returned when performing some action against a non-existent user.
-var ENOSUCHUSER = APIerror{"No such user."}
+var ENOSUCHUSER = APIerror{Reason: "No such user."}
 
 //MsgQueue will deliver you a bunch of json-encoded things (internal events or messages sent to the user) through MsgQueue.Messages.
 //You can stop listening by sending QueueCommand{"UNSUBSCRIBE", ""} and after a little while the Messages chan should close.

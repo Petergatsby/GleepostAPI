@@ -9,7 +9,7 @@ import (
 )
 
 //ENOTALLOWED is returned when a user attempts an action that they shouldn't.
-var ENOTALLOWED = gp.APIerror{Reason: "You're not allowed to do that!"}
+var ENOTALLOWED = gp.APIerror{Reason: "You're not allowed to do that!", StatusCode: 403}
 
 //ETOOFEW = You tried to create a conversation with 0 other participants (or you gave all invalid participants)
 var ETOOFEW = gp.APIerror{Reason: "Must have at least one valid recipient."}
