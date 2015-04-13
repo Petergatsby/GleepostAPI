@@ -436,19 +436,10 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 			return e
 		}
 		err = api.db.CreateInvite(userID, netID, email, token)
-		if err == nil {
-			var from gp.User
-			from, err = api.getUser(userID)
-			if err != nil {
-				return
-			}
-			var group gp.Group
-			group, err = api.getNetwork(netID)
-			if err != nil {
-				return
-			}
-			go api.issueInviteEmail(email, from, group, token)
+		if err != nil {
+			return
 		}
+		go api.issueInviteEmail(email, userID, netID, token)
 		return
 	}
 }

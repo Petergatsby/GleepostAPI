@@ -107,7 +107,17 @@ func (api *API) inviteURL(token, email string) string {
 	return fmt.Sprintf("https://gleepost.com/?invite=%s&email=%s", token, email)
 }
 
-func (api *API) issueInviteEmail(email string, from gp.User, group gp.Group, token string) (err error) {
+func (api *API) issueInviteEmail(email string, userID gp.UserID, netID gp.NetworkID, token string) (err error) {
+	var from gp.User
+	from, err = api.getUser(userID)
+	if err != nil {
+		return
+	}
+	var group gp.Group
+	group, err = api.getNetwork(netID)
+	if err != nil {
+		return
+	}
 	url := api.inviteURL(token, email)
 	subject := fmt.Sprintf("%s has invited you to the private group \"%s\" on Gleepost.", from.Name, group.Name)
 	html := "<html><body>" +
