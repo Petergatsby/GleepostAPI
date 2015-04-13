@@ -11,12 +11,49 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
-func TestPassReset(t *testing.T) {
-	err := initDB()
+func passResetInit(db *sql.DB, tests []passResetTest) (err error) {
+	err = initDB()
 	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
+		return
 	}
+	client := &http.Client{}
+	for _, t := range tests {
+		data := make(url.Values)
+		data["email"] = []string{t.Email}
+		data["pass"] = []string{t.Pass}
+		data["first"] = []string{t.First}
+		data["last"] = []string{t.Last}
+		_, err = client.PostForm(baseURL+"register", data)
 
+		if err != nil {
+			return
+		}
+
+		if t.VerifyAccount {
+			_, err = db.Exec("UPDATE users SET verified = 1 WHERE email = ?", t.Email)
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+type passResetTest struct {
+	Email              string
+	Pass               string
+	NewPass            string
+	First              string
+	Last               string
+	VerifyAccount      bool
+	BadResetToken      bool
+	ResetTwice         bool
+	RequestTwice       bool
+	ExpectedStatusCode int
+	ExpectedError      string
+}
+
+func TestPassReset(t *testing.T) {
 	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
@@ -24,19 +61,6 @@ func TestPassReset(t *testing.T) {
 
 	client := &http.Client{}
 
-	type passResetTest struct {
-		Email              string
-		Pass               string
-		NewPass            string
-		First              string
-		Last               string
-		VerifyAccount      bool
-		BadResetToken      bool
-		ResetTwice         bool
-		RequestTwice       bool
-		ExpectedStatusCode int
-		ExpectedError      string
-	}
 	testGood := passResetTest{
 		Email:              "pass_reset_test1@fakestanford.edu",
 		Pass:               "TestingPass",
@@ -127,36 +151,11 @@ func TestPassReset(t *testing.T) {
 	}
 	tests := []passResetTest{testGood, testBad, testUnverified, testWeakPass, testResetTwice, testTokenAfterWeak, testRequestTwice}
 
+	err = passResetInit(db, tests)
+	if err != nil {
+		t.Fatalf("Problem initializing test state:", err)
+	}
 	for _, prt := range tests {
-
-		data := make(url.Values)
-		data["email"] = []string{prt.Email}
-		data["pass"] = []string{prt.Pass}
-		data["first"] = []string{prt.First}
-		data["last"] = []string{prt.Last}
-		_, err := client.PostForm(baseURL+"register", data)
-
-		if err != nil {
-			t.Fatalf("Error making http request: %v\n", err)
-		}
-
-		if prt.VerifyAccount {
-			var token string
-			err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", prt.Email).Scan(&token)
-
-			if err != nil {
-				t.Fatalf("Error finding token: %v\n", err)
-			}
-			if token == "" {
-				t.Fatalf("Incorrect token retrieved: %v\n", token)
-			}
-
-			_, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
-
-			if err != nil {
-				t.Fatalf("Error with verification request: %v\n", err)
-			}
-		}
 
 		requestResetData := make(url.Values)
 		requestResetData["email"] = []string{prt.Email}
