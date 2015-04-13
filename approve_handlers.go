@@ -192,8 +192,8 @@ func getApproveRejected(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		rejected, err := api.UserGetRejected(userID, mode, index, api.Config.PostPageSize)
 		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		rejected, err := api.UserGetRejected(userID, mode, index, api.Config.PostPageSize)
 		switch {
 		case err == nil:
 			jsonResponse(w, rejected, 200)
