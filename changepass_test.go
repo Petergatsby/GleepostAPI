@@ -61,15 +61,13 @@ func TestChangePass(t *testing.T) {
 		}
 
 		resp, err := changePassRequest(token, cpt.OldPass, cpt.NewPass)
+		if cpt.ExpectedStatusCode != resp.StatusCode {
+			t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
+		}
 		switch {
 		case cpt.ExpectedStatusCode == http.StatusNoContent:
-			if cpt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
-			}
+			//All done
 		case cpt.ExpectedType == "Error":
-			if cpt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
-			}
 			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
