@@ -271,7 +271,7 @@ func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		log.Println(err)
 	}
-	conv.Messages, err = api.getMessages(userID, convID, start, "start", count)
+	conv.Messages, err = api.getMessages(userID, convID, gp.OSTART, start, count)
 	return
 }
 
@@ -296,20 +296,16 @@ func (api *API) getParticipants(convID gp.ConversationID, includeDeleted bool) [
 }
 
 //UserGetMessages returns count messages from the conversation convId, or ENOTALLOWED if the user is not allowed to view this conversation.
-//sel may be one of:
-//start (returns messages starting from the index'th)
-//before (returns messages historically earlier than the one with id index)
-//after (returns messages newer than index)
-func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
 	if api.UserCanViewConversation(userID, convID) {
-		return api.getMessages(userID, convID, index, sel, count)
+		return api.getMessages(userID, convID, mode, index, count)
 	}
 	return messages, &ENOTALLOWED
 }
 
-func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
-	messages, err = api.db.GetMessages(userID, convID, index, sel, count)
+func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
+	messages, err = api.db.GetMessages(userID, convID, mode, index, count)
 	return
 }
 

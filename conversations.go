@@ -180,27 +180,9 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
-	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-	if err != nil {
-		start = 0
-	}
-	after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-	if err != nil {
-		after = 0
-	}
-	before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-	if err != nil {
-		before = 0
-	}
+	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 	var messages []gp.Message
-	switch {
-	case after > 0:
-		messages, err = api.UserGetMessages(userID, convID, after, "after", api.Config.MessagePageSize)
-	case before > 0:
-		messages, err = api.UserGetMessages(userID, convID, before, "before", api.Config.MessagePageSize)
-	default:
-		messages, err = api.UserGetMessages(userID, convID, start, "start", api.Config.MessagePageSize)
-	}
+	messages, err = api.UserGetMessages(userID, convID, mode, index, api.Config.MessagePageSize)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {

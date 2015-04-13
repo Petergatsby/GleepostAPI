@@ -183,7 +183,7 @@ func (db *DB) GetConversation(userID gp.UserID, convID gp.ConversationID, count 
 	if err != nil {
 		log.Println(err)
 	}
-	conversation.Messages, err = db.GetMessages(userID, convID, 0, "start", count)
+	conversation.Messages, err = db.GetMessages(userID, convID, gp.OSTART, 0, count)
 	return
 }
 
@@ -296,26 +296,26 @@ func (db *DB) AddMessage(convID gp.ConversationID, userID gp.UserID, text string
 //exception.
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
-func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, index int64, sel string, count int) (messages []gp.Message, err error) {
+func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
 	var s *sql.Stmt
 	var q string
 	switch {
-	case sel == "after":
+	case mode == gp.OAFTER:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id > ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
-	case sel == "before":
+	case mode == gp.OBEFORE:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id < ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
-	case sel == "start":
+	case mode == gp.OSTART:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
