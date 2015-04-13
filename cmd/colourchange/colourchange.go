@@ -11,6 +11,15 @@ import (
 	"regexp"
 )
 
+var names = []string{
+	"firstAutoColour",
+	"secondAutoColour",
+	"thirdAutoColour",
+	"fourthAutoColour",
+	"fifthAutoColour",
+	"sixthAutoColour",
+}
+
 func main() {
 	//Take user input
 	var primary = flag.String("primary", "", "The app's primary colour")
@@ -84,20 +93,7 @@ func main() {
 				fmt.Println(err)
 				os.Exit(-1)
 			}
-			switch {
-			case i == 0:
-				name = "firstAutoColour"
-			case i == 1:
-				name = "secondAutoColour"
-			case i == 2:
-				name = "thirdAutoColour"
-			case i == 3:
-				name = "fourthAutoColour"
-			case i == 4:
-				name = "fifthAutoColour"
-			case i == 5:
-				name = "sixthAutoColour"
-			}
+			name = names[i]
 			colours[name] = c
 		}
 	}
