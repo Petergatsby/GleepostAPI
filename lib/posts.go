@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -371,6 +372,13 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		commID, err = api.db.CreateComment(postID, userID, text)
 		if err == nil {
 			api.notifObserver.Notify(commentEvent{userID: userID, recipientID: post.By.ID, postID: postID, text: text})
+			comment := gp.Comment{ID: commID, Post: postID, Time: time.Now().UTC(), Text: text}
+			comment.By, err = api.getUser(userID)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			go api.cache.PublishEvent("comment", "/posts/"+strconv.Itoa(int(postID)), comment, []string{cache.PostChannel(postID)})
 		}
 		return commID, err
 	}
