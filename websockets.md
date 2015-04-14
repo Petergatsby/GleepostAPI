@@ -114,7 +114,9 @@ To do so, the client must send a subscription message with the following format:
 ```
 Where `123`, `456`, `789` represent post IDs that the client is interested in.
 
-From this point onwards, the client will be updated with realtime view counts for these posts:
+From this point onwards, the client will be updated with information about these posts.
+
+This includes realtime view counts:
 
 ```json
 {
@@ -122,6 +124,45 @@ From this point onwards, the client will be updated with realtime view counts fo
 	"location":"/posts/123",
 	"data":{
 		"views":355
+	}
+}
+```
+
+Realtime poll updates:
+
+```json
+{
+	"type":"vote",
+	"location":"/posts/123",
+	"data":{	
+		"options":["option1", "option B", "another option", "joe biden"],
+		"votes":{
+			"option1":1234,
+			"option B": 3,
+			"another option": 67,
+			"joe biden": 456
+		},
+		"expires-at":"2014-01-31T09:43:28Z",
+		"your-vote":"option B"
+	}
+}
+```
+
+And realtime comments:
+
+```json
+{
+	"type":"comment",
+	"location":"/posts/123",
+	"data":{
+		"id":51341,
+		"by": {
+			"id":9,
+			"name":"Patrick"
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		},
+		"timestamp":"2013-09-05T13:09:38Z",
+		"text":"I concur."
 	}
 }
 ```
