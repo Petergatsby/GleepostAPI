@@ -51,6 +51,34 @@ Same as creating a regular post, except:
 
 `POST` to `/posts/:id/votes` with `option` = `0`, `1`, `2`, `3`
 
+##POST /posts/[post-id]/votes
+
+Required parameters:
+
+`option` = `0`, `1`, `2`, `3`
+
+If successful, will respond with a 204.
+
+If this post is not, in fact, a poll, you will get a 400:
+```json
+{"error":"Not a poll"}
+```
+
+If the option you have specified is not valid, eg. option=3 when there are 3 poll options (index starts at 0):
+```json
+{"error":"Invalid option"}
+```
+
+If you have already voted:
+```json
+{"error":"You already voted"}
+```
+
+If the poll has ended already:
+```json
+{"error":"Poll has already ended"}
+```
+
 ###Comments
 
 ###Conversations

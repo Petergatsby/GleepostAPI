@@ -71,6 +71,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 (DEPRECATED) /posts/[post-id]/attending [[POST]](#post-postspost-idattending) [[DELETE]](#delete-postspost-idattending)
 
+/posts/[post-id]/votes [[POST]](#post-postspost-idvotes)
+
 /networks [[POST]](#post-networks)
 
 /networks/[network-id] [[GET]](#get-networksnetwork-id) [[PUT]](#put-networksnetwork-id)
@@ -694,6 +696,34 @@ required parameters: id, token
 Issuing a DELETE to this URI should mark you as not attending this event.
 It should succeed even if you aren't already attending.
 It will return a 204 if successful.
+
+##POST /posts/[post-id]/votes
+
+Required parameters:
+
+`option` = `0`, `1`, `2`, `3`
+
+If successful, will respond with a 204.
+
+If this post is not, in fact, a poll, you will get a 400:
+```json
+{"error":"Not a poll"}
+```
+
+If the option you have specified is not valid, eg. option=3 when there are 3 poll options (index starts at 0):
+```json
+{"error":"Invalid option"}
+```
+
+If you have already voted:
+```json
+{"error":"You already voted"}
+```
+
+If the poll has ended already:
+```json
+{"error":"Poll has already ended"}
+```
 
 ##GET /live
 required parameters: id, token, after
