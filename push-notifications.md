@@ -290,3 +290,23 @@ Version is the new app version number.
      "post-id":12345
 }
 ```
+
+##Someone voted in your poll
+
+(iOS)
+
+```json
+{
+    "aps":{
+         "alert":{
+             "loc-key":"poll_vote",
+             "loc-args":["Patrick"],
+         },
+         "badge":12345,
+         "sound":"default"
+     },
+     "voter-id":6789,
+     "post-id":12345
+
+}
+```
