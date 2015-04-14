@@ -310,3 +310,20 @@ Version is the new app version number.
 
 }
 ```
+
+(Android)
+
+```json
+{
+    "registration_ids":["APA91bF58RwLEXNBMoKxy5s1sxmxQXL8MYgGmdgAyWw5YFzNyrH876WWL20Il7j8vxCqw6Ube8puw5JkRvIaIDws94iRInE7jfHqXq-EZ34RtdHeil7cuCp-xIYMDbsE3b50W1eTlRNdHRAG0SODHfbg1yORcJ9Beg"],
+    "collapse_key":"Someone voted in your poll.",
+    "data": {
+         "for":8,
+         "Voter":"Patrick",
+         "post-id":6789,
+         "voter-id":1234,
+         "type":"poll_vote"
+    }
+}
+
+```
