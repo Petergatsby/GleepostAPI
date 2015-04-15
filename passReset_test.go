@@ -153,7 +153,7 @@ func TestPassReset(t *testing.T) {
 
 	err = passResetInit(db, tests)
 	if err != nil {
-		t.Fatalf("Problem initializing test state:", err)
+		t.Fatal("Problem initializing test state:", err)
 	}
 	for _, prt := range tests {
 
