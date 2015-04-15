@@ -376,6 +376,7 @@ Optionally, you can set “location-name” and/or “location-gps” to specify
 If the post is in the category `poll`, you MUST set `poll-expiry` and `poll-options`.
 
 `poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z`
+
 `poll-options` is a comma-delimited list of the options available in this poll. You must specify at least 2 and at most 4 options, and the options must each be 3 <= n <= 50 characters long.
 eg: `hillary clinton,alien kang, alien kodos,abstain`
 
