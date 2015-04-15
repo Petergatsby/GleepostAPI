@@ -28,58 +28,20 @@ func main() {
 	var navBackground = flag.String("navbar", "", "The nav-bar background colour")
 	var wallTitle = flag.String("walltitle", "", "The campus wall title colour")
 	var navBarTitle = flag.String("navtitle", "", "The general title colour")
+	colourFlags := []*string{primary, leftNav, rightNav, navBackground, wallTitle, navBarTitle}
 	flag.Parse()
 	args := flag.Args()
 	filename := args[0]
 	colours := make(map[string]color.RGBA)
-	if *primary != "" {
-		c, err := fromHex(*primary)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
+	for i, colour := range colourFlags {
+		if *colour != "" {
+			c, err := fromHex(*primary)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(-1)
+			}
+			colours[names[i]] = c
 		}
-		colours["firstAutoColour"] = c
-	}
-	if *leftNav != "" {
-		c, err := fromHex(*leftNav)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
-		colours["secondAutoColour"] = c
-	}
-	if *rightNav != "" {
-		c, err := fromHex(*rightNav)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
-		colours["thirdAutoColour"] = c
-	}
-	if *navBackground != "" {
-		c, err := fromHex(*navBackground)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
-		colours["fourthAutoColour"] = c
-	}
-	if *wallTitle != "" {
-		c, err := fromHex(*wallTitle)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
-		colours["fifthAutoColour"] = c
-	}
-	if *navBarTitle != "" {
-		c, err := fromHex(*navBarTitle)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(-1)
-		}
-		colours["sixthAutoColour"] = c
-
 	}
 	switch {
 	case len(colours) == 0 && len(args) < 2:
