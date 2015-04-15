@@ -104,16 +104,12 @@ func TestVerification(t *testing.T) {
 			}
 		}
 
+		if vt.ExpectedStatusCode != resp.StatusCode {
+			t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
+		}
 		switch {
 		case vt.ExpectedStatusCode == http.StatusOK:
-			if vt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
-			}
 		case vt.ExpectedStatusCode == http.StatusBadRequest:
-			if vt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
-			}
-
 			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
