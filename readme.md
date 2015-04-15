@@ -355,7 +355,7 @@ example responses:
 
 ##POST /posts
 required parameters: id, token, text
-optional parameters: url, tags, video
+optional parameters: url, tags, video, poll-expiry, poll-options
 
 If set, url must be a url previously returned from [/upload](#post-upload).
 If the image url is invalid, the post will be created without an image. 
@@ -372,6 +372,12 @@ Event posts are strongly encouraged to set "event-time", which represents the ti
 Event posts may also set an "title", to be used as a heading.
 
 Optionally, you can set “location-name” and/or “location-gps” to specify where an event will be occurring.
+
+If the post is in the category `poll`, you MUST set `poll-expiry` and `poll-options`.
+
+`poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z`
+`poll-options` is a comma-delimited list of the options available in this poll. You must specify at least 2 and at most 4 options, and the options must each be 3 <= n <= 50 characters long.
+eg: `hillary clinton,alien kang, alien kodos,abstain`
 
 If this post requires review before it is published, the response will contain `pending` = `true`.
 ```json
