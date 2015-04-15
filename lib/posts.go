@@ -473,6 +473,34 @@ func (api *API) needsReview(netID gp.NetworkID, categories ...string) (needsRevi
 
 }
 
+func hasTag(lookingFor string, tags []string) bool {
+	for _, tag := range tags {
+		if tag == lookingFor {
+			return true
+		}
+	}
+	return false
+}
+
+func validatePost(text string, attribs map[string]string, video gp.VideoID, imageURL, pollExpiry string, pollOptions, tags []string) (expiry time.Time, errs []error) {
+	if len(text) == 0 && len(attribs["title"]) == 0 && video == 0 && len(imageURL) == 0 {
+		errs = append(errs, PostNoContent)
+	}
+	poll := hasTag("poll", tags)
+	if poll {
+		var err error
+		expiry, err = time.Parse(time.RFC3339, pollExpiry)
+		if err != nil {
+			errs = append(errs, MissingParameterPollExpiry)
+		}
+		err = validatePollInput(expiry, pollOptions)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return
+}
+
 //UserAddPostToPrimary creates a post in the user's university.
 func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
 	primary, err := api.db.GetUserUniversity(userID)
@@ -491,15 +519,9 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 	case !in:
 		return postID, false, ENOTALLOWED
 	default:
-		var poll bool
-		var expiry time.Time
-		poll, expiry, err = validatePollInput(tags, pollExpiry, pollOptions)
-		if err != nil {
-			return
-		}
-		if len(text) == 0 && len(attribs["title"]) < 1 && video == 0 && len(imageURL) == 0 {
-			err = PostNoContent
-			return
+		expiry, errs := validatePost(text, attribs, video, imageURL, pollExpiry, pollOptions, tags)
+		if len(errs) > 0 {
+			return postID, false, errs[0]
 		}
 		//If the post matches one of the filters for this network, we want to hide it for now
 		pending, err = api.needsReview(netID, tags...)
@@ -537,7 +559,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 				return
 			}
 		}
-		if poll {
+		if hasTag("poll", tags) {
 			err = api.db.SavePoll(postID, expiry, pollOptions)
 			if err != nil {
 				return

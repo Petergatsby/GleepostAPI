@@ -37,21 +37,8 @@ func optionTooAdjective(adj string, n int) gp.APIerror {
 	return gp.APIerror{Reason: fmt.Sprintf("Option too %s: %d", adj, n)}
 }
 
-func validatePollInput(tags []string, pollExpiry string, pollOptions []string) (poll bool, expiry time.Time, err error) {
-	poll = false
-	for _, t := range tags {
-		if t == "poll" {
-			poll = true
-			break
-		}
-	}
-	if !poll {
-		return
-	}
-	expiry, err = time.Parse(time.RFC3339, pollExpiry)
+func validatePollInput(expiry time.Time, pollOptions []string) (err error) {
 	switch {
-	case err != nil:
-		err = MissingParameterPollExpiry
 	case expiry.Before(time.Now()):
 		err = EndingInPast
 	case expiry.Before(time.Now().Add(15 * time.Minute)):
