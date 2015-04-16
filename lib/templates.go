@@ -58,7 +58,7 @@ func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateG
 	if err != nil {
 		return
 	}
-	up := userPool{users: make(map[gp.UserID]gp.UserID), network: network, networkDomain: domain, api: api}
+	up := userPool{users: make(map[string]gp.UserID), network: network, networkDomain: domain, api: api}
 	for _, tpl := range templates {
 		post := gp.PostFull{}
 		err = json.Unmarshal([]byte(tpl), &post)
@@ -114,7 +114,7 @@ func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateG
 
 //userPool maps arbitrary user ids (for uniqueness) to particular real users (who will have a different ID once they're created)
 type userPool struct {
-	users         map[gp.UserID]gp.UserID
+	users         map[string]gp.UserID
 	network       gp.NetworkID
 	networkDomain string
 	api           *API
@@ -122,11 +122,6 @@ type userPool struct {
 
 //DuplicateUser creates a new user in this userPool, or returns the existing one if it's an id we've seen before.
 func (up *userPool) DuplicateUser(userID gp.UserID) (u gp.UserID, err error) {
-	u, ok := up.users[userID]
-	if ok {
-		return u, nil
-	}
-	//TODO(patrick): Add check here if this email address already exists. Maybe change the map to email[userID]
 	var userProfile gp.Profile
 	userProfile, err = up.api.getProfile(userID, userID)
 	if err != nil {
@@ -138,6 +133,11 @@ func (up *userPool) DuplicateUser(userID gp.UserID) (u gp.UserID, err error) {
 		lastName = names[1]
 	}
 	email := userProfile.Name + "." + lastName + "@" + up.networkDomain
+	u, ok := up.users[email]
+	if ok {
+		return u, nil
+	}
+	//TODO(patrick): Add check here if this email address already exists. Maybe change the map to email[userID]
 	u, err = up.api.createUserSpecial(userProfile.Name, lastName, email, "TestingPass", true, up.network)
 	if err != nil {
 		return
@@ -146,7 +146,7 @@ func (up *userPool) DuplicateUser(userID gp.UserID) (u gp.UserID, err error) {
 	if err != nil {
 		return
 	}
-	up.users[userID] = u
+	up.users[email] = u
 	return u, nil
 }
 
