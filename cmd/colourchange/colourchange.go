@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+
+	"github.com/draaglom/xctools/xcassets"
 )
 
 var names = []string{
@@ -59,7 +61,19 @@ func main() {
 			colours[name] = c
 		}
 	}
-	AppearanceHelper, err := ioutil.ReadFile(filename)
+	found, err := xcassets.FindPath(filename, "AppearanceHelper.m")
+	if err != nil || len(found) == 0 {
+		fmt.Println("Couldn't find AppearanceHelper.m in this tree:", filename)
+		os.Exit(-1)
+	}
+	if len(found) > 1 {
+		fmt.Println("Destination ambiguous: Found multiple AppearanceHelper.m in this tree:")
+		for _, f := range found {
+			fmt.Println(f)
+		}
+		os.Exit(-1)
+	}
+	AppearanceHelper, err := ioutil.ReadFile(found[0])
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -67,7 +81,7 @@ func main() {
 	for name, col := range colours {
 		AppearanceHelper, err = setColour(AppearanceHelper, name, col)
 	}
-	err = ioutil.WriteFile(filename, AppearanceHelper, 0644)
+	err = ioutil.WriteFile(found[0], AppearanceHelper, 0644)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
