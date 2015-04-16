@@ -15,6 +15,7 @@ func init() {
 	base.Handle("/admin/masspush", timeHandler(api, http.HandlerFunc(newVersionNotificationHandler))).Methods("POST")
 	base.Handle("/admin/masspush", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(prefillNetwork))).Methods("POST")
+	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/admin/prefill", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/admin/templates", timeHandler(api, http.HandlerFunc(createTemplate))).Methods("POST")
 	base.Handle("/admin/templates", timeHandler(api, http.HandlerFunc(unsupportedHandler)))

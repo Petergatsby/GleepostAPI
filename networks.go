@@ -13,6 +13,7 @@ import (
 
 func init() {
 	base.Handle("/networks", timeHandler(api, http.HandlerFunc(postNetworks))).Methods("POST")
+	base.Handle("/networks", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(getNetwork))).Methods("GET")
 	base.Handle("/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(putNetwork))).Methods("PUT")
