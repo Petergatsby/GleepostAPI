@@ -26,15 +26,6 @@ type viewPostTest struct {
 }
 
 func TestViewPost(t *testing.T) {
-	err := initDB()
-	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
-	}
-
-	client := &http.Client{}
-
-	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
-
 	goodTest := viewPostTest{
 		ExpectedPostIndex:  0,
 		Token:              token.Token,
@@ -68,6 +59,10 @@ func TestViewPost(t *testing.T) {
 	tests := []viewPostTest{goodTest, goodTestVideo, badTest, badToken, badID}
 
 	initPosts(tests)
+
+	client := &http.Client{}
+
+	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 
 	for testNumber, vpt := range tests {
 
@@ -169,6 +164,12 @@ func TestViewPost(t *testing.T) {
 }
 
 func initPosts(tests []viewPostTest) error {
+
+	err := initDB()
+	if err != nil {
+		t.Fatalf("Error initializing db: %v\n", err)
+	}
+
 	client := &http.Client{}
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
