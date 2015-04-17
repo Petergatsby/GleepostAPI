@@ -23,6 +23,7 @@ var (
 func init() {
 	base.Handle("/invite_message", timeHandler(api, http.HandlerFunc(inviteMessageHandler))).Methods("GET")
 	base.Handle("/contact_form", timeHandler(api, http.HandlerFunc(contactFormHandler))).Methods("POST")
+	base.Handle("/chasen", timeHandler(api, http.HandlerFunc(chasenHandler))).Methods("POST")
 	base.Handle("/", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 }
 
@@ -91,6 +92,16 @@ func inviteMessageHandler(w http.ResponseWriter, r *http.Request) {
 func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 	ip := r.Header.Get("X-Real-IP")
 	err := api.ContactFormRequest(r.FormValue("name"), r.FormValue("college"), r.FormValue("email"), r.FormValue("phoneNo"), ip)
+	if err != nil {
+		jsonErr(w, err, 500)
+	}
+	jsonResponse(w, struct {
+		Success bool `json:"success"`
+	}{Success: true}, 200)
+}
+
+func chasenHandler(w http.ResponseWriter, r *http.Request) {
+	err := api.ChasenRequest(r.FormValue("where"), r.FormValue("when"))
 	if err != nil {
 		jsonErr(w, err, 500)
 	}

@@ -23,3 +23,10 @@ func (api *API) ContactFormRequest(fullName, college, email, phoneNo, ip string)
 	api.Mail.SendPlaintext("tade@gleepost.com", fmt.Sprintf("%s from %s reached out for contact", fullName, college), body)
 	return nil
 }
+
+func (api *API) ChasenRequest(where, when string) (err error) {
+	log.Println("Chasen request")
+	body := fmt.Sprintf("Location: %s\nTime: %s\n", where, when)
+	api.Mail.SendPlaintext("tade@gleepost.com", "Michael Chasen has requested a meeting.", body)
+	return nil
+}
