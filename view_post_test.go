@@ -26,6 +26,10 @@ type viewPostTest struct {
 }
 
 func TestViewPost(t *testing.T) {
+	client := &http.Client{}
+
+	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
+
 	goodTest := viewPostTest{
 		ExpectedPostIndex:  0,
 		Token:              token.Token,
@@ -63,19 +67,15 @@ func TestViewPost(t *testing.T) {
 		t.Fatalf("Error initialising posts: %v", err)
 	}
 
-	client := &http.Client{}
-
-	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
-
 	file, err := os.Open("testdata/test_post1.json")
 	if err != nil {
-		t.Fatalf("Test%v: Error loading test file: %v", testNumber, err)
+		t.Fatalf("Error loading test file: %v", err)
 	}
 	dec := json.NewDecoder(file)
 	expectedValues := []gp.PostSmall{}
 	err = dec.Decode(&expectedValues)
 	if err != nil {
-		t.Fatalf("Test%v: Error parsing expected data: %v", testNumber, err)
+		t.Fatalf("Error parsing expected data: %v", err)
 	}
 
 	for testNumber, vpt := range tests {
@@ -170,7 +170,7 @@ func initPosts(tests []viewPostTest) error {
 
 	err := initDB()
 	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
+		return err
 	}
 
 	client := &http.Client{}
@@ -271,15 +271,16 @@ func testPostVideoMatch(currentValue []gp.Video, expectedValue []gp.Video) (err 
 			return gp.APIerror{Reason: "Video mismatch"}
 		}
 		for index, video := range currentValue {
-			if video.ID != expectedValue[index].ID {
+			switch {
+			case video.ID != expectedValue[index].ID:
 				return gp.APIerror{Reason: "Video mismatch"}
-			} else if video.MP4 != expectedValue[index].MP4 {
+			case video.MP4 != expectedValue[index].MP4:
 				return gp.APIerror{Reason: "Video mismatch"}
-			} else if video.WebM != expectedValue[index].WebM {
+			case video.WebM != expectedValue[index].WebM:
 				return gp.APIerror{Reason: "Video mismatch"}
-			} else if len(video.Thumbs) != len(expectedValue[index].Thumbs) {
+			case len(video.Thumbs) != len(expectedValue[index].Thumbs):
 				return gp.APIerror{Reason: "Video mismatch"}
-			} else if len(video.Thumbs) == len(expectedValue[index].Thumbs) {
+			case len(video.Thumbs) == len(expectedValue[index].Thumbs):
 				for thumbIndex, thumbnail := range video.Thumbs {
 					if thumbnail != expectedValue[index].Thumbs[thumbIndex] {
 						return gp.APIerror{Reason: "Video mismatch"}
