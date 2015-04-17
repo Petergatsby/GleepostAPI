@@ -125,7 +125,7 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
-	err = truncate("network", "net_rules", "users", "user_network", "uploads")
+	err = truncate("network", "net_rules", "users", "user_network", "uploads", "post_images")
 	if err != nil {
 		return err
 	}
