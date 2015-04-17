@@ -17,7 +17,7 @@ import (
 var testStart = time.Now()
 
 type viewPostTest struct {
-	ExpectedPost       string
+	ExpectedPostIndex  int
 	VideoID            string
 	Token              string
 	UserID             gp.UserID
@@ -36,31 +36,31 @@ func TestViewPost(t *testing.T) {
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 
 	goodTest := viewPostTest{
-		ExpectedPost:       "testdata/test_post1.json",
+		ExpectedPostIndex:  0,
 		Token:              token.Token,
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusOK,
 	}
 	goodTestVideo := viewPostTest{
-		ExpectedPost:       "testdata/test_post2.json",
+		ExpectedPostIndex:  1,
 		VideoID:            "9989",
 		Token:              token.Token,
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusOK,
 	}
 	badTest := viewPostTest{
-		ExpectedPost:       "testdata/test_post1.json",
+		ExpectedPostIndex:  0,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badToken := viewPostTest{
-		ExpectedPost:       "testdata/test_post1.json",
+		ExpectedPostIndex:  0,
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badID := viewPostTest{
-		ExpectedPost:       "testdata/test_post1.json",
+		ExpectedPostIndex:  0,
 		Token:              token.Token,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
@@ -88,15 +88,21 @@ func TestViewPost(t *testing.T) {
 			t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, vpt.ExpectedStatusCode, resp.StatusCode)
 		}
 
+		file, err := os.Open("testdata/test_post1.json")
+		if err != nil {
+			t.Fatalf("Test%v: Error loading test file: %v", testNumber, err)
+		}
+		dec := json.NewDecoder(file)
+		expectedValues := []gp.PostSmall{}
+		err = dec.Decode(&expectedValues)
+		if err != nil {
+			t.Fatalf("Test%v: Error parsing expected data: %v", testNumber, err)
+		}
+
 		switch {
 		case vpt.ExpectedStatusCode == http.StatusOK:
-			file, err := os.Open(vpt.ExpectedPost)
-			dec := json.NewDecoder(file)
-			expectedValue := gp.PostSmall{}
-			err = dec.Decode(&expectedValue)
-			if err != nil {
-				t.Fatalf("Test%v: Error parsing expected data: %v", testNumber, err)
-			}
+
+			expectedValue := expectedValues[vpt.ExpectedPostIndex]
 
 			addTimeDuration, _ := time.ParseDuration(fmt.Sprintf("%d", expectedValue.Attribs["event-time"]))
 			expectedValue.Attribs["event-time"] = fmt.Sprintf("%d", testStart.Add(addTimeDuration).Unix())
@@ -185,14 +191,20 @@ func initPosts(tests []viewPostTest) error {
 		return err
 	}
 
+	file, err := os.Open("testdata/test_post1.json")
+	if err != nil {
+		return err
+	}
+	dec := json.NewDecoder(file)
+	expectedValues := []gp.PostSmall{}
+	err = dec.Decode(&expectedValues)
+	if err != nil {
+		return err
+	}
+
 	for _, vpt := range tests {
-		file, err := os.Open(vpt.ExpectedPost)
-		dec := json.NewDecoder(file)
-		expectedValue := gp.PostSmall{}
-		err = dec.Decode(&expectedValue)
-		if err != nil {
-			return err
-		}
+
+		expectedValue := expectedValues[vpt.ExpectedPostIndex]
 
 		var tags string
 
