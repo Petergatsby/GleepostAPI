@@ -58,11 +58,25 @@ func TestViewPost(t *testing.T) {
 	}
 	tests := []viewPostTest{goodTest, goodTestVideo, badTest, badToken, badID}
 
-	initPosts(tests)
+	err = initPosts(tests)
+	if err != nil {
+		t.Fatalf("Error initialising posts: %v", err)
+	}
 
 	client := &http.Client{}
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
+
+	file, err := os.Open("testdata/test_post1.json")
+	if err != nil {
+		t.Fatalf("Test%v: Error loading test file: %v", testNumber, err)
+	}
+	dec := json.NewDecoder(file)
+	expectedValues := []gp.PostSmall{}
+	err = dec.Decode(&expectedValues)
+	if err != nil {
+		t.Fatalf("Test%v: Error parsing expected data: %v", testNumber, err)
+	}
 
 	for testNumber, vpt := range tests {
 
@@ -81,17 +95,6 @@ func TestViewPost(t *testing.T) {
 
 		if vpt.ExpectedStatusCode != resp.StatusCode {
 			t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, vpt.ExpectedStatusCode, resp.StatusCode)
-		}
-
-		file, err := os.Open("testdata/test_post1.json")
-		if err != nil {
-			t.Fatalf("Test%v: Error loading test file: %v", testNumber, err)
-		}
-		dec := json.NewDecoder(file)
-		expectedValues := []gp.PostSmall{}
-		err = dec.Decode(&expectedValues)
-		if err != nil {
-			t.Fatalf("Test%v: Error parsing expected data: %v", testNumber, err)
 		}
 
 		switch {
@@ -158,7 +161,7 @@ func TestViewPost(t *testing.T) {
 				t.Fatalf("Test%v: Expected %s, got %s\n", testNumber, vpt.ExpectedError, errorValue.Reason)
 			}
 		default:
-			t.Fatalf("Test%v: Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
 }
@@ -265,7 +268,6 @@ func testPostImageMatch(currentValue []string, expectedValue []string) (err erro
 func testPostVideoMatch(currentValue []gp.Video, expectedValue []gp.Video) (err error) {
 	if len(currentValue) > 0 || len(expectedValue) > 0 {
 		if len(currentValue) != len(expectedValue) {
-			fmt.Println("current %v, expected %v", len(currentValue), len(expectedValue))
 			return gp.APIerror{Reason: "Video mismatch"}
 		}
 		for index, video := range currentValue {
