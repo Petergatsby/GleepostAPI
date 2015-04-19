@@ -24,6 +24,7 @@ func (api *API) ContactFormRequest(fullName, college, email, phoneNo, ip string)
 	return nil
 }
 
+//ChasenRequest emails Tade with the where&when for the michael chasen meeting.
 func (api *API) ChasenRequest(where, when string) (err error) {
 	log.Println("Chasen request")
 	body := fmt.Sprintf("Location: %s\nTime: %s\n", where, when)
