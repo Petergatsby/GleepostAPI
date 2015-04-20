@@ -33,11 +33,17 @@ func main() {
 	colourFlags := []*string{primary, leftNav, rightNav, navBackground, wallTitle, navBarTitle}
 	flag.Parse()
 	args := flag.Args()
-	filename := args[0]
+	filename := ""
+	if len(args) < 1 {
+		fmt.Println("You must supply the path to the GleepostIOS project.")
+		fmt.Println("eg: colourchange -leftnav=fffeee ~/GleepostIOS")
+		os.Exit(-1)
+	}
+	filename = args[0]
 	colours := make(map[string]color.RGBA)
 	for i, colour := range colourFlags {
 		if *colour != "" {
-			c, err := fromHex(*primary)
+			c, err := fromHex(*colour)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(-1)
