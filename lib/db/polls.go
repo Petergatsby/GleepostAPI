@@ -98,7 +98,7 @@ func (db *DB) GetPollVotes(postID gp.PostID) (votes map[string]int, err error) {
 
 //GetUserVote returns the way this user voted in this poll.
 func (db *DB) GetUserVote(userID gp.UserID, postID gp.PostID) (vote string, err error) {
-	s, err := db.prepare("SELECT option FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id AND poll_votes.user_id = ?")
+	s, err := db.prepare("SELECT `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id AND poll_votes.user_id = ?")
 	if err != nil {
 		return
 	}
