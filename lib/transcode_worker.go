@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -47,7 +49,29 @@ func (t TranscodeWorker) claimJobs() (err error) {
 			return
 		}
 		//Note to self: get the source first!
-		t.tq.Enqueue(id, source, target, rotate)
+		client := http.Client{}
+		var resp *http.Response
+		resp, err = client.Get(source)
+		if err != nil {
+			return
+		}
+		extStrs := strings.SplitAfter(source, ".")
+		if len(extStrs) < 1 {
+			err = errors.New("oo er")
+			return
+		}
+		location := "/tmp/" + randomFilename(extStrs[len(extStrs)-1])
+		var tmp *os.File
+		tmp, err = os.Create(location)
+		if err != nil {
+			return
+		}
+		_, err = io.Copy(tmp, resp.Body)
+		if err != nil {
+			return
+		}
+		tmp.Close()
+		t.tq.Enqueue(id, location, target, rotate)
 	}
 	return
 }
@@ -178,7 +202,6 @@ func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
 /*
 TODO
 
-- Add intervening stage, GETing the remote file URL before passing it to the transcode worker
 - On upload, create an Upload and the appropriate Jobs
 
 */
