@@ -54,15 +54,15 @@ func TestChangePass(t *testing.T) {
 
 	tests := []changePassTest{testGood, testWeakPass, testWrongOldPass}
 
-	for _, cpt := range tests {
+	for testNumber, cpt := range tests {
 		token, err := testingGetSession(cpt.Email, cpt.Pass)
 		if err != nil {
-			t.Fatal("Error logging in:", err)
+			t.Fatal("Test%v: Error logging in:", testNumber, err)
 		}
 
 		resp, err := changePassRequest(token, cpt.OldPass, cpt.NewPass)
 		if cpt.ExpectedStatusCode != resp.StatusCode {
-			t.Fatalf("Expected %v, got %v\n", cpt.ExpectedStatusCode, resp.StatusCode)
+			t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, cpt.ExpectedStatusCode, resp.StatusCode)
 		}
 		switch {
 		case cpt.ExpectedStatusCode == http.StatusNoContent:
@@ -72,13 +72,13 @@ func TestChangePass(t *testing.T) {
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
-				t.Fatalf("Error parsing error: %v\n", err)
+				t.Fatalf("Test%v: Error parsing error: %v\n", testNumber, err)
 			}
 			if errorValue.Reason != cpt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", cpt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %s, got %s\n", testNumber, cpt.ExpectedError, errorValue.Reason)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
 }

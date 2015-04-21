@@ -14,12 +14,12 @@ import (
 func TestVerification(t *testing.T) {
 	err := initDB()
 	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
+		t.Fatalf("Test%v: Error initializing db: %v\n", err)
 	}
 
 	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
 	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
+		t.Fatalf("Test%v: Error initializing db: %v\n", err)
 	}
 
 	client := &http.Client{}
@@ -63,7 +63,7 @@ func TestVerification(t *testing.T) {
 		ExpectedError:      "Bad verification token",
 	}
 	tests := []verificationTest{testGood, testTwice, testBad}
-	for _, vt := range tests {
+	for testNumber, vt := range tests {
 
 		data := make(url.Values)
 		data["email"] = []string{vt.Email}
@@ -73,7 +73,7 @@ func TestVerification(t *testing.T) {
 		resp, err := client.PostForm(baseURL+"register", data)
 
 		if err != nil {
-			t.Fatalf("Error making http request: %v\n", err)
+			t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 		}
 
 		if vt.TestValidToken {
@@ -81,31 +81,31 @@ func TestVerification(t *testing.T) {
 			err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", vt.Email).Scan(&token)
 
 			if err != nil {
-				t.Fatalf("Error finding token: %v\n", err)
+				t.Fatalf("Test%v: Error finding token: %v\n", testNumber, err)
 			}
 			if token == "" {
-				t.Fatalf("Incorrect token retrieved: %v\n", token)
+				t.Fatalf("Test%v: Incorrect token retrieved: %v\n", testNumber, token)
 			}
 
 			resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
 			if err != nil {
-				t.Fatalf("Error with verification request: %v\n", err)
+				t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
 			}
 			if vt.VerifyTwice {
 				resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
 				if err != nil {
-					t.Fatalf("Error with verification request: %v\n", err)
+					t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
 				}
 			}
 		} else {
 			resp, err = client.PostForm(baseURL+"verify/12345lolololtest", make(url.Values))
 			if err != nil {
-				t.Fatalf("Error with verification request: %v\n", err)
+				t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
 			}
 		}
 
 		if vt.ExpectedStatusCode != resp.StatusCode {
-			t.Fatalf("Expected %v, got %v\n", vt.ExpectedStatusCode, resp.StatusCode)
+			t.Fatalf("Test%v: Expected %v, got %v\n", vt.ExpectedStatusCode, testNumber, resp.StatusCode)
 		}
 		switch {
 		case vt.ExpectedStatusCode == http.StatusOK:
@@ -114,20 +114,20 @@ func TestVerification(t *testing.T) {
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
-				t.Fatalf("Error parsing error: %v\n", err)
+				t.Fatalf("Test%v: Error parsing error: %v\n", testNumber, err)
 			}
 			if errorValue.Reason != vt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", vt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %s, got %s\n", testNumber, vt.ExpectedError, errorValue.Reason)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 
 		_, err = testingGetSession(vt.Email, vt.Pass)
 		if err != nil && vt.TestValidToken {
-			t.Fatalf("Error logging in: %v\n", err)
+			t.Fatalf("Test%v: Error logging in: %v\n", testNumber, err)
 		} else if err == nil && !vt.TestValidToken {
-			t.Fatalf("Should not have been able to log in.")
+			t.Fatalf("Test%v: Should not have been able to log in.", testNumber)
 		}
 	}
 }

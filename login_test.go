@@ -50,13 +50,13 @@ func TestLogin(t *testing.T) {
 		ExpectedStatus:     "unverified",
 	}
 	tests := []loginTest{badLogin, goodLogin, unverifiedLogin}
-	for _, lt := range tests {
+	for testNumber, lt := range tests {
 		resp, err := loginRequest(lt.Email, lt.Pass)
 		if err != nil {
-			t.Fatalf("Error logging in: %v\n", err)
+			t.Fatalf("Test%v: Error logging in: %v\n", testNumber, err)
 		}
 		if resp.StatusCode != lt.ExpectedStatusCode {
-			t.Fatalf("Got status code %d, expected %d\n", resp.StatusCode, lt.ExpectedStatusCode)
+			t.Fatalf("Test%v: Got status code %d, expected %d\n", testNumber, resp.StatusCode, lt.ExpectedStatusCode)
 		}
 		dec := json.NewDecoder(resp.Body)
 		switch {
@@ -64,41 +64,41 @@ func TestLogin(t *testing.T) {
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
-				t.Fatalf("Error parsing error: %v\n", err)
+				t.Fatalf("Test%v: Error parsing error: %v\n", testNumber, err)
 			}
 			if errorValue.Reason != lt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", lt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %s, got %s\n", testNumber, lt.ExpectedError, errorValue.Reason)
 			}
 		case lt.ExpectedType == "Token":
 			token := gp.Token{}
 			err = dec.Decode(&token)
 			if err != nil {
-				t.Fatalf("Error parsing %s: %v", lt.ExpectedType, err)
+				t.Fatalf("Test%v: Error parsing %s: %v", testNumber, lt.ExpectedType, err)
 			}
 			if token.UserID <= 0 {
-				t.Fatalf("User ID is not valid: got %d\n", token.UserID)
+				t.Fatalf("Test%v: User ID is not valid: got %d\n", testNumber, token.UserID)
 			}
 			if len(token.Token) != 64 {
-				t.Fatalf("Token too short: expected %d but got %d\n", 64, len(token.Token))
+				t.Fatalf("Test%v: Token too short: expected %d but got %d\n", testNumber, 64, len(token.Token))
 			}
 			expectedMaxExpiry := time.Now().AddDate(1, 0, 0).Add(1 * time.Minute)
 			if token.Expiry.After(expectedMaxExpiry) {
-				t.Fatalf("Token expiration longer than it should be: %v is after %v\n", token.Expiry, expectedMaxExpiry)
+				t.Fatalf("Test%v: Token expiration longer than it should be: %v is after %v\n", testNumber, token.Expiry, expectedMaxExpiry)
 			}
 			if token.Expiry.AddDate(-1, 0, 0).Before(time.Now().Add(-1 * time.Minute)) {
-				t.Fatalf("Token expiration shorter than it should be!")
+				t.Fatalf("Test%v: Token expiration shorter than it should be!", testNumber)
 			}
 		case lt.ExpectedType == "Status":
 			status := gp.Status{}
 			err = dec.Decode(&status)
 			if err != nil {
-				t.Fatalf("Error parsing status: %v\n", err)
+				t.Fatalf("Test%v: Error parsing status: %v\n", testNumber, err)
 			}
 			if status.Status != lt.ExpectedStatus {
-				t.Fatalf("Expected %s, got %s", lt.ExpectedStatus, status.Status)
+				t.Fatalf("Test%v: Expected %s, got %s", testNumber, lt.ExpectedStatus, status.Status)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
 }
