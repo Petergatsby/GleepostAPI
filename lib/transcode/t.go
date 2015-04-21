@@ -11,15 +11,15 @@ import (
 //Queue represents a single queueing transcoder. You may Enqueue jobs with an arbitrary ID, an input file and a target filetype.
 //Results() returns the results for the enqueued jobs as they happen.
 type Queue interface {
-	Enqueue(id uint64, file string, target string)
+	Enqueue(id uint64, file string, target string, rotate bool)
 	Results() (results <-chan Result)
 }
 
 //Result maps an arbitrary ID to a (probably temp) filename or an error.
 type Result struct {
-	ID   uint64
-	file string
-	err  error
+	ID    uint64
+	File  string
+	Error error
 }
 
 type job struct {
@@ -29,8 +29,8 @@ type job struct {
 	rotate bool
 }
 
-func newJob(id uint64, source, target string) (j job) {
-	j = job{ID: id, source: source, target: target}
+func newJob(id uint64, source, target string, rotate bool) (j job) {
+	j = job{ID: id, source: source, target: target, rotate: rotate}
 	return
 }
 
@@ -39,17 +39,17 @@ func (j job) do() (res Result) {
 	var cmd *exec.Cmd
 	switch {
 	case j.target == "webm":
-		res.file = "/tmp/" + randomFilename(".webm")
+		res.File = "/tmp/" + randomFilename(".webm")
 		if j.rotate {
-			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "transpose=1", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.file)
+			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "transpose=1", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.File)
 		} else {
-			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.file)
+			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.File)
 		}
 	case j.target == "jpg":
-		res.file = "/tmp/" + randomFilename(".jpg")
-		cmd = exec.Command("ffmpeg", "-ss", "00:00:00", "-i", j.source, "-frames:v", "1", res.file)
+		res.File = "/tmp/" + randomFilename(".jpg")
+		cmd = exec.Command("ffmpeg", "-ss", "00:00:00", "-i", j.source, "-frames:v", "1", res.File)
 	}
-	res.err = cmd.Run()
+	res.Error = cmd.Run()
 	return
 }
 
@@ -67,8 +67,8 @@ func NewTranscoder() Queue {
 	return queue
 }
 
-func (q transcodeQueue) Enqueue(id uint64, file, target string) {
-	j := newJob(id, file, target)
+func (q transcodeQueue) Enqueue(id uint64, file, target string, rotate bool) {
+	j := newJob(id, file, target, rotate)
 	q.jobs <- j
 }
 

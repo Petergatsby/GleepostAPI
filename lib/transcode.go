@@ -175,24 +175,6 @@ func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
 	return bucket
 }
 
-func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	fi, err := file.Stat()
-	if err != nil {
-		return
-	}
-	//The [5:] is assuming all files will be in "/tmp/" (so it extracts their filename from their full path)
-	err = b.PutReader(path[5:], file, fi.Size(), contentType, s3.PublicRead)
-	if err != nil {
-		return
-	}
-	url = b.URL(path[5:])
-	return
-}
-
 //del removes all temp files associated with this video
 func del(v gp.UploadStatus) (err error) {
 	err = os.Remove(v.MP4)
