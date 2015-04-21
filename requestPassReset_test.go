@@ -67,7 +67,7 @@ func TestRequestPassReset(t *testing.T) {
 	}
 	tests := []requestPassResetTest{testGood, testBad, testMixedCap, testUnverified}
 
-	for _, rprt := range tests {
+	for testNumber, rprt := range tests {
 
 		if rprt.RegisterAccount {
 			data := make(url.Values)
@@ -78,7 +78,7 @@ func TestRequestPassReset(t *testing.T) {
 			_, err := client.PostForm(baseURL+"register", data)
 
 			if err != nil {
-				t.Fatalf("Error making http request: %v\n", err)
+				t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 			}
 		}
 
@@ -87,16 +87,16 @@ func TestRequestPassReset(t *testing.T) {
 			err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", rprt.Email).Scan(&token)
 
 			if err != nil {
-				t.Fatalf("Error finding token: %v\n", err)
+				t.Fatalf("Test%v: Error finding token: %v\n", testNumber, err)
 			}
 			if token == "" {
-				t.Fatalf("Incorrect token retrieved: %v\n", token)
+				t.Fatalf("Test%v: Incorrect token retrieved: %v\n", testNumber, token)
 			}
 
 			_, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
 
 			if err != nil {
-				t.Fatalf("Error with verification request: %v\n", err)
+				t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
 			}
 		}
 
@@ -107,24 +107,24 @@ func TestRequestPassReset(t *testing.T) {
 		switch {
 		case rprt.ExpectedStatusCode == http.StatusNoContent:
 			if rprt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", rprt.ExpectedStatusCode, resp.StatusCode)
+				t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, rprt.ExpectedStatusCode, resp.StatusCode)
 			}
 		case rprt.ExpectedStatusCode == http.StatusBadRequest:
 			if rprt.ExpectedStatusCode != resp.StatusCode {
-				t.Fatalf("Expected %v, got %v\n", rprt.ExpectedStatusCode, resp.StatusCode)
+				t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, rprt.ExpectedStatusCode, resp.StatusCode)
 			}
 
 			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
-				t.Fatalf("Error parsing error: %v\n", err)
+				t.Fatalf("Test%v: Error parsing error: %v\n", testNumber, err)
 			}
 			if errorValue.Reason != rprt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", rprt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %s, got %s\n", testNumber, rprt.ExpectedError, errorValue.Reason)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
 }

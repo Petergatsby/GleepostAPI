@@ -155,34 +155,34 @@ func TestPassReset(t *testing.T) {
 	if err != nil {
 		t.Fatal("Problem initializing test state:", err)
 	}
-	for _, prt := range tests {
+	for testNumber, prt := range tests {
 
 		requestResetData := make(url.Values)
 		requestResetData["email"] = []string{prt.Email}
 		_, err = client.PostForm(baseURL+"profile/request_reset", requestResetData)
 		if err != nil {
-			t.Fatalf("Error making http request: %v\n", err)
+			t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 		}
 
 		var userID string
 		err = db.QueryRow("SELECT users.id FROM users WHERE users.email = ?", prt.Email).Scan(&userID)
 		if err != nil {
-			t.Fatalf("Error finding reset token: %v\n", err)
+			t.Fatalf("Test%v: Error finding reset token: %v\n", testNumber, err)
 		}
 
 		var resetToken string
 		err = db.QueryRow("SELECT token FROM password_recovery WHERE password_recovery.user = ?", userID).Scan(&resetToken)
 		if err != nil {
-			t.Fatalf("Error finding reset token: %v\n", err)
+			t.Fatalf("Test%v: Error finding reset token: %v\n", testNumber, err)
 		}
 		if resetToken == "" {
-			t.Fatalf("Incorrect reset token retrieved: %v\n", resetToken)
+			t.Fatalf("Test%v: Incorrect reset token retrieved: %v\n", testNumber, resetToken)
 		}
 
 		if prt.RequestTwice {
 			_, err = client.PostForm(baseURL+"profile/request_reset", requestResetData)
 			if err != nil {
-				t.Fatalf("Error making http request: %v\n", err)
+				t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 			}
 		}
 
@@ -197,19 +197,19 @@ func TestPassReset(t *testing.T) {
 
 		resp, err := client.PostForm(baseURL+"profile/reset/"+userID+"/"+resetToken, resetData)
 		if err != nil {
-			t.Fatalf("Error with reset request: %v\n", err)
+			t.Fatalf("Test%v: Error with reset request: %v\n", testNumber, err)
 		}
 
 		if prt.ResetTwice {
 			resetData["pass"] = []string{prt.Pass}
 			resp, err = client.PostForm(baseURL+"profile/reset/"+userID+"/"+resetToken, resetData)
 			if err != nil {
-				t.Fatalf("Error with reset request: %v\n", err)
+				t.Fatalf("Test%v: Error with reset request: %v\n", testNumber, err)
 			}
 		}
 
 		if prt.ExpectedStatusCode != resp.StatusCode {
-			t.Fatalf("%v: Expected %v, got %v\n", prt.Last, prt.ExpectedStatusCode, resp.StatusCode)
+			t.Fatalf("Test%v: %v: Expected %v, got %v\n", testNumber, prt.Last, prt.ExpectedStatusCode, resp.StatusCode)
 		}
 		switch {
 		case prt.ExpectedStatusCode == http.StatusNoContent:
@@ -219,13 +219,13 @@ func TestPassReset(t *testing.T) {
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if err != nil {
-				t.Fatalf("Error parsing error: %v\n", err)
+				t.Fatalf("Test%v: Error parsing error: %v\n", testNumber, err)
 			}
 			if errorValue.Reason != prt.ExpectedError {
-				t.Fatalf("Expected %s, got %s\n", prt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %s, got %s\n", testNumber, prt.ExpectedError, errorValue.Reason)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
 }

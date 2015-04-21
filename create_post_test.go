@@ -24,7 +24,6 @@ func TestCreatePost(t *testing.T) {
 	}
 
 	type createPostTest struct {
-		TestNumber         int
 		Title              string
 		Text               string
 		Tags               string
@@ -36,35 +35,30 @@ func TestCreatePost(t *testing.T) {
 		ExpectedError      string
 	}
 	textPost := createPostTest{
-		TestNumber:         1,
 		Text:               "Hello my name is Patrick, how are you?",
 		Token:              token.Token,
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusCreated,
 	}
 	badPost := createPostTest{
-		TestNumber:         2,
 		Token:              token.Token,
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Post contains no content",
 	}
 	badToken := createPostTest{
-		TestNumber:         3,
 		Text:               "Hey my name is Patrick, what up?",
 		UserID:             token.UserID,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badID := createPostTest{
-		TestNumber:         4,
 		Text:               "Yo yo me name's Pat, sup?",
 		Token:              token.Token,
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Invalid credentials",
 	}
 	badImage := createPostTest{
-		TestNumber:         5,
 		Image:              "https://www.fakeimage.com/lololol.jpg",
 		Token:              token.Token,
 		UserID:             token.UserID,
@@ -72,7 +66,6 @@ func TestCreatePost(t *testing.T) {
 		ExpectedError:      "That is not a valid image",
 	}
 	badVideo := createPostTest{
-		TestNumber:         6,
 		Video:              "12341",
 		Token:              token.Token,
 		UserID:             token.UserID,
@@ -80,7 +73,7 @@ func TestCreatePost(t *testing.T) {
 		ExpectedError:      "That is not a valid video",
 	}
 	tests := []createPostTest{textPost, badPost, badToken, badID, badImage, badVideo}
-	for _, cpt := range tests {
+	for testNumber, cpt := range tests {
 
 		data := make(url.Values)
 		data["token"] = []string{cpt.Token}
@@ -92,20 +85,20 @@ func TestCreatePost(t *testing.T) {
 
 		postResp, err := client.PostForm(baseURL+"posts", data)
 		if err != nil {
-			t.Fatalf("Test%v: Error with post request: %v", cpt.TestNumber, err)
+			t.Fatalf("Test%v: Error with post request: %v", testNumber, err)
 		}
 
 		if cpt.ExpectedStatusCode != postResp.StatusCode {
 			errorValue := gp.APIerror{}
 			dec := json.NewDecoder(postResp.Body)
 			err = dec.Decode(&errorValue)
-			t.Fatalf("Test%v: Expected %v, got %v: %v\n", cpt.TestNumber, cpt.ExpectedStatusCode, postResp.StatusCode, errorValue.Reason)
+			t.Fatalf("Test%v: Expected %v, got %v: %v\n", testNumber, cpt.ExpectedStatusCode, postResp.StatusCode, errorValue.Reason)
 		} else if cpt.ExpectedStatusCode == http.StatusBadRequest {
 			errorValue := gp.APIerror{}
 			dec := json.NewDecoder(postResp.Body)
 			err = dec.Decode(&errorValue)
 			if cpt.ExpectedError != errorValue.Reason {
-				t.Fatalf("Test%v: Expected %v, got %v\n", cpt.TestNumber, cpt.ExpectedError, errorValue.Reason)
+				t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, cpt.ExpectedError, errorValue.Reason)
 			}
 		}
 	}
