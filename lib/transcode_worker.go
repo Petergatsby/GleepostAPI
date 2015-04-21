@@ -3,6 +3,7 @@ package lib
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -10,13 +11,16 @@ import (
 
 	"launchpad.net/goamz/s3"
 
+	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
 )
 
 type TranscodeWorker struct {
-	db *sql.DB
-	tq transcode.Queue
-	b  *s3.Bucket
+	db    *sql.DB
+	tq    transcode.Queue
+	b     *s3.Bucket
+	cache *cache.Cache
 }
 
 func (t TranscodeWorker) claimJobs() (err error) {
@@ -63,21 +67,46 @@ func (t TranscodeWorker) handleDone(b *s3.Bucket) {
 	results := t.tq.Results()
 	for res := range results {
 		if res.Error != nil {
-			//Record the error
-
+			log.Println("There was an error transcoding this file:", res.Error)
 			continue
 		}
 		url, err := t.upload(res.File, t.b)
 		if err != nil {
-			//Record the error
+			log.Println("There was an error uploading this file:", err)
+			err = os.Remove(res.File)
+			if err != nil {
+				log.Println("Error removing tmp file:", err)
+			}
+			continue
 		}
 		//Mark job "done"
 		err = t.done(res.ID, url)
 		if err != nil {
 			log.Println("Couldn't mark job as done:", err)
 		}
+		err = os.Remove(res.File)
+		if err != nil {
+			log.Println("Error removing tmp file:", err)
+		}
+		t.maybeReady(res.ID)
 		// - Iff all URLs are ready, set the parent upload as Ready and trigger evt.
 	}
+}
+
+func (t TranscodeWorker) maybeReady(jobID uint64) {
+	var video gp.UploadStatus
+	var thumb string
+	err := t.db.QueryRow("SELECT upload_id, url, mp4_url, user_id FROM uploads WHERE url IS NOT NULL AND mp4_url IS NOT NULL AND webm_url IS NOT NULL AND upload_id = (SELECT parent_id FROM video_jobs WHERE id = ?)").Scan(&video.ID, &thumb, &video.MP4, &video.WebM, &video.Owner)
+	if err != nil {
+		return
+	}
+	_, err = t.db.Exec("UPDATE uploads SET status = 'ready' WHERE upload_id = ?", video.ID)
+	if err != nil {
+		return
+	}
+	video.Status = "ready"
+	t.cache.PublishEvent("video-ready", fmt.Sprintf("/videos/%d", video.ID), video, []string{NotificationChannelKey(video.Owner)})
+
 }
 
 func (t TranscodeWorker) done(jobID uint64, URL string) (err error) {
@@ -149,12 +178,7 @@ func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
 /*
 TODO
 
-- Stick a db.DB in the TranscodeWorker (so can get the upload status)
-- And an api.Cache (so we can broadcast the done event)
-- Check that all URLs != nil in the done handler && mark the video ready if so
-- Broadcast the vieo-ready event
 - Add intervening stage, GETing the remote file URL before passing it to the transcode worker
 - On upload, create an Upload and the appropriate Jobs
-- Delete tmp files after upload!
 
 */
