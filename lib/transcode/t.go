@@ -41,7 +41,7 @@ func (j job) do() (res Result) {
 	case j.target == "webm":
 		res.File = "/tmp/" + randomFilename(".webm")
 		if j.rotate {
-			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "transpose=1", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.File)
+			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-filter_complex", " [0] transpose=1 [rotated] ; [rotated] scale=-1:480 ", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.File)
 		} else {
 			cmd = exec.Command("ffmpeg", "-i", j.source, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", res.File)
 		}
