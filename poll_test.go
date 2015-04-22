@@ -142,7 +142,7 @@ func TestCreatePoll(t *testing.T) {
 
 		resp, err := client.PostForm(baseURL+"posts", data)
 		if err != nil {
-			t.Fatalf("Test%v: Error making request:", testNumber, err)
+			t.Fatalf("Test%v: Error making request: %s\n", testNumber, err)
 		}
 		if resp.StatusCode != cpt.ExpectedStatusCode {
 			d := json.NewDecoder(resp.Body)

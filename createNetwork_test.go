@@ -67,7 +67,7 @@ func TestCreateNetwork(t *testing.T) {
 	for testNumber, nct := range tests {
 		token, err := testingGetSession(nct.Email, nct.Pass)
 		if err != nil {
-			t.Fatal("Test%v: Error logging in:", testNumber, err)
+			t.Fatalf("Test%v: Error logging in: %s\n", testNumber, err)
 		}
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
@@ -76,7 +76,7 @@ func TestCreateNetwork(t *testing.T) {
 		data["name"] = []string{nct.Name}
 		resp, err := client.PostForm(baseURL+"networks", data)
 		if err != nil {
-			t.Fatal("Test%v: Error making request:", testNumber, err)
+			t.Fatalf("Test%v: Error making request: %s\n", testNumber, err)
 		}
 		if resp.StatusCode != nct.ExpectedStatusCode {
 			t.Fatalf("Test%v: Expected status code %d, got %d\n", testNumber, nct.ExpectedStatusCode, resp.StatusCode)

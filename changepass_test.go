@@ -57,7 +57,7 @@ func TestChangePass(t *testing.T) {
 	for testNumber, cpt := range tests {
 		token, err := testingGetSession(cpt.Email, cpt.Pass)
 		if err != nil {
-			t.Fatal("Test%v: Error logging in:", testNumber, err)
+			t.Fatalf("Test%v: Error logging in: %s\n", testNumber, err)
 		}
 
 		resp, err := changePassRequest(token, cpt.OldPass, cpt.NewPass)

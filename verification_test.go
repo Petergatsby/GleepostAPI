@@ -14,12 +14,12 @@ import (
 func TestVerification(t *testing.T) {
 	err := initDB()
 	if err != nil {
-		t.Fatalf("Test%v: Error initializing db: %v\n", err)
+		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
 	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
 	if err != nil {
-		t.Fatalf("Test%v: Error initializing db: %v\n", err)
+		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
 	client := &http.Client{}
