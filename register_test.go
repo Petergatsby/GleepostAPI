@@ -83,7 +83,7 @@ func TestRegister(t *testing.T) {
 	}
 	tests := []registrationTest{testGood, testNoEmail, testInvalidEmail, testExistingUser, testWeakPass}
 
-	for _, r := range tests {
+	for testNumber, r := range tests {
 		data := make(url.Values)
 		data["email"] = []string{r.Email}
 		data["pass"] = []string{r.Pass}
@@ -91,10 +91,10 @@ func TestRegister(t *testing.T) {
 		data["last"] = []string{r.Last}
 		resp, err := client.PostForm(baseURL+"register", data)
 		if err != nil {
-			t.Fatalf("Error making http request: %v\n", err)
+			t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 		}
 		if resp.StatusCode != r.ExpectedStatusCode {
-			t.Fatalf("Wrong status code: Got %v but was expecting %v", resp.StatusCode, r.ExpectedStatusCode)
+			t.Fatalf("Test%v: Wrong status code: Got %v but was expecting %v", testNumber, resp.StatusCode, r.ExpectedStatusCode)
 		}
 		dec := json.NewDecoder(resp.Body)
 		switch {
@@ -102,22 +102,22 @@ func TestRegister(t *testing.T) {
 			created := gp.NewUser{}
 			err = dec.Decode(&created)
 			if err != nil {
-				t.Fatalf("Error parsing registration response as %s: %v\n", r.ExpectedReturnType, err)
+				t.Fatalf("Test%v: Error parsing registration response as %s: %v\n", testNumber, r.ExpectedReturnType, err)
 			}
 			if created.Status != r.ExpectedRegStatus {
-				t.Fatalf("Status should be %s, but is actually: %s\n", r.ExpectedRegStatus, created.Status)
+				t.Fatalf("Test%v: Status should be %s, but is actually: %s\n", testNumber, r.ExpectedRegStatus, created.Status)
 			}
 		case r.ExpectedReturnType == "Error":
 			errorResp := gp.APIerror{}
 			err = dec.Decode(&errorResp)
 			if err != nil {
-				t.Fatalf("Error parsing registration response as %s: %v\n", r.ExpectedReturnType, err)
+				t.Fatalf("Test%v: Error parsing registration response as %s: %v\n", testNumber, r.ExpectedReturnType, err)
 			}
 			if errorResp.Reason != r.ExpectedError {
-				t.Fatalf("Saw error: %s, was expecting: %s\n", errorResp.Reason, r.ExpectedError)
+				t.Fatalf("Test%v: Saw error: %s, was expecting: %s\n", testNumber, errorResp.Reason, r.ExpectedError)
 			}
 		default:
-			t.Fatalf("Something completely unexpected happened")
+			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
 }

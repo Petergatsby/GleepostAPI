@@ -129,7 +129,7 @@ func TestCreatePoll(t *testing.T) {
 	}
 
 	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong}
-	for _, cpt := range tests {
+	for testNumber, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
 		data["token"] = []string{cpt.Token.Token}
@@ -142,14 +142,14 @@ func TestCreatePoll(t *testing.T) {
 
 		resp, err := client.PostForm(baseURL+"posts", data)
 		if err != nil {
-			t.Fatal("Error making request:", err)
+			t.Fatalf("Test%v: Error making request:", testNumber, err)
 		}
 		if resp.StatusCode != cpt.ExpectedStatusCode {
 			d := json.NewDecoder(resp.Body)
 			errResp := gp.APIerror{}
 			d.Decode(&errResp)
 			log.Println(errResp.Reason)
-			t.Fatalf("Expected status code %d, got %d\n", cpt.ExpectedStatusCode, resp.StatusCode)
+			t.Fatalf("Test%v: Expected status code %d, got %d\n", testNumber, cpt.ExpectedStatusCode, resp.StatusCode)
 		}
 		dec := json.NewDecoder(resp.Body)
 		switch {
@@ -157,22 +157,22 @@ func TestCreatePoll(t *testing.T) {
 			post := gp.CreatedPost{}
 			err = dec.Decode(&post)
 			if err != nil {
-				t.Fatalf("Failed to decode as %s: %v\n", cpt.ExpectedType, err)
+				t.Fatalf("Test%v: Failed to decode as %s: %v\n", testNumber, cpt.ExpectedType, err)
 			}
 			if post.ID < 1 {
-				t.Fatalf("Post.ID must be nonzero (%d)\n", post.ID)
+				t.Fatalf("Test%v: Post.ID must be nonzero (%d)\n", testNumber, post.ID)
 			}
 			if post.Pending == true {
-				t.Fatalf("Post should not be pending")
+				t.Fatalf("Test%v: Post should not be pending", testNumber)
 			}
 		case cpt.ExpectedType == "Error":
 			errorResp := gp.APIerror{}
 			err = dec.Decode(&errorResp)
 			if err != nil {
-				t.Fatalf("Failed to decode as %s: %v\n", cpt.ExpectedType, err)
+				t.Fatalf("Test%v: Failed to decode as %s: %v\n", testNumber, cpt.ExpectedType, err)
 			}
 			if cpt.ExpectedError != errorResp.Reason {
-				t.Fatalf("Expected error: %s but got: %s\n", cpt.ExpectedError, errorResp.Reason)
+				t.Fatalf("Test%v: Expected error: %s but got: %s\n", testNumber, cpt.ExpectedError, errorResp.Reason)
 			}
 		}
 	}

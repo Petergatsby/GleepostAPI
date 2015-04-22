@@ -122,6 +122,18 @@ func TestViewPost(t *testing.T) {
 				t.Fatalf("Test%v: Wrong title found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["title"], respValue[respNumber].Attribs["title"])
 			}
 
+			if respValue[respNumber].Attribs["location-desc"] != expectedValue.Attribs["location-desc"] {
+				t.Fatalf("Test%v: Wrong location-desc found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["location-desc"], respValue[respNumber].Attribs["location-desc"])
+			}
+
+			if respValue[respNumber].Attribs["location-name"] != expectedValue.Attribs["location-name"] {
+				t.Fatalf("Test%v: Wrong location-name found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["location-name"], respValue[respNumber].Attribs["location-name"])
+			}
+
+			if respValue[respNumber].Attribs["location-gps"] != expectedValue.Attribs["location-gps"] {
+				t.Fatalf("Test%v: Wrong location-gps found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["location-gps"], respValue[respNumber].Attribs["location-gps"])
+			}
+
 			if respValue[respNumber].Text != expectedValue.Text {
 				t.Fatalf("Test%v: Wrong value found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Text, respValue[respNumber].Text)
 			}
@@ -228,6 +240,9 @@ func initPosts(tests []viewPostTest) error {
 		data["video"] = []string{vpt.VideoID}
 		data["event-time"] = []string{expectedValue.Attribs["event-time"].(string)}
 		data["title"] = []string{expectedValue.Attribs["title"].(string)}
+		data["location-desc"] = []string{expectedValue.Attribs["location-desc"].(string)}
+		data["location-name"] = []string{expectedValue.Attribs["location-name"].(string)}
+		data["location-gps"] = []string{expectedValue.Attribs["location-gps"].(string)}
 
 		_, err = client.PostForm(baseURL+"posts", data)
 		if err != nil {
