@@ -1298,6 +1298,22 @@ On success, returns the updated list of participants. Note: This may be differen
 ]
 ```
 
+In addition, this will trigger a "system" message in this conversation indicating that the user has joined the conversation:
+
+```json
+{
+	"id":1234123,
+	"by":{
+		"id":123,
+		"name":"Patrick Molgaard",
+		"profile_image":"https://gleepost.com/uploads/foo.png"
+	},
+	"text":"JOINED",
+	"system":true,
+	"timestamp":"2015-04-20T16:19:30Z"
+}
+```
+
 ##POST /user
 Use this to generate a new user in a particular network.
 
