@@ -313,6 +313,10 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 		if err != nil {
 			return
 		}
+		privacy = strings.ToLower(privacy)
+		if privacy != "public" && privacy != "private" && privacy != "secret" {
+			privacy = "private"
+		}
 		network, err = api.db.CreateNetwork(name, primary.ID, url, desc, userID, true, privacy)
 		if err != nil {
 			return
