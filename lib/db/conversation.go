@@ -87,7 +87,7 @@ func (db *DB) GetConversations(userID gp.UserID, start int64, count int) (conver
 		return
 	}
 	rows, err := s.Query(userID, start, count)
-	log.Println("DB hit: getConversations user_id, start (conversation.id)")
+	log.Printf("DB hit: GetConversations(userID: %d, start: %d, count: %d)\n", userID, start, count)
 	if err != nil {
 		return conversations, err
 	}
@@ -327,7 +327,7 @@ func (db *DB) GetMessages(userID gp.UserID, convID gp.ConversationID, mode int, 
 		return
 	}
 	rows, err := s.Query(convID, userID, convID, index, count)
-	log.Println("DB hit: getMessages convid, start (message.id, message.by, message.text, message.time)")
+	log.Println("DB hit: GetMessages(user: %d, convID: %d, mode: %d, index: %d, count: %d)\n", userID, convID, mode, index, count)
 	if err != nil {
 		return
 	}

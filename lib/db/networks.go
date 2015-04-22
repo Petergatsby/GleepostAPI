@@ -86,7 +86,7 @@ func (db *DB) GetUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.
 		return
 	}
 	rows, err := s.Query(id)
-	log.Println("DB hit: getUserNetworks userid (network.id, network.name, cover_img, desc, creator)")
+	log.Printf("DB hit: GetUserNetworks(%d, %t)\n", id, userGroupsOnly)
 	if err != nil {
 		return
 	}
