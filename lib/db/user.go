@@ -60,7 +60,7 @@ func (db *DB) GetUser(id gp.UserID) (user gp.User, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
-	log.Println("DB hit: db.GetUser id(user.Name, user.Id, user.Avatar)")
+	log.Printf("DB hit: db.GetUser(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = &gp.ENOSUCHUSER

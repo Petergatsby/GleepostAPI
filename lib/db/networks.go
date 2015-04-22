@@ -16,7 +16,7 @@ func (db *DB) GetRules() (rules []gp.Rule, err error) {
 		return
 	}
 	rows, err := s.Query()
-	log.Println("DB hit: validateEmail (rule.networkid, rule.type, rule.value)")
+	log.Println("DB hit: GetRules()")
 	if err != nil {
 		return
 	}

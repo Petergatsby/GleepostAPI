@@ -37,7 +37,7 @@ func (db *DB) CreateConversation(id gp.UserID, participants []gp.User, primary b
 	if err != nil {
 		return
 	}
-	log.Println("DB hit: createConversation (user.Name, user.Id)")
+	log.Printf("DB hit: createConversation(userID: %d, participants: %v, primary: %t, group: %d)\n", id, participants, primary, group)
 	var pids []gp.UserID
 	for _, u := range participants {
 		pids = append(pids, u.ID)

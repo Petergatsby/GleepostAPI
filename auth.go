@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -134,7 +133,6 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	err := api.Verify(vars["token"])
 	if err != nil {
-		log.Println(err)
 		go api.Count(1, "gleepost.verify.post.400")
 		jsonResponse(w, gp.APIerror{Reason: "Bad verification token"}, 400)
 		return

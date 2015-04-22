@@ -162,7 +162,6 @@ func (api *API) registerUser(pass, email, first, last, invite string) (newUser g
 		return
 	}
 	exists, err := api.inviteExists(email, invite)
-	log.Println(exists, err)
 	newUser.ID = userID
 	newUser.Status = "unverified"
 	if err == nil && exists {

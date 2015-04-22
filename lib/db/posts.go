@@ -68,7 +68,6 @@ var (
 func (db *DB) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	for rows.Next() {
-		log.Println("Post!")
 		var post gp.PostSmall
 		var t string
 		var by gp.UserID
@@ -226,7 +225,7 @@ func (db *DB) GetPostImages(postID gp.PostID) (images []string, err error) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Println("DB hit: getImages postId(image)")
+	log.Printf("DB hit: getImages postID(%d)\n", postID)
 	if err != nil {
 		return
 	}
@@ -296,7 +295,7 @@ func (db *DB) GetPostVideos(postID gp.PostID) (videos []gp.Video, err error) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Println("DB hit: getVideos postId(image)")
+	log.Printf("DB hit: getVideos postID(%d)\n", postID)
 	if err != nil {
 		return
 	}
@@ -348,7 +347,7 @@ func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []
 		return
 	}
 	rows, err := s.Query(postID, start, count)
-	log.Println("DB hit: getComments postid, start(comment.id, comment.by, comment.text, comment.time)")
+	log.Printf("DB hit: GetComments(%d, %d, %d)\n", postID, start, count)
 	if err != nil {
 		return comments, err
 	}
@@ -365,7 +364,7 @@ func (db *DB) GetComments(postID gp.PostID, start int64, count int) (comments []
 		comment.Time, _ = time.Parse(mysqlTime, timeString)
 		comment.By, err = db.GetUser(by)
 		if err != nil {
-			log.Printf("error getting user %d %v", by, err)
+			log.Printf("error getting user %d: %v\n", by, err)
 		}
 		comments = append(comments, comment)
 	}
