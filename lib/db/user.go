@@ -81,7 +81,7 @@ func (db *DB) GetProfile(id gp.UserID) (user gp.Profile, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
-	log.Println("DB hit: getProfile id(user.Name, user.Desc)")
+	log.Println("DB hit: GetProfile(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER

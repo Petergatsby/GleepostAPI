@@ -225,7 +225,7 @@ func (db *DB) GetParticipants(conv gp.ConversationID, includeDeleted bool) (part
 		return
 	}
 	rows, err := s.Query(conv)
-	log.Println("DB hit: getParticipants convid (user.id)")
+	log.Printf("DB hit: GetParticipants(conv: %d, includeDeleted: %t)\n", conv, includeDeleted)
 	if err != nil {
 		log.Printf("Error getting participant: %v", err)
 		return
@@ -259,7 +259,7 @@ func (db *DB) GetLastMessage(id gp.ConversationID) (message gp.Message, err erro
 		return
 	}
 	err = s.QueryRow(id).Scan(&message.ID, &by, &message.Text, &timeString, &message.System)
-	log.Println("DB hit: db.GetLastMessage convid (message.id, message.by, message.text, message.time)")
+	log.Printf("DB hit: db.GetLastMessage(%d)\n", id)
 	log.Println("Message is:", message, "Len of message.Text:", len(message.Text))
 	if err != nil {
 		return message, err
