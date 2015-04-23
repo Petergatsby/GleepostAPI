@@ -152,11 +152,11 @@ func (t TranscodeWorker) done(jobID uint64, URL string) (err error) {
 	var q string
 	switch {
 	case fileType == "mp4":
-		q = "UPDATE uploads SET mp4_url = ? WHERE upload_id = SELECT parent_id FROM video_jobs WHERE id = ?"
+		q = "UPDATE uploads SET mp4_url = ? WHERE upload_id = (SELECT parent_id FROM video_jobs WHERE id = ?)"
 	case fileType == "webm":
-		q = "UPDATE uploads SET webm_url = ? WHERE upload_id = SELECT parent_id FROM video_jobs WHERE id = ?"
+		q = "UPDATE uploads SET webm_url = ? WHERE upload_id = (SELECT parent_id FROM video_jobs WHERE id = ?)"
 	case fileType == "jpg":
-		q = "UPDATE uploads SET url = ? WHERE upload_id = SELECT parent_id FROM video_jobs WHERE id = ?"
+		q = "UPDATE uploads SET url = ? WHERE upload_id = (SELECT parent_id FROM video_jobs WHERE id = ?)"
 	}
 
 	_, err = t.db.Exec(q, URL, jobID)
