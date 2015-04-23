@@ -5,30 +5,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
 	"os"
-	"os/exec"
-	"strings"
 
 	"launchpad.net/goamz/s3"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
-
-var transcodeQueue chan gp.UploadStatus
-
-func init() {
-	transcodeQueue = make(chan gp.UploadStatus, 100)
-}
-
-func (api *API) process(vids chan gp.UploadStatus) {
-	for inProgress := range vids {
-		api.pipeline(inProgress)
-	}
-}
 
 func randomFilename(extension string) string {
 	hash := sha256.New()
@@ -41,82 +26,6 @@ func randomFilename(extension string) string {
 	}
 	log.Println(err)
 	return ""
-}
-
-func (api *API) pipeline(inProgress gp.UploadStatus) {
-	log.Println("Initial state:", inProgress)
-	inProgress.Status = "transcoding"
-	api.setUploadStatus(inProgress)
-	var err error
-	//Transcode mp4 to webm
-	if inProgress.MP4 != "" {
-		inProgress.WebM, err = mp4ToWebM(inProgress.MP4, inProgress.ShouldRotate)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-	}
-	log.Println("State after transcode to webM:", inProgress)
-	//Extract initial thumb
-	thumb, err := mp4Thumb(inProgress.MP4)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	inProgress.Thumbs = append(inProgress.Thumbs, thumb)
-	log.Println("State after extracting thumb:", inProgress)
-	//Upload
-	inProgress.Status = "transferring"
-	api.setUploadStatus(inProgress)
-	uploaded, err := api.upload(inProgress)
-	if err != nil {
-		log.Println("Upload error:", err)
-	}
-	log.Println("State after uploading:", uploaded)
-	//Mark as processed
-	uploaded.Status = "ready"
-	id, err := api.setUploadStatus(uploaded)
-	if err != nil {
-		log.Println(id, err)
-	}
-	//Emit "Done" event
-	api.cache.PublishEvent("video-ready", fmt.Sprintf("/videos/%d", uploaded.ID), uploaded, []string{NotificationChannelKey(uploaded.Owner)})
-	//Delete temp files
-	err = del(inProgress)
-	if err != nil {
-		log.Println("Error cleaning up temp files:", err)
-	}
-}
-
-//MP4ToWebM converts an MP4 video to WebM, returning the path to the output video.
-//The caller is responsible for cleaning up after itself (ie, deleting the videos from local storage when it is done)
-func mp4ToWebM(in string, rotate bool) (output string, err error) {
-	//do transcode
-	output = "/tmp/" + randomFilename(".webm")
-	log.Println("Creating ffmpeg command")
-	var cmd *exec.Cmd
-	if rotate {
-		cmd = exec.Command("ffmpeg", "-i", in, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "transpose=1", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", output)
-	} else {
-		cmd = exec.Command("ffmpeg", "-i", in, "-codec:v", "libvpx", "-quality", "good", "-cpu-used", "0", "-b:v", "500k", "-qmin", "10", "-qmax", "42", "-maxrate", "500k", "-bufsize", "1000k", "-threads", "6", "-vf", "scale=-1:480", "-codec:a", "libvorbis", "-b:a", "128k", "-ac", "2", "-f", "webm", output)
-
-	}
-	err = cmd.Run()
-	if err != nil {
-		return
-	}
-	//hand back temp file?
-	return output, nil
-}
-
-//MP4Thumb attempts to extract a thumbnail from the first second of a video at path `in`, returning the path for the thumbnail
-//The caller is responsible for cleaning up after itself (ie, deleting the files from local storage when it is done)
-func mp4Thumb(in string) (output string, err error) {
-	output = "/tmp/" + randomFilename(".jpg")
-	log.Println("Extracting thumbnail")
-	cmd := exec.Command("ffmpeg", "-ss", "00:00:00", "-i", in, "-frames:v", "1", output)
-	err = cmd.Run()
-	return
 }
 
 //TransientStoreFile writes a multipart.File to disk, returning its location.
@@ -134,34 +43,6 @@ func transientStoreFile(f multipart.File, ext string) (location string, err erro
 	return location, nil
 }
 
-//Upload sends all versions and thumbnails of a Video to the bucket b.
-func (api *API) upload(v gp.UploadStatus) (uploaded gp.UploadStatus, err error) {
-	b := api.getBucket(v.Owner)
-	v.MP4, err = upload(v.MP4, "video/mp4", b)
-	if err != nil {
-		return
-	}
-	v.MP4 = cloudfrontify(v.MP4)
-	v.WebM, err = upload(v.WebM, "video/webm", b)
-	if err != nil {
-		return
-	}
-	v.WebM = cloudfrontify(v.WebM)
-	var ts []string
-	var url string
-	for _, i := range v.Thumbs {
-		url, err = upload(i, "image/jpeg", b)
-		if err != nil {
-			return
-		}
-		url = cloudfrontify(url)
-		ts = append(ts, url)
-	}
-	v.Thumbs = ts
-	v.Uploaded = true
-	return v, nil
-}
-
 func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
 	primary, _ := api.db.GetUserUniversity(user)
 	var s *s3.S3
@@ -175,69 +56,42 @@ func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
 	return bucket
 }
 
-//del removes all temp files associated with this video
-func del(v gp.UploadStatus) (err error) {
-	err = os.Remove(v.MP4)
-	if err != nil {
-		return
-	}
-	err = os.Remove(v.WebM)
-	if err != nil {
-		return
-	}
-	for _, v := range v.Thumbs {
-		err = os.Remove(v)
-		if err != nil {
-			return
-		}
-	}
-	return nil
-}
-
 //EnqueueVideo takes a user-uploaded video and enqueues it for processing.
 func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multipart.FileHeader, shouldRotate bool) (inProgress gp.UploadStatus, err error) {
-	//First we must copy the file to /tmp,
-	//because while ffmpeg _can_ operate on a stream directly,
-	//that throws away the video length.
-	var ext string
-	switch {
-	case strings.HasSuffix(header.Filename, ".mp4"):
-		ext = ".mp4"
-	case strings.HasSuffix(header.Filename, ".webm"):
-		ext = ".webm"
-	default:
+	_, ext := inferContentType(header.Filename)
+	if ext == "" {
 		return inProgress, errors.New("unsupported video type")
 	}
-	log.Println("Storing the video in /tmp for now")
-	name, err := transientStoreFile(file, ext)
+	//Saved locally because PutReader needs a content-length, which tw.upload will get from the saved file.
+	filePath, err := transientStoreFile(file, ext)
 	if err != nil {
-		return
+		log.Println("Problem temp saving file:", err)
+		return inProgress, err
 	}
-	//Then we'll pass off the video for transcoding / thumbnail extraction
+	url, err := api.tw.upload(filePath, api.tw.b)
+	if err != nil {
+		return inProgress, err
+	}
+	err = os.Remove(filePath)
+	if err != nil {
+		log.Println("Error removing file:", filePath, err)
+	}
 	video := gp.UploadStatus{}
-	switch {
-	case ext == ".mp4":
-		video.MP4 = name
-	case ext == ".webm":
-		video.WebM = name
-	}
 	video.ShouldRotate = shouldRotate
 	video.Status = "uploaded"
 	video.Owner = user
-	log.Println("Recording upload status")
 	id, err := api.setUploadStatus(video)
 	if err != nil {
 		return video, err
 	}
+	err = api.db.CreateJob(url, "webm", shouldRotate, id)
+	if err != nil {
+		return video, err
+	}
+	err = api.db.CreateJob(url, "jpg", shouldRotate, id)
+	if err != nil {
+		return video, err
+	}
 	video.ID = id
-	go api.enqueueVideo(video)
-	video.MP4 = ""
-	video.WebM = ""
 	return video, nil
-}
-
-func (api *API) enqueueVideo(video gp.UploadStatus) {
-	api.setUploadStatus(video)
-	transcodeQueue <- video
-	return
 }

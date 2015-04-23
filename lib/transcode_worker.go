@@ -25,6 +25,13 @@ type TranscodeWorker struct {
 	cache *cache.Cache
 }
 
+func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t TranscodeWorker) {
+	t = TranscodeWorker{db: db, tq: tq, b: b, cache: cache}
+	go t.claimLoop()
+	go t.handleDone()
+	return
+}
+
 func (t TranscodeWorker) claimJobs() (err error) {
 	s, err := t.db.Prepare("SELECT id, source, target, rotate FROM `video_jobs` WHERE completion_time IS NULL AND (claim_time IS NULL OR claim_time < ?)")
 	if err != nil {
@@ -87,7 +94,7 @@ func (t TranscodeWorker) claimLoop() {
 	}
 }
 
-func (t TranscodeWorker) handleDone(b *s3.Bucket) {
+func (t TranscodeWorker) handleDone() {
 	results := t.tq.Results()
 	for res := range results {
 		if res.Error != nil {
@@ -113,7 +120,6 @@ func (t TranscodeWorker) handleDone(b *s3.Bucket) {
 			log.Println("Error removing tmp file:", err)
 		}
 		t.maybeReady(res.ID)
-		// - Iff all URLs are ready, set the parent upload as Ready and trigger evt.
 	}
 }
 
@@ -158,25 +164,15 @@ func (t TranscodeWorker) done(jobID uint64, URL string) (err error) {
 }
 
 func (t TranscodeWorker) upload(file string, b *s3.Bucket) (URL string, err error) {
-	var contentType string
-	fileExt := strings.SplitAfter(file, ".")
-	if len(fileExt) != 1 {
+	contentType, _ := inferContentType(file)
+	if contentType == "" {
 		err = errors.New("Couldn't determine content-type")
 		return
-	}
-	switch {
-	case fileExt[0] == "mp4":
-		contentType = "video/mp4"
-	case fileExt[0] == "jpg" || fileExt[0] == "jpeg":
-		contentType = "image/jpeg"
-	case fileExt[0] == "webm":
-		contentType = "video/webm"
 	}
 	url, err := upload(file, contentType, b)
 	if err != nil {
 		return
 	}
-
 	URL = cloudfrontify(url)
 	return
 }
