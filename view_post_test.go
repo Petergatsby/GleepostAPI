@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -26,6 +28,12 @@ type viewPostTest struct {
 }
 
 func TestViewPost(t *testing.T) {
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
+
 	client := &http.Client{}
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")

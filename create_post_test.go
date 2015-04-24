@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -15,6 +18,12 @@ func TestCreatePost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	client := &http.Client{}
 

@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
@@ -21,6 +23,12 @@ func TestCreatePoll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
