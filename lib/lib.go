@@ -3,6 +3,7 @@ package lib
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"io"
 	"log"
@@ -15,6 +16,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
 	"github.com/draaglom/GleepostAPI/lib/push"
+	"github.com/draaglom/GleepostAPI/lib/transcode"
 	"github.com/peterbourgon/g2s"
 )
 
@@ -28,6 +30,7 @@ type API struct {
 	pushers       map[string]*push.Pusher
 	statsd        g2s.Statter
 	notifObserver NotificationObserver
+	tw            TranscodeWorker
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -48,6 +51,11 @@ func New(conf conf.Config) (api *API) {
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.Mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
+	db, err := sql.Open("mysql", conf.Mysql.ConnectionString())
+	if err != nil {
+		log.Println("error getting db:", err)
+	}
+	api.tw = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	return
 }
 
@@ -67,7 +75,6 @@ func (api *API) Start() {
 	} else {
 		api.statsd = statsd
 	}
-	go api.process(transcodeQueue)
 }
 
 //Time reports the time for this stat to statsd. (use it with defer)

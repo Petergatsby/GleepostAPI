@@ -23,39 +23,35 @@ func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
 	return
 }
 
+func inferContentType(filename string) (contenttype, ext string) {
+	switch {
+	case strings.HasSuffix(filename, ".jpeg"):
+		fallthrough
+	case strings.HasSuffix(filename, ".jpg"):
+		ext = ".jpg"
+		contenttype = "image/jpeg"
+	case strings.HasSuffix(filename, ".png"):
+		ext = ".png"
+		contenttype = "image/png"
+	case strings.HasSuffix(filename, ".mp4"):
+		ext = ".mp4"
+		contenttype = "video/mp4"
+	case strings.HasSuffix(filename, ".webm"):
+		ext = ".webm"
+		contenttype = "video/webm"
+	}
+	return contenttype, ext
+
+}
+
 //StoreFile takes an uploaded file, checks if it is allowed (ie, is jpg / png / appropriate video file) and uploads it to s3 (selecting a bucket based on the user who uploaded it).
 func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.FileHeader) (url string, err error) {
-	var filename string
-	var contenttype string
-	switch {
-	case strings.HasSuffix(header.Filename, ".jpg"):
-		filename = randomFilename(".jpg")
-		contenttype = "image/jpeg"
-	case strings.HasSuffix(header.Filename, ".jpeg"):
-		filename = randomFilename(".jpg")
-		contenttype = "image/jpeg"
-	case strings.HasSuffix(header.Filename, ".png"):
-		filename = randomFilename(".png")
-		contenttype = "image/png"
-	case strings.HasSuffix(header.Filename, ".mp4"):
-		filename = randomFilename(".mp4")
-		contenttype = "video/mp4"
-	case strings.HasSuffix(header.Filename, ".webm"):
-		filename = randomFilename(".webm")
-		contenttype = "video/webm"
-	default:
+	contenttype, ext := inferContentType(header.Filename)
+	if contenttype == "" {
 		return "", gp.APIerror{Reason: "Unsupported file type"}
 	}
-	//store on s3
-	primary, _ := api.db.GetUserUniversity(id)
-	var s *s3.S3
-	var bucket *s3.Bucket
-	s = api.getS3(primary.ID)
-	if primary.ID == 1911 {
-		bucket = s.Bucket("gpcali")
-	} else {
-		bucket = s.Bucket("gpimg")
-	}
+	filename := randomFilename(ext)
+	bucket := api.getBucket(id)
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err

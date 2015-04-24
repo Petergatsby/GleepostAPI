@@ -99,3 +99,13 @@ func (db *DB) GetUploadStatus(user gp.UserID, upload gp.VideoID) (uploadStatus g
 	uploadStatus.ID = upload
 	return
 }
+
+//CreateJob records a Transcoding job into the queue
+func (db *DB) CreateJob(source, target string, rotate bool, parent gp.VideoID) (err error) {
+	s, err := db.prepare("INSERT INTO video_jobs(parent_id, source, target, rotate) VALUES (?,?,?,?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(parent, source, target, rotate)
+	return
+}
