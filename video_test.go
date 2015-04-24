@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -31,7 +30,6 @@ func TestVideo(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error logging in:", err)
 	}
-	log.Println(token)
 	tests := []videoTest{
 		{
 			Token:              token,
@@ -55,20 +53,17 @@ func TestVideo(t *testing.T) {
 		if resp.StatusCode != test.ExpectedStatusCode {
 			t.Fatalf("Received unexpected status code: %d (expecting %d)\n", resp.StatusCode, test.ExpectedStatusCode)
 		}
-		switch {
-		case test.ExpectedType == "UploadStatus":
-			status := gp.UploadStatus{}
-			dec := json.NewDecoder(resp.Body)
-			err = dec.Decode(&status)
-			if err != nil {
-				t.Fatal("Problem decoding response json:", err)
-			}
-			if status.ID == 0 {
-				t.Fatal("Upload should return a nonzero ID")
-			}
-			if status.Status != "uploaded" {
-				t.Fatal("Upload status should be 'uploaded'")
-			}
+		status := gp.UploadStatus{}
+		dec := json.NewDecoder(resp.Body)
+		err = dec.Decode(&status)
+		if err != nil {
+			t.Fatal("Problem decoding response json:", err)
+		}
+		if status.ID == 0 {
+			t.Fatal("Upload should return a nonzero ID")
+		}
+		if status.Status != "uploaded" {
+			t.Fatal("Upload status should be 'uploaded'")
 		}
 	}
 }
