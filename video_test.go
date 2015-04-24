@@ -15,6 +15,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestVideo(t *testing.T) {
@@ -25,6 +26,7 @@ func TestVideo(t *testing.T) {
 
 	config := conf.GetConfig()
 	api = lib.New(*config)
+	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
