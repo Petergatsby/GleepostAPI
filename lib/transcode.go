@@ -93,5 +93,12 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 		return video, err
 	}
 	video.ID = id
+	video.MP4 = url
+	video.Uploaded = true
+	_, err = api.setUploadStatus(video)
+	if err != nil {
+		log.Println("Error saving mp4 url:", err)
+	}
+	video.MP4 = ""
 	return video, nil
 }

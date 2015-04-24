@@ -61,7 +61,7 @@ type transcodeQueue struct {
 //NewTranscoder returns a transcodeQueue. A process should probably only use one of these as they are already optimized to transcode in parallel where possible.
 func NewTranscoder() Queue {
 	queue := transcodeQueue{}
-	queue.jobs = make(chan job)
+	queue.jobs = make(chan job, 10)
 	queue.results = make(chan Result)
 	go queue.process()
 	return queue

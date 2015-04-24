@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"launchpad.net/goamz/s3"
@@ -62,12 +61,8 @@ func (t TranscodeWorker) claimJobs() (err error) {
 		if err != nil {
 			return
 		}
-		extStrs := strings.SplitAfter(source, ".")
-		if len(extStrs) < 1 {
-			err = errors.New("oo er")
-			return
-		}
-		location := "/tmp/" + randomFilename(extStrs[len(extStrs)-1])
+		_, ext := inferContentType(source)
+		location := "/tmp/" + randomFilename(ext)
 		var tmp *os.File
 		tmp, err = os.Create(location)
 		if err != nil {
@@ -126,12 +121,14 @@ func (t TranscodeWorker) handleDone() {
 func (t TranscodeWorker) maybeReady(jobID uint64) {
 	var video gp.UploadStatus
 	var thumb string
-	err := t.db.QueryRow("SELECT upload_id, url, mp4_url, user_id FROM uploads WHERE url IS NOT NULL AND mp4_url IS NOT NULL AND webm_url IS NOT NULL AND upload_id = (SELECT parent_id FROM video_jobs WHERE id = ?)").Scan(&video.ID, &thumb, &video.MP4, &video.WebM, &video.Owner)
+	err := t.db.QueryRow("SELECT upload_id, url, mp4_url, webm_url, user_id FROM uploads JOIN video_jobs ON upload_id = video_jobs.parent_id WHERE url IS NOT NULL AND mp4_url IS NOT NULL AND webm_url IS NOT NULL AND video_jobs.id = ?", jobID).Scan(&video.ID, &thumb, &video.MP4, &video.WebM, &video.Owner)
 	if err != nil {
+		log.Println("Error getting parent video:", err)
 		return
 	}
 	_, err = t.db.Exec("UPDATE uploads SET status = 'ready' WHERE upload_id = ?", video.ID)
 	if err != nil {
+		log.Println("Error marking ready:", err)
 		return
 	}
 	video.Status = "ready"
@@ -194,10 +191,3 @@ func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
 	url = b.URL(path[5:])
 	return
 }
-
-/*
-TODO
-
-- On upload, create an Upload and the appropriate Jobs
-
-*/
