@@ -137,8 +137,17 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "Option too long: 1",
 	}
+	testUnix := createPollTest{
+		Token:              token,
+		Text:               "This poll was created with a UNIX timestamp",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Why do I care?", "woo"},
+		PollExpiry:         strconv.FormatInt(time.Now().Add(24*time.Hour).Unix(), 10),
+		ExpectedStatusCode: 201,
+		ExpectedType:       "CreatedPost",
+	}
 
-	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong}
+	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong, testUnix}
 	for testNumber, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}

@@ -491,7 +491,11 @@ func validatePost(text string, attribs map[string]string, video gp.VideoID, imag
 		var err error
 		expiry, err = time.Parse(time.RFC3339, pollExpiry)
 		if err != nil {
-			errs = append(errs, MissingParameterPollExpiry)
+			_unix, err := strconv.ParseInt(pollExpiry, 10, 64)
+			if err != nil {
+				errs = append(errs, MissingParameterPollExpiry)
+			}
+			expiry = time.Unix(_unix, 0)
 		}
 		err = validatePollInput(expiry, pollOptions)
 		if err != nil {

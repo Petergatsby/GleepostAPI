@@ -44,7 +44,7 @@ Same as creating a regular post, except:
 
  - The post must be in the category `poll`
  - `poll-expiry` is required.
-  - `poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z`
+  - `poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z` OR a Unix timestamp.
  - `poll-options` is a comma-delimited list of the options available in this poll. 
   - You must specify at least 2 and at most 4 options, and the options must each be 3 <= n <= 50 characters long.
 eg: `hillary clinton,alien kang, alien kodos,abstain`
