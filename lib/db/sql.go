@@ -51,5 +51,6 @@ func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
 	if err == nil {
 		db.stmt[statement] = stmt
 	}
+	log.Println("Open statements:", len(db.stmt))
 	return
 }
