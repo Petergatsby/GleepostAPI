@@ -45,10 +45,28 @@ func TestPostPagination(t *testing.T) {
 	startTest := postPaginationTest{
 		Command:                   "?start=25",
 		ExpectedPosts:             20,
-		ExpectedStartingPostIndex: 26,
-		ExpectedEndingPostIndex:   45,
+		ExpectedStartingPostIndex: 75,
+		ExpectedEndingPostIndex:   56,
 	}
-	tests := []postPaginationTest{beforeTest, afterTest, startTest}
+	beforeEmptyTest := postPaginationTest{
+		Command:                   "?before=1",
+		ExpectedPosts:             0,
+		ExpectedStartingPostIndex: 0,
+		ExpectedEndingPostIndex:   0,
+	}
+	startEmptyTest := postPaginationTest{
+		Command:                   "?start=150",
+		ExpectedPosts:             0,
+		ExpectedStartingPostIndex: 0,
+		ExpectedEndingPostIndex:   0,
+	}
+	afterEmptyTest := postPaginationTest{
+		Command:                   "?after=100",
+		ExpectedPosts:             0,
+		ExpectedStartingPostIndex: 0,
+		ExpectedEndingPostIndex:   0,
+	}
+	tests := []postPaginationTest{beforeTest, afterTest, startTest, beforeEmptyTest, afterEmptyTest, startEmptyTest}
 	for testNumber, ppt := range tests {
 		req, err := http.NewRequest("GET", baseURL+"posts"+ppt.Command, nil)
 		req.Header.Set("X-GP-Auth", fmt.Sprintf("%d", token.UserID)+"-"+token.Token)
@@ -67,19 +85,21 @@ func TestPostPagination(t *testing.T) {
 		err = dec.Decode(&respValue)
 
 		if len(respValue) != ppt.ExpectedPosts {
-			t.Fatalf("Test%v: Incorrect number of responses, expected 20, got %v", testNumber, len(respValue))
+			t.Fatalf("Test%v: Incorrect number of responses, expected %v, got %v", testNumber, ppt.ExpectedPosts, len(respValue))
 		}
 
-		if !checkPostsDescending(respValue) {
-			t.Fatalf("Test%v: Posts are not in order", testNumber)
-		}
+		if len(respValue) > 0 {
+			if !checkPostsDescending(respValue) {
+				t.Fatalf("Test%v: Posts are not in order", testNumber)
+			}
 
-		if respValue[0].ID != gp.PostID(ppt.ExpectedStartingPostIndex) {
-			t.Fatalf("Test%v: Incorrect starting post number. Expected %v, got %v", testNumber, ppt.ExpectedStartingPostIndex, respValue[0].ID)
-		}
+			if respValue[0].ID != gp.PostID(ppt.ExpectedStartingPostIndex) {
+				t.Fatalf("Test%v: Incorrect starting post number. Expected %v, got %v", testNumber, ppt.ExpectedStartingPostIndex, respValue[0].ID)
+			}
 
-		if respValue[ppt.ExpectedPosts-1].ID != gp.PostID(ppt.ExpectedEndingPostIndex) {
-			t.Fatalf("Test%v: Incorrect ending post number. Expected %v, got %v", testNumber, ppt.ExpectedEndingPostIndex, respValue[ppt.ExpectedPosts-1].ID)
+			if respValue[ppt.ExpectedPosts-1].ID != gp.PostID(ppt.ExpectedEndingPostIndex) {
+				t.Fatalf("Test%v: Incorrect ending post number. Expected %v, got %v", testNumber, ppt.ExpectedEndingPostIndex, respValue[ppt.ExpectedPosts-1].ID)
+			}
 		}
 	}
 }
