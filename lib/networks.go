@@ -934,7 +934,7 @@ func (api *API) userAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.Net
 }
 
 //SetNetworkParent records that this network is a sub-network of parent (at the moment just used for visibility).
-func (api *API) SetNetworkParent(network, parent gp.NetworkID) (err error) {
+func (api *API) setNetworkParent(network, parent gp.NetworkID) (err error) {
 	q := "UPDATE network SET parent = ? WHERE id = ?"
 	s, err := api.db.Prepare(q)
 	if err != nil {

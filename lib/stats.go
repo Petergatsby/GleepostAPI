@@ -202,7 +202,7 @@ func (api *API) interactionsForPostBetween(post gp.PostID, start time.Time, fini
 
 //ActivatedUsersInCohort finds, among the cohort of users signed up between start and finish, all the users who have performed each activity
 //"liked", "commented", "posted", "attended", "initiated", "messaged".
-func (api *API) ActivatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserID, err error) {
+func (api *API) activatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserID, err error) {
 	ActiveUsers = make(map[string][]gp.UserID)
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
@@ -243,7 +243,7 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 			stats[k] = len(users)
 		}
 	}
-	UsersByActivity, err := api.ActivatedUsersInCohort(start, finish)
+	UsersByActivity, err := api.activatedUsersInCohort(start, finish)
 	if err != nil {
 		return
 	}

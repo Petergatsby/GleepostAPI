@@ -1483,7 +1483,7 @@ func (api *API) changePostText(postID gp.PostID, text string) (err error) {
 }
 
 //AddCategory marks the post id as a member of category.
-func (api *API) AddCategory(id gp.PostID, category gp.CategoryID) (err error) {
+func (api *API) addCategory(id gp.PostID, category gp.CategoryID) (err error) {
 	s, err := api.db.Prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)")
 	if err != nil {
 		return
