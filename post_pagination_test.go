@@ -4,15 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
+	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestPostPagination(t *testing.T) {
 
 	client := &http.Client{}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
@@ -138,7 +150,14 @@ func initManyPosts(tests int) error {
 		data["text"] = []string{fmt.Sprintf("This is the test post %v", i)}
 		data["title"] = []string{fmt.Sprintf("Test post %v", i)}
 
-		_, err = client.PostForm(baseURL+"posts", data)
+		req, err := http.NewRequest("POST", baseURL+"posts", strings.NewReader(data.Encode()))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Close = true
+
+		_, err = client.Do(req)
 		if err != nil {
 			return err
 		}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/draaglom/GleepostAPI/lib"
@@ -108,7 +109,15 @@ func testingGetSession(email, pass string) (token gp.Token, err error) {
 	client := &http.Client{}
 	data["email"] = []string{email}
 	data["pass"] = []string{pass}
-	resp, err := client.PostForm(baseURL+"login", data)
+
+	req, err := http.NewRequest("POST", baseURL+"login", strings.NewReader(data.Encode()))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Close = true
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}
