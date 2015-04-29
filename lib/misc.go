@@ -15,7 +15,7 @@ func (api *API) ContactFormRequest(fullName, college, email, phoneNo, ip string)
 	if !looksLikeEmail(email) {
 		return InvalidEmail
 	}
-	err = api.db.ContactFormRequest(fullName, college, email, phoneNo)
+	err = api.contactFormRequest(fullName, college, email, phoneNo)
 	if err != nil {
 		return
 	}
@@ -30,4 +30,15 @@ func (api *API) ChasenRequest(where, when string) (err error) {
 	body := fmt.Sprintf("Location: %s\nTime: %s\n", where, when)
 	api.Mail.SendPlaintext("tade@gleepost.com", "Michael Chasen has requested a meeting.", body)
 	return nil
+}
+
+//ContactFormRequest records a request for contact in the db.
+func (api *API) contactFormRequest(fullName, college, email, phoneNo string) (err error) {
+	q := "INSERT INTO contact_requests(full_name, college, email, phone_no) VALUES (?, ?, ?, ?)"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(fullName, college, email, phoneNo)
+	return
 }

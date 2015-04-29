@@ -17,21 +17,21 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/transcode"
 )
 
-type TranscodeWorker struct {
+type transcodeWorker struct {
 	db    *sql.DB
 	tq    transcode.Queue
 	b     *s3.Bucket
 	cache *cache.Cache
 }
 
-func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t TranscodeWorker) {
-	t = TranscodeWorker{db: db, tq: tq, b: b, cache: cache}
+func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t transcodeWorker) {
+	t = transcodeWorker{db: db, tq: tq, b: b, cache: cache}
 	go t.claimLoop()
 	go t.handleDone()
 	return
 }
 
-func (t TranscodeWorker) claimJobs() (err error) {
+func (t transcodeWorker) claimJobs() (err error) {
 	s, err := t.db.Prepare("SELECT id, source, target, rotate FROM `video_jobs` WHERE completion_time IS NULL AND (claim_time IS NULL OR claim_time < ?)")
 	if err != nil {
 		return
@@ -78,7 +78,7 @@ func (t TranscodeWorker) claimJobs() (err error) {
 	return
 }
 
-func (t TranscodeWorker) claimLoop() {
+func (t transcodeWorker) claimLoop() {
 	tick := time.Tick(500 * time.Millisecond)
 	for {
 		err := t.claimJobs()
@@ -89,7 +89,7 @@ func (t TranscodeWorker) claimLoop() {
 	}
 }
 
-func (t TranscodeWorker) handleDone() {
+func (t transcodeWorker) handleDone() {
 	results := t.tq.Results()
 	for res := range results {
 		if res.Error != nil {
@@ -118,7 +118,7 @@ func (t TranscodeWorker) handleDone() {
 	}
 }
 
-func (t TranscodeWorker) maybeReady(jobID uint64) {
+func (t transcodeWorker) maybeReady(jobID uint64) {
 	var video gp.UploadStatus
 	var thumb string
 	err := t.db.QueryRow("SELECT upload_id, url, mp4_url, webm_url, user_id FROM uploads JOIN video_jobs ON upload_id = video_jobs.parent_id WHERE url IS NOT NULL AND mp4_url IS NOT NULL AND webm_url IS NOT NULL AND video_jobs.id = ?", jobID).Scan(&video.ID, &thumb, &video.MP4, &video.WebM, &video.Owner)
@@ -136,7 +136,7 @@ func (t TranscodeWorker) maybeReady(jobID uint64) {
 
 }
 
-func (t TranscodeWorker) done(jobID uint64, URL string) (err error) {
+func (t transcodeWorker) done(jobID uint64, URL string) (err error) {
 	_, err = t.db.Query("UPDATE `video_jobs` SET completion_time = NOW() WHERE id = ?", jobID)
 	if err != nil {
 		return
@@ -160,7 +160,7 @@ func (t TranscodeWorker) done(jobID uint64, URL string) (err error) {
 	return
 }
 
-func (t TranscodeWorker) upload(file string, b *s3.Bucket) (URL string, err error) {
+func (t transcodeWorker) upload(file string, b *s3.Bucket) (URL string, err error) {
 	contentType, _ := inferContentType(file)
 	if contentType == "" {
 		err = errors.New("Couldn't determine content-type")

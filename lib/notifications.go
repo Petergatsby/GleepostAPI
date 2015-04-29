@@ -1,12 +1,13 @@
 package lib
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"github.com/draaglom/apns"
@@ -24,12 +25,12 @@ func toLocKey(notificationType string) (locKey string) {
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
 func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []gp.Notification, err error) {
-	return api.db.GetUserNotifications(id, includeSeen)
+	return api.getUserNotifications(id, includeSeen)
 }
 
 //MarkNotificationsSeen marks all notifications up to upTo seen for this user.
 func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationID) (err error) {
-	return api.db.MarkNotificationsSeen(id, upTo)
+	return api.markNotificationsSeen(id, upTo)
 }
 
 //createNotification creates a new gleepost notification. location is the id of the object where the notification happened - a post id if the notification is "liked" or "commented", or a network id if the notification type is "added_group". Otherwise, the location will be ignored.
@@ -37,7 +38,7 @@ func (n NotificationObserver) createNotification(ntype string, by gp.UserID, rec
 	if len(preview) > 97 {
 		preview = preview[:97] + "..."
 	}
-	notification, err := n.db.CreateNotification(ntype, by, recipient, postID, netID, preview)
+	notification, err := n._createNotification(ntype, by, recipient, postID, netID, preview)
 	if err == nil {
 		n.push(notification, recipient)
 		go n.cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
@@ -53,7 +54,7 @@ func NotificationChannelKey(id gp.UserID) (channel string) {
 //NotificationObserver has the responsibility of producing Notifications for users.
 type NotificationObserver struct {
 	events chan NotificationEvent
-	db     *db.DB
+	db     *sql.DB
 	cache  *cache.Cache
 	pusher *push.Pusher
 }
@@ -69,7 +70,7 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *db.DB, cache *cache.Cache, pusher *push.Pusher) NotificationObserver {
+func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher) NotificationObserver {
 	events := make(chan NotificationEvent)
 	n := NotificationObserver{events: events, db: db, cache: cache, pusher: pusher}
 	go n.spin()
@@ -91,9 +92,9 @@ type postEvent struct {
 }
 
 func (p postEvent) notify(n NotificationObserver) error {
-	creator, err := n.db.NetworkCreator(p.netID)
+	creator, err := n.networkCreator(p.netID)
 	if err == nil && (creator == p.userID) && !p.pending {
-		users, err := n.db.GetNetworkUsers(p.netID)
+		users, err := getNetworkUsers(n.db, p.netID)
 		if err != nil {
 			return err
 		}
@@ -172,19 +173,19 @@ type voteEvent struct {
 }
 
 func (v voteEvent) notify(n NotificationObserver) (err error) {
-	post, err := n.db.GetPost(v.postID)
+	owner, err := postOwner(n.db, v.postID)
 	if err != nil {
 		return
 	}
-	if v.userID != post.By.ID {
-		err = n.createNotification("poll_vote", v.userID, post.By.ID, v.postID, 0, "")
+	if v.userID != owner {
+		err = n.createNotification("poll_vote", v.userID, owner, v.postID, 0, "")
 	}
 	return
 }
 
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (n NotificationObserver) push(notification gp.Notification, recipient gp.UserID) {
-	devices, err := n.db.GetDevices(recipient, "gleepost")
+	devices, err := getDevices(n.db, recipient, "gleepost")
 	if err != nil {
 		log.Println(err)
 		return
@@ -237,13 +238,13 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	d.LocArgs = []string{notification.By.Name}
 	switch {
 	case notification.Type == "added_group" || notification.Type == "group_post":
-		var group gp.Group
-		group, err = n.db.GetNetwork(notification.Group)
+		var name string
+		name, err = groupName(n.db, notification.Group)
 		if err != nil {
 			return
 		}
-		d.LocArgs = append(d.LocArgs, group.Name)
-		pn.Set("group-id", group.ID)
+		d.LocArgs = append(d.LocArgs, name)
+		pn.Set("group-id", notification.Group)
 	case notification.Type == "accepted_you":
 		pn.Set("accepter-id", notification.By.ID)
 	case notification.Type == "added_you":
@@ -275,13 +276,13 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 	data["for"] = recipient
 	switch {
 	case notification.Type == "added_group" || notification.Type == "group_post":
-		var group gp.Group
-		group, err = n.db.GetNetwork(notification.Group)
+		var name string
+		name, err = groupName(n.db, notification.Group)
 		if err != nil {
 			return
 		}
 		data["group-id"] = notification.Group
-		data["group-name"] = group.Name
+		data["group-name"] = name
 		switch {
 		case notification.Type == "group_post":
 			data["poster"] = notification.By.Name
@@ -323,18 +324,136 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 }
 
 func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) {
-	notifications, err := n.db.GetUserNotifications(user, false)
+	count, err = unreadNotificationCount(n.db, user)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	count = len(notifications)
-	unread, e := n.db.UnreadMessageCount(user, true)
+	unread, e := unreadMessageCount(n.db, user, true)
 	if e == nil {
 		count += unread
 	} else {
 		log.Println(e)
 	}
 	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, count, unread)
+	return
+}
+
+func unreadNotificationCount(db *sql.DB, userID gp.UserID) (count int, err error) {
+	s, err := db.Prepare("SELECT COUNT(*) FROM notifications WHERE recipient = ? AND seen = 0")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID).Scan(&count)
+	return
+}
+
+//GetUserNotifications returns all the notifications for a given user, optionally including the seen ones.
+func (api *API) getUserNotifications(id gp.UserID, includeSeen bool) (notifications []gp.Notification, err error) {
+	notifications = make([]gp.Notification, 0)
+	var notificationSelect string
+	if !includeSeen {
+		notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? AND seen = 0 ORDER BY `id` DESC"
+	} else {
+		notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? ORDER BY `id` DESC LIMIT 0, 20"
+	}
+	s, err := api.db.Prepare(notificationSelect)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(id)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var notification gp.Notification
+		var t string
+		var postID, netID sql.NullInt64
+		var preview sql.NullString
+		var by gp.UserID
+		if err = rows.Scan(&notification.ID, &notification.Type, &t, &by, &postID, &netID, &preview, &notification.Seen); err != nil {
+			return
+		}
+		notification.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return
+		}
+		notification.By, err = api.getUser(by)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if postID.Valid {
+			notification.Post = gp.PostID(postID.Int64)
+		}
+		if netID.Valid {
+			notification.Group = gp.NetworkID(netID.Int64)
+		}
+		if preview.Valid {
+			notification.Preview = preview.String
+		}
+		notifications = append(notifications, notification)
+	}
+	return
+}
+
+//MarkNotificationsSeen records that this user has seen all their notifications.
+func (api *API) markNotificationsSeen(user gp.UserID, upTo gp.NotificationID) (err error) {
+	s, err := api.db.Prepare("UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, upTo)
+	return
+}
+
+//CreateNotification creates a notification ntype for recipient, "from" by, with an optional post, network and preview text.
+//TODO: All this stuff should not be in the db layer.
+func (n NotificationObserver) _createNotification(ntype string, by gp.UserID, recipient gp.UserID, postID gp.PostID, netID gp.NetworkID, preview string) (notification gp.Notification, err error) {
+	var res sql.Result
+	notificationInsert := "INSERT INTO notifications (type, time, `by`, recipient, post_id, network_id, preview_text) VALUES (?, NOW(), ?, ?, ?, ?, ?)"
+	var s *sql.Stmt
+	notification = gp.Notification{
+		Type: ntype,
+		Time: time.Now().UTC(),
+		Seen: false,
+	}
+	notification.By, err = getUser(n.db, by)
+	if err != nil {
+		return
+	}
+	s, err = n.db.Prepare(notificationInsert)
+	if err != nil {
+		return
+	}
+	res, err = s.Exec(ntype, by, recipient, postID, netID, preview)
+	if err != nil {
+		return
+	}
+	id, iderr := res.LastInsertId()
+	if iderr != nil {
+		return notification, iderr
+	}
+	notification.ID = gp.NotificationID(id)
+	if postID > 0 {
+		notification.Post = postID
+	}
+	if netID > 0 {
+		notification.Group = netID
+	}
+	if len(preview) > 0 {
+		notification.Preview = preview
+	}
+	return notification, nil
+}
+
+func (n NotificationObserver) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
+	qCreator := "SELECT creator FROM network WHERE id = ?"
+	s, err := n.db.Prepare(qCreator)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netID).Scan(&creator)
 	return
 }

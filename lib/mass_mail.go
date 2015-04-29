@@ -19,7 +19,7 @@ It’s dead week and we all know that we’re all stressing over exams! You've h
 See you there and Good luck with exams!<br><br> 
 
 Curing FOMO one day at a time, The Gleepost Team.</body></html>`
-	emails, err := api.db.AllEmails()
+	emails, err := api.allEmails()
 	if err != nil {
 		log.Println(err)
 		return
@@ -33,6 +33,27 @@ Curing FOMO one day at a time, The Gleepost Team.</body></html>`
 			count++
 			log.Println("Sent mails:", count)
 		}
+	}
+	return
+}
+
+//AllEmails returns all registered emails.
+func (api *API) allEmails() (emails []string, err error) {
+	s, err := api.db.Prepare("SELECT email FROM users")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var email string
+		err = rows.Scan(&email)
+		if err != nil {
+			return
+		}
+		emails = append(emails, email)
 	}
 	return
 }

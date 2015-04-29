@@ -12,7 +12,6 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
 	"github.com/draaglom/GleepostAPI/lib/push"
@@ -23,14 +22,14 @@ import (
 //API contains all the configuration and sub-modules the Gleepost API requires to function.
 type API struct {
 	cache         *cache.Cache
-	db            *db.DB
+	db            *sql.DB
 	fb            *FB
 	Mail          mail.Mailer
 	Config        conf.Config
 	pushers       map[string]*push.Pusher
 	statsd        g2s.Statter
 	notifObserver NotificationObserver
-	tw            TranscodeWorker
+	tw            transcodeWorker
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -47,7 +46,6 @@ var (
 func New(conf conf.Config) (api *API) {
 	api = new(API)
 	api.cache = cache.New(conf.Redis)
-	api.db = db.New(conf.Mysql)
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.Mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
@@ -55,6 +53,7 @@ func New(conf conf.Config) (api *API) {
 	if err != nil {
 		log.Println("error getting db:", err)
 	}
+	api.db = db
 	api.tw = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	return
 }

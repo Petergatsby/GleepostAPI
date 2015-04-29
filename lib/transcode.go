@@ -44,7 +44,7 @@ func transientStoreFile(f multipart.File, ext string) (location string, err erro
 }
 
 func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
-	primary, _ := api.db.GetUserUniversity(user)
+	primary, _ := api.getUserUniversity(user)
 	var s *s3.S3
 	var bucket *s3.Bucket
 	s = api.getS3(primary.ID)
@@ -84,11 +84,11 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 	if err != nil {
 		return video, err
 	}
-	err = api.db.CreateJob(url, "webm", shouldRotate, id)
+	err = api.createJob(url, "webm", shouldRotate, id)
 	if err != nil {
 		return video, err
 	}
-	err = api.db.CreateJob(url, "jpg", shouldRotate, id)
+	err = api.createJob(url, "jpg", shouldRotate, id)
 	if err != nil {
 		return video, err
 	}

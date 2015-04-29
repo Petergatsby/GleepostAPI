@@ -1,12 +1,12 @@
 package lib
 
 import (
+	"database/sql"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -27,7 +27,7 @@ var (
 
 //GetPost returns a particular Post
 func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
-	return api.db.GetPost(postID)
+	return api.getPost(postID)
 }
 
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
@@ -48,12 +48,12 @@ func (api *API) canViewPost(userID gp.UserID, postID gp.PostID) (canView bool, e
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(userID, p.Network)
+	in, err := api.userInNetwork(userID, p.Network)
 	return in, err
 }
 
 func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
-	post.Post, err = api.db.UserGetPost(userID, postID)
+	post.Post, err = api.userGetPost(userID, postID)
 	if err != nil {
 		return
 	}
@@ -64,7 +64,7 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 	for _, c := range post.Categories {
 		if c.Tag == "event" {
 			//Don't squelch the error. Those things are useful as it turns out.
-			post.Popularity, post.Attendees, err = api.db.GetEventPopularity(postID)
+			post.Popularity, post.Attendees, err = api.getEventPopularity(postID)
 			if err != nil {
 				log.Println("Error getting popularity:", err)
 			}
@@ -85,17 +85,17 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		return
 	}
 	if post.By.ID == userID {
-		post.ReviewHistory, err = api.db.ReviewHistory(post.ID)
+		post.ReviewHistory, err = api.reviewHistory(post.ID)
 		if err != nil {
 			return
 		}
 	}
-	post.Views, err = api.db.PostViewCount(postID)
+	post.Views, err = api.postViewCount(postID)
 	if err != nil {
 		log.Println(err)
 		err = nil
 	}
-	post.Attending, err = api.db.IsAttending(userID, postID)
+	post.Attending, err = api.isAttending(userID, postID)
 	if err != nil {
 		log.Println(err)
 		err = nil
@@ -120,7 +120,7 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 		}
 		t = time.Unix(unix, 0)
 	}
-	primary, err := api.db.GetUserUniversity(userID)
+	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
 	}
@@ -130,7 +130,7 @@ func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []
 //getLive returns the first count events happening after after, within network netId.
 func (api *API) getLive(netID gp.NetworkID, after time.Time, count int, userID gp.UserID) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	posts, err = api.db.GetLive(netID, after, count)
+	posts, err = api._getLive(netID, after, count)
 	if err != nil {
 		return
 	}
@@ -146,7 +146,7 @@ func (api *API) getLive(netID gp.NetworkID, after time.Time, count int, userID g
 //GetUserPosts returns the count most recent posts by userId since post `after`.
 func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	posts, err = api.db.GetUserPosts(userID, perspective, mode, index, count, category)
+	posts, err = api.getUserPosts(userID, perspective, mode, index, count, category)
 	if err != nil {
 		return
 	}
@@ -161,7 +161,7 @@ func (api *API) GetUserPosts(userID gp.UserID, perspective gp.UserID, mode int, 
 
 //UserGetPrimaryNetworkPosts returns the posts in the user's primary network (ie, their university)
 func (api *API) UserGetPrimaryNetworkPosts(userID gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
-	primary, err := api.db.GetUserUniversity(userID)
+	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
 	}
@@ -171,7 +171,7 @@ func (api *API) UserGetPrimaryNetworkPosts(userID gp.UserID, mode int, index int
 //UserGetNetworkPosts returns the posts in netId if userId can access it, or ENOTALLOWED otherwise.
 func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	in, err := api.db.UserInNetwork(userID, netID)
+	in, err := api.userInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return posts, err
@@ -184,7 +184,7 @@ func (api *API) UserGetNetworkPosts(userID gp.UserID, netID gp.NetworkID, mode i
 
 func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, category string, userID gp.UserID) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	posts, err = api.db.GetPosts(netID, mode, index, count, category)
+	posts, err = api._getPosts(netID, mode, index, count, category)
 	if err != nil {
 		return
 	}
@@ -202,7 +202,7 @@ func (api *API) getPosts(netID gp.NetworkID, mode int, index int64, count int, c
 //UserGetGroupsPosts returns up to count posts from this user's user-groups (ie, networks which aren't universities). Acts exactly the same as GetPosts in other respects, except that it will also populate the post's Group attribute.
 func (api *API) UserGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	posts, err = api.db.UserGetGroupsPosts(user, mode, index, count, category)
+	posts, err = api.userGetGroupsPosts(user, mode, index, count, category)
 	if err != nil {
 		return
 	}
@@ -237,35 +237,24 @@ func (api *API) postProcess(post gp.PostSmall, userID gp.UserID) (processed gp.P
 	for _, c := range processed.Categories {
 		if c.Tag == "event" {
 			//Don't squelch the error, that shit's useful yo
-			processed.Popularity, processed.Attendees, err = api.db.GetEventPopularity(processed.ID)
+			processed.Popularity, processed.Attendees, err = api.getEventPopularity(processed.ID)
 			if err != nil {
 				log.Println(err)
 			}
 			break
 		}
 	}
-	processed.Views, err = api.db.PostViewCount(processed.ID)
+	processed.Views, err = api.postViewCount(processed.ID)
 	if err != nil {
 		log.Println(err)
 		err = nil
 	}
-	processed.Attending, err = api.db.IsAttending(userID, processed.ID)
+	processed.Attending, err = api.isAttending(userID, processed.ID)
 	poll, err := api.userGetPoll(userID, processed.ID)
 	if err == nil {
 		processed.Poll = &poll
 	}
 	return processed, nil
-}
-
-//getComments returns comments for this post, chronologically ordered starting from the start-th.
-func (api *API) getComments(id gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
-	comments = make([]gp.Comment, 0)
-	comments, err = api.cache.GetComments(id, start, count)
-	if err != nil {
-		comments, err = api.db.GetComments(id, start, count)
-		go api.cache.AddAllCommentsFromDB(id, api.db)
-	}
-	return
 }
 
 //UserGetComments returns comments for this post, chronologically ordered starting from the start-th.
@@ -276,7 +265,7 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(userID, p.Network)
+	in, err := api.userInNetwork(userID, p.Network)
 	switch {
 	case err != nil:
 		return comments, err
@@ -290,33 +279,105 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 
 //GetCommentCount returns the total number of comments for this post, trying the cache first (so it could be inaccurate)
 func (api *API) getCommentCount(id gp.PostID) (count int) {
-	count, err := api.cache.GetCommentCount(id)
+	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ?")
 	if err != nil {
-		count = api.db.GetCommentCount(id)
+		return
+	}
+	err = s.QueryRow(id).Scan(&count)
+	if err != nil {
+		return 0
 	}
 	return count
 }
 
 //GetPostImages returns all the images attached to postID.
 func (api *API) getPostImages(postID gp.PostID) (images []string) {
-	images, _ = api.db.GetPostImages(postID)
+	s, err := api.db.Prepare("SELECT url FROM post_images WHERE post_id = ?")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	rows, err := s.Query(postID)
+	defer rows.Close()
+	log.Printf("DB hit: getImages postID(%d)\n", postID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for rows.Next() {
+		var image string
+		err = rows.Scan(&image)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		images = append(images, image)
+	}
 	return
 }
 
 //GetPostVideos returns all the videos attached to postID.
 func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
-	videos, _ = api.db.GetPostVideos(postID)
+	s, err := api.db.Prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = 'ready'")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	rows, err := s.Query(postID)
+	defer rows.Close()
+	log.Printf("DB hit: getVideos postID(%d)\n", postID)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var thumb, mp4, webm sql.NullString
+	for rows.Next() {
+		err = rows.Scan(&thumb, &mp4, &webm)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		video := gp.Video{}
+		if mp4.Valid {
+			video.MP4 = mp4.String
+		}
+		if webm.Valid {
+			video.WebM = webm.String
+		}
+		if thumb.Valid {
+			video.Thumbs = append(video.Thumbs, thumb.String)
+		}
+		videos = append(videos, video)
+	}
 	return
 }
 
+//PostCategories returns all the categories which post belongs to.
 func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, err error) {
-	return api.db.PostCategories(post)
+	s, err := api.db.Prepare("SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		c := gp.PostCategory{}
+		err = rows.Scan(&c.ID, &c.Tag, &c.Name)
+		if err != nil {
+			return
+		}
+		categories = append(categories, c)
+	}
+	return
 }
 
 //GetLikes returns all the likes for a particular post.
 func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 	log.Println("GetLikes", post)
-	l, err := api.db.GetLikes(post)
+	l, err := api._getLikes(post)
 	if err != nil {
 		return
 	}
@@ -333,12 +394,24 @@ func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 	return
 }
 
+//HasLiked retuns true if this user has already liked this post.
 func (api *API) hasLiked(user gp.UserID, post gp.PostID) (liked bool, err error) {
-	return api.db.HasLiked(user, post)
+	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, user).Scan(&liked)
+	return
 }
 
+//LikeCount returns the number of likes this post has.
 func (api *API) likeCount(post gp.PostID) (count int, err error) {
-	return api.db.LikeCount(post)
+	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&count)
+	return
 }
 
 //LikesAndCount retrieves both the likes and the total count of likes for a post.
@@ -361,7 +434,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(userID, post.Network)
+	in, err := api.userInNetwork(userID, post.Network)
 	switch {
 	case err != nil:
 		return
@@ -369,7 +442,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		err = &ENOTALLOWED
 		return
 	default:
-		commID, err = api.db.CreateComment(postID, userID, text)
+		commID, err = api.createComment(postID, userID, text)
 		if err == nil {
 			api.notifObserver.Notify(commentEvent{userID: userID, recipientID: post.By.ID, postID: postID, text: text})
 			comment := gp.Comment{ID: commID, Post: postID, Time: time.Now().UTC(), Text: text}
@@ -394,7 +467,7 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 	if !exists || err != nil {
 		return nil, NoSuchUpload
 	}
-	in, err := api.db.UserInNetwork(userID, post.Network)
+	in, err := api.userInNetwork(userID, post.Network)
 	switch {
 	case err != nil:
 		return
@@ -413,14 +486,28 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 	}
 }
 
+//AddPostImage adds an image (url) to postID.
 func (api *API) addPostImage(postID gp.PostID, url string) (err error) {
-	return api.db.AddPostImage(postID, url)
+	s, err := api.db.Prepare("INSERT INTO post_images (post_id, url) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, url)
+	return
 }
 
 //AddPostVideo attaches a URL of a video file to a post.
 func (api *API) addPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
-	err = api.db.AddPostVideo(userID, postID, videoID)
-	if err == db.InvalidVideo {
+	s, err := api.db.Prepare("INSERT INTO post_videos (post_id, video_id) SELECT ?, upload_id FROM uploads WHERE upload_id = ? AND user_id = ?")
+	if err != nil {
+		return
+	}
+	result, err := s.Exec(postID, videoID, userID)
+	if err != nil {
+		return
+	}
+	rowsAffected, err := result.RowsAffected()
+	if rowsAffected <= 0 {
 		err = InvalidVideo
 	}
 	return
@@ -432,7 +519,7 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(userID, p.Network)
+	in, err := api.userInNetwork(userID, p.Network)
 	switch {
 	case err != nil:
 		return
@@ -447,12 +534,18 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 	}
 }
 
+//ClearPostVideos deletes all videos from this post.
 func (api *API) clearPostVideos(postID gp.PostID) (err error) {
-	return api.db.ClearPostVideos(postID)
+	s, err := api.db.Prepare("DELETE FROM post_videos WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID)
+	return
 }
 
 func (api *API) needsReview(netID gp.NetworkID, categories ...string) (needsReview bool, err error) {
-	level, e := api.db.ApproveLevel(netID)
+	level, e := api.approveLevel(netID)
 	switch {
 	case e != nil:
 		return false, e
@@ -507,7 +600,7 @@ func validatePost(text string, attribs map[string]string, video gp.VideoID, imag
 
 //UserAddPostToPrimary creates a post in the user's university.
 func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	primary, err := api.db.GetUserUniversity(userID)
+	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
 	}
@@ -516,7 +609,7 @@ func (api *API) UserAddPostToPrimary(userID gp.UserID, text string, attribs map[
 
 //UserAddPost creates a post in the network netID, with the categories in []tags, or returns an ENOTALLOWED if userID is not a member of netID. If imageURL is set, the post will be created with this image. If allowUnowned, it will allow the post to be created without checking if the user "owns" this image. If video > 0, the post will be created with this video.
 func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, attribs map[string]string, video gp.VideoID, allowUnowned bool, imageURL string, pollExpiry string, pollOptions []string, tags ...string) (postID gp.PostID, pending bool, err error) {
-	in, err := api.db.UserInNetwork(userID, netID)
+	in, err := api.userInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
@@ -532,7 +625,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 		if err != nil {
 			return
 		}
-		postID, err = api.db.AddPost(userID, text, netID, pending)
+		postID, err = api.addPost(userID, text, netID, pending)
 		if err != nil {
 			return
 		}
@@ -564,7 +657,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 			}
 		}
 		if hasTag("poll", tags) {
-			err = api.db.SavePoll(postID, expiry, pollOptions)
+			err = api.savePoll(postID, expiry, pollOptions)
 			if err != nil {
 				return
 			}
@@ -579,36 +672,50 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 
 //TagPost adds these tags/categories to the post if they're not already.
 func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
-	//TODO: Only allow the post owner to tag
-	return api.db.TagPost(post, tags...)
+	if len(tags) == 0 {
+		return
+	}
+	s, err := api.db.Prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
+	if err != nil {
+		return
+	}
+	for _, tag := range tags {
+		_, err = s.Exec(post, tag)
+		if err != nil {
+			return
+		}
+	}
+	return
 }
 
-//AddLike likes a post!
-func (api *API) AddLike(user gp.UserID, postID gp.PostID) (err error) {
-	//TODO: add like to redis
+//UserSetLike marks a post as "liked" or "unliked" by this user.
+func (api *API) UserSetLike(user gp.UserID, postID gp.PostID, liked bool) (err error) {
 	post, err := api.GetPost(postID)
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil:
 		return
 	case !in:
-		return &ENOTALLOWED
+		return ENOTALLOWED
+	case !liked:
+		var s *sql.Stmt
+		s, err = api.db.Prepare("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?")
+		if err != nil {
+			return
+		}
+		_, err = s.Exec(post, user)
+		return
 	default:
-		err = api.db.CreateLike(user, postID)
+		err = api.createLike(user, postID)
 		if err != nil {
 			return
 		}
 		api.notifObserver.Notify(likeEvent{userID: user, recipientID: post.By.ID, postID: postID})
 		return
 	}
-}
-
-//DelLike idempotently un-likes a post.
-func (api *API) DelLike(user gp.UserID, post gp.PostID) (err error) {
-	return api.db.RemoveLike(user, post)
 }
 
 //setPostAttribs associates a set of key, value pairs with a particular post
@@ -631,13 +738,13 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 			attribs[attrib] = strconv.FormatInt(unix, 10)
 		}
 	}
-	return api.db.SetPostAttribs(post, attribs)
+	return api._setPostAttribs(post, attribs)
 }
 
 //getPostAttribs returns all the custom attributes of a post.
 func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
 	attribs = make(map[string]interface{})
-	atts, err := api.db.GetPostAttribs(post)
+	atts, err := api._getPostAttribs(post)
 	for attrib, val := range atts {
 		switch {
 		case attrib == "event-time":
@@ -661,22 +768,22 @@ func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
 		err = &ENOTALLOWED
 		return
 	case attending:
-		return api.db.Attend(event, user)
+		return api.attend(event, user)
 	default:
-		return api.db.UnAttend(event, user)
+		return api.unAttend(event, user)
 	}
 }
 
 //UserEvents returns all the events that a user is attending.
 func (api *API) UserEvents(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
 	events = make([]gp.PostSmall, 0)
-	events, err = api.db.UserAttending(perspective, user, category, mode, index, count)
+	events, err = api.userAttending(perspective, user, category, mode, index, count)
 	if err != nil {
 		log.Println("Error getting events:", err)
 		return
@@ -694,7 +801,26 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 
 //UserAttends returns all event IDs that a user is attending.
 func (api *API) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
-	return api.db.UserAttends(user)
+	events = make([]gp.PostID, 0)
+	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
+	s, err := api.db.Prepare(query)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(user)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PostID
+		err = rows.Scan(&post)
+		if err != nil {
+			return
+		}
+		events = append(events, post)
+	}
+	return
 }
 
 //UserDeletePost marks a post as deleted (it remains in the db but doesn't show up in feeds). You can only delete your own posts.
@@ -714,8 +840,15 @@ func (api *API) UserDeletePost(user gp.UserID, post gp.PostID) (err error) {
 	return
 }
 
+//DeletePost marks a post as deleted in the database.
 func (api *API) deletePost(post gp.PostID) (err error) {
-	return api.db.DeletePost(post)
+	q := "UPDATE wall_posts SET deleted = 1 WHERE id = ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post)
+	return
 }
 
 //UserEditPost updates this post with entirely new information. Any fields which aren't set are unchanged.
@@ -763,7 +896,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 		}
 		if len(tags) > 0 {
 			//Delete and re-set the categories
-			err = api.db.ClearCategories(postID)
+			err = api.clearCategories(postID)
 			if err != nil {
 				return
 			}
@@ -801,12 +934,12 @@ func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attende
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
 		return attendeeSummary, ENOTALLOWED
 	default:
-		attendeeSummary.Attendees, err = api.db.EventAttendees(postID)
+		attendeeSummary.Attendees, err = api.eventAttendees(postID)
 		if err != nil {
 			return
 		}
@@ -821,25 +954,682 @@ func (api *API) userGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 	if err != nil {
 		return
 	}
-	in, err := api.db.UserInNetwork(user, post.Network)
+	in, err := api.userInNetwork(user, post.Network)
 	switch {
 	case err != nil || !in:
 		err = ENOTALLOWED
 		return
 	default:
-		return api.db.GetEventPopularity(postID)
+		return api.getEventPopularity(postID)
 	}
 }
 
-func (api *API) changePostText(postID gp.PostID, text string) (err error) {
-	return api.db.ChangePostText(postID, text)
+const (
+	//WNETWORK is posts in this network.
+	WNETWORK = iota
+	//WUSER is posts by this user.
+	WUSER
+	//WGROUPS is posts in all groups this user belongs to.
+	WGROUPS
+	//WATTENDS is events this user has attended
+	WATTENDS
+)
+
+const (
+	//Base
+	baseQuery = "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
+	//Joins
+	categoryClause = "JOIN post_categories ON wall_posts.id = post_categories.post_id " +
+		"JOIN categories ON post_categories.category_id = categories.id "
+
+	attendClause = "JOIN event_attendees ON wall_posts.id = event_attendees.post_id "
+	//Wheres
+	notDeleted    = "WHERE deleted = 0 "
+	notPending    = "AND pending = 0 "
+	whereCategory = "AND categories.tag = ? "
+
+	whereBefore = "AND wall_posts.id < ? "
+	whereAfter  = "AND wall_posts.id > ? "
+
+	whereBeforeAtt = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ? AND user_id = ?) "
+	whereAfterAtt  = "AND event_attendees.time < (SELECT time FROM event_attendees WHERE post_id = ? AND user_id = ?) "
+
+	byNetwork = "AND network_id = ? "
+	byPoster  = "AND `by` = ? AND network_id IN ( " +
+		"SELECT network_id FROM user_network WHERE user_id = ? ) "
+	byUserGroups = "AND network_id IN ( " +
+		"SELECT network_id FROM user_network " +
+		"JOIN network ON user_network.network_id = network.id " +
+		"WHERE user_id = ? AND network.user_group = 1 ) "
+	byVisibleAttendance = "AND network_id IN ( " +
+		"SELECT network_id FROM user_network WHERE user_id = ? ) " +
+		"AND event_attendees.user_id = ? "
+
+	//Orders
+	orderLinear        = "ORDER BY time DESC, id DESC LIMIT ?, ?"
+	orderChronological = "ORDER BY time DESC, id DESC LIMIT 0, ?"
+
+	orderLinearAttend        = "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
+	orderChronologicalAttend = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
+)
+
+var (
+	//EBADORDER means you tried to order a post query in an unexpected way.
+	EBADORDER = gp.APIerror{Reason: "Invalid order clause!"}
+)
+
+func (api *API) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	for rows.Next() {
+		var post gp.PostSmall
+		var t string
+		var by gp.UserID
+		err = rows.Scan(&post.ID, &by, &t, &post.Text, &post.Network)
+		if err != nil {
+			return posts, err
+		}
+		post.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return posts, err
+		}
+		post.By, err = api.getUser(by)
+		if err == nil {
+			post.CommentCount = api.getCommentCount(post.ID)
+			post.Images = api.getPostImages(post.ID)
+			post.Videos = api.getPostVideos(post.ID)
+			post.LikeCount, err = api.likeCount(post.ID)
+			if err != nil {
+				return
+			}
+			if expandNetworks {
+				net, err := api.getNetwork(post.Network)
+				if err == nil {
+					post.Group = &net
+				} else {
+					log.Println("Error getting network:", err)
+				}
+			}
+			posts = append(posts, post)
+		} else {
+			log.Println("Bad post: ", post)
+		}
+	}
+	return posts, nil
 }
 
+//GetUserPosts returns the most recent count posts by userId after the post with id after.
+func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	var q string
+	if len(category) > 0 {
+		q = baseQuery + categoryClause + notDeleted + notPending + byPoster + category
+	} else {
+		q = baseQuery + notDeleted + notPending + byPoster
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinear
+	case mode == gp.OAFTER:
+		q += whereAfter + orderChronological
+	case mode == gp.OBEFORE:
+		q += whereBefore + orderChronological
+	}
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(userID, perspective, category, index, count)
+	} else {
+		rows, err = s.Query(userID, perspective, index, count)
+	}
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	return api.scanPostRows(rows, true)
+}
+
+//AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
+func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pending bool) (postID gp.PostID, err error) {
+	s, err := api.db.Prepare("INSERT INTO wall_posts(`by`, `text`, network_id, pending) VALUES (?,?,?,?)")
+	if err != nil {
+		return
+	}
+	res, err := s.Exec(userID, text, network, pending)
+	if err != nil {
+		return 0, err
+	}
+	_postID, err := res.LastInsertId()
+	postID = gp.PostID(_postID)
+	if err != nil {
+		return 0, err
+	}
+	return postID, nil
+}
+
+//GetLive returns a list of events whose event time is after "after", ordered by time.
+func (api *API) _getLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	q := "SELECT wall_posts.id, `by`, time, text, network_id " +
+		"FROM wall_posts " +
+		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
+		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
+		"ORDER BY value ASC LIMIT 0, ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(netID, after.Unix(), count)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	//The second argument is meaningless and should be removed.
+	return api.scanPostRows(rows, false)
+}
+
+//GetPosts finds posts in the network netId.
+func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	var q string
+	if len(category) > 0 {
+		q = baseQuery + categoryClause + notDeleted + notPending + byNetwork + whereCategory
+	} else {
+		q = baseQuery + notDeleted + notPending + byNetwork
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinear
+	case mode == gp.OAFTER:
+		q += whereAfter + orderChronological
+	case mode == gp.OBEFORE:
+		q += whereBefore + orderChronological
+	}
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(netID, category, index, count)
+	} else {
+		rows, err = s.Query(netID, index, count)
+	}
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	return api.scanPostRows(rows, false)
+}
+
+//ClearPostImages deletes all images from this post.
 func (api *API) clearPostImages(postID gp.PostID) (err error) {
-	return api.db.ClearPostImages(postID)
+	s, err := api.db.Prepare("DELETE FROM post_images WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID)
+	return
+}
+
+//CreateComment adds a comment on this post.
+func (api *API) createComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
+	s, err := api.db.Prepare("INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	if res, err := s.Exec(postID, userID, text); err == nil {
+		cID, err := res.LastInsertId()
+		commID = gp.CommentID(cID)
+		return commID, err
+	}
+	return 0, err
+}
+
+//GetComments returns up to count comments for this post.
+func (api *API) getComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	comments = make([]gp.Comment, 0)
+	q := "SELECT id, `by`, text, `timestamp` " +
+		"FROM post_comments " +
+		"WHERE post_id = ? " +
+		"ORDER BY `timestamp` DESC LIMIT ?, ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID, start, count)
+	log.Printf("DB hit: GetComments(%d, %d, %d)\n", postID, start, count)
+	if err != nil {
+		return comments, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var comment gp.Comment
+		comment.Post = postID
+		var timeString string
+		var by gp.UserID
+		err := rows.Scan(&comment.ID, &by, &comment.Text, &timeString)
+		if err != nil {
+			return comments, err
+		}
+		comment.Time, _ = time.Parse(mysqlTime, timeString)
+		comment.By, err = api.getUser(by)
+		if err != nil {
+			log.Printf("error getting user %d: %v\n", by, err)
+		}
+		comments = append(comments, comment)
+	}
+	return comments, nil
+}
+
+//UserGetPost returns the post postId or an error if it doesn't exist.
+//TODO: This could return without an embedded user or images array
+func (api *API) userGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, err error) {
+	s, err := api.db.Prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ? AND (pending = 0 OR `by` = ?)")
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = gp.NoSuchPost
+		}
+		return
+	}
+	post.ID = postID
+	var by gp.UserID
+	var t string
+	err = s.QueryRow(postID, userID).Scan(&post.Network, &by, &t, &post.Text)
+	if err != nil {
+		return
+	}
+	post.By, err = api.getUser(by)
+	if err != nil {
+		return
+	}
+	post.Time, err = time.Parse(mysqlTime, t)
+	if err != nil {
+		return
+	}
+	post.Images = api.getPostImages(postID)
+	post.Videos = api.getPostVideos(postID)
+	return
+}
+
+//GetPost returns the post postId or an error if it doesn't exist.
+//TODO: This could return without an embedded user or images array
+func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
+	s, err := api.db.Prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?")
+	if err != nil {
+		return
+	}
+	post.ID = postID
+	var by gp.UserID
+	var t string
+	err = s.QueryRow(postID).Scan(&post.Network, &by, &t, &post.Text)
+	if err != nil {
+		return
+	}
+	post.By, err = api.getUser(by)
+	if err != nil {
+		return
+	}
+	post.Time, err = time.Parse(mysqlTime, t)
+	if err != nil {
+		return
+	}
+	post.Images = api.getPostImages(postID)
+	post.Videos = api.getPostVideos(postID)
+	return
+}
+
+//SetPostAttribs associates all the attribute:value pairs in attrib with post.
+func (api *API) _setPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
+	if len(attribs) == 0 {
+		return
+	}
+	s, err := api.db.Prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	for attrib, value := range attribs {
+		_, err = s.Exec(post, attrib, value)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//GetPostAttribs returns a map of all attributes associated with post.
+func (api *API) _getPostAttribs(post gp.PostID) (attribs map[string]string, err error) {
+	s, err := api.db.Prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	attribs = make(map[string]string)
+	for rows.Next() {
+		var attrib, val string
+		err = rows.Scan(&attrib, &val)
+		if err != nil {
+			return
+		}
+		attribs[attrib] = val
+	}
+	return
+}
+
+//GetEventPopularity returns the popularity score (0 - 99) and the actual attendees count
+func (api *API) getEventPopularity(post gp.PostID) (popularity int, attendees int, err error) {
+	query := "SELECT COUNT(*) FROM event_attendees WHERE post_id = ?"
+	s, err := api.db.Prepare(query)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&attendees)
+	if err != nil {
+		return
+	}
+	switch {
+	case attendees > 3:
+		popularity = 100
+	case attendees > 2:
+		popularity = 75
+	case attendees > 1:
+		popularity = 50
+	case attendees > 0:
+		popularity = 25
+	default:
+		popularity = 0
+	}
+	return
+}
+
+//UserGetGroupsPosts retrieves posts from this user's groups (non-university networks)
+//TODO: Verify shit doesn't break when a user has no user-groups
+func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count int, category string) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	var q string
+	if len(category) > 0 {
+		q = baseQuery + categoryClause + notDeleted + notPending + byUserGroups + whereCategory
+	} else {
+		q = baseQuery + notDeleted + notPending + byUserGroups
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinear
+	case mode == gp.OAFTER:
+		q += whereAfter + orderChronological
+	case mode == gp.OBEFORE:
+		q += whereBefore + orderChronological
+	}
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(user, category, index, count)
+	} else {
+		rows, err = s.Query(user, index, count)
+	}
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	return api.scanPostRows(rows, true)
+}
+
+//EventAttendees returns all users who are attending this event.
+func (api *API) eventAttendees(post gp.PostID) (attendees []gp.User, err error) {
+	q := "SELECT id, firstname, avatar, official FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	if err != nil {
+		return
+	}
+	var avatar sql.NullString
+	for rows.Next() {
+		var user gp.User
+		err = rows.Scan(&user.ID, &user.Name, &avatar, &user.Official)
+		if avatar.Valid {
+			user.Avatar = avatar.String
+		}
+		attendees = append(attendees, user)
+	}
+	return
+}
+
+//UserPostCount returns this user's number of posts, from the other user's perspective (ie, only the posts in groups they share).
+func (api *API) userPostCount(perspective, user gp.UserID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM wall_posts "
+	q += "WHERE `by` = ? "
+	q += "AND deleted = 0 AND pending = 0 "
+	q += "AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?)"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user, perspective).Scan(&count)
+	return
+}
+
+//UserAttending returns all the events this user is attending.
+func (api *API) userAttending(perspective, user gp.UserID, category string, mode int, index int64, count int) (events []gp.PostSmall, err error) {
+	events = make([]gp.PostSmall, 0)
+	q := baseQuery + attendClause
+	if len(category) > 0 {
+		q += categoryClause + notDeleted + notPending + byVisibleAttendance + category
+	} else {
+		q += notDeleted + notPending + byVisibleAttendance
+	}
+	switch {
+	case mode == gp.OSTART:
+		q += orderLinearAttend
+	case mode == gp.OAFTER:
+		q += whereAfterAtt + orderChronologicalAttend
+	case mode == gp.OBEFORE:
+		q += whereBeforeAtt + orderChronologicalAttend
+	}
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		log.Println("Error preparing statement:", err, "Statement:", q)
+		return
+	}
+	var rows *sql.Rows
+	switch {
+	case len(category) > 0 && mode != gp.OSTART:
+		rows, err = s.Query(perspective, user, category, index, user, count)
+	case len(category) > 0 && mode == gp.OSTART:
+		rows, err = s.Query(perspective, user, category, index, count)
+	case mode != gp.OSTART:
+		rows, err = s.Query(perspective, user, index, user, count)
+	default:
+		rows, err = s.Query(perspective, user, index, count)
+	}
+	if err != nil {
+		log.Println("Error querying:", err, q)
+		return
+	}
+	return api.scanPostRows(rows, false)
+}
+
+//IsAttending returns true iff this user is attending/has attended this post.
+func (api *API) isAttending(userID gp.UserID, postID gp.PostID) (attending bool, err error) {
+	q := "SELECT COUNT(*) FROM event_attendees WHERE user_id = ? AND post_id = ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, postID).Scan(&attending)
+	return
+}
+
+//ChangePostText sets this post's text.
+func (api *API) changePostText(postID gp.PostID, text string) (err error) {
+	q := "UPDATE wall_posts SET text = ? WHERE id = ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(text, postID)
+	return
+}
+
+//AddCategory marks the post id as a member of category.
+func (api *API) AddCategory(id gp.PostID, category gp.CategoryID) (err error) {
+	s, err := api.db.Prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(id, category)
+	return
+}
+
+//CategoryList returns all existing categories.
+func (api *API) CategoryList() (categories []gp.PostCategory, err error) {
+	s, err := api.db.Prepare("SELECT id, tag, name FROM categories WHERE 1")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	defer rows.Close()
+	for rows.Next() {
+		c := gp.PostCategory{}
+		err = rows.Scan(&c.ID, &c.Tag, &c.Name)
+		if err != nil {
+			return
+		}
+		categories = append(categories, c)
+	}
+	return
+}
+
+//ClearCategories removes all this post's categories.
+func (api *API) clearCategories(post gp.PostID) (err error) {
+	s, err := api.db.Prepare("DELETE FROM categories WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post)
+	return
+}
+
+//CreateLike records that this user has liked this post. Acts idempotently.
+func (api *API) createLike(user gp.UserID, post gp.PostID) (err error) {
+	s, err := api.db.Prepare("REPLACE INTO post_likes (post_id, user_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(post, user)
+	return
+}
+
+//GetLikes returns all this post's likes
+func (api *API) _getLikes(post gp.PostID) (likes []gp.Like, err error) {
+	s, err := api.db.Prepare("SELECT user_id, timestamp FROM post_likes WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(post)
+	defer rows.Close()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var t string
+		var like gp.Like
+		err = rows.Scan(&like.UserID, &t)
+		if err != nil {
+			return
+		}
+		like.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return
+		}
+		likes = append(likes, like)
+	}
+	return
+}
+
+//Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
+//The results are undefined for a post which isn't an event.
+//(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
+func (api *API) attend(event gp.PostID, user gp.UserID) (err error) {
+	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
+	s, err := api.db.Prepare(query)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(event, user)
+	return
+}
+
+//UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
+func (api *API) unAttend(event gp.PostID, user gp.UserID) (err error) {
+	query := "DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?"
+	s, err := api.db.Prepare(query)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(event, user)
+	return
 }
 
 //SubjectiveRSVPCount shows the number of events otherID has attended, from the perspective of the `perspective` user (ie, not counting those events perspective can't see...)
 func (api *API) subjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (count int, err error) {
-	return api.db.SubjectiveRSVPCount(perspective, otherID)
+	q := "SELECT COUNT(*) FROM event_attendees JOIN wall_posts ON event_attendees.post_id = wall_posts.id "
+	q += "WHERE wall_posts.network_id IN ( SELECT network_id FROM user_network WHERE user_network.user_id = ? ) "
+	q += "AND wall_posts.deleted = 0 AND wall_posts.pending = 0 "
+	q += "AND event_attendees.user_id = ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(perspective, otherID).Scan(&count)
+	return
+}
+
+//KeepPostsInFuture returns all the posts which should be kept in the future
+func (api *API) keepPostsInFuture() (err error) {
+	s, err := api.db.Prepare("SELECT post_id, value FROM post_attribs WHERE attrib = 'meta-future'")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var post gp.PostID
+		var tstring string
+		err := rows.Scan(&post, &tstring)
+		d, err := time.ParseDuration(tstring)
+		if err != nil {
+			return err
+		}
+		attribs := make(map[string]string)
+		attribs["event-time"] = strconv.FormatInt(time.Now().UTC().Add(d).Unix(), 10)
+		err = api.setPostAttribs(post, attribs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func postOwner(db *sql.DB, post gp.PostID) (by gp.UserID, err error) {
+	s, err := db.Prepare("SELECT `by` FROM wall_posts WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&by)
+	return
 }

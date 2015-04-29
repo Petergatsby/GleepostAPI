@@ -203,6 +203,13 @@ func TestVote(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
+
 	err = initPolls()
 	if err != nil {
 		t.Fatalf("Error clearing poll tables: %v\n", err)

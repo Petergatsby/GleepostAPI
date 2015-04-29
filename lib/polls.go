@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -62,15 +62,15 @@ func validatePollInput(expiry time.Time, pollOptions []string) (err error) {
 }
 
 func (api *API) getPoll(postID gp.PostID) (poll gp.Poll, err error) {
-	poll.Expiry, err = api.db.GetPollExpiry(postID)
+	poll.Expiry, err = api.getPollExpiry(postID)
 	if err != nil {
 		return
 	}
-	poll.Options, err = api.db.GetPollOptions(postID)
+	poll.Options, err = api.getPollOptions(postID)
 	if err != nil {
 		return
 	}
-	poll.Votes, err = api.db.GetPollVotes(postID)
+	poll.Votes, err = api.getPollVotes(postID)
 	return
 }
 
@@ -79,7 +79,7 @@ func (api *API) userGetPoll(userID gp.UserID, postID gp.PostID) (poll gp.Subject
 	if err != nil {
 		return
 	}
-	vote, err := api.db.GetUserVote(userID, postID)
+	vote, err := api.getUserVote(userID, postID)
 	if err == nil {
 		poll.YourVote = vote
 	}
@@ -103,16 +103,124 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 	if time.Now().After(poll.Expiry) {
 		return PollExpired
 	}
-	err = api.db.UserCastVote(userID, postID, option)
-	if err == db.AlreadyVoted {
-		err = AlreadyVoted
-	}
+	err = api.userCastVote(userID, postID, option)
 	if err == nil {
 		poll, err = api.getPoll(postID)
 		if err == nil {
 			go api.cache.PublishEvent("vote", "/posts/"+strconv.Itoa(int(postID)), poll, []string{cache.PostChannel(postID)})
 		}
 		api.notifObserver.Notify(voteEvent{userID: userID, postID: postID})
+	}
+	return
+}
+
+//SavePoll adds this poll to this post.
+func (api *API) savePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []string) (err error) {
+	s, err := api.db.Prepare("INSERT INTO post_polls (post_id, expiry_time) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, pollExpiry.Format(mysqlTime))
+	if err != nil {
+		return
+	}
+	s, err = api.db.Prepare("INSERT INTO poll_options (post_id, option_id, `option`) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	for i, opt := range pollOptions {
+		_, err = s.Exec(postID, i, opt)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+//GetPollExpiry returns this poll's expiry time -- or err if this is not a poll.
+func (api *API) getPollExpiry(postID gp.PostID) (expiry time.Time, err error) {
+	s, err := api.db.Prepare("SELECT expiry_time FROM post_polls WHERE post_id = ?")
+	if err != nil {
+		return
+	}
+	var t string
+	err = s.QueryRow(postID).Scan(&t)
+	if err != nil {
+		return
+	}
+	expiry, err = time.Parse(mysqlTime, t)
+	return
+}
+
+//GetPollOptions returns this poll's options -- or err if this is not a poll.
+func (api *API) getPollOptions(postID gp.PostID) (options []string, err error) {
+	s, err := api.db.Prepare("SELECT `option` FROM poll_options WHERE post_id = ? ORDER BY option_id ASC")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var opt string
+		err = rows.Scan(&opt)
+		if err != nil {
+			return
+		}
+		options = append(options, opt)
+	}
+	return
+}
+
+//GetPollVotes returns a map of option-name:vote count for this poll, or err if this is not a poll.
+func (api *API) getPollVotes(postID gp.PostID) (votes map[string]int, err error) {
+	votes = make(map[string]int)
+	s, err := api.db.Prepare("SELECT COUNT(*) as votes, `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id GROUP BY poll_votes.option_id")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(postID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var option string
+		var count int
+		err = rows.Scan(&count, &option)
+		if err != nil {
+			return
+		}
+		votes[option] = count
+	}
+	return
+}
+
+//GetUserVote returns the way this user voted in this poll.
+func (api *API) getUserVote(userID gp.UserID, postID gp.PostID) (vote string, err error) {
+	s, err := api.db.Prepare("SELECT `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id AND poll_votes.user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(postID, userID).Scan(&vote)
+	return
+}
+
+//UserCastVote records this user's vote in this poll.
+func (api *API) userCastVote(userID gp.UserID, postID gp.PostID, option int) (err error) {
+	s, err := api.db.Prepare("INSERT INTO poll_votes (post_id, option_id, user_id) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(postID, option, userID)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok {
+			if err.Number == 1062 {
+				return AlreadyVoted
+			}
+		}
 	}
 	return
 }
