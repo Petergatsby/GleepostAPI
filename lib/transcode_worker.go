@@ -36,6 +36,7 @@ func (t transcodeWorker) claimJobs() (err error) {
 	if err != nil {
 		return
 	}
+	defer s.Close()
 	since := time.Now().UTC().Add(-30 * time.Second)
 	rows, err := s.Query(since)
 	if err != nil {
