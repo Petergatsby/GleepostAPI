@@ -23,7 +23,6 @@ var (
 
 //DB contains the database configuration and so forth.
 type DB struct {
-	stmt     map[string]*sql.Stmt
 	database *sql.DB
 	config   conf.MysqlConfig
 }
@@ -37,20 +36,10 @@ func New(conf conf.MysqlConfig) (db *DB) {
 		log.Fatalf("Error opening database: %v", err)
 	}
 	db.database.SetMaxIdleConns(conf.MaxConns)
-	db.stmt = make(map[string]*sql.Stmt)
 	return db
 }
 
-//prepare wraps sql.DB.Prepare, storing prepared statements in a map.
 func (db *DB) prepare(statement string) (stmt *sql.Stmt, err error) {
-	stmt, ok := db.stmt[statement]
-	if ok {
-		return
-	}
 	stmt, err = db.database.Prepare(statement)
-	if err == nil {
-		db.stmt[statement] = stmt
-	}
-	log.Println("Open statements:", len(db.stmt))
 	return
 }
