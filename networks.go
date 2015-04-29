@@ -118,10 +118,6 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		url := r.FormValue("url")
 		desc := r.FormValue("desc")
 		privacy := r.FormValue("privacy")
-		privacy = strings.ToLower(privacy)
-		if privacy != "public" && privacy != "private" && privacy != "secret" {
-			privacy = "private"
-		}
 		university, err := strconv.ParseBool(r.FormValue("university"))
 		var network interface{}
 		switch {

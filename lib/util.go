@@ -10,7 +10,7 @@ import (
 func (api *API) KeepPostsInFuture(pollInterval time.Duration) {
 	t := time.Tick(pollInterval)
 	for {
-		err := api.db.KeepPostsInFuture()
+		err := api.keepPostsInFuture()
 		if err != nil {
 			log.Println(err)
 		}

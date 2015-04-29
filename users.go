@@ -106,7 +106,7 @@ func changeNameHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		firstName := r.FormValue("first")
 		lastName := r.FormValue("last")
-		err := api.SetUserName(userID, firstName, lastName)
+		err := api.UserSetName(userID, firstName, lastName)
 		if err != nil {
 			jsonResponse(w, &EBADINPUT, 400)
 			return

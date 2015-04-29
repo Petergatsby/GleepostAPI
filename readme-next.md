@@ -44,10 +44,52 @@ Same as creating a regular post, except:
 
  - The post must be in the category `poll`
  - `poll-expiry` is required.
-  - `poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z`
+  - `poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z` OR a Unix timestamp.
  - `poll-options` is a comma-delimited list of the options available in this poll. 
   - You must specify at least 2 and at most 4 options, and the options must each be 3 <= n <= 50 characters long.
 eg: `hillary clinton,alien kang, alien kodos,abstain`
+
+If you have provided invalid input when creating a poll, you'll get one of the following errors:
+
+You omitted `poll-expiry` (or it was invalid):
+```json
+{"error":"Missing parameter: poll-expiry"}
+```
+
+`poll-expiry` was in the past
+```json
+{"error":"Poll ending in the past"}
+```
+
+`poll-expiry` was in the future, but too soon:
+```json
+{"error":"Poll ending too soon"}
+```
+
+`poll-expiry` too far in the future:
+```json
+{"error":"Poll ending too late"}
+```
+
+Less than two `poll-options` provided:
+```json
+{"error":"Poll: too few options"}
+```
+
+more than four `poll-options` provided:
+```json
+{"error":"Poll: too many options"}
+```
+
+The option at index N was too short (less than 3 characters):
+```json
+{"error":"Option too short: 1"}
+```
+
+The option at index N was too long (More than 50 characters):
+```json
+{"error":"Option too long: 1"}
+```
 
 #####Voting in a poll
 

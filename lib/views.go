@@ -10,7 +10,7 @@ import (
 func (api *API) RecordViews(views ...gp.PostView) {
 	//Purge views the user couldn't have made
 	views = api.verifyViews(views...)
-	err := api.db.RecordViews(views...)
+	err := api.recordViews(views...)
 	if err != nil {
 		log.Println(err)
 	}
@@ -25,7 +25,7 @@ func (api *API) verifyViews(views ...gp.PostView) (verified []gp.PostView) {
 		if err != nil {
 			log.Println(err)
 		}
-		in, err := api.db.UserInNetwork(v.User, p.Network)
+		in, err := api.userInNetwork(v.User, p.Network)
 		if in && err == nil {
 			verified = append(verified, v)
 		}
@@ -40,7 +40,7 @@ func (api *API) publishNewViewCounts(views ...gp.PostView) {
 	for _, v := range views {
 		_, ok := done[v.Post]
 		if !ok {
-			count, err := api.db.PostViewCount(v.Post)
+			count, err := api.postViewCount(v.Post)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -62,4 +62,31 @@ func (api *API) CanSubscribePosts(user gp.UserID, posts []gp.PostID) (subscribab
 		}
 	}
 	return subscribable, err
+}
+
+//RecordViews saves a bunch of post views. You probably want api.RecordViews() instead.
+func (api *API) recordViews(views ...gp.PostView) error {
+	q := "INSERT INTO post_views (user_id, post_id, ts) VALUES (?, ?, ?)"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return err
+	}
+	for _, v := range views {
+		_, err = s.Exec(v.User, v.Post, v.Time.UTC())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+//PostViewCount returns the number of total views this post has had.
+func (api *API) postViewCount(post gp.PostID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM post_views WHERE post_id = ?"
+	s, err := api.db.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&count)
+	return
 }

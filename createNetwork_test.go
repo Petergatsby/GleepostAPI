@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestCreateNetwork(t *testing.T) {
@@ -22,6 +25,13 @@ func TestCreateNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing admin status: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	client := &http.Client{}
 
@@ -67,7 +77,7 @@ func TestCreateNetwork(t *testing.T) {
 	for testNumber, nct := range tests {
 		token, err := testingGetSession(nct.Email, nct.Pass)
 		if err != nil {
-			t.Fatal("Test%v: Error logging in:", testNumber, err)
+			t.Fatalf("Test%v: Error logging in: %s\n", testNumber, err)
 		}
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
@@ -76,7 +86,7 @@ func TestCreateNetwork(t *testing.T) {
 		data["name"] = []string{nct.Name}
 		resp, err := client.PostForm(baseURL+"networks", data)
 		if err != nil {
-			t.Fatal("Test%v: Error making request:", testNumber, err)
+			t.Fatalf("Test%v: Error making request: %s\n", testNumber, err)
 		}
 		if resp.StatusCode != nct.ExpectedStatusCode {
 			t.Fatalf("Test%v: Expected status code %d, got %d\n", testNumber, nct.ExpectedStatusCode, resp.StatusCode)

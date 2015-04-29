@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -16,6 +19,12 @@ func TestChangePass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	type changePassTest struct {
 		Email              string
@@ -57,7 +66,7 @@ func TestChangePass(t *testing.T) {
 	for testNumber, cpt := range tests {
 		token, err := testingGetSession(cpt.Email, cpt.Pass)
 		if err != nil {
-			t.Fatal("Test%v: Error logging in:", testNumber, err)
+			t.Fatalf("Test%v: Error logging in: %s\n", testNumber, err)
 		}
 
 		resp, err := changePassRequest(token, cpt.OldPass, cpt.NewPass)

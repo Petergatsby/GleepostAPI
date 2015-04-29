@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestCreatePoll(t *testing.T) {
@@ -21,6 +24,13 @@ func TestCreatePoll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
@@ -127,8 +137,17 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedType:       "Error",
 		ExpectedError:      "Option too long: 1",
 	}
+	testUnix := createPollTest{
+		Token:              token,
+		Text:               "This poll was created with a UNIX timestamp",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Why do I care?", "woo"},
+		PollExpiry:         strconv.FormatInt(time.Now().Add(24*time.Hour).Unix(), 10),
+		ExpectedStatusCode: 201,
+		ExpectedType:       "CreatedPost",
+	}
 
-	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong}
+	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong, testUnix}
 	for testNumber, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
@@ -142,7 +161,7 @@ func TestCreatePoll(t *testing.T) {
 
 		resp, err := client.PostForm(baseURL+"posts", data)
 		if err != nil {
-			t.Fatalf("Test%v: Error making request:", testNumber, err)
+			t.Fatalf("Test%v: Error making request: %s\n", testNumber, err)
 		}
 		if resp.StatusCode != cpt.ExpectedStatusCode {
 			d := json.NewDecoder(resp.Body)
@@ -183,6 +202,13 @@ func TestVote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	err = initPolls()
 	if err != nil {

@@ -312,24 +312,15 @@ func postLikes(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case err != nil:
 			jsonErr(w, err, 400)
-		case liked:
-			err = api.AddLike(userID, postID)
-			if err != nil {
-				e, ok := err.(*gp.APIerror)
-				if ok && *e == lib.ENOTALLOWED {
-					jsonResponse(w, e, 403)
-				} else {
-					jsonErr(w, err, 500)
-				}
-			} else {
-				jsonResponse(w, gp.Liked{Post: postID, Liked: true}, 200)
-			}
 		default:
-			err = api.DelLike(userID, postID)
-			if err != nil {
+			err = api.UserSetLike(userID, postID, liked)
+			switch {
+			case err == lib.ENOTALLOWED:
+				jsonResponse(w, err, 403)
+			case err != nil:
 				jsonErr(w, err, 500)
-			} else {
-				jsonResponse(w, gp.Liked{Post: postID, Liked: false}, 200)
+			default:
+				jsonResponse(w, gp.Liked{Post: postID, Liked: liked}, 200)
 			}
 		}
 	}

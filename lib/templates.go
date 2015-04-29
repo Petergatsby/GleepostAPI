@@ -26,7 +26,7 @@ func (api *API) AdminCreateTemplateFromPost(admin gp.UserID, post gp.PostID) (te
 //CreateTemplateFromPost saves a Post as a Template, so it can be used again.
 func (api *API) createTemplateFromPost(post gp.PostFull) (templateID gp.TemplateID, err error) {
 	template, err := json.MarshalIndent(post, "", "\t")
-	templateID, err = api.db.CreateTemplate(1, string(template))
+	templateID, err = api.createTemplate(1, string(template))
 	return
 }
 
@@ -50,11 +50,11 @@ func (api *API) AdminPrefillUniversity(admin gp.UserID, network gp.NetworkID, un
 //PrefillUniversity adds posts generated from this template set to this university, filling in any instances of <university> with universityName.
 func (api *API) prefillUniversity(network gp.NetworkID, templateSet gp.TemplateGroupID, universityName string) (err error) {
 	//Retreive all posts in this template set
-	templates, err := api.db.GetTemplateSet(templateSet)
+	templates, err := api.getTemplateSet(templateSet)
 	if err != nil {
 		return
 	}
-	domain, err := api.db.NetworkDomain(network)
+	domain, err := api.networkDomain(network)
 	if err != nil {
 		return
 	}
@@ -152,4 +152,64 @@ func (up *userPool) DuplicateUser(userID gp.UserID) (u gp.UserID, err error) {
 
 func randomFuture() string {
 	return fmt.Sprintf("%dh%dm", rand.Intn(10), rand.Intn(59))
+}
+
+//CreateTemplate saves this post template to the db, as part of template-set group, returning its id.
+func (api *API) createTemplate(group gp.TemplateGroupID, template string) (id gp.TemplateID, err error) {
+	s, err := api.db.Prepare("INSERT INTO post_templates (`set`, template) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	res, err := s.Exec(group, template)
+	if err != nil {
+		return
+	}
+	_id, err := res.LastInsertId()
+	if err != nil {
+		return
+	}
+	id = gp.TemplateID(_id)
+	return
+}
+
+//GetTemplate returns a specific template.
+func (api *API) getTemplate(id gp.TemplateID) (template string, err error) {
+	s, err := api.db.Prepare("SELECT template FROM post_templates WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&template)
+	return
+}
+
+//GetTemplateSet returns all the post templates in this set.
+func (api *API) getTemplateSet(set gp.TemplateGroupID) (templates []string, err error) {
+	s, err := api.db.Prepare("SELECT template FROM post_templates WHERE `set` = ?")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(set)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var tmpl string
+		err = rows.Scan(&tmpl)
+		if err != nil {
+			return
+		}
+		templates = append(templates, tmpl)
+	}
+	return
+}
+
+//UpdateTemplate saves a new Template
+func (api *API) UpdateTemplate(id gp.TemplateID, group gp.TemplateGroupID, template string) (err error) {
+	s, err := api.db.Prepare("REPLACE INTO post_templates (id, `set`, template) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(id, group, template)
+	return
 }

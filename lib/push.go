@@ -12,7 +12,7 @@ import (
 
 func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.ConversationID) (err error) {
 	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.ID)
-	devices, e := api.GetDevices(other, "gleepost")
+	devices, e := getDevices(api.db, other, "gleepost")
 	if e != nil {
 		log.Println(e)
 		return
@@ -43,11 +43,15 @@ func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.
 
 func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	log.Println("Trying to send a push notification")
-	recipients := api.getParticipants(convID, false)
+	recipients, err := api.getParticipants(convID, false)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	for _, user := range recipients {
 		if user.ID != message.By.ID {
 			log.Println("Trying to send a push notification to", user.Name)
-			devices, err := api.GetDevices(user.ID, "gleepost")
+			devices, err := getDevices(api.db, user.ID, "gleepost")
 			if err != nil {
 				log.Println(err)
 			}
@@ -186,7 +190,7 @@ func (api *API) SendUpdateNotification(userID gp.UserID, message, version, platf
 
 //MassNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
 func (api *API) massNotification(message string, version string, platform string) (count int, err error) {
-	devices, err := api.db.GetAllDevices(platform)
+	devices, err := api.getAllDevices(platform)
 	if err != nil {
 		return
 	}

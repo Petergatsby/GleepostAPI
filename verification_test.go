@@ -4,23 +4,33 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestVerification(t *testing.T) {
 	err := initDB()
 	if err != nil {
-		t.Fatalf("Test%v: Error initializing db: %v\n", err)
+		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
 	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
 	if err != nil {
-		t.Fatalf("Test%v: Error initializing db: %v\n", err)
+		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
 
 	client := &http.Client{}
 
@@ -76,29 +86,21 @@ func TestVerification(t *testing.T) {
 			t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 		}
 
+		var token string
 		if vt.TestValidToken {
-			var token string
-			err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", vt.Email).Scan(&token)
-
+			token, err = getToken(db, vt.Email)
 			if err != nil {
 				t.Fatalf("Test%v: Error finding token: %v\n", testNumber, err)
 			}
-			if token == "" {
-				t.Fatalf("Test%v: Incorrect token retrieved: %v\n", testNumber, token)
-			}
-
-			resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
-			if err != nil {
-				t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
-			}
-			if vt.VerifyTwice {
-				resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
-				if err != nil {
-					t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
-				}
-			}
 		} else {
-			resp, err = client.PostForm(baseURL+"verify/12345lolololtest", make(url.Values))
+			token = "12345lolololtest"
+		}
+		resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
+		if err != nil {
+			t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
+		}
+		if vt.VerifyTwice {
+			resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
 			if err != nil {
 				t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
 			}
@@ -130,4 +132,9 @@ func TestVerification(t *testing.T) {
 			t.Fatalf("Test%v: Should not have been able to log in.", testNumber)
 		}
 	}
+}
+
+func getToken(db *sql.DB, email string) (token string, err error) {
+	err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", email).Scan(&token)
+	return
 }

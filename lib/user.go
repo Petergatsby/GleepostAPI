@@ -1,24 +1,17 @@
 package lib
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/go-sql-driver/mysql"
 )
 
-//GetUser returns the User with this ID. It hits the cache first, so some details may be out of date.
+//GetUser returns the User with this ID.
 func (api *API) getUser(id gp.UserID) (user gp.User, err error) {
-	/* Hits the api.cache then the api.db
-	only I'm not 100% confident yet with what
-	happens when you attempt to get a redis key
-	that doesn't exist in redigo! */
-	user, err = api.cache.GetUser(id)
-	if err != nil {
-		user, err = api.db.GetUser(id)
-		if err == nil {
-			api.cache.SetUser(user)
-		}
-	}
+	user, err = getUser(api.db, id)
 	return
 }
 
@@ -41,11 +34,11 @@ func (api *API) UserGetProfile(userID, otherID gp.UserID) (user gp.Profile, err 
 
 //getProfile returns the Profile (extended info) for the user with this ID.
 func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err error) {
-	user, err = api.db.GetProfile(otherID)
+	user, err = api._getProfile(otherID)
 	if err != nil {
 		return
 	}
-	user.Network, err = api.db.GetUserUniversity(user.ID)
+	user.Network, err = api.getUserUniversity(user.ID)
 	if err != nil {
 		return
 	}
@@ -54,12 +47,12 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.RSVPCount = rsvps
-	groupCount, err := api.db.SubjectiveMembershipCount(perspective, otherID)
+	groupCount, err := api.subjectiveMembershipCount(perspective, otherID)
 	if err != nil {
 		return
 	}
 	user.GroupCount = groupCount
-	postCount, err := api.db.UserPostCount(perspective, otherID)
+	postCount, err := api.userPostCount(perspective, otherID)
 	if err != nil {
 		return
 	}
@@ -67,9 +60,13 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 	return
 }
 
-//IsAdmin returns true if this user is a member of the Admin network specified in the config.
+//IsAdmin returns true if this user member has their Admin flag set.
 func (api *API) isAdmin(user gp.UserID) (admin bool) {
-	admin, err := api.db.UserIsAdmin(user)
+	s, err := api.db.Prepare("SELECT is_admin FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user).Scan(&admin)
 	if err == nil && admin {
 		return true
 	}
@@ -91,7 +88,7 @@ func (api *API) createUserSpecial(first, last, email, pass string, verified bool
 		return
 	}
 	if verified {
-		err = api.db.Verify(userID)
+		err = api.verify(userID)
 		if err != nil {
 			return
 		}
@@ -131,22 +128,22 @@ func (api *API) issueInviteEmail(email string, userID gp.UserID, netID gp.Networ
 
 //GetEmail returns this user's email address.
 func (api *API) getEmail(id gp.UserID) (email string, err error) {
-	return api.db.GetEmail(id)
+	s, err := api.db.Prepare("SELECT email FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&email)
+	return
 }
 
-//SetUserName updates this user's name.
-func (api *API) SetUserName(id gp.UserID, firstName, lastName string) (err error) {
-	return api.db.SetUserName(id, firstName, lastName)
-}
-
-//UserChangeTagline sets this user's tagline (obviously enough...)
-func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
-	return api.db.UserChangeTagline(userID, tagline)
-}
-
-//UserWithEmail returns the userID this email is associated with, or err if there isn't one.
-func (api *API) userWithEmail(email string) (id gp.UserID, err error) {
-	return api.db.UserWithEmail(email)
+//UserSetName updates this user's name.
+func (api *API) UserSetName(id gp.UserID, firstName, lastName string) (err error) {
+	s, err := api.db.Prepare("UPDATE users SET firstname = ?, lastname = ? where id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(firstName, lastName, id)
+	return
 }
 
 //UserSetProfileImage updates this user's profile image to the new url
@@ -162,26 +159,11 @@ func (api *API) UserSetProfileImage(id gp.UserID, url string) (err error) {
 }
 
 func (api *API) setProfileImage(id gp.UserID, url string) (err error) {
-	err = api.db.SetProfileImage(id, url)
-	if err == nil {
-		go api.cache.SetProfileImage(id, url)
+	s, err := api.db.Prepare("UPDATE users SET avatar = ? WHERE id = ?")
+	if err != nil {
+		return
 	}
-	return
-
-}
-
-//SetBusyStatus records whether you are busy or not.
-func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
-	err = api.db.SetBusyStatus(id, busy)
-	if err == nil {
-		go api.cache.SetBusyStatus(id, busy)
-	}
-	return
-}
-
-//BusyStatus returns true if this user is busy.
-func (api *API) BusyStatus(id gp.UserID) (busy bool, err error) {
-	busy, err = api.db.BusyStatus(id)
+	_, err = s.Exec(url, id)
 	return
 }
 
@@ -206,6 +188,155 @@ func (api *API) userHasPosted(user gp.UserID, perspective gp.UserID) (posted boo
 	return false, nil
 }
 
-func (api *API) getGlobalAdmins() (admins []gp.User, err error) {
-	return api.db.GetGlobalAdmins()
+/********************************************************************
+		User
+********************************************************************/
+
+//RegisterUser creates a user with a name a password hash and an email address.
+//They'll be created in an unverified state.
+func (api *API) _registerUser(first, last string, hash []byte, email string) (gp.UserID, error) {
+	s, err := api.db.Prepare("INSERT INTO users(firstname, lastname, password, email) VALUES (?,?,?,?)")
+	if err != nil {
+		return 0, err
+	}
+	res, err := s.Exec(first, last, hash, email)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok {
+			if err.Number == 1062 {
+				return 0, UserAlreadyExists
+			}
+		}
+		return 0, err
+	}
+	id, _ := res.LastInsertId()
+	return gp.UserID(id), nil
+}
+
+//UserChangeTagline sets this user's tagline (obviously enough)
+func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
+	s, err := api.db.Prepare("UPDATE users SET `desc` = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(tagline, userID)
+	return
+}
+
+//GetUser returns this user, or ENOSUCHUSER if they don't exist.
+func getUser(db *sql.DB, id gp.UserID) (user gp.User, err error) {
+	var av sql.NullString
+	s, err := db.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
+	log.Printf("DB hit: db.GetUser(%d)\n", id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = &gp.ENOSUCHUSER
+		}
+		return
+	}
+	if av.Valid {
+		user.Avatar = av.String
+	}
+	return
+}
+
+//GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
+func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
+	var av, desc, lastName sql.NullString
+	s, err := api.db.Prepare("SELECT `desc`, avatar, firstname, lastname, official FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
+	log.Println("DB hit: GetProfile(%d)\n", id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return user, &gp.ENOSUCHUSER
+		}
+		return
+	}
+	if av.Valid {
+		user.Avatar = av.String
+	}
+	if desc.Valid {
+		user.Desc = desc.String
+	}
+	if lastName.Valid {
+		user.FullName = user.Name + " " + lastName.String
+	}
+	user.ID = id
+	return
+}
+
+//SetBusyStatus records whether this user is busy or not.
+func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
+	s, err := api.db.Prepare("UPDATE users SET busy = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(busy, id)
+	return
+}
+
+//BusyStatus returns this user's busy status.
+func (api *API) BusyStatus(id gp.UserID) (busy bool, err error) {
+	s, err := api.db.Prepare("SELECT busy FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&busy)
+	return
+}
+
+//UserIDFromFB gets the gleepost user who has fbid associated, or an error if there is none.
+func (api *API) userIDFromFB(fbid uint64) (id gp.UserID, err error) {
+	s, err := api.db.Prepare("SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(fbid).Scan(&id)
+	if err == sql.ErrNoRows {
+		err = NoSuchUser
+	}
+	return
+}
+
+//UserWithEmail returns the user whose email this is, or an error if they don't exist.
+func (api *API) userWithEmail(email string) (id gp.UserID, err error) {
+	s, err := api.db.Prepare("SELECT id FROM users WHERE email = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(email).Scan(&id)
+	if err == sql.ErrNoRows {
+		err = NoSuchUser
+	}
+	return
+}
+
+//GetGlobalAdmins returns all users who are gleepost company admins.
+func (api *API) getGlobalAdmins() (users []gp.User, err error) {
+	users = make([]gp.User, 0)
+	s, err := api.db.Prepare("SELECT id, firstname, avatar, official FROM users WHERE is_admin = 1")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var u gp.User
+		var av sql.NullString
+		err = rows.Scan(&u.ID, &u.Name, &av, &u.Official)
+		if err != nil {
+			log.Println("GetGlobalAdmins: Problem scanning:", err)
+			continue
+		}
+		users = append(users, u)
+	}
+	return users, nil
 }

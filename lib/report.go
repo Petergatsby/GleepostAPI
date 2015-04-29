@@ -12,7 +12,7 @@ func (api *API) ReportPost(user gp.UserID, post gp.PostID, reason string) error 
 	if err != nil {
 		return err
 	}
-	in, err := api.db.UserInNetwork(user, p.Network)
+	in, err := api.userInNetwork(user, p.Network)
 	switch {
 	case err != nil:
 		return err
@@ -20,6 +20,16 @@ func (api *API) ReportPost(user gp.UserID, post gp.PostID, reason string) error 
 		log.Printf("User %d not in %d\n", user, p.Network)
 		return &ENOTALLOWED
 	default:
-		return api.db.ReportPost(user, post, reason)
+		return api.reportPost(user, post, reason)
 	}
+}
+
+//ReportPost records that this post has been flagged by user, because of reason.
+func (api *API) reportPost(user gp.UserID, post gp.PostID, reason string) (err error) {
+	s, err := api.db.Prepare("REPLACE INTO user_reports (reporter_id, type, entity_id, reason) VALUES (?, 'post', ?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(user, post, reason)
+	return
 }

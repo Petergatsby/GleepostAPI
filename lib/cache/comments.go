@@ -2,10 +2,8 @@ package cache
 
 import (
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/garyburd/redigo/redis"
 )
@@ -31,23 +29,6 @@ func (c *Cache) AddComment(id gp.PostID, comment gp.Comment) {
 	conn.Send("ZADD", key, comment.Time.Unix(), comment.ID)
 	conn.Send("MSET", baseKey+":by", comment.By.ID, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
 	conn.Flush()
-}
-
-//AddAllCommentsFromDB pulls the most recent cache.config.CommentCache comments from the database.
-func (c *Cache) AddAllCommentsFromDB(postID gp.PostID, db *db.DB) {
-	comments, err := db.GetComments(postID, 0, c.config.CommentCache)
-	if err != nil {
-		log.Println(err)
-	}
-	conn := c.pool.Get()
-	defer conn.Close()
-	key := fmt.Sprintf("posts:%d:comments", postID)
-	for _, comment := range comments {
-		baseKey := fmt.Sprintf("comments:%d", comment.ID)
-		conn.Send("ZADD", key, comment.Time.Unix(), comment.ID)
-		conn.Send("MSET", baseKey+":by", comment.By.ID, baseKey+":text", comment.Text, baseKey+":time", comment.Time.Format(time.RFC3339))
-		conn.Flush()
-	}
 }
 
 //GetComments returns the comments on this post, ordered from oldest to newest, starting from start.
