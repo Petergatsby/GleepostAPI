@@ -294,11 +294,6 @@ func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, mode
 	return messages, &ENOTALLOWED
 }
 
-func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
-	messages, err = api.getMessages(userID, convID, mode, index, count)
-	return
-}
-
 //GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.
 func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
 	conversations, err = api.getConversations(userID, start, count)
@@ -704,7 +699,7 @@ func (api *API) addMessage(convID gp.ConversationID, userID gp.UserID, text stri
 //exception.
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
-func (api *API) GetMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
+func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
 	var s *sql.Stmt
 	var q string
