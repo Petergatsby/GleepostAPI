@@ -43,6 +43,11 @@ func (t transcodeWorker) claimJobs() (err error) {
 		return
 	}
 	defer rows.Close()
+	claimStmt, err := t.db.Prepare("UPDATE `video_jobs` SET claim_time = NOW() WHERE id = ?")
+	if err != nil {
+		return
+	}
+	defer claimStmt.Close()
 	for rows.Next() {
 		var id uint64
 		var source, target string
@@ -51,7 +56,7 @@ func (t transcodeWorker) claimJobs() (err error) {
 		if err != nil {
 			return
 		}
-		_, err = t.db.Exec("UPDATE `video_jobs` SET claim_time = NOW() WHERE id = ?", id)
+		_, err = claimStmt.Exec(id)
 		if err != nil {
 			return
 		}
