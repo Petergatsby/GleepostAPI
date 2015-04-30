@@ -37,6 +37,21 @@ func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cac
 	return
 }
 
+type stubTranscodeWorker struct {
+}
+
+func (s stubTranscodeWorker) upload(file string) (url string, err error) {
+	return "https://gleepost.com/images/sm-logo.png", nil
+}
+
+func (s stubTranscodeWorker) claimLoop() {
+	return
+}
+
+func (s stubTranscodeWorker) handleDone() {
+	return
+}
+
 func (t transcodeWorker) claimJobs() (err error) {
 	s, err := t.db.Prepare("SELECT id, source, target, rotate FROM `video_jobs` WHERE completion_time IS NULL AND (claim_time IS NULL OR claim_time < ?)")
 	if err != nil {
