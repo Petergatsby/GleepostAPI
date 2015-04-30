@@ -29,7 +29,7 @@ type API struct {
 	pushers       map[string]*push.Pusher
 	statsd        g2s.Statter
 	notifObserver NotificationObserver
-	tw            TranscodeWorker
+	TW            TranscodeWorker
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -55,7 +55,7 @@ func New(conf conf.Config) (api *API) {
 	}
 	db.SetMaxIdleConns(100)
 	api.db = db
-	api.tw = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
+	api.TW = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	return
 }
 

@@ -27,6 +27,7 @@ func TestVideo(t *testing.T) {
 	config := conf.GetConfig()
 	api = lib.New(*config)
 	api.Mail = mail.NewMock()
+	api.TW = lib.StubTranscodeWorker{}
 	api.Start()
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"

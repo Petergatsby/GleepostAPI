@@ -37,18 +37,18 @@ func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cac
 	return
 }
 
-type stubTranscodeWorker struct {
+type StubTranscodeWorker struct {
 }
 
-func (s stubTranscodeWorker) upload(file string) (url string, err error) {
+func (s StubTranscodeWorker) upload(file string) (url string, err error) {
 	return "https://gleepost.com/images/sm-logo.png", nil
 }
 
-func (s stubTranscodeWorker) claimLoop() {
+func (s StubTranscodeWorker) claimLoop() {
 	return
 }
 
-func (s stubTranscodeWorker) handleDone() {
+func (s StubTranscodeWorker) handleDone() {
 	return
 }
 
