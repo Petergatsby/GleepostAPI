@@ -51,7 +51,7 @@ func (t transcodeWorker) claimJobs() (err error) {
 		if err != nil {
 			return
 		}
-		_, err = t.db.Query("UPDATE `video_jobs` SET claim_time = NOW() WHERE id = ?", id)
+		_, err = t.db.Exec("UPDATE `video_jobs` SET claim_time = NOW() WHERE id = ?", id)
 		if err != nil {
 			return
 		}
