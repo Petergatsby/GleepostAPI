@@ -53,6 +53,7 @@ func New(conf conf.Config) (api *API) {
 	if err != nil {
 		log.Println("error getting db:", err)
 	}
+	db.SetMaxIdleConns(100)
 	api.db = db
 	api.tw = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	return
