@@ -24,7 +24,13 @@ type transcodeWorker struct {
 	cache *cache.Cache
 }
 
-func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t transcodeWorker) {
+type TranscodeWorker interface {
+	upload(file string) (url string, err error)
+	claimLoop()
+	handleDone()
+}
+
+func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t TranscodeWorker) {
 	t = transcodeWorker{db: db, tq: tq, b: b, cache: cache}
 	go t.claimLoop()
 	go t.handleDone()
@@ -102,7 +108,7 @@ func (t transcodeWorker) handleDone() {
 			log.Println("There was an error transcoding this file:", res.Error)
 			continue
 		}
-		url, err := t.upload(res.File, t.b)
+		url, err := t.upload(res.File)
 		if err != nil {
 			log.Println("There was an error uploading this file:", err)
 			err = os.Remove(res.File)
@@ -166,13 +172,13 @@ func (t transcodeWorker) done(jobID uint64, URL string) (err error) {
 	return
 }
 
-func (t transcodeWorker) upload(file string, b *s3.Bucket) (URL string, err error) {
+func (t transcodeWorker) upload(file string) (URL string, err error) {
 	contentType, _ := inferContentType(file)
 	if contentType == "" {
 		err = errors.New("Couldn't determine content-type")
 		return
 	}
-	url, err := upload(file, contentType, b)
+	url, err := upload(file, contentType, t.b)
 	if err != nil {
 		return
 	}

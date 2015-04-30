@@ -68,7 +68,7 @@ func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multip
 		log.Println("Problem temp saving file:", err)
 		return inProgress, err
 	}
-	url, err := api.tw.upload(filePath, api.tw.b)
+	url, err := api.tw.upload(filePath)
 	if err != nil {
 		return inProgress, err
 	}
