@@ -300,12 +300,6 @@ func (api *API) GetConversations(userID gp.UserID, start int64, count int) (conv
 	return
 }
 
-//GetLastMessage returns the most recent message in this conversation.
-//this function doesn't appear to be used
-func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err error) {
-	return api.getLastMessage(id)
-}
-
 //MarkAllConversationsSeen sets "read" = LastMessage for all user's conversations.
 func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 	conversations, err := api.getConversations(user, 0, 10000)
@@ -647,7 +641,7 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 }
 
 //GetLastMessage retrieves the most recent message in conversation id.
-func (api *API) GetLastMessage(id gp.ConversationID) (message gp.Message, err error) {
+func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err error) {
 	var timeString string
 	var by gp.UserID
 	//Ordered by id rather than timestamp because timestamps are limited to 1-second resolution
