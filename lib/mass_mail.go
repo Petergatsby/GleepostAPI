@@ -39,7 +39,7 @@ Curing FOMO one day at a time, The Gleepost Team.</body></html>`
 
 //AllEmails returns all registered emails.
 func (api *API) allEmails() (emails []string, err error) {
-	s, err := api.db.Prepare("SELECT email FROM users")
+	s, err := api.sc.Prepare("SELECT email FROM users")
 	if err != nil {
 		return
 	}

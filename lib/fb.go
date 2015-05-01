@@ -277,7 +277,7 @@ func (api *API) fBVerify(token string) (fbid uint64, err error) {
 
 //FBGetEmail returns the email address we have on file for this facebook id, or an error if we don't have one.
 func (api *API) fBGetEmail(fbid uint64) (email string, err error) {
-	s, err := api.db.Prepare("SELECT email FROM facebook WHERE fb_id = ?")
+	s, err := api.sc.Prepare("SELECT email FROM facebook WHERE fb_id = ?")
 	if err != nil {
 		return
 	}
@@ -288,7 +288,7 @@ func (api *API) fBGetEmail(fbid uint64) (email string, err error) {
 //UserSetFB sets the associated facebook account for the gleepost user userID.
 func (api *API) userSetFB(userID gp.UserID, fbid uint64) (err error) {
 	fbSetGPUser := "REPLACE INTO facebook (user_id, fb_id) VALUES (?, ?)"
-	stmt, err := api.db.Prepare(fbSetGPUser)
+	stmt, err := api.sc.Prepare(fbSetGPUser)
 	if err != nil {
 		return
 	}
@@ -451,7 +451,7 @@ func (api *API) fBFirstTimeWithEmail(email, fbToken, invite string, fbUser uint6
 
 //CreateFBUser records the existence of this (fbid:email) pair; when the user is verified it will be converted to a full gleepost user.
 func (api *API) createFBUser(fbID uint64, email string) (err error) {
-	s, err := api.db.Prepare("INSERT INTO facebook (fb_id, email) VALUES (?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO facebook (fb_id, email) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -461,7 +461,7 @@ func (api *API) createFBUser(fbID uint64, email string) (err error) {
 
 //FBUserWithEmail returns the facebook id we've seen associated with this email, or error if none exists.
 func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
-	s, err := api.db.Prepare("SELECT fb_id FROM facebook WHERE email = ?")
+	s, err := api.sc.Prepare("SELECT fb_id FROM facebook WHERE email = ?")
 	if err != nil {
 		return
 	}
@@ -474,7 +474,7 @@ func (api *API) FBUserWithEmail(email string) (fbid uint64, err error) {
 
 //CreateFBVerification records a (hopefully random!) verification token for this facebook user.
 func (api *API) createFBVerification(fbid uint64, token string) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO facebook_verification (fb_id, token) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -484,7 +484,7 @@ func (api *API) createFBVerification(fbid uint64, token string) (err error) {
 
 //FBVerificationExists returns the user this verification token is for, or an error if there is none.
 func (api *API) fBVerificationExists(token string) (fbid uint64, err error) {
-	s, err := api.db.Prepare("SELECT fb_id FROM facebook_verification WHERE token = ?")
+	s, err := api.sc.Prepare("SELECT fb_id FROM facebook_verification WHERE token = ?")
 	if err != nil {
 		return
 	}

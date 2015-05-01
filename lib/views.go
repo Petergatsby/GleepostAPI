@@ -67,7 +67,7 @@ func (api *API) CanSubscribePosts(user gp.UserID, posts []gp.PostID) (subscribab
 //RecordViews saves a bunch of post views. You probably want api.RecordViews() instead.
 func (api *API) recordViews(views ...gp.PostView) error {
 	q := "INSERT INTO post_views (user_id, post_id, ts) VALUES (?, ?, ?)"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (api *API) recordViews(views ...gp.PostView) error {
 //PostViewCount returns the number of total views this post has had.
 func (api *API) postViewCount(post gp.PostID) (count int, err error) {
 	q := "SELECT COUNT(*) FROM post_views WHERE post_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}

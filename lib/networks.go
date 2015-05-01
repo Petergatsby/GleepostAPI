@@ -484,7 +484,7 @@ func (api *API) AdminCreateUniversity(userID gp.UserID, name string, domains ...
 
 //GetUserUniversity returns this user's primary network (ie, their university)
 func (api *API) getUserUniversity(id gp.UserID) (network gp.GroupMembership, err error) {
-	s, err := api.db.Prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
+	s, err := api.sc.Prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
 	if err != nil {
 		return
 	}
@@ -517,7 +517,7 @@ func (api *API) getUserUniversity(id gp.UserID) (network gp.GroupMembership, err
 //MasterGroup returns the id of the group which administrates this network, or NoSuchGroup if there is none.
 func (api *API) masterGroup(netID gp.NetworkID) (master gp.NetworkID, err error) {
 	q := "SELECT master_group FROM network WHERE id = ? AND master_group IS NOT NULL"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -531,7 +531,7 @@ func (api *API) masterGroup(netID gp.NetworkID) (master gp.NetworkID, err error)
 //GetRules returns all the network matching rules for every network.
 func (api *API) getRules() (rules []gp.Rule, err error) {
 	ruleSelect := "SELECT network_id, rule_type, rule_value FROM net_rules"
-	s, err := api.db.Prepare(ruleSelect)
+	s, err := api.sc.Prepare(ruleSelect)
 	if err != nil {
 		return
 	}
@@ -569,7 +569,7 @@ func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []
 		networkSelect += "AND network.user_group = 1 "
 	}
 	networkSelect += "ORDER BY last_activity DESC"
-	s, err := api.db.Prepare(networkSelect)
+	s, err := api.sc.Prepare(networkSelect)
 	if err != nil {
 		return
 	}
@@ -624,7 +624,7 @@ func (api *API) subjectiveMembershipCount(perspective, user gp.UserID) (count in
 	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
 	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
 	q += "AND user_network.user_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -640,7 +640,7 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID) (groups []gp.
 	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
 	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
 	q += "AND user_network.user_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -682,7 +682,7 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID) (groups []gp.
 //SetNetwork idempotently makes userID a member of networkID
 func (api *API) setNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
 	networkInsert := "REPLACE INTO user_network (user_id, network_id) VALUES (?, ?)"
-	s, err := api.db.Prepare(networkInsert)
+	s, err := api.sc.Prepare(networkInsert)
 	if err != nil {
 		return
 	}
@@ -695,7 +695,7 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group, privacy " +
 		"FROM network " +
 		"WHERE network.id = ?"
-	s, err := api.db.Prepare(networkSelect)
+	s, err := api.sc.Prepare(networkSelect)
 	if err != nil {
 		return
 	}
@@ -730,7 +730,7 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 //CreateNetwork creates a new network. usergroup indicates that the group is user-defined (created by a user rather than system-defined networks such as universities)
 func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string, creator gp.UserID, usergroup bool, privacy string) (group gp.Group, err error) {
 	networkInsert := "INSERT INTO network (name, parent, cover_img, `desc`, creator, user_group, privacy) VALUES (?, ?, ?, ?, ?, ?, ?)"
-	s, err := api.db.Prepare(networkInsert)
+	s, err := api.sc.Prepare(networkInsert)
 	if err != nil {
 		return
 	}
@@ -757,7 +757,7 @@ func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string
 //IsGroup returns false if netId isn't a user group, and ErrNoRows if netId doesn't exist.
 func (api *API) IsGroup(netID gp.NetworkID) (group bool, err error) {
 	isgroup := "SELECT user_group FROM network WHERE id = ?"
-	s, err := api.db.Prepare(isgroup)
+	s, err := api.sc.Prepare(isgroup)
 	if err != nil {
 		return
 	}
@@ -769,7 +769,7 @@ func (api *API) IsGroup(netID gp.NetworkID) (group bool, err error) {
 func (api *API) getNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
 	memberQuery := "SELECT user_id, users.avatar, users.firstname, users.official, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
-	s, err := api.db.Prepare(memberQuery)
+	s, err := api.sc.Prepare(memberQuery)
 	if err != nil {
 		return
 	}
@@ -824,7 +824,7 @@ func getNetworkUsers(db *sql.DB, netID gp.NetworkID) (users []gp.UserRole, err e
 //LeaveNetwork idempotently removes userID from the network netID.
 func (api *API) leaveNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {
 	leaveQuery := "DELETE FROM user_network WHERE user_id = ? AND network_id = ?"
-	s, err := api.db.Prepare(leaveQuery)
+	s, err := api.sc.Prepare(leaveQuery)
 	if err != nil {
 		return
 	}
@@ -835,7 +835,7 @@ func (api *API) leaveNetwork(userID gp.UserID, netID gp.NetworkID) (err error) {
 //CreateInvite stores an invite for a particular email to a particular network.
 func (api *API) createInvite(userID gp.UserID, netID gp.NetworkID, email string, token string) (err error) {
 	inviteQuery := "INSERT INTO group_invites (group_id, inviter, email, `key`) VALUES (?, ?, ?, ?)"
-	s, err := api.db.Prepare(inviteQuery)
+	s, err := api.sc.Prepare(inviteQuery)
 	if err != nil {
 		return
 	}
@@ -846,7 +846,7 @@ func (api *API) createInvite(userID gp.UserID, netID gp.NetworkID, email string,
 //SetNetworkImage updates a network's profile image.
 func (api *API) setNetworkImage(netID gp.NetworkID, url string) (err error) {
 	networkUpdate := "UPDATE network SET cover_img = ? WHERE id = ?"
-	s, err := api.db.Prepare(networkUpdate)
+	s, err := api.sc.Prepare(networkUpdate)
 	if err != nil {
 		return
 	}
@@ -857,7 +857,7 @@ func (api *API) setNetworkImage(netID gp.NetworkID, url string) (err error) {
 //NetworkCreator returns the user who created this network.
 func (api *API) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
 	qCreator := "SELECT creator FROM network WHERE id = ?"
-	s, err := api.db.Prepare(qCreator)
+	s, err := api.sc.Prepare(qCreator)
 	if err != nil {
 		return
 	}
@@ -868,7 +868,7 @@ func (api *API) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error
 //InviteExists returns true if there is a matching invite for email:invite (that's not already accepted)
 func (api *API) inviteExists(email, invite string) (exists bool, err error) {
 	q := "SELECT COUNT(*) FROM group_invites WHERE `email` = ? AND `key` = ? AND `accepted` = 0"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -879,7 +879,7 @@ func (api *API) inviteExists(email, invite string) (exists bool, err error) {
 //AcceptAllInvites marks all invites as accepted for this email address.
 func (api *API) acceptAllInvites(email string) (err error) {
 	q := "UPDATE group_invites SET accepted = 1 WHERE email = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -891,7 +891,7 @@ func (api *API) acceptAllInvites(email string) (err error) {
 //TODO: only do un-accepted invites (!)
 func (api *API) assignNetworksFromInvites(user gp.UserID, email string) (err error) {
 	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -903,7 +903,7 @@ func (api *API) assignNetworksFromInvites(user gp.UserID, email string) (err err
 //TODO: only do un-accepted invites (!)
 func (api *API) assignNetworksFromFBInvites(user gp.UserID, facebook uint64) (err error) {
 	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, network_id FROM fb_group_invites WHERE facebook_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -914,7 +914,7 @@ func (api *API) assignNetworksFromFBInvites(user gp.UserID, facebook uint64) (er
 //AcceptAllFBInvites marks all invites for this facebook user as accepted.
 func (api *API) acceptAllFBInvites(facebook uint64) (err error) {
 	q := "UPDATE fb_group_invites SET accepted = 1 WHERE facebook_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -925,7 +925,7 @@ func (api *API) acceptAllFBInvites(facebook uint64) (err error) {
 //UserAddFBUserToGroup records that this facebook user has been invited to netID.
 func (api *API) userAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.NetworkID) (err error) {
 	q := "INSERT INTO fb_group_invites (inviter_user_id, facebook_id, network_id) VALUES (?, ?, ?)"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -936,7 +936,7 @@ func (api *API) userAddFBUserToGroup(user gp.UserID, fbuser uint64, netID gp.Net
 //SetNetworkParent records that this network is a sub-network of parent (at the moment just used for visibility).
 func (api *API) setNetworkParent(network, parent gp.NetworkID) (err error) {
 	q := "UPDATE network SET parent = ? WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -947,7 +947,7 @@ func (api *API) setNetworkParent(network, parent gp.NetworkID) (err error) {
 //NetworkParent returns the ID of this network's parent, or zero if it has none.
 func (api *API) networkParent(netID gp.NetworkID) (parent gp.NetworkID, err error) {
 	q := "SELECT parent FROM network WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -958,7 +958,7 @@ func (api *API) networkParent(netID gp.NetworkID) (parent gp.NetworkID, err erro
 //UserRole gives this user's role:level in this network, or ENOSUCHUSER if the user isn't part of the network.
 func (api *API) UserRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
 	q := "SELECT role, role_level FROM user_network WHERE user_id = ? AND network_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -972,7 +972,7 @@ func (api *API) UserRole(user gp.UserID, network gp.NetworkID) (role gp.Role, er
 //UserSetRole sets this user's Role within this network.
 func (api *API) userSetRole(user gp.UserID, network gp.NetworkID, role gp.Role) (err error) {
 	q := "UPDATE user_network SET role = ?, role_level = ? WHERE user_id = ? AND network_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -983,7 +983,7 @@ func (api *API) userSetRole(user gp.UserID, network gp.NetworkID, role gp.Role) 
 //GroupMemberCount returns the number of members this group has.
 func (api *API) groupMemberCount(network gp.NetworkID) (count int, err error) {
 	q := "SELECT COUNT(*) FROM user_network WHERE network_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -994,7 +994,7 @@ func (api *API) groupMemberCount(network gp.NetworkID) (count int, err error) {
 //GroupConversation returns this group's conversation ID.
 func (api *API) groupConversation(group gp.NetworkID) (conversation gp.ConversationID, err error) {
 	q := "SELECT id FROM conversations WHERE group_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1004,7 +1004,7 @@ func (api *API) groupConversation(group gp.NetworkID) (conversation gp.Conversat
 
 //UserInNetwork returns true iff this user is in this network.
 func (api *API) userInNetwork(userID gp.UserID, network gp.NetworkID) (in bool, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM user_network WHERE user_id = ? AND network_id = ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM user_network WHERE user_id = ? AND network_id = ?")
 	if err != nil {
 		return
 	}
@@ -1014,7 +1014,7 @@ func (api *API) userInNetwork(userID gp.UserID, network gp.NetworkID) (in bool, 
 
 //CreateUniversity creates a new university network with this name.
 func (api *API) createUniversity(name string) (network gp.Network, err error) {
-	s, err := api.db.Prepare("INSERT INTO network (name, is_university, user_group) VALUES (?, 1, 0)")
+	s, err := api.sc.Prepare("INSERT INTO network (name, is_university, user_group) VALUES (?, 1, 0)")
 	if err != nil {
 		return
 	}
@@ -1033,7 +1033,7 @@ func (api *API) createUniversity(name string) (network gp.Network, err error) {
 
 //AddNetworkRules adds filters to this network: people registering with emails in these domains will be automatically filtered into this network.
 func (api *API) addNetworkRules(netID gp.NetworkID, domains ...string) (err error) {
-	s, err := api.db.Prepare("INSERT INTO net_rules (network_id, rule_type, rule_value) VALUES (?, 'email', ?)")
+	s, err := api.sc.Prepare("INSERT INTO net_rules (network_id, rule_type, rule_value) VALUES (?, 'email', ?)")
 	if err != nil {
 		return
 	}
@@ -1048,7 +1048,7 @@ func (api *API) addNetworkRules(netID gp.NetworkID, domains ...string) (err erro
 
 //NetworkDomain returns this network's domain.
 func (api *API) networkDomain(netID gp.NetworkID) (domain string, err error) {
-	s, err := api.db.Prepare("SELECT rule_value FROM net_rules WHERE rule_type = 'email' AND network_id = ?")
+	s, err := api.sc.Prepare("SELECT rule_value FROM net_rules WHERE rule_type = 'email' AND network_id = ?")
 	if err != nil {
 		return
 	}

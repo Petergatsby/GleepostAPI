@@ -116,7 +116,7 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 
 //SavePoll adds this poll to this post.
 func (api *API) savePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []string) (err error) {
-	s, err := api.db.Prepare("INSERT INTO post_polls (post_id, expiry_time) VALUES (?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO post_polls (post_id, expiry_time) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -124,7 +124,7 @@ func (api *API) savePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []s
 	if err != nil {
 		return
 	}
-	s, err = api.db.Prepare("INSERT INTO poll_options (post_id, option_id, `option`) VALUES (?, ?, ?)")
+	s, err = api.sc.Prepare("INSERT INTO poll_options (post_id, option_id, `option`) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
@@ -139,7 +139,7 @@ func (api *API) savePoll(postID gp.PostID, pollExpiry time.Time, pollOptions []s
 
 //GetPollExpiry returns this poll's expiry time -- or err if this is not a poll.
 func (api *API) getPollExpiry(postID gp.PostID) (expiry time.Time, err error) {
-	s, err := api.db.Prepare("SELECT expiry_time FROM post_polls WHERE post_id = ?")
+	s, err := api.sc.Prepare("SELECT expiry_time FROM post_polls WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -154,7 +154,7 @@ func (api *API) getPollExpiry(postID gp.PostID) (expiry time.Time, err error) {
 
 //GetPollOptions returns this poll's options -- or err if this is not a poll.
 func (api *API) getPollOptions(postID gp.PostID) (options []string, err error) {
-	s, err := api.db.Prepare("SELECT `option` FROM poll_options WHERE post_id = ? ORDER BY option_id ASC")
+	s, err := api.sc.Prepare("SELECT `option` FROM poll_options WHERE post_id = ? ORDER BY option_id ASC")
 	if err != nil {
 		return
 	}
@@ -177,7 +177,7 @@ func (api *API) getPollOptions(postID gp.PostID) (options []string, err error) {
 //GetPollVotes returns a map of option-name:vote count for this poll, or err if this is not a poll.
 func (api *API) getPollVotes(postID gp.PostID) (votes map[string]int, err error) {
 	votes = make(map[string]int)
-	s, err := api.db.Prepare("SELECT COUNT(*) as votes, `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id GROUP BY poll_votes.option_id")
+	s, err := api.sc.Prepare("SELECT COUNT(*) as votes, `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id GROUP BY poll_votes.option_id")
 	if err != nil {
 		return
 	}
@@ -200,7 +200,7 @@ func (api *API) getPollVotes(postID gp.PostID) (votes map[string]int, err error)
 
 //GetUserVote returns the way this user voted in this poll.
 func (api *API) getUserVote(userID gp.UserID, postID gp.PostID) (vote string, err error) {
-	s, err := api.db.Prepare("SELECT `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id AND poll_votes.user_id = ?")
+	s, err := api.sc.Prepare("SELECT `option` FROM poll_votes JOIN poll_options ON poll_votes.option_id = poll_options.option_id WHERE poll_votes.post_id = ? AND poll_votes.post_id = poll_options.post_id AND poll_votes.user_id = ?")
 	if err != nil {
 		return
 	}
@@ -210,7 +210,7 @@ func (api *API) getUserVote(userID gp.UserID, postID gp.PostID) (vote string, er
 
 //UserCastVote records this user's vote in this poll.
 func (api *API) userCastVote(userID gp.UserID, postID gp.PostID, option int) (err error) {
-	s, err := api.db.Prepare("INSERT INTO poll_votes (post_id, option_id, user_id) VALUES (?, ?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO poll_votes (post_id, option_id, user_id) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}

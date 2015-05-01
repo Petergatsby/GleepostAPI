@@ -26,7 +26,7 @@ func (api *API) ReportPost(user gp.UserID, post gp.PostID, reason string) error 
 
 //ReportPost records that this post has been flagged by user, because of reason.
 func (api *API) reportPost(user gp.UserID, post gp.PostID, reason string) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO user_reports (reporter_id, type, entity_id, reason) VALUES (?, 'post', ?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO user_reports (reporter_id, type, entity_id, reason) VALUES (?, 'post', ?, ?)")
 	if err != nil {
 		return
 	}

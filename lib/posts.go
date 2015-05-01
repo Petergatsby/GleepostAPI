@@ -279,7 +279,7 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 
 //GetCommentCount returns the total number of comments for this post, trying the cache first (so it could be inaccurate)
 func (api *API) getCommentCount(id gp.PostID) (count int) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -292,7 +292,7 @@ func (api *API) getCommentCount(id gp.PostID) (count int) {
 
 //GetPostImages returns all the images attached to postID.
 func (api *API) getPostImages(postID gp.PostID) (images []string) {
-	s, err := api.db.Prepare("SELECT url FROM post_images WHERE post_id = ?")
+	s, err := api.sc.Prepare("SELECT url FROM post_images WHERE post_id = ?")
 	if err != nil {
 		log.Println(err)
 		return
@@ -318,7 +318,7 @@ func (api *API) getPostImages(postID gp.PostID) (images []string) {
 
 //GetPostVideos returns all the videos attached to postID.
 func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
-	s, err := api.db.Prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = 'ready'")
+	s, err := api.sc.Prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = 'ready'")
 	if err != nil {
 		log.Println(err)
 		return
@@ -354,7 +354,7 @@ func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
 
 //PostCategories returns all the categories which post belongs to.
 func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, err error) {
-	s, err := api.db.Prepare("SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?")
+	s, err := api.sc.Prepare("SELECT categories.id, categories.tag, categories.name FROM post_categories JOIN categories ON post_categories.category_id = categories.id WHERE post_categories.post_id = ?")
 	if err != nil {
 		return
 	}
@@ -396,7 +396,7 @@ func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 
 //HasLiked retuns true if this user has already liked this post.
 func (api *API) hasLiked(user gp.UserID, post gp.PostID) (liked bool, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND user_id = ?")
 	if err != nil {
 		return
 	}
@@ -406,7 +406,7 @@ func (api *API) hasLiked(user gp.UserID, post gp.PostID) (liked bool, err error)
 
 //LikeCount returns the number of likes this post has.
 func (api *API) likeCount(post gp.PostID) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -488,7 +488,7 @@ func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string)
 
 //AddPostImage adds an image (url) to postID.
 func (api *API) addPostImage(postID gp.PostID, url string) (err error) {
-	s, err := api.db.Prepare("INSERT INTO post_images (post_id, url) VALUES (?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO post_images (post_id, url) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -498,7 +498,7 @@ func (api *API) addPostImage(postID gp.PostID, url string) (err error) {
 
 //AddPostVideo attaches a URL of a video file to a post.
 func (api *API) addPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (err error) {
-	s, err := api.db.Prepare("INSERT INTO post_videos (post_id, video_id) SELECT ?, upload_id FROM uploads WHERE upload_id = ? AND user_id = ?")
+	s, err := api.sc.Prepare("INSERT INTO post_videos (post_id, video_id) SELECT ?, upload_id FROM uploads WHERE upload_id = ? AND user_id = ?")
 	if err != nil {
 		return
 	}
@@ -536,7 +536,7 @@ func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.
 
 //ClearPostVideos deletes all videos from this post.
 func (api *API) clearPostVideos(postID gp.PostID) (err error) {
-	s, err := api.db.Prepare("DELETE FROM post_videos WHERE post_id = ?")
+	s, err := api.sc.Prepare("DELETE FROM post_videos WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -675,7 +675,7 @@ func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
 	if len(tags) == 0 {
 		return
 	}
-	s, err := api.db.Prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
+	s, err := api.sc.Prepare("INSERT INTO post_categories( post_id, category_id ) SELECT ? , categories.id FROM categories WHERE categories.tag = ?")
 	if err != nil {
 		return
 	}
@@ -702,7 +702,7 @@ func (api *API) UserSetLike(user gp.UserID, postID gp.PostID, liked bool) (err e
 		return ENOTALLOWED
 	case !liked:
 		var s *sql.Stmt
-		s, err = api.db.Prepare("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?")
+		s, err = api.sc.Prepare("DELETE FROM post_likes WHERE post_id = ? AND user_id = ?")
 		if err != nil {
 			return
 		}
@@ -803,7 +803,7 @@ func (api *API) UserEvents(perspective, user gp.UserID, category string, mode in
 func (api *API) UserAttends(user gp.UserID) (events []gp.PostID, err error) {
 	events = make([]gp.PostID, 0)
 	query := "SELECT post_id FROM event_attendees WHERE user_id = ?"
-	s, err := api.db.Prepare(query)
+	s, err := api.sc.Prepare(query)
 	if err != nil {
 		return
 	}
@@ -843,7 +843,7 @@ func (api *API) UserDeletePost(user gp.UserID, post gp.PostID) (err error) {
 //DeletePost marks a post as deleted in the database.
 func (api *API) deletePost(post gp.PostID) (err error) {
 	q := "UPDATE wall_posts SET deleted = 1 WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1074,7 +1074,7 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 	case mode == gp.OBEFORE:
 		q += whereBefore + orderChronological
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1093,7 +1093,7 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 
 //AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
 func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pending bool) (postID gp.PostID, err error) {
-	s, err := api.db.Prepare("INSERT INTO wall_posts(`by`, `text`, network_id, pending) VALUES (?,?,?,?)")
+	s, err := api.sc.Prepare("INSERT INTO wall_posts(`by`, `text`, network_id, pending) VALUES (?,?,?,?)")
 	if err != nil {
 		return
 	}
@@ -1117,7 +1117,7 @@ func (api *API) _getLive(netID gp.NetworkID, after time.Time, count int) (posts 
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
 		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
 		"ORDER BY value ASC LIMIT 0, ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1147,7 +1147,7 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 	case mode == gp.OBEFORE:
 		q += whereBefore + orderChronological
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1166,7 +1166,7 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 
 //ClearPostImages deletes all images from this post.
 func (api *API) clearPostImages(postID gp.PostID) (err error) {
-	s, err := api.db.Prepare("DELETE FROM post_images WHERE post_id = ?")
+	s, err := api.sc.Prepare("DELETE FROM post_images WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -1176,7 +1176,7 @@ func (api *API) clearPostImages(postID gp.PostID) (err error) {
 
 //CreateComment adds a comment on this post.
 func (api *API) createComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
-	s, err := api.db.Prepare("INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO post_comments (post_id, `by`, text) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
@@ -1195,7 +1195,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 		"FROM post_comments " +
 		"WHERE post_id = ? " +
 		"ORDER BY `timestamp` DESC LIMIT ?, ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1227,7 +1227,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 //UserGetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
 func (api *API) userGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, err error) {
-	s, err := api.db.Prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ? AND (pending = 0 OR `by` = ?)")
+	s, err := api.sc.Prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ? AND (pending = 0 OR `by` = ?)")
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = gp.NoSuchPost
@@ -1257,7 +1257,7 @@ func (api *API) userGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, e
 //GetPost returns the post postId or an error if it doesn't exist.
 //TODO: This could return without an embedded user or images array
 func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
-	s, err := api.db.Prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?")
+	s, err := api.sc.Prepare("SELECT `network_id`, `by`, `time`, text FROM wall_posts WHERE deleted = 0 AND id = ?")
 	if err != nil {
 		return
 	}
@@ -1286,7 +1286,7 @@ func (api *API) _setPostAttribs(post gp.PostID, attribs map[string]string) (err 
 	if len(attribs) == 0 {
 		return
 	}
-	s, err := api.db.Prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
@@ -1301,7 +1301,7 @@ func (api *API) _setPostAttribs(post gp.PostID, attribs map[string]string) (err 
 
 //GetPostAttribs returns a map of all attributes associated with post.
 func (api *API) _getPostAttribs(post gp.PostID) (attribs map[string]string, err error) {
-	s, err := api.db.Prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
+	s, err := api.sc.Prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
 	if err != nil {
 		return
 	}
@@ -1325,7 +1325,7 @@ func (api *API) _getPostAttribs(post gp.PostID) (attribs map[string]string, err 
 //GetEventPopularity returns the popularity score (0 - 99) and the actual attendees count
 func (api *API) getEventPopularity(post gp.PostID) (popularity int, attendees int, err error) {
 	query := "SELECT COUNT(*) FROM event_attendees WHERE post_id = ?"
-	s, err := api.db.Prepare(query)
+	s, err := api.sc.Prepare(query)
 	if err != nil {
 		return
 	}
@@ -1366,7 +1366,7 @@ func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 	case mode == gp.OBEFORE:
 		q += whereBefore + orderChronological
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1386,7 +1386,7 @@ func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 //EventAttendees returns all users who are attending this event.
 func (api *API) eventAttendees(post gp.PostID) (attendees []gp.User, err error) {
 	q := "SELECT id, firstname, avatar, official FROM users JOIN event_attendees ON user_id = id WHERE post_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1412,7 +1412,7 @@ func (api *API) userPostCount(perspective, user gp.UserID) (count int, err error
 	q += "WHERE `by` = ? "
 	q += "AND deleted = 0 AND pending = 0 "
 	q += "AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?)"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1437,7 +1437,7 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 	case mode == gp.OBEFORE:
 		q += whereBeforeAtt + orderChronologicalAttend
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		log.Println("Error preparing statement:", err, "Statement:", q)
 		return
@@ -1463,7 +1463,7 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 //IsAttending returns true iff this user is attending/has attended this post.
 func (api *API) isAttending(userID gp.UserID, postID gp.PostID) (attending bool, err error) {
 	q := "SELECT COUNT(*) FROM event_attendees WHERE user_id = ? AND post_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1474,7 +1474,7 @@ func (api *API) isAttending(userID gp.UserID, postID gp.PostID) (attending bool,
 //ChangePostText sets this post's text.
 func (api *API) changePostText(postID gp.PostID, text string) (err error) {
 	q := "UPDATE wall_posts SET text = ? WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1484,7 +1484,7 @@ func (api *API) changePostText(postID gp.PostID, text string) (err error) {
 
 //AddCategory marks the post id as a member of category.
 func (api *API) addCategory(id gp.PostID, category gp.CategoryID) (err error) {
-	s, err := api.db.Prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -1494,7 +1494,7 @@ func (api *API) addCategory(id gp.PostID, category gp.CategoryID) (err error) {
 
 //CategoryList returns all existing categories.
 func (api *API) CategoryList() (categories []gp.PostCategory, err error) {
-	s, err := api.db.Prepare("SELECT id, tag, name FROM categories WHERE 1")
+	s, err := api.sc.Prepare("SELECT id, tag, name FROM categories WHERE 1")
 	if err != nil {
 		return
 	}
@@ -1513,7 +1513,7 @@ func (api *API) CategoryList() (categories []gp.PostCategory, err error) {
 
 //ClearCategories removes all this post's categories.
 func (api *API) clearCategories(post gp.PostID) (err error) {
-	s, err := api.db.Prepare("DELETE FROM categories WHERE post_id = ?")
+	s, err := api.sc.Prepare("DELETE FROM categories WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -1523,7 +1523,7 @@ func (api *API) clearCategories(post gp.PostID) (err error) {
 
 //CreateLike records that this user has liked this post. Acts idempotently.
 func (api *API) createLike(user gp.UserID, post gp.PostID) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO post_likes (post_id, user_id) VALUES (?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO post_likes (post_id, user_id) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -1533,7 +1533,7 @@ func (api *API) createLike(user gp.UserID, post gp.PostID) (err error) {
 
 //GetLikes returns all this post's likes
 func (api *API) _getLikes(post gp.PostID) (likes []gp.Like, err error) {
-	s, err := api.db.Prepare("SELECT user_id, timestamp FROM post_likes WHERE post_id = ?")
+	s, err := api.sc.Prepare("SELECT user_id, timestamp FROM post_likes WHERE post_id = ?")
 	if err != nil {
 		return
 	}
@@ -1563,7 +1563,7 @@ func (api *API) _getLikes(post gp.PostID) (likes []gp.Like, err error) {
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
 func (api *API) attend(event gp.PostID, user gp.UserID) (err error) {
 	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
-	s, err := api.db.Prepare(query)
+	s, err := api.sc.Prepare(query)
 	if err != nil {
 		return
 	}
@@ -1574,7 +1574,7 @@ func (api *API) attend(event gp.PostID, user gp.UserID) (err error) {
 //UnAttend removes a user's attendance to an event. Idempotent, returns an error if the DB is down.
 func (api *API) unAttend(event gp.PostID, user gp.UserID) (err error) {
 	query := "DELETE FROM event_attendees WHERE post_id = ? AND user_id = ?"
-	s, err := api.db.Prepare(query)
+	s, err := api.sc.Prepare(query)
 	if err != nil {
 		return
 	}
@@ -1588,7 +1588,7 @@ func (api *API) subjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (c
 	q += "WHERE wall_posts.network_id IN ( SELECT network_id FROM user_network WHERE user_network.user_id = ? ) "
 	q += "AND wall_posts.deleted = 0 AND wall_posts.pending = 0 "
 	q += "AND event_attendees.user_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1598,7 +1598,7 @@ func (api *API) subjectiveRSVPCount(perspective gp.UserID, otherID gp.UserID) (c
 
 //KeepPostsInFuture returns all the posts which should be kept in the future
 func (api *API) keepPostsInFuture() (err error) {
-	s, err := api.db.Prepare("SELECT post_id, value FROM post_attribs WHERE attrib = 'meta-future'")
+	s, err := api.sc.Prepare("SELECT post_id, value FROM post_attribs WHERE attrib = 'meta-future'")
 	if err != nil {
 		return
 	}

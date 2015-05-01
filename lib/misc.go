@@ -35,7 +35,7 @@ func (api *API) ChasenRequest(where, when string) (err error) {
 //ContactFormRequest records a request for contact in the db.
 func (api *API) contactFormRequest(fullName, college, email, phoneNo string) (err error) {
 	q := "INSERT INTO contact_requests(full_name, college, email, phone_no) VALUES (?, ?, ?, ?)"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}

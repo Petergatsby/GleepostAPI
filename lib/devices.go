@@ -58,7 +58,7 @@ func (api *API) DeviceFeedback(deviceID string, timestamp uint32) (err error) {
 
 //AddDevice idempotently records user's ios or android device id for pushing notifications to.
 func (api *API) addDevice(user gp.UserID, deviceType string, deviceID string, application string) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO devices (user_id, device_type, device_id, application) VALUES (?, ?, ?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO devices (user_id, device_type, device_id, application) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return
 	}
@@ -69,7 +69,7 @@ func (api *API) addDevice(user gp.UserID, deviceType string, deviceID string, ap
 //DeleteDevice deregisters this device (if it exists).
 func (api *API) deleteDevice(user gp.UserID, device string) (err error) {
 	log.Printf("Deleting %d's device: %s\n", user, device)
-	s, err := api.db.Prepare("DELETE FROM devices WHERE user_id = ? AND device_id = ?")
+	s, err := api.sc.Prepare("DELETE FROM devices WHERE user_id = ? AND device_id = ?")
 	if err != nil {
 		return
 	}
@@ -79,7 +79,7 @@ func (api *API) deleteDevice(user gp.UserID, device string) (err error) {
 
 //Feedback deletes the ios device with this ID unless it has been re-registered more recently than timestamp.
 func (api *API) feedback(deviceID string, timestamp time.Time) (err error) {
-	s, err := api.db.Prepare("DELETE FROM devices WHERE device_id = ? AND last_update < ? AND device_type = 'ios'")
+	s, err := api.sc.Prepare("DELETE FROM devices WHERE device_id = ? AND last_update < ? AND device_type = 'ios'")
 	r, err := s.Exec(deviceID, timestamp)
 	n, _ := r.RowsAffected()
 	log.Printf("Feedback: %d devices deleted\n", n)
@@ -88,7 +88,7 @@ func (api *API) feedback(deviceID string, timestamp time.Time) (err error) {
 
 //GetAllDevices returns all pushable devices on this platform. Use with caution!
 func (api *API) getAllDevices(platform string) (devices []gp.Device, err error) {
-	s, err := api.db.Prepare("SELECT user_id, device_type, device_id FROM devices WHERE device_type = ?")
+	s, err := api.sc.Prepare("SELECT user_id, device_type, device_id FROM devices WHERE device_type = ?")
 	if err != nil {
 		return
 	}

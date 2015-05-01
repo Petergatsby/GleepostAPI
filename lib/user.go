@@ -62,7 +62,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 
 //IsAdmin returns true if this user member has their Admin flag set.
 func (api *API) isAdmin(user gp.UserID) (admin bool) {
-	s, err := api.db.Prepare("SELECT is_admin FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT is_admin FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -128,7 +128,7 @@ func (api *API) issueInviteEmail(email string, userID gp.UserID, netID gp.Networ
 
 //GetEmail returns this user's email address.
 func (api *API) getEmail(id gp.UserID) (email string, err error) {
-	s, err := api.db.Prepare("SELECT email FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT email FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -138,7 +138,7 @@ func (api *API) getEmail(id gp.UserID) (email string, err error) {
 
 //UserSetName updates this user's name.
 func (api *API) UserSetName(id gp.UserID, firstName, lastName string) (err error) {
-	s, err := api.db.Prepare("UPDATE users SET firstname = ?, lastname = ? where id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET firstname = ?, lastname = ? where id = ?")
 	if err != nil {
 		return
 	}
@@ -159,7 +159,7 @@ func (api *API) UserSetProfileImage(id gp.UserID, url string) (err error) {
 }
 
 func (api *API) setProfileImage(id gp.UserID, url string) (err error) {
-	s, err := api.db.Prepare("UPDATE users SET avatar = ? WHERE id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET avatar = ? WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -195,7 +195,7 @@ func (api *API) userHasPosted(user gp.UserID, perspective gp.UserID) (posted boo
 //RegisterUser creates a user with a name a password hash and an email address.
 //They'll be created in an unverified state.
 func (api *API) _registerUser(first, last string, hash []byte, email string) (gp.UserID, error) {
-	s, err := api.db.Prepare("INSERT INTO users(firstname, lastname, password, email) VALUES (?,?,?,?)")
+	s, err := api.sc.Prepare("INSERT INTO users(firstname, lastname, password, email) VALUES (?,?,?,?)")
 	if err != nil {
 		return 0, err
 	}
@@ -214,7 +214,7 @@ func (api *API) _registerUser(first, last string, hash []byte, email string) (gp
 
 //UserChangeTagline sets this user's tagline (obviously enough)
 func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) {
-	s, err := api.db.Prepare("UPDATE users SET `desc` = ? WHERE id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET `desc` = ? WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -246,7 +246,7 @@ func getUser(db *sql.DB, id gp.UserID) (user gp.User, err error) {
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 	var av, desc, lastName sql.NullString
-	s, err := api.db.Prepare("SELECT `desc`, avatar, firstname, lastname, official FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT `desc`, avatar, firstname, lastname, official FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -273,7 +273,7 @@ func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 
 //SetBusyStatus records whether this user is busy or not.
 func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
-	s, err := api.db.Prepare("UPDATE users SET busy = ? WHERE id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET busy = ? WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -283,7 +283,7 @@ func (api *API) SetBusyStatus(id gp.UserID, busy bool) (err error) {
 
 //BusyStatus returns this user's busy status.
 func (api *API) BusyStatus(id gp.UserID) (busy bool, err error) {
-	s, err := api.db.Prepare("SELECT busy FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT busy FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -293,7 +293,7 @@ func (api *API) BusyStatus(id gp.UserID) (busy bool, err error) {
 
 //UserIDFromFB gets the gleepost user who has fbid associated, or an error if there is none.
 func (api *API) userIDFromFB(fbid uint64) (id gp.UserID, err error) {
-	s, err := api.db.Prepare("SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL")
+	s, err := api.sc.Prepare("SELECT user_id FROM facebook WHERE fb_id = ? AND user_id IS NOT NULL")
 	if err != nil {
 		return
 	}
@@ -306,7 +306,7 @@ func (api *API) userIDFromFB(fbid uint64) (id gp.UserID, err error) {
 
 //UserWithEmail returns the user whose email this is, or an error if they don't exist.
 func (api *API) userWithEmail(email string) (id gp.UserID, err error) {
-	s, err := api.db.Prepare("SELECT id FROM users WHERE email = ?")
+	s, err := api.sc.Prepare("SELECT id FROM users WHERE email = ?")
 	if err != nil {
 		return
 	}
@@ -320,7 +320,7 @@ func (api *API) userWithEmail(email string) (id gp.UserID, err error) {
 //GetGlobalAdmins returns all users who are gleepost company admins.
 func (api *API) getGlobalAdmins() (users []gp.User, err error) {
 	users = make([]gp.User, 0)
-	s, err := api.db.Prepare("SELECT id, firstname, avatar, official FROM users WHERE is_admin = 1")
+	s, err := api.sc.Prepare("SELECT id, firstname, avatar, official FROM users WHERE is_admin = 1")
 	if err != nil {
 		return
 	}

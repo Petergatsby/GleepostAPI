@@ -36,7 +36,7 @@ func (api *API) ApproveAccess(userID gp.UserID) (access gp.ApprovePermission, er
 
 func (api *API) approveAccess(userID gp.UserID, netID gp.NetworkID) (perm gp.ApprovePermission, err error) {
 	q := "SELECT role_level FROM user_network JOIN network ON network.master_group = user_network.network_id WHERE network.id = ? AND user_network.user_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -461,7 +461,7 @@ func (api *API) ResubmitPost(userID gp.UserID, postID gp.PostID, netID gp.Networ
 //ApproveLevel returns this network's current approval level.
 func (api *API) approveLevel(netID gp.NetworkID) (level gp.ApproveLevel, err error) {
 	q := "SELECT approval_level, approved_categories FROM network WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -494,7 +494,7 @@ func (api *API) setApproveLevel(netID gp.NetworkID, level int) (err error) {
 	default:
 		return gp.APIerror{Reason: "That's not a valid approve level"}
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -520,7 +520,7 @@ func (api *API) pendingPosts(netID gp.NetworkID) (pending []gp.PostSmall, err er
 		"FROM wall_posts " +
 		"WHERE deleted = 0 AND pending = 1 AND network_id = ? " +
 		"ORDER BY time DESC "
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -536,7 +536,7 @@ func (api *API) pendingPosts(netID gp.NetworkID) (pending []gp.PostSmall, err er
 func (api *API) reviewHistory(postID gp.PostID) (history []gp.ReviewEvent, err error) {
 	history = make([]gp.ReviewEvent, 0)
 	q := "SELECT action, `by`, reason, `timestamp` FROM post_reviews WHERE post_id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -575,7 +575,7 @@ func (api *API) reviewHistory(postID gp.PostID) (history []gp.ReviewEvent, err e
 //PendingStatus returns the current approval status of this post. 0 = approved, 1 = pending, 2 = rejected.
 func (api *API) pendingStatus(postID gp.PostID) (pending int, err error) {
 	q := "SELECT pending FROM wall_posts WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -587,7 +587,7 @@ func (api *API) pendingStatus(postID gp.PostID) (pending int, err error) {
 func (api *API) approvePost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
 	//Should be one transaction...
 	q := "INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'approved', ?, ?)"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -596,7 +596,7 @@ func (api *API) approvePost(userID gp.UserID, postID gp.PostID, reason string) (
 		return
 	}
 	q2 := "UPDATE wall_posts SET pending = 0 WHERE id = ?"
-	s, err = api.db.Prepare(q2)
+	s, err = api.sc.Prepare(q2)
 	if err != nil {
 		return
 	}
@@ -605,7 +605,7 @@ func (api *API) approvePost(userID gp.UserID, postID gp.PostID, reason string) (
 		return
 	}
 	q3 := "UPDATE wall_posts SET time = NOW() WHERE id = ?"
-	s, err = api.db.Prepare(q3)
+	s, err = api.sc.Prepare(q3)
 	if err != nil {
 		return
 	}
@@ -630,7 +630,7 @@ func (api *API) getNetworkApproved(netID gp.NetworkID, mode int, index int64, co
 		q += "AND wall_posts.time < (SELECT time FROM wall_posts WHERE post_id = ?) " +
 			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -645,7 +645,7 @@ func (api *API) getNetworkApproved(netID gp.NetworkID, mode int, index int64, co
 //RejectPost marks this post as 'rejected'.
 func (api *API) rejectPost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
 	q := "INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'rejected', ?, ?)"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -654,7 +654,7 @@ func (api *API) rejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 		return
 	}
 	q = "UPDATE wall_posts SET pending = 2 WHERE id = ?"
-	s, err = api.db.Prepare(q)
+	s, err = api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -664,7 +664,7 @@ func (api *API) rejectPost(userID gp.UserID, postID gp.PostID, reason string) (e
 
 //ResubmitPost marks this post as 'pending' again.
 func (api *API) resubmitPost(userID gp.UserID, postID gp.PostID, reason string) (err error) {
-	s, err := api.db.Prepare("INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'edited', ?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO post_reviews (post_id, action, `by`, reason) VALUES (?, 'edited', ?, ?)")
 	if err != nil {
 		return
 	}
@@ -672,7 +672,7 @@ func (api *API) resubmitPost(userID gp.UserID, postID gp.PostID, reason string) 
 	if err != nil {
 		return
 	}
-	s, err = api.db.Prepare("UPDATE wall_posts SET pending = 1 WHERE id = ?")
+	s, err = api.sc.Prepare("UPDATE wall_posts SET pending = 1 WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -697,7 +697,7 @@ func (api *API) getNetworkRejected(netID gp.NetworkID, mode int, index int64, co
 		q += "AND wall_posts.time < (SELECT time FROM wall_posts WHERE post_id = ?) " +
 			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -719,7 +719,7 @@ func (api *API) userPendingPosts(userID gp.UserID) (pending []gp.PostSmall, err 
 		"WHERE deleted = 0 AND pending > 0 AND wall_posts.`by` = ? " +
 		"GROUP BY wall_posts.id " +
 		"ORDER BY CASE WHEN MAX(post_reviews.timestamp) IS NULL THEN wall_posts.time ELSE MAX(post_reviews.timestamp) END DESC "
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}

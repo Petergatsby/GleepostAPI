@@ -64,7 +64,7 @@ func (api *API) searchUsersInNetwork(first, last string, netID gp.NetworkID) (us
 	first += "%"
 	last += "%"
 	log.Println(search, first, last)
-	s, err := api.db.Prepare(search)
+	s, err := api.sc.Prepare(search)
 	if err != nil {
 		return
 	}
@@ -101,7 +101,7 @@ func (api *API) searchGroups(parent gp.NetworkID, name string) (groups []gp.Grou
 		"AND privacy != 'secret' " +
 		"AND name LIKE ?"
 	name = "%" + name + "%"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}

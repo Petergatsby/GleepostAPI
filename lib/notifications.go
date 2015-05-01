@@ -357,7 +357,7 @@ func (api *API) getUserNotifications(id gp.UserID, includeSeen bool) (notificati
 	} else {
 		notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? ORDER BY `id` DESC LIMIT 0, 20"
 	}
-	s, err := api.db.Prepare(notificationSelect)
+	s, err := api.sc.Prepare(notificationSelect)
 	if err != nil {
 		return
 	}
@@ -400,7 +400,7 @@ func (api *API) getUserNotifications(id gp.UserID, includeSeen bool) (notificati
 
 //MarkNotificationsSeen records that this user has seen all their notifications.
 func (api *API) markNotificationsSeen(user gp.UserID, upTo gp.NotificationID) (err error) {
-	s, err := api.db.Prepare("UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?")
+	s, err := api.sc.Prepare("UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?")
 	if err != nil {
 		return
 	}

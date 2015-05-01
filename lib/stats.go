@@ -320,7 +320,7 @@ func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 
 //LikesForUserBetween finds all likes for user's posts in the interval between start and finish.
 func (api *API) likesForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
 	}
@@ -330,7 +330,7 @@ func (api *API) likesForUserBetween(user gp.UserID, start time.Time, finish time
 
 //CommentsForUserBetween - Same as LikesForUserBetween, but for comments
 func (api *API) commentsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
 	}
@@ -340,7 +340,7 @@ func (api *API) commentsForUserBetween(user gp.UserID, start time.Time, finish t
 
 //PostsForUserBetween returns the number of posts a user has made in this interval.
 func (api *API) postsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND `time` > ? AND `time` < ? AND pending = 0 AND deleted = 0")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND `time` > ? AND `time` < ? AND pending = 0 AND deleted = 0")
 	if err != nil {
 		return
 	}
@@ -350,7 +350,7 @@ func (api *API) postsForUserBetween(user gp.UserID, start time.Time, finish time
 
 //RsvpsForUserBetween - Same as LikesForUserBetween, but for "attending"s
 func (api *API) rsvpsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `time` > ? AND `time` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `time` > ? AND `time` < ?")
 	if err != nil {
 		return
 	}
@@ -360,7 +360,7 @@ func (api *API) rsvpsForUserBetween(user gp.UserID, start time.Time, finish time
 
 //CohortSignedUpBetween returns all the users who signed up between start and finish.
 func (api *API) cohortSignedUpBetween(start time.Time, finish time.Time) (users []gp.UserID, err error) {
-	s, err := api.db.Prepare("SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?")
+	s, err := api.sc.Prepare("SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
 	}
@@ -382,7 +382,7 @@ func (api *API) cohortSignedUpBetween(start time.Time, finish time.Time) (users 
 
 //UsersVerifiedInCohort returns all the users who have verified their account in the cohort signed up between start and finish.
 func (api *API) usersVerifiedInCohort(start time.Time, finish time.Time) (users []gp.UserID, err error) {
-	s, err := api.db.Prepare("SELECT id FROM users WHERE `verified` = 1 AND `timestamp` > ? AND `timestamp` < ?")
+	s, err := api.sc.Prepare("SELECT id FROM users WHERE `verified` = 1 AND `timestamp` > ? AND `timestamp` < ?")
 	rows, err := s.Query(start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime))
 	if err != nil {
 		return
@@ -404,17 +404,17 @@ func (api *API) usersActivityInCohort(activity string, start time.Time, finish t
 	var s *sql.Stmt
 	switch {
 	case activity == "liked":
-		s, err = api.db.Prepare("SELECT DISTINCT user_id FROM post_likes WHERE user_id IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
+		s, err = api.sc.Prepare("SELECT DISTINCT user_id FROM post_likes WHERE user_id IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	case activity == "commented":
-		s, err = api.db.Prepare("SELECT DISTINCT `by` FROM post_comments WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
+		s, err = api.sc.Prepare("SELECT DISTINCT `by` FROM post_comments WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	case activity == "posted":
-		s, err = api.db.Prepare("SELECT DISTINCT `by` FROM wall_posts WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?) AND deleted = 0")
+		s, err = api.sc.Prepare("SELECT DISTINCT `by` FROM wall_posts WHERE `by` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?) AND deleted = 0")
 	case activity == "attended":
-		s, err = api.db.Prepare("SELECT DISTINCT `user_id` FROM event_attendees WHERE `user_id` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
+		s, err = api.sc.Prepare("SELECT DISTINCT `user_id` FROM event_attendees WHERE `user_id` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	case activity == "initiated":
-		s, err = api.db.Prepare("SELECT DISTINCT `initiator` FROM conversations WHERE `initiator` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
+		s, err = api.sc.Prepare("SELECT DISTINCT `initiator` FROM conversations WHERE `initiator` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	case activity == "messaged":
-		s, err = api.db.Prepare("SELECT DISTINCT `from` FROM chat_messages WHERE `from` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
+		s, err = api.sc.Prepare("SELECT DISTINCT `from` FROM chat_messages WHERE `from` IN (SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?)")
 	default:
 		err = errors.New("no such activity")
 		return
@@ -440,7 +440,7 @@ func (api *API) usersActivityInCohort(activity string, start time.Time, finish t
 
 //LikesForPostBetween returns the number of likes this post has gained in the interval between start and finish.
 func (api *API) likesForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
 	}
@@ -451,7 +451,7 @@ func (api *API) likesForPostBetween(post gp.PostID, start time.Time, finish time
 
 //CommentsForPostBetween returns the number of comments this post has gained in the interval between start and finish.
 func (api *API) commentsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
 	}
@@ -462,7 +462,7 @@ func (api *API) commentsForPostBetween(post gp.PostID, start time.Time, finish t
 
 //RsvpsForPostBetween returns the number of RSVPs this post has gained in the interval between start and finish.
 func (api *API) rsvpsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id = ? AND `time` > ? AND `time` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id = ? AND `time` > ? AND `time` < ?")
 	if err != nil {
 		return
 	}

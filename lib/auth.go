@@ -435,7 +435,7 @@ func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err e
 
 //GetHash returns this user's password hash (by username).
 func (api *API) getHash(user string) (hash []byte, id gp.UserID, err error) {
-	s, err := api.db.Prepare("SELECT id, password FROM users WHERE email = ?")
+	s, err := api.sc.Prepare("SELECT id, password FROM users WHERE email = ?")
 	if err != nil {
 		return
 	}
@@ -445,7 +445,7 @@ func (api *API) getHash(user string) (hash []byte, id gp.UserID, err error) {
 
 //GetHashByID returns this user's password hash.
 func (api *API) getHashByID(id gp.UserID) (hash []byte, err error) {
-	s, err := api.db.Prepare("SELECT password FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT password FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -455,7 +455,7 @@ func (api *API) getHashByID(id gp.UserID) (hash []byte, err error) {
 
 //PassUpdate replaces this user's password hash with a new one.
 func (api *API) passUpdate(id gp.UserID, newHash []byte) (err error) {
-	s, err := api.db.Prepare("UPDATE users SET password = ? WHERE id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET password = ? WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -465,7 +465,7 @@ func (api *API) passUpdate(id gp.UserID, newHash []byte) (err error) {
 
 //SetVerificationToken records a (hopefully random!) verification token for this user.
 func (api *API) setVerificationToken(id gp.UserID, token string) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO `verification` (user_id, token) VALUES (?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO `verification` (user_id, token) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -475,7 +475,7 @@ func (api *API) setVerificationToken(id gp.UserID, token string) (err error) {
 
 //VerificationTokenExists returns the user who this verification token belongs to, or an error if there isn't one.
 func (api *API) verificationTokenExists(token string) (id gp.UserID, err error) {
-	s, err := api.db.Prepare("SELECT user_id FROM verification WHERE token = ?")
+	s, err := api.sc.Prepare("SELECT user_id FROM verification WHERE token = ?")
 	if err != nil {
 		return
 	}
@@ -485,7 +485,7 @@ func (api *API) verificationTokenExists(token string) (id gp.UserID, err error) 
 
 //Verify marks a user as verified.
 func (api *API) verify(id gp.UserID) (err error) {
-	s, err := api.db.Prepare("UPDATE users SET verified = 1 WHERE id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET verified = 1 WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -495,7 +495,7 @@ func (api *API) verify(id gp.UserID) (err error) {
 
 //IsVerified returns true if this user is verified.
 func (api *API) isVerified(user gp.UserID) (verified bool, err error) {
-	s, err := api.db.Prepare("SELECT verified FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT verified FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -505,7 +505,7 @@ func (api *API) isVerified(user gp.UserID) (verified bool, err error) {
 
 //AddPasswordRecovery records a password recovery token for this user.
 func (api *API) addPasswordRecovery(userID gp.UserID, token string) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO password_recovery (token, user) VALUES (?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO password_recovery (token, user) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -515,7 +515,7 @@ func (api *API) addPasswordRecovery(userID gp.UserID, token string) (err error) 
 
 //CheckPasswordRecovery returns true if this password recovery user:token pair exists.
 func (api *API) checkPasswordRecovery(userID gp.UserID, token string) (exists bool, err error) {
-	s, err := api.db.Prepare("SELECT count(*) FROM password_recovery WHERE user = ? and token = ?")
+	s, err := api.sc.Prepare("SELECT count(*) FROM password_recovery WHERE user = ? and token = ?")
 	if err != nil {
 		return
 	}
@@ -525,7 +525,7 @@ func (api *API) checkPasswordRecovery(userID gp.UserID, token string) (exists bo
 
 //DeletePasswordRecovery removes this password recovery token so it can't be used again.
 func (api *API) deletePasswordRecovery(userID gp.UserID, token string) (err error) {
-	s, err := api.db.Prepare("DELETE FROM password_recovery WHERE user = ? and token = ?")
+	s, err := api.sc.Prepare("DELETE FROM password_recovery WHERE user = ? and token = ?")
 	if err != nil {
 		return
 	}
@@ -540,7 +540,7 @@ func (api *API) deletePasswordRecovery(userID gp.UserID, token string) (err erro
 //TokenExists returns true if this user:token pair exists, false otherwise (or in the case of error)
 func (api *API) tokenExists(id gp.UserID, token string) bool {
 	var expiry string
-	s, err := api.db.Prepare("SELECT expiry FROM tokens WHERE user_id = ? AND token = ?")
+	s, err := api.sc.Prepare("SELECT expiry FROM tokens WHERE user_id = ? AND token = ?")
 	if err != nil {
 		return false
 	}
@@ -557,7 +557,7 @@ func (api *API) tokenExists(id gp.UserID, token string) bool {
 
 //AddToken records this session token in the database.
 func (api *API) addToken(token gp.Token) (err error) {
-	s, err := api.db.Prepare("INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}

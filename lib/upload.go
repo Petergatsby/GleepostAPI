@@ -87,7 +87,7 @@ func cloudfrontify(url string) (cdnurl string) {
 
 //userAddUpload records that this user has uploaded this URL.
 func (api *API) userAddUpload(id gp.UserID, url string) (err error) {
-	s, err := api.db.Prepare("INSERT INTO uploads (user_id, url) VALUES (?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO uploads (user_id, url) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -97,7 +97,7 @@ func (api *API) userAddUpload(id gp.UserID, url string) (err error) {
 
 //UserUploadExists returns true if the user has uploaded the file at url
 func (api *API) userUploadExists(id gp.UserID, url string) (exists bool, err error) {
-	s, err := api.db.Prepare("SELECT COUNT(*) > 0 FROM uploads WHERE user_id = ? AND url = ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) > 0 FROM uploads WHERE user_id = ? AND url = ?")
 	if err != nil {
 		return
 	}
@@ -108,7 +108,7 @@ func (api *API) userUploadExists(id gp.UserID, url string) (exists bool, err err
 //GetUploadStatus returns the current status of this upload.
 //That's one of "uploaded", "transcode", "transfer", "done".
 func (api *API) GetUploadStatus(user gp.UserID, upload gp.VideoID) (UploadStatus gp.UploadStatus, err error) {
-	s, err := api.db.Prepare("SELECT status, mp4_url, webm_url, url FROM uploads WHERE upload_id = ?")
+	s, err := api.sc.Prepare("SELECT status, mp4_url, webm_url, url FROM uploads WHERE upload_id = ?")
 	if err != nil {
 		return
 	}
@@ -146,7 +146,7 @@ func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, er
 		ID = uploadStatus.ID
 	}
 	log.Println(q)
-	s, err = api.db.Prepare(q)
+	s, err = api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -183,7 +183,7 @@ func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, er
 
 //CreateJob records a Transcoding job into the queue
 func (api *API) createJob(source, target string, rotate bool, parent gp.VideoID) (err error) {
-	s, err := api.db.Prepare("INSERT INTO video_jobs(parent_id, source, target, rotate) VALUES (?,?,?,?)")
+	s, err := api.sc.Prepare("INSERT INTO video_jobs(parent_id, source, target, rotate) VALUES (?,?,?,?)")
 	if err != nil {
 		return
 	}

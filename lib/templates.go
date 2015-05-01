@@ -156,7 +156,7 @@ func randomFuture() string {
 
 //CreateTemplate saves this post template to the db, as part of template-set group, returning its id.
 func (api *API) createTemplate(group gp.TemplateGroupID, template string) (id gp.TemplateID, err error) {
-	s, err := api.db.Prepare("INSERT INTO post_templates (`set`, template) VALUES (?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO post_templates (`set`, template) VALUES (?, ?)")
 	if err != nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (api *API) createTemplate(group gp.TemplateGroupID, template string) (id gp
 
 //GetTemplate returns a specific template.
 func (api *API) getTemplate(id gp.TemplateID) (template string, err error) {
-	s, err := api.db.Prepare("SELECT template FROM post_templates WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT template FROM post_templates WHERE id = ?")
 	if err != nil {
 		return
 	}
@@ -184,7 +184,7 @@ func (api *API) getTemplate(id gp.TemplateID) (template string, err error) {
 
 //GetTemplateSet returns all the post templates in this set.
 func (api *API) getTemplateSet(set gp.TemplateGroupID) (templates []string, err error) {
-	s, err := api.db.Prepare("SELECT template FROM post_templates WHERE `set` = ?")
+	s, err := api.sc.Prepare("SELECT template FROM post_templates WHERE `set` = ?")
 	if err != nil {
 		return
 	}
@@ -206,7 +206,7 @@ func (api *API) getTemplateSet(set gp.TemplateGroupID) (templates []string, err 
 
 //UpdateTemplate saves a new Template
 func (api *API) updateTemplate(id gp.TemplateID, group gp.TemplateGroupID, template string) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO post_templates (id, `set`, template) VALUES (?, ?, ?)")
+	s, err := api.sc.Prepare("REPLACE INTO post_templates (id, `set`, template) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}

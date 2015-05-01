@@ -412,9 +412,9 @@ var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 func (api *API) _createConversation(id gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
 	var s *sql.Stmt
 	if group > 0 {
-		s, err = api.db.Prepare("INSERT INTO conversations (initiator, primary_conversation, group_id) VALUES (?, ?, ?)")
+		s, err = api.sc.Prepare("INSERT INTO conversations (initiator, primary_conversation, group_id) VALUES (?, ?, ?)")
 	} else {
-		s, err = api.db.Prepare("INSERT INTO conversations (initiator, primary_conversation) VALUES (?, ?)")
+		s, err = api.sc.Prepare("INSERT INTO conversations (initiator, primary_conversation) VALUES (?, ?)")
 	}
 	if err != nil {
 		return
@@ -451,7 +451,7 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 
 //AddConversationParticipants adds these participants to convID, or does nothing if they are already members.
 func (api *API) addConversationParticipants(adder gp.UserID, participants []gp.UserID, convID gp.ConversationID) (err error) {
-	s, err := api.db.Prepare("REPLACE INTO conversation_participants (conversation_id, participant_id, deleted) VALUES (?, ?, 0)")
+	s, err := api.sc.Prepare("REPLACE INTO conversation_participants (conversation_id, participant_id, deleted) VALUES (?, ?, 0)")
 	if err != nil {
 		return
 	}
@@ -479,7 +479,7 @@ func (api *API) getConversations(userID gp.UserID, start int64, count int) (conv
 		"GROUP BY chat_messages.conversation_id " +
 		"ORDER BY last_mod DESC " +
 		"LIMIT ? , ? "
-	s, err = api.db.Prepare(q)
+	s, err = api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -524,7 +524,7 @@ func (api *API) getConversations(userID gp.UserID, start int64, count int) (conv
 
 //ConversationActivity returns the time this conversation last changed.
 func (api *API) conversationActivity(userID gp.UserID, convID gp.ConversationID) (t time.Time, err error) {
-	s, err := api.db.Prepare("SELECT MAX(chat_messages.`timestamp`) AS last_mod FROM conversation_participants JOIN chat_messages ON conversation_participants.conversation_id = chat_messages.conversation_id WHERE conversation_participants.participant_id = ? AND conversation_participants.conversation_id = ?")
+	s, err := api.sc.Prepare("SELECT MAX(chat_messages.`timestamp`) AS last_mod FROM conversation_participants JOIN chat_messages ON conversation_participants.conversation_id = chat_messages.conversation_id WHERE conversation_participants.participant_id = ? AND conversation_participants.conversation_id = ?")
 	if err != nil {
 		return
 	}
@@ -539,7 +539,7 @@ func (api *API) conversationActivity(userID gp.UserID, convID gp.ConversationID)
 
 //DeleteConversation removes this conversation for this user.
 func (api *API) deleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
-	s, err := api.db.Prepare("UPDATE conversation_participants SET deleted = 1 WHERE participant_id = ? AND conversation_id = ?")
+	s, err := api.sc.Prepare("UPDATE conversation_participants SET deleted = 1 WHERE participant_id = ? AND conversation_id = ?")
 	if err != nil {
 		return
 	}
@@ -549,7 +549,7 @@ func (api *API) deleteConversation(userID gp.UserID, convID gp.ConversationID) (
 
 //SetDeletionThreshold marks all messages before or equal to this message as "deleted" for this user. Attempting to set a lower threshold does nothing. High thresholds are reinterpreted as the <= message.
 func (api *API) setDeletionThreshold(userID gp.UserID, convID gp.ConversationID, threshold gp.MessageID) (err error) {
-	s, err := api.db.Prepare("UPDATE conversation_participants SET deletion_threshold = (SELECT MAX(id) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id <= ?) WHERE conversation_participants.conversation_id = ? AND conversation_participants.participant_id = ? AND conversation_participants.deletion_threshold < ?")
+	s, err := api.sc.Prepare("UPDATE conversation_participants SET deletion_threshold = (SELECT MAX(id) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id <= ?) WHERE conversation_participants.conversation_id = ? AND conversation_participants.participant_id = ? AND conversation_participants.deletion_threshold < ?")
 	if err != nil {
 		return
 	}
@@ -586,7 +586,7 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, coun
 
 //GetReadStatus returns all the positions the participants in this conversation have read to. If omitZeros is true, it omits participants who haven't read any messages.
 func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []gp.Read, err error) {
-	s, err := api.db.Prepare("SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?")
+	s, err := api.sc.Prepare("SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?")
 	if err != nil {
 		return
 	}
@@ -617,7 +617,7 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 	if !includeDeleted {
 		q += " AND deleted = 0"
 	}
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -651,7 +651,7 @@ func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err er
 		"FROM chat_messages " +
 		"WHERE conversation_id = ? " +
 		"ORDER BY `id` DESC LIMIT 1"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -673,7 +673,7 @@ func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err er
 //AddMessage records this message in the database. System represents whether this is a system- or user-generated message.
 func (api *API) addMessage(convID gp.ConversationID, userID gp.UserID, text string, system bool) (id gp.MessageID, err error) {
 	log.Printf("Adding message to db: %d, %d %s, system: %v\n", convID, userID, text, system)
-	s, err := api.db.Prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`, `system`) VALUES (?,?,?,?)")
+	s, err := api.sc.Prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`, `system`) VALUES (?,?,?,?)")
 	if err != nil {
 		return
 	}
@@ -719,7 +719,7 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	}
-	s, err = api.db.Prepare(q)
+	s, err = api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -753,7 +753,7 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 
 //MarkRead moves this user's "read" marker up to this message in this conversation.
 func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (read gp.MessageID, err error) {
-	s, err := api.db.Prepare("UPDATE conversation_participants " +
+	s, err := api.sc.Prepare("UPDATE conversation_participants " +
 		"SET last_read = (SELECT MAX(id) FROM chat_messages WHERE conversation_id = ? AND id <= ?) " +
 		"WHERE `conversation_id` = ? AND `participant_id` = ?")
 	if err != nil {
@@ -763,7 +763,7 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 	if err != nil {
 		return
 	}
-	s, err = api.db.Prepare("SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?")
+	s, err = api.sc.Prepare("SELECT last_read FROM conversation_participants WHERE conversation_id = ? AND participant_id = ?")
 	err = s.QueryRow(convID, id).Scan(&read)
 	return
 }
@@ -819,7 +819,7 @@ func unreadMessageCount(db *sql.DB, user gp.UserID, useThreshold bool) (count in
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
 func (api *API) userMuteBadges(userID gp.UserID, t time.Time) (err error) {
 	q := "UPDATE users SET new_message_threshold = ? WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -844,7 +844,7 @@ func (api *API) userConversationUnread(userID gp.UserID, convID gp.ConversationI
 		"(SELECT deletion_threshold FROM conversation_participants " +
 		"WHERE conversation_id = ? AND participant_id = ?) " +
 		"AND `system` = 0 AND conversations.group_id IS NULL"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -855,7 +855,7 @@ func (api *API) userConversationUnread(userID gp.UserID, convID gp.ConversationI
 //GetPrimaryConversation returns the primary conversation for this set of users, or NoSuchConversation otherwise.
 func (api *API) getPrimaryConversation(participantA, participantB gp.UserID) (conversation gp.ConversationAndMessages, err error) {
 	q := "SELECT conversation_id FROM conversation_participants JOIN conversations ON conversations.id = conversation_participants.conversation_id WHERE conversations.primary_conversation=1 AND participant_id IN (?, ?) GROUP BY conversation_id HAVING count(*) = 2"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -873,7 +873,7 @@ var ErrNotMerged = gp.APIerror{Reason: "Conversation not merged"}
 //ConversationMergedInto returns the id of the conversation this one has merged with, or err if it hasn't merged.
 func (api *API) conversationMergedInto(convID gp.ConversationID) (merged gp.ConversationID, err error) {
 	q := "SELECT merged FROM conversations WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -891,7 +891,7 @@ func (api *API) conversationMergedInto(convID gp.ConversationID) (merged gp.Conv
 //ConversationGroup returns the id of the group this conversation is connected to, or zero if it isn't.
 func (api *API) conversationGroup(convID gp.ConversationID) (group gp.NetworkID, err error) {
 	q := "SELECT group_id FROM conversations WHERE id = ?"
-	s, err := api.db.Prepare(q)
+	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -905,7 +905,7 @@ func (api *API) conversationGroup(convID gp.ConversationID) (group gp.NetworkID,
 
 //IsPrimaryConversation returns true if this is a primary conversation.
 func (api *API) isPrimaryConversation(convID gp.ConversationID) (primary bool, err error) {
-	s, err := api.db.Prepare("SELECT primary_conversation FROM conversations WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT primary_conversation FROM conversations WHERE id = ?")
 	if err != nil {
 		return
 	}
