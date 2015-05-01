@@ -53,11 +53,6 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.Grou
 	}
 }
 
-//isGroup returns false if this network isn't a group (ie isn't user-created) and error if the group doesn't exist.
-func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
-	return api.isGroup(netID)
-}
-
 //UserAddToGroup adds these gleepost users to this group (if you're allowed) and invites the rest via facebook / email.
 func (api *API) UserAddToGroup(adder gp.UserID, group gp.NetworkID, addees []gp.UserID, fbinvites []uint64, emailInvites []string) (err error) {
 	added := false
@@ -755,7 +750,7 @@ func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string
 }
 
 //IsGroup returns false if netId isn't a user group, and ErrNoRows if netId doesn't exist.
-func (api *API) IsGroup(netID gp.NetworkID) (group bool, err error) {
+func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
 	isgroup := "SELECT user_group FROM network WHERE id = ?"
 	s, err := api.sc.Prepare(isgroup)
 	if err != nil {
