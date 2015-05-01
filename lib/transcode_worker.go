@@ -26,6 +26,7 @@ type transcodeWorker struct {
 	cache *cache.Cache
 }
 
+//TranscodeWorker reads jobs from a queue, transcodes them and marks them as "done" in the queue.
 type TranscodeWorker interface {
 	upload(file string) (url string, err error)
 	claimLoop()
@@ -39,6 +40,7 @@ func newTranscodeWorker(db *sql.DB, sc *psc.StatementCache, tq transcode.Queue, 
 	return
 }
 
+//StubTranscodeWorker pretends it is transcoding things but doesn't.
 type StubTranscodeWorker struct {
 }
 
