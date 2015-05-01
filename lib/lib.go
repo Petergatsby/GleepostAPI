@@ -70,7 +70,7 @@ func (api *API) Start() {
 	}
 	gp, ok := api.pushers["gleepost"]
 	if ok {
-		api.notifObserver = NewObserver(api.db, api.cache, gp)
+		api.notifObserver = NewObserver(api.db, api.cache, gp, api.sc)
 	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {

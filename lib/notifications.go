@@ -9,6 +9,7 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
@@ -55,6 +56,7 @@ func NotificationChannelKey(id gp.UserID) (channel string) {
 type NotificationObserver struct {
 	events chan NotificationEvent
 	db     *sql.DB
+	sc     *psc.StatementCache
 	cache  *cache.Cache
 	pusher *push.Pusher
 }
@@ -70,9 +72,9 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher) NotificationObserver {
+func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher, sc *psc.StatementCache) NotificationObserver {
 	events := make(chan NotificationEvent)
-	n := NotificationObserver{events: events, db: db, cache: cache, pusher: pusher}
+	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher}
 	go n.spin()
 	return n
 }
@@ -423,7 +425,7 @@ func (n NotificationObserver) _createNotification(ntype string, by gp.UserID, re
 	if err != nil {
 		return
 	}
-	s, err = n.db.Prepare(notificationInsert)
+	s, err = n.sc.Prepare(notificationInsert)
 	if err != nil {
 		return
 	}
@@ -450,7 +452,7 @@ func (n NotificationObserver) _createNotification(ntype string, by gp.UserID, re
 
 func (n NotificationObserver) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
 	qCreator := "SELECT creator FROM network WHERE id = ?"
-	s, err := n.db.Prepare(qCreator)
+	s, err := n.sc.Prepare(qCreator)
 	if err != nil {
 		return
 	}
