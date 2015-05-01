@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -45,6 +46,7 @@ func TestFiltration(t *testing.T) {
 	for testNumber, ft := range tests {
 		req, err := http.NewRequest("GET", baseURL+"posts?filter="+ft.Filter, nil)
 		req.Header.Set("X-GP-Auth", fmt.Sprintf("%d", token.UserID)+"-"+token.Token)
+		req.Close = true
 
 		if err != nil {
 			t.Fatalf("Test%v: Error with get request: %v", testNumber, err)
@@ -60,6 +62,10 @@ func TestFiltration(t *testing.T) {
 		err = dec.Decode(&respValue)
 		if err != nil {
 			t.Fatalf("Error parsing expected data: %v", err)
+		}
+
+		if len(respValue) != ft.ExpectedMatches {
+			t.Fatalf("Test%v: Did not return the correct number of posts. Expected %v posts, got %v posts", testNumber, ft.ExpectedMatches, len(respValue))
 		}
 
 		categoryMatches := 0
@@ -116,7 +122,15 @@ func initPostFromJSON(fileLocation string) error {
 		data["tags"] = []string{tags}
 		data["title"] = []string{expectedValue.Attribs["title"].(string)}
 
-		_, err = client.PostForm(baseURL+"posts", data)
+		req, err := http.NewRequest("POST", baseURL+"posts", strings.NewReader(data.Encode()))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Close = true
+
+		_, err = client.Do(req)
+
 		if err != nil {
 			return err
 		}
