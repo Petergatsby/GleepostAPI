@@ -6,15 +6,6 @@ import "time"
 //UserID is self explanatory.
 type UserID uint64
 
-const (
-	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
-	OSTART = iota
-	//OBEFORE - This resource will be retreived starting from the entries which happened chronologically right before the index.
-	OBEFORE
-	//OAFTER - Opposite of OBEFORE.
-	OAFTER
-)
-
 //User is the basic user representation, containing their unique ID, their name and their profile image.
 type User struct {
 	ID       UserID `json:"id"`

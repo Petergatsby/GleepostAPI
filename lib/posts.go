@@ -10,6 +10,15 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
+const (
+	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
+	OSTART = iota
+	//OBEFORE - This resource will be retreived starting from the entries which happened chronologically right before the index.
+	OBEFORE
+	//OAFTER - Opposite of OBEFORE.
+	OAFTER
+)
+
 var (
 	//EBADTIME happens when you don't provide a well-formed time when looking for live posts.
 	EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
@@ -1067,11 +1076,11 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 		q = baseQuery + notDeleted + notPending + byPoster
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinear
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfter + orderChronological
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.db.Prepare(q)
@@ -1140,11 +1149,11 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 		q = baseQuery + notDeleted + notPending + byNetwork
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinear
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfter + orderChronological
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.db.Prepare(q)
@@ -1359,11 +1368,11 @@ func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 		q = baseQuery + notDeleted + notPending + byUserGroups
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinear
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfter + orderChronological
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.db.Prepare(q)
@@ -1430,11 +1439,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 		q += notDeleted + notPending + byVisibleAttendance
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinearAttend
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfterAtt + orderChronologicalAttend
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBeforeAtt + orderChronologicalAttend
 	}
 	s, err := api.db.Prepare(q)
@@ -1444,11 +1453,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 	}
 	var rows *sql.Rows
 	switch {
-	case len(category) > 0 && mode != gp.OSTART:
+	case len(category) > 0 && mode != OSTART:
 		rows, err = s.Query(perspective, user, category, index, user, count)
-	case len(category) > 0 && mode == gp.OSTART:
+	case len(category) > 0 && mode == OSTART:
 		rows, err = s.Query(perspective, user, category, index, count)
-	case mode != gp.OSTART:
+	case mode != OSTART:
 		rows, err = s.Query(perspective, user, index, user, count)
 	default:
 		rows, err = s.Query(perspective, user, index, count)

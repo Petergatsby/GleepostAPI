@@ -375,13 +375,13 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 		var index int64
 		switch {
 		case after > 0:
-			mode = gp.OAFTER
+			mode = lib.OAFTER
 			index = after
 		case before > 0:
-			mode = gp.OBEFORE
+			mode = lib.OBEFORE
 			index = before
 		default:
-			mode = gp.OSTART
+			mode = lib.OSTART
 			index = start
 		}
 		posts, err := api.UserGetGroupsPosts(userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
