@@ -14,11 +14,13 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
 )
 
 type transcodeWorker struct {
 	db    *sql.DB
+	sc    *psc.StatementCache
 	tq    transcode.Queue
 	b     *s3.Bucket
 	cache *cache.Cache
@@ -30,8 +32,8 @@ type TranscodeWorker interface {
 	handleDone()
 }
 
-func newTranscodeWorker(db *sql.DB, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t TranscodeWorker) {
-	t = transcodeWorker{db: db, tq: tq, b: b, cache: cache}
+func newTranscodeWorker(db *sql.DB, sc *psc.StatementCache, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t TranscodeWorker) {
+	t = transcodeWorker{db: db, sc: sc, tq: tq, b: b, cache: cache}
 	go t.claimLoop()
 	go t.handleDone()
 	return
@@ -53,7 +55,7 @@ func (s StubTranscodeWorker) handleDone() {
 }
 
 func (t transcodeWorker) claimJobs() (err error) {
-	s, err := t.db.Prepare("SELECT id, source, target, rotate FROM `video_jobs` WHERE completion_time IS NULL AND (claim_time IS NULL OR claim_time < ?)")
+	s, err := t.sc.Prepare("SELECT id, source, target, rotate FROM `video_jobs` WHERE completion_time IS NULL AND (claim_time IS NULL OR claim_time < ?)")
 	if err != nil {
 		return
 	}
@@ -64,7 +66,7 @@ func (t transcodeWorker) claimJobs() (err error) {
 		return
 	}
 	defer rows.Close()
-	claimStmt, err := t.db.Prepare("UPDATE `video_jobs` SET claim_time = NOW() WHERE id = ?")
+	claimStmt, err := t.sc.Prepare("UPDATE `video_jobs` SET claim_time = NOW() WHERE id = ?")
 	if err != nil {
 		return
 	}

@@ -58,7 +58,7 @@ func New(conf conf.Config) (api *API) {
 	db.SetMaxIdleConns(100)
 	api.sc = psc.NewCache(db)
 	api.db = db
-	api.TW = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
+	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	return
 }
 
