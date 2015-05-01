@@ -117,7 +117,6 @@ func TestPostPagination(t *testing.T) {
 func checkPostsDescending(posts []gp.PostSmall) bool {
 	lastID := posts[0].ID + 1
 	for _, post := range posts {
-		fmt.Println(post.ID)
 		if lastID != post.ID+1 {
 			return false
 		}
