@@ -618,7 +618,7 @@ example responses:
 		"id":51341,
 		"by": {
 			"id":9,
-			"name":"Patrick"
+			"name":"Patrick",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
@@ -628,7 +628,7 @@ example responses:
 		"id":4362346,
 		"by": {
 			"id":545,
-			"name":"SomeoneElse"
+			"name":"SomeoneElse",
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
 		},
 		"timestamp":"2013-09-05T13:09:38Z",
