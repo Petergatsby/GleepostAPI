@@ -121,7 +121,7 @@ func TestCreatePoll(t *testing.T) {
 		Token:              token,
 		Text:               "Which is the best option?",
 		Tags:               []string{"poll"},
-		PollOptions:        []string{"Option 1", "A", "Lrrr", "Zaphod Beeblebrox"},
+		PollOptions:        []string{"Option 1", "", "Lrrr", "Zaphod Beeblebrox"},
 		PollExpiry:         time.Now().Add(24 * time.Hour).Format(time.RFC3339),
 		ExpectedStatusCode: 400,
 		ExpectedType:       "Error",
