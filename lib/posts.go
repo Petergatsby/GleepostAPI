@@ -2,6 +2,7 @@ package lib
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -1015,8 +1016,11 @@ const (
 		"AND event_attendees.user_id = ? "
 
 	//Orders
-	orderLinear        = "ORDER BY time DESC, id DESC LIMIT ?, ?"
-	orderChronological = "ORDER BY time DESC, id DESC LIMIT 0, ?"
+	orderLinear               = "ORDER BY time DESC, id DESC LIMIT ?, ?"
+	orderChronological        = "ORDER BY time DESC, id DESC LIMIT 0, ?"
+	orderReverseChronological = "ORDER BY time ASC, id ASC limit 0, ?"
+
+	reverse = "SELECT `id`, `by`, `time`, `text`, `network_id` FROM ( %s ) AS `wp` ORDER BY `time` DESC, `id` DESC"
 
 	orderLinearAttend        = "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
 	orderChronologicalAttend = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
@@ -1152,7 +1156,8 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 	case mode == OSTART:
 		q += orderLinear
 	case mode == OAFTER:
-		q += whereAfter + orderChronological
+		q += whereAfter + orderReverseChronological
+		q = fmt.Sprintf(reverse, q)
 	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}

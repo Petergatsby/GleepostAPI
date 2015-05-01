@@ -51,7 +51,7 @@ func TestPostPagination(t *testing.T) {
 	afterTest := postPaginationTest{
 		Command:                   "?after=25",
 		ExpectedPosts:             20,
-		ExpectedStartingPostIndex: 46,
+		ExpectedStartingPostIndex: 45,
 		ExpectedEndingPostIndex:   26,
 	}
 	startTest := postPaginationTest{
@@ -90,8 +90,6 @@ func TestPostPagination(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test%v: Error with get post: %v", testNumber, err)
 		}
-		fmt.Println(resp)
-
 		dec := json.NewDecoder(resp.Body)
 		respValue := []gp.PostSmall{}
 		err = dec.Decode(&respValue)
