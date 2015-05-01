@@ -51,8 +51,8 @@ func TestPostPagination(t *testing.T) {
 	afterTest := postPaginationTest{
 		Command:                   "?after=25",
 		ExpectedPosts:             20,
-		ExpectedStartingPostIndex: 70,
-		ExpectedEndingPostIndex:   51,
+		ExpectedStartingPostIndex: 46,
+		ExpectedEndingPostIndex:   26,
 	}
 	startTest := postPaginationTest{
 		Command:                   "?start=25",
