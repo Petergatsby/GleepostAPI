@@ -14,6 +14,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
 	"github.com/peterbourgon/g2s"
@@ -23,6 +24,7 @@ import (
 type API struct {
 	cache         *cache.Cache
 	db            *sql.DB
+	sc            *psc.StatementCache
 	fb            *FB
 	Mail          mail.Mailer
 	Config        conf.Config
@@ -54,6 +56,7 @@ func New(conf conf.Config) (api *API) {
 		log.Println("error getting db:", err)
 	}
 	db.SetMaxIdleConns(100)
+	api.sc = psc.NewCache(db)
 	api.db = db
 	api.TW = newTranscodeWorker(db, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	return
