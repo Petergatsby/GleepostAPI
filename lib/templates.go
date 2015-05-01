@@ -205,7 +205,7 @@ func (api *API) getTemplateSet(set gp.TemplateGroupID) (templates []string, err 
 }
 
 //UpdateTemplate saves a new Template
-func (api *API) UpdateTemplate(id gp.TemplateID, group gp.TemplateGroupID, template string) (err error) {
+func (api *API) updateTemplate(id gp.TemplateID, group gp.TemplateGroupID, template string) (err error) {
 	s, err := api.db.Prepare("REPLACE INTO post_templates (id, `set`, template) VALUES (?, ?, ?)")
 	if err != nil {
 		return
