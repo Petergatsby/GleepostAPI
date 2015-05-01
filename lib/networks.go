@@ -151,10 +151,6 @@ func (api *API) userHasRole(user gp.UserID, network gp.NetworkID, roleName strin
 	return true, nil
 }
 
-func (api *API) userRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
-	return api.userRole(user, network)
-}
-
 //UserAddUserToGroup adds addee to group iff adder is in group and group is not a university network (we don't want people to be able to get into universities they're not part of)
 //TODO: Check addee exists
 //TODO: Suppress re-add push notification.
@@ -952,7 +948,7 @@ func (api *API) networkParent(netID gp.NetworkID) (parent gp.NetworkID, err erro
 }
 
 //UserRole gives this user's role:level in this network, or ENOSUCHUSER if the user isn't part of the network.
-func (api *API) UserRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
+func (api *API) userRole(user gp.UserID, network gp.NetworkID) (role gp.Role, err error) {
 	q := "SELECT role, role_level FROM user_network WHERE user_id = ? AND network_id = ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
