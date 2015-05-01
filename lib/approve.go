@@ -102,7 +102,7 @@ func (api *API) approvalChangePush(netID gp.NetworkID, changer gp.UserID, level 
 		return
 	}
 	for _, u := range users {
-		devices, err := getDevices(api.db, u.ID, "approve")
+		devices, err := getDevices(api.sc, u.ID, "approve")
 		if err != nil {
 			log.Println(err)
 			continue
@@ -353,7 +353,7 @@ func (api *API) silentSetApproveBadgeCount(netID gp.NetworkID, userID gp.UserID)
 		return
 	}
 	for _, u := range users {
-		devices, err := getDevices(api.db, u.ID, "approve")
+		devices, err := getDevices(api.sc, u.ID, "approve")
 		if err != nil {
 			log.Println(err)
 			continue
@@ -383,7 +383,7 @@ func (api *API) approveUsers(netID gp.NetworkID) (users []gp.UserRole, err error
 	if err != nil {
 		return
 	}
-	return getNetworkUsers(api.db, master)
+	return getNetworkUsers(api.sc, master)
 }
 
 func (api *API) approvalBadgeCount(userID gp.UserID, netID gp.NetworkID) (badge int) {
@@ -407,7 +407,7 @@ func (api *API) postsToApproveNotification(userID gp.UserID, netID gp.NetworkID)
 		return
 	}
 	for _, u := range users {
-		devices, err := getDevices(api.db, u.ID, "approve")
+		devices, err := getDevices(api.sc, u.ID, "approve")
 		if err != nil {
 			log.Println(err)
 			continue

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
 //ENoRole is given when you try to specify a role which doesn't exist.
@@ -372,7 +373,7 @@ func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users
 	CanJoin, errJoin := api.userCanJoin(userID, netID)
 	switch {
 	case errJoin == nil && CanJoin:
-		return getNetworkUsers(api.db, netID)
+		return getNetworkUsers(api.sc, netID)
 	case errin != nil:
 		return users, errin
 	case errgroup != nil:
@@ -380,7 +381,7 @@ func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users
 	case !in || !group:
 		return users, &ENOTALLOWED
 	default:
-		return getNetworkUsers(api.db, netID)
+		return getNetworkUsers(api.sc, netID)
 	}
 }
 
@@ -789,10 +790,10 @@ func (api *API) getNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err e
 }
 
 //GetNetworkUsers returns all the members of the group netId
-func getNetworkUsers(db *sql.DB, netID gp.NetworkID) (users []gp.UserRole, err error) {
+func getNetworkUsers(sc *psc.StatementCache, netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
 	memberQuery := "SELECT user_id, users.avatar, users.firstname, users.official, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ?"
-	s, err := db.Prepare(memberQuery)
+	s, err := sc.Prepare(memberQuery)
 	if err != nil {
 		return
 	}
@@ -1052,8 +1053,8 @@ func (api *API) networkDomain(netID gp.NetworkID) (domain string, err error) {
 	return
 }
 
-func groupName(db *sql.DB, group gp.NetworkID) (name string, err error) {
-	s, err := db.Prepare("SELECT name FROM network WHERE id = ?")
+func groupName(sc *psc.StatementCache, group gp.NetworkID) (name string, err error) {
+	s, err := sc.Prepare("SELECT name FROM network WHERE id = ?")
 	if err != nil {
 		return
 	}

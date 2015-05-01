@@ -12,7 +12,7 @@ import (
 
 func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.ConversationID) (err error) {
 	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.ID)
-	devices, e := getDevices(api.db, other, "gleepost")
+	devices, e := getDevices(api.sc, other, "gleepost")
 	if e != nil {
 		log.Println(e)
 		return
@@ -51,7 +51,7 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	for _, user := range recipients {
 		if user.ID != message.By.ID {
 			log.Println("Trying to send a push notification to", user.Name)
-			devices, err := getDevices(api.db, user.ID, "gleepost")
+			devices, err := getDevices(api.sc, user.ID, "gleepost")
 			if err != nil {
 				log.Println(err)
 			}

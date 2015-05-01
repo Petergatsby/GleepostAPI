@@ -6,12 +6,13 @@ import (
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/go-sql-driver/mysql"
 )
 
 //GetUser returns the User with this ID.
 func (api *API) getUser(id gp.UserID) (user gp.User, err error) {
-	user, err = getUser(api.db, id)
+	user, err = getUser(api.sc, id)
 	return
 }
 
@@ -223,9 +224,9 @@ func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) 
 }
 
 //GetUser returns this user, or ENOSUCHUSER if they don't exist.
-func getUser(db *sql.DB, id gp.UserID) (user gp.User, err error) {
+func getUser(sc *psc.StatementCache, id gp.UserID) (user gp.User, err error) {
 	var av sql.NullString
-	s, err := db.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
+	s, err := sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
 	if err != nil {
 		return
 	}

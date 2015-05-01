@@ -8,6 +8,7 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
 var (
@@ -1625,8 +1626,8 @@ func (api *API) keepPostsInFuture() (err error) {
 	return nil
 }
 
-func postOwner(db *sql.DB, post gp.PostID) (by gp.UserID, err error) {
-	s, err := db.Prepare("SELECT `by` FROM wall_posts WHERE post_id = ?")
+func postOwner(sc *psc.StatementCache, post gp.PostID) (by gp.UserID, err error) {
+	s, err := sc.Prepare("SELECT `by` FROM wall_posts WHERE post_id = ?")
 	if err != nil {
 		return
 	}

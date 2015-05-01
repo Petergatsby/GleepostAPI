@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
 //ENOTALLOWED is returned when a user attempts an action that they shouldn't.
@@ -321,7 +322,7 @@ func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 
 //UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations, optionally ignoring ones before the user's configured threshold time.
 func (api *API) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
-	return unreadMessageCount(api.db, user, useThreshold)
+	return unreadMessageCount(api.sc, user, useThreshold)
 }
 
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
@@ -770,9 +771,9 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 
 //UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
 //TODO(Patrick) - convert this into a single query
-func unreadMessageCount(db *sql.DB, user gp.UserID, useThreshold bool) (count int, err error) {
+func unreadMessageCount(sc *psc.StatementCache, user gp.UserID, useThreshold bool) (count int, err error) {
 	qParticipate := "SELECT conversation_id, last_read, deletion_threshold FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
-	sParticipate, err := db.Prepare(qParticipate)
+	sParticipate, err := sc.Prepare(qParticipate)
 	if err != nil {
 		return
 	}
@@ -787,7 +788,7 @@ func unreadMessageCount(db *sql.DB, user gp.UserID, useThreshold bool) (count in
 		qUnreadCount = "SELECT count(*) FROM chat_messages WHERE chat_messages.conversation_id = ? AND chat_messages.id > ? AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) AND `system` = 0 AND chat_messages.id > ?"
 
 	}
-	sUnreadCount, err := db.Prepare(qUnreadCount)
+	sUnreadCount, err := sc.Prepare(qUnreadCount)
 	if err != nil {
 		return
 	}

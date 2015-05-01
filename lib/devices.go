@@ -1,11 +1,11 @@
 package lib
 
 import (
-	"database/sql"
 	"log"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
 //AddDevice records this user's device for the purpose of sending them push notifications.
@@ -21,8 +21,8 @@ func (api *API) AddDevice(user gp.UserID, deviceType string, deviceID string, ap
 }
 
 //GetDevices returns all this user's associated devices.
-func getDevices(db *sql.DB, user gp.UserID, application string) (devices []gp.Device, err error) {
-	s, err := db.Prepare("SELECT user_id, device_type, device_id FROM devices WHERE user_id = ? AND application = ?")
+func getDevices(sc *psc.StatementCache, user gp.UserID, application string) (devices []gp.Device, err error) {
+	s, err := sc.Prepare("SELECT user_id, device_type, device_id FROM devices WHERE user_id = ? AND application = ?")
 	if err != nil {
 		return
 	}

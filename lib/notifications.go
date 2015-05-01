@@ -96,7 +96,7 @@ type postEvent struct {
 func (p postEvent) notify(n NotificationObserver) error {
 	creator, err := n.networkCreator(p.netID)
 	if err == nil && (creator == p.userID) && !p.pending {
-		users, err := getNetworkUsers(n.db, p.netID)
+		users, err := getNetworkUsers(n.sc, p.netID)
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ type voteEvent struct {
 }
 
 func (v voteEvent) notify(n NotificationObserver) (err error) {
-	owner, err := postOwner(n.db, v.postID)
+	owner, err := postOwner(n.sc, v.postID)
 	if err != nil {
 		return
 	}
@@ -187,7 +187,7 @@ func (v voteEvent) notify(n NotificationObserver) (err error) {
 
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (n NotificationObserver) push(notification gp.Notification, recipient gp.UserID) {
-	devices, err := getDevices(n.db, recipient, "gleepost")
+	devices, err := getDevices(n.sc, recipient, "gleepost")
 	if err != nil {
 		log.Println(err)
 		return
@@ -241,7 +241,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	switch {
 	case notification.Type == "added_group" || notification.Type == "group_post":
 		var name string
-		name, err = groupName(n.db, notification.Group)
+		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
 			return
 		}
@@ -279,7 +279,7 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 	switch {
 	case notification.Type == "added_group" || notification.Type == "group_post":
 		var name string
-		name, err = groupName(n.db, notification.Group)
+		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
 			return
 		}
@@ -326,12 +326,12 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 }
 
 func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) {
-	count, err = unreadNotificationCount(n.db, user)
+	count, err = unreadNotificationCount(n.sc, user)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	unread, e := unreadMessageCount(n.db, user, true)
+	unread, e := unreadMessageCount(n.sc, user, true)
 	if e == nil {
 		count += unread
 	} else {
@@ -341,8 +341,8 @@ func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) 
 	return
 }
 
-func unreadNotificationCount(db *sql.DB, userID gp.UserID) (count int, err error) {
-	s, err := db.Prepare("SELECT COUNT(*) FROM notifications WHERE recipient = ? AND seen = 0")
+func unreadNotificationCount(sc *psc.StatementCache, userID gp.UserID) (count int, err error) {
+	s, err := sc.Prepare("SELECT COUNT(*) FROM notifications WHERE recipient = ? AND seen = 0")
 	if err != nil {
 		return
 	}
@@ -421,7 +421,7 @@ func (n NotificationObserver) _createNotification(ntype string, by gp.UserID, re
 		Time: time.Now().UTC(),
 		Seen: false,
 	}
-	notification.By, err = getUser(n.db, by)
+	notification.By, err = getUser(n.sc, by)
 	if err != nil {
 		return
 	}
