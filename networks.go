@@ -358,32 +358,7 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		if err != nil {
-			start = 0
-		}
-		before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
-		if err != nil {
-			before = 0
-		}
-		after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
-		if err != nil {
-			after = 0
-		}
-		//First: which paging scheme are we using
-		var mode int
-		var index int64
-		switch {
-		case after > 0:
-			mode = gp.OAFTER
-			index = after
-		case before > 0:
-			mode = gp.OBEFORE
-			index = before
-		default:
-			mode = gp.OSTART
-			index = start
-		}
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		posts, err := api.UserGetGroupsPosts(userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 		if err != nil {
 			e, ok := err.(*gp.APIerror)

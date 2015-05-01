@@ -124,52 +124,10 @@ func TestViewPost(t *testing.T) {
 
 			respNumber := len(tests) - testNumber - 1
 
-			if respValue[respNumber].By.ID != token.UserID {
-				t.Fatalf("Test%v: Wrong user found. Expecting: %v, Got: %v\n", testNumber, token.UserID, respValue[respNumber].By.ID)
-			}
-
-			if respValue[respNumber].Attribs["title"] != expectedValue.Attribs["title"] {
-				t.Fatalf("Test%v: Wrong title found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["title"], respValue[respNumber].Attribs["title"])
-			}
-
-			if respValue[respNumber].Attribs["location-desc"] != expectedValue.Attribs["location-desc"] {
-				t.Fatalf("Test%v: Wrong location-desc found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["location-desc"], respValue[respNumber].Attribs["location-desc"])
-			}
-
-			if respValue[respNumber].Attribs["location-name"] != expectedValue.Attribs["location-name"] {
-				t.Fatalf("Test%v: Wrong location-name found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["location-name"], respValue[respNumber].Attribs["location-name"])
-			}
-
-			if respValue[respNumber].Attribs["location-gps"] != expectedValue.Attribs["location-gps"] {
-				t.Fatalf("Test%v: Wrong location-gps found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["location-gps"], respValue[respNumber].Attribs["location-gps"])
-			}
-
-			if respValue[respNumber].Text != expectedValue.Text {
-				t.Fatalf("Test%v: Wrong value found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Text, respValue[respNumber].Text)
-			}
-
-			err = testPostImageMatch(respValue[respNumber].Images, expectedValue.Images)
-			if err != nil {
-				t.Fatalf("Test%v: Error with images: %v", testNumber, err)
-			}
-
-			err = testPostVideoMatch(respValue[respNumber].Videos, expectedValue.Videos)
+			verifyPost(respValue[respNumber], expectedValue)
 
 			if err != nil {
-				t.Fatalf("Test%v: Error with videos: %v", testNumber, err)
-			}
-
-			err = testPostTagMatch(respValue[respNumber].Categories, expectedValue.Categories)
-			if err != nil {
-				t.Fatalf("Test%v: Error with tags: %v", testNumber, err)
-			}
-
-			responseTime, err := time.Parse(time.RFC3339, respValue[respNumber].Attribs["event-time"].(string))
-			if err != nil {
-				t.Fatalf("Test%v: Error with time: %v", testNumber, err)
-			}
-			if fmt.Sprintf("%d", responseTime.Unix()) != expectedValue.Attribs["event-time"] {
-				t.Fatalf("Test%v: Wrong time found. Expecting: %v, Got: %v\n", testNumber, expectedValue.Attribs["event-time"], responseTime.Unix())
+				t.Fatalf("Test%v: %v", testNumber, err)
 			}
 
 		case vpt.ExpectedStatusCode == http.StatusBadRequest:
@@ -186,6 +144,58 @@ func TestViewPost(t *testing.T) {
 			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
+}
+
+func verifyPost(currentPost gp.PostSmall, expectedPost gp.PostSmall) error {
+	if currentPost.By.ID != expectedPost.By.ID {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong user found. Expecting: %v, Got: %v\n", expectedPost.By.ID, currentPost.By.ID)}
+	}
+
+	if currentPost.Attribs["title"] != expectedPost.Attribs["title"] {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong title found. Expecting: %v, Got: %v\n", expectedPost.Attribs["title"], currentPost.Attribs["title"])}
+	}
+
+	if currentPost.Attribs["location-desc"] != expectedPost.Attribs["location-desc"] {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong location-desc found. Expecting: %v, Got: %v\n", expectedPost.Attribs["location-desc"], currentPost.Attribs["location-desc"])}
+	}
+
+	if currentPost.Attribs["location-name"] != expectedPost.Attribs["location-name"] {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong location-name found. Expecting: %v, Got: %v\n", expectedPost.Attribs["location-name"], currentPost.Attribs["location-name"])}
+	}
+
+	if currentPost.Attribs["location-gps"] != expectedPost.Attribs["location-gps"] {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong location-gps found. Expecting: %v, Got: %v\n", expectedPost.Attribs["location-gps"], currentPost.Attribs["location-gps"])}
+	}
+
+	if currentPost.Text != expectedPost.Text {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong value found. Expecting: %v, Got: %v\n", expectedPost.Text, currentPost.Text)}
+	}
+
+	err := testPostImageMatch(currentPost.Images, expectedPost.Images)
+	if err != nil {
+		return gp.APIerror{Reason: fmt.Sprintf("Error with images: %v", err)}
+	}
+
+	err = testPostVideoMatch(currentPost.Videos, expectedPost.Videos)
+
+	if err != nil {
+		return gp.APIerror{Reason: fmt.Sprintf("Error with videos: %v", err)}
+	}
+
+	err = testPostTagMatch(currentPost.Categories, expectedPost.Categories)
+	if err != nil {
+		return gp.APIerror{Reason: fmt.Sprintf("Error with tags: %v", err)}
+	}
+
+	responseTime, err := time.Parse(time.RFC3339, currentPost.Attribs["event-time"].(string))
+	if err != nil {
+		return gp.APIerror{Reason: fmt.Sprintf("Error with time: %v", err)}
+	}
+	if fmt.Sprintf("%d", responseTime.Unix()) != expectedPost.Attribs["event-time"] {
+		return gp.APIerror{Reason: fmt.Sprintf("Wrong time found. Expecting: %v, Got: %v\n", expectedPost.Attribs["event-time"], responseTime.Unix())}
+	}
+
+	return nil
 }
 
 func initPosts(tests []viewPostTest) error {

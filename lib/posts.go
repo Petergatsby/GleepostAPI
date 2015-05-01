@@ -2,6 +2,7 @@ package lib
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -9,6 +10,15 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+)
+
+const (
+	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
+	OSTART = iota
+	//OBEFORE - This resource will be retreived starting from the entries which happened chronologically right before the index.
+	OBEFORE
+	//OAFTER - Opposite of OBEFORE.
+	OAFTER
 )
 
 var (
@@ -1007,8 +1017,11 @@ const (
 		"AND event_attendees.user_id = ? "
 
 	//Orders
-	orderLinear        = "ORDER BY time DESC, id DESC LIMIT ?, ?"
-	orderChronological = "ORDER BY time DESC, id DESC LIMIT 0, ?"
+	orderLinear               = "ORDER BY time DESC, id DESC LIMIT ?, ?"
+	orderChronological        = "ORDER BY time DESC, id DESC LIMIT 0, ?"
+	orderReverseChronological = "ORDER BY time ASC, id ASC limit 0, ?"
+
+	reverse = "SELECT `id`, `by`, `time`, `text`, `network_id` FROM ( %s ) AS `wp` ORDER BY `time` DESC, `id` DESC"
 
 	orderLinearAttend        = "ORDER BY event_attendees.time DESC, id DESC LIMIT ?, ?"
 	orderChronologicalAttend = "ORDER BY event_attendees.time DESC, id DESC LIMIT 0, ?"
@@ -1068,11 +1081,11 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 		q = baseQuery + notDeleted + notPending + byPoster
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinear
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfter + orderChronological
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1141,11 +1154,12 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 		q = baseQuery + notDeleted + notPending + byNetwork
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinear
-	case mode == gp.OAFTER:
-		q += whereAfter + orderChronological
-	case mode == gp.OBEFORE:
+	case mode == OAFTER:
+		q += whereAfter + orderReverseChronological
+		q = fmt.Sprintf(reverse, q)
+	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1360,11 +1374,11 @@ func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 		q = baseQuery + notDeleted + notPending + byUserGroups
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinear
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfter + orderChronological
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1431,11 +1445,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 		q += notDeleted + notPending + byVisibleAttendance
 	}
 	switch {
-	case mode == gp.OSTART:
+	case mode == OSTART:
 		q += orderLinearAttend
-	case mode == gp.OAFTER:
+	case mode == OAFTER:
 		q += whereAfterAtt + orderChronologicalAttend
-	case mode == gp.OBEFORE:
+	case mode == OBEFORE:
 		q += whereBeforeAtt + orderChronologicalAttend
 	}
 	s, err := api.sc.Prepare(q)
@@ -1445,11 +1459,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 	}
 	var rows *sql.Rows
 	switch {
-	case len(category) > 0 && mode != gp.OSTART:
+	case len(category) > 0 && mode != OSTART:
 		rows, err = s.Query(perspective, user, category, index, user, count)
-	case len(category) > 0 && mode == gp.OSTART:
+	case len(category) > 0 && mode == OSTART:
 		rows, err = s.Query(perspective, user, category, index, count)
-	case mode != gp.OSTART:
+	case mode != OSTART:
 		rows, err = s.Query(perspective, user, index, user, count)
 	default:
 		rows, err = s.Query(perspective, user, index, count)
