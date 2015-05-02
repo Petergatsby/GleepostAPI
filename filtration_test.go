@@ -17,7 +17,7 @@ func TestFiltration(t *testing.T) {
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
-		t.Fatalf("Error logging in", err)
+		t.Fatal("Error logging in", err)
 	}
 
 	type filtrationTest struct {
