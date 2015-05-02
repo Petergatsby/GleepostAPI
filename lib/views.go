@@ -3,8 +3,20 @@ package lib
 import (
 	"log"
 
+	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 )
+
+//Viewer handles Views submitted by clients.
+type Viewer interface {
+	RecordViews(views []gp.PostView)
+}
+
+type viewer struct {
+	c  *cache.Cache
+	sc *psc.StatementCache
+}
 
 //RecordViews saves a bunch of post views, after purging views that the user couldn't have done. It also triggers a views-change event on all the posts involved.
 func (api *API) RecordViews(views ...gp.PostView) {
