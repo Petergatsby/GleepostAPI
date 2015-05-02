@@ -28,7 +28,7 @@ func postPostViews(w http.ResponseWriter, r *http.Request) {
 		for i := range views {
 			views[i].User = userID
 		}
-		go api.RecordViews(views...)
+		go api.Viewer.RecordViews(views)
 		w.WriteHeader(204)
 	}
 }

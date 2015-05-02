@@ -32,6 +32,7 @@ type API struct {
 	statsd        g2s.Statter
 	notifObserver NotificationObserver
 	TW            TranscodeWorker
+	Viewer        Viewer
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -59,6 +60,7 @@ func New(conf conf.Config) (api *API) {
 	api.sc = psc.NewCache(db)
 	api.db = db
 	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
+	api.Viewer = &viewer{cache: api.cache, sc: api.sc}
 	return
 }
 

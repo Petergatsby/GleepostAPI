@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
@@ -11,56 +12,89 @@ import (
 //Viewer handles Views submitted by clients.
 type Viewer interface {
 	RecordViews(views []gp.PostView)
+	postViewCount(post gp.PostID) (views int, err error)
 }
 
 type viewer struct {
-	c  *cache.Cache
-	sc *psc.StatementCache
+	cache *cache.Cache
+	sc    *psc.StatementCache
 }
 
 //RecordViews saves a bunch of post views, after purging views that the user couldn't have done. It also triggers a views-change event on all the posts involved.
-func (api *API) RecordViews(views ...gp.PostView) {
-	//Purge views the user couldn't have made
-	views = api.verifyViews(views...)
-	err := api.recordViews(views...)
+func (v *viewer) RecordViews(views []gp.PostView) {
+	views = v.verifyViews(views)
+	err := v.recordViews(views)
+	if err != nil {
+		log.Println("Error recording views:", err)
+		return
+	}
+	go v.publishNewViewCounts(views)
+}
+
+func (v *viewer) verifyViews(views []gp.PostView) (verified []gp.PostView) {
+	verified = make([]gp.PostView, 0)
+	s, err := v.sc.Prepare("SELECT 1 FROM user_network JOIN wall_posts ON user_network.network_id = wall_posts.network_id WHERE user_id = ? AND wall_posts.id = ?")
 	if err != nil {
 		log.Println(err)
+		return
 	}
-	//Publish
-	go api.publishNewViewCounts(views...)
+	for _, view := range views {
+		var visible bool
+		err := s.QueryRow(view.User, view.Post).Scan(&visible)
+		switch {
+		case visible:
+			verified = append(verified, view)
+		case err == sql.ErrNoRows:
+			//The user couldn't see this post
+		default:
+			log.Println("Error verifying view:", err)
+		}
+	}
+	return
 }
 
-func (api *API) verifyViews(views ...gp.PostView) (verified []gp.PostView) {
-	verified = make([]gp.PostView, 0)
-	for _, v := range views {
-		canView, err := api.canViewPost(v.User, v.Post)
+func (v *viewer) recordViews(views []gp.PostView) (err error) {
+	s, err := v.sc.Prepare("INSERT INTO post_views (user_id, post_id, ts) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	for _, view := range views {
+		_, err = s.Exec(view.User, view.Post, view.Time.UTC())
 		if err != nil {
-			log.Println(err)
-		}
-		if canView {
-			verified = append(verified, v)
+			return err
 		}
 	}
-	return verified
+	return nil
 }
 
-func (api *API) publishNewViewCounts(views ...gp.PostView) {
+func (v *viewer) publishNewViewCounts(views []gp.PostView) {
 	done := make(map[gp.PostID]bool)
 	var counts []gp.PostViewCount
 
-	for _, v := range views {
-		_, ok := done[v.Post]
+	for _, view := range views {
+		_, ok := done[view.Post]
 		if !ok {
-			count, err := api.postViewCount(v.Post)
+			count, err := v.postViewCount(view.Post)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			counts = append(counts, gp.PostViewCount{Post: v.Post, Count: count})
-			done[v.Post] = true
+			counts = append(counts, gp.PostViewCount{Post: view.Post, Count: count})
+			done[view.Post] = true
 		}
 	}
-	go api.cache.PublishViewCounts(counts...)
+	go v.cache.PublishViewCounts(counts...)
+}
+
+//PostViewCount returns the number of total views this post has had.
+func (v *viewer) postViewCount(post gp.PostID) (count int, err error) {
+	q := "SELECT COUNT(*) FROM post_views WHERE post_id = ?"
+	s, err := v.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post).Scan(&count)
+	return
 }
 
 //CanSubscribePosts takes a list of posts that a user wishes to subscribe to and returns the ones they can actually see.
@@ -73,31 +107,4 @@ func (api *API) CanSubscribePosts(user gp.UserID, posts []gp.PostID) (subscribab
 		}
 	}
 	return subscribable, err
-}
-
-//RecordViews saves a bunch of post views. You probably want api.RecordViews() instead.
-func (api *API) recordViews(views ...gp.PostView) error {
-	q := "INSERT INTO post_views (user_id, post_id, ts) VALUES (?, ?, ?)"
-	s, err := api.sc.Prepare(q)
-	if err != nil {
-		return err
-	}
-	for _, v := range views {
-		_, err = s.Exec(v.User, v.Post, v.Time.UTC())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-//PostViewCount returns the number of total views this post has had.
-func (api *API) postViewCount(post gp.PostID) (count int, err error) {
-	q := "SELECT COUNT(*) FROM post_views WHERE post_id = ?"
-	s, err := api.sc.Prepare(q)
-	if err != nil {
-		return
-	}
-	err = s.QueryRow(post).Scan(&count)
-	return
 }
