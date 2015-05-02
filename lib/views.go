@@ -33,7 +33,7 @@ func (v *viewer) RecordViews(views []gp.PostView) {
 
 func (v *viewer) verifyViews(views []gp.PostView) (verified []gp.PostView) {
 	verified = make([]gp.PostView, 0)
-	s, err := v.sc.Prepare("SELECT 1 FROM user_network JOIN wall_posts ON user_network.network_id = wall_posts.network_id WHERE user_id = ? AND wall_posts.id = ?")
+	s, err := v.sc.Prepare("SELECT 1 FROM user_network JOIN wall_posts ON user_network.network_id = wall_posts.network_id WHERE user_id = ? AND wall_posts.id = ? AND wall_posts.deleted = 0")
 	if err != nil {
 		log.Println(err)
 		return
