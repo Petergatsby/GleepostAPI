@@ -21,12 +21,11 @@ func (api *API) RecordViews(views ...gp.PostView) {
 func (api *API) verifyViews(views ...gp.PostView) (verified []gp.PostView) {
 	verified = make([]gp.PostView, 0)
 	for _, v := range views {
-		p, err := api.getPostFull(v.User, v.Post)
+		canView, err := api.canViewPost(v.User, v.Post)
 		if err != nil {
 			log.Println(err)
 		}
-		in, err := api.userInNetwork(v.User, p.Network)
-		if in && err == nil {
+		if canView {
 			verified = append(verified, v)
 		}
 	}
