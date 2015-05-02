@@ -39,8 +39,7 @@ func TestFiltration(t *testing.T) {
 	}
 	tests := []filtrationTest{newsTest, jobsTest, badTest}
 
-	truncate("wall_posts")
-	truncate("post_categories")
+	truncate("wall_posts", "post_categories")
 	initPostFromJSON("testdata/filtration_test_posts.json")
 
 	for testNumber, ft := range tests {
