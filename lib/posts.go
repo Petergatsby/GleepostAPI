@@ -122,7 +122,7 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 //UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
 func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	t, enotstringtime := time.Parse(after, time.RFC3339)
+	t, enotstringtime := time.Parse(time.RFC3339, after)
 	if enotstringtime != nil {
 		unix, enotunixtime := strconv.ParseInt(after, 10, 64)
 		if enotunixtime != nil {
