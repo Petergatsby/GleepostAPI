@@ -717,7 +717,7 @@ func (api *API) UserSetLike(user gp.UserID, postID gp.PostID, liked bool) (err e
 		if err != nil {
 			return
 		}
-		_, err = s.Exec(post, user)
+		_, err = s.Exec(postID, user)
 		return
 	default:
 		err = api.createLike(user, postID)
