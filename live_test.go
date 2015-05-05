@@ -108,6 +108,12 @@ func TestLive(t *testing.T) {
 			ExpectedType:       "[]gp.PostSmall",
 			ExpectedCount:      20,
 		},
+		{
+			Token:              token,
+			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedType:       "gp.APIerror",
+			ExpectedError:      "Could not parse as a time",
+		},
 	}
 	client := &http.Client{}
 	for _, test := range tests {
