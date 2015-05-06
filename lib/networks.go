@@ -869,25 +869,22 @@ func (api *API) inviteExists(email, invite string) (exists bool, err error) {
 }
 
 //AcceptAllInvites marks all invites as accepted for this email address.
-func (api *API) acceptAllInvites(email string) (err error) {
-	q := "UPDATE group_invites SET accepted = 1 WHERE email = ?"
+func (api *API) acceptAllInvites(userID gp.UserID, email string) (err error) {
+	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ? AND acceptted = 0"
 	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userID, email)
+	if err != nil {
+		return
+	}
+	q = "UPDATE group_invites SET accepted = 1 WHERE email = ?"
+	s, err = api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
 	_, err = s.Exec(email)
-	return
-}
-
-//AssignNetworksFromInvites adds user to all networks which email has been invited to.
-//TODO: only do un-accepted invites (!)
-func (api *API) assignNetworksFromInvites(user gp.UserID, email string) (err error) {
-	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ?"
-	s, err := api.sc.Prepare(q)
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(user, email)
 	return
 }
 

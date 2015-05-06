@@ -211,12 +211,7 @@ func (api *API) fBSetVerified(email string, fbuser uint64) (id gp.UserID, err er
 		err = api.verify(id)
 		if err == nil {
 			log.Println("Verifying worked. Now setting networks from invites...")
-			err = api.assignNetworksFromInvites(id, email)
-			if err != nil {
-				log.Println("Something went wrong while setting networks from invites:", err)
-				return
-			}
-			err = api.acceptAllInvites(email)
+			err = api.acceptAllInvites(id, email)
 		}
 	}
 	return
@@ -349,12 +344,7 @@ func (api *API) createUserFromFB(fbid uint64, email string) (userID gp.UserID, e
 		log.Println("associating facebook account with user account failed:", err)
 		return
 	}
-	err = api.assignNetworksFromInvites(userID, email)
-	if err != nil {
-		log.Println("Something went wrong while setting networks from invites:", err)
-		return
-	}
-	err = api.acceptAllInvites(email)
+	err = api.acceptAllInvites(userID, email)
 	if err != nil {
 		log.Println("Something went wrong while accepting invites:", err)
 		return
