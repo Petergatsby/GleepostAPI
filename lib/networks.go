@@ -870,7 +870,7 @@ func (api *API) inviteExists(email, invite string) (exists bool, err error) {
 
 //AcceptAllInvites marks all invites as accepted for this email address.
 func (api *API) acceptAllInvites(userID gp.UserID, email string) (err error) {
-	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ? AND acceptted = 0"
+	q := "REPLACE INTO user_network (user_id, network_id) SELECT ?, group_id FROM group_invites WHERE email = ? AND accepted = 0"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -107,7 +108,11 @@ func TestVerification(t *testing.T) {
 		}
 
 		if vt.ExpectedStatusCode != resp.StatusCode {
-			t.Fatalf("Test%v: Expected %v, got %v\n", vt.ExpectedStatusCode, testNumber, resp.StatusCode)
+			dec := json.NewDecoder(resp.Body)
+			errorValue := gp.APIerror{}
+			err = dec.Decode(&errorValue)
+			log.Println(errorValue.Reason)
+			t.Fatalf("Test%v: Expected %v, got %v\n", testNumber, vt.ExpectedStatusCode, resp.StatusCode)
 		}
 		switch {
 		case vt.ExpectedStatusCode == http.StatusOK:
