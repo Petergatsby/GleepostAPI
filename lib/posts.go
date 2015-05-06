@@ -794,6 +794,13 @@ func (api *API) UserSetLike(user gp.UserID, postID gp.PostID, liked bool) (err e
 //the onus is on the viewer of the attributes to look for just the ones which make sense,
 //and on the caller of this function to ensure that the values conform to a particular format.
 func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
+	if len(attribs) == 0 {
+		return
+	}
+	s, err := api.sc.Prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
 	for attrib, value := range attribs {
 		//How could I be so foolish to store time strings rather than unix timestamps...
 		if attrib == "event-time" {
@@ -806,10 +813,14 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 				t = time.Unix(unixt, 0)
 			}
 			unix := t.Unix()
-			attribs[attrib] = strconv.FormatInt(unix, 10)
+			value = strconv.FormatInt(unix, 10)
+		}
+		_, err = s.Exec(post, attrib, value)
+		if err != nil {
+			return
 		}
 	}
-	return api._setPostAttribs(post, attribs)
+	return nil
 }
 
 //getPostAttribs returns all the custom attributes of a post.
@@ -1372,24 +1383,6 @@ func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
 	}
 	post.Images = api.getPostImages(postID)
 	post.Videos = api.getPostVideos(postID)
-	return
-}
-
-//SetPostAttribs associates all the attribute:value pairs in attrib with post.
-func (api *API) _setPostAttribs(post gp.PostID, attribs map[string]string) (err error) {
-	if len(attribs) == 0 {
-		return
-	}
-	s, err := api.sc.Prepare("REPLACE INTO post_attribs (post_id, attrib, value) VALUES (?, ?, ?)")
-	if err != nil {
-		return
-	}
-	for attrib, value := range attribs {
-		_, err = s.Exec(post, attrib, value)
-		if err != nil {
-			return
-		}
-	}
 	return
 }
 
