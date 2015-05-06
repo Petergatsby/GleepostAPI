@@ -44,6 +44,7 @@ func liveInit() error {
 			data["event-time"] = []string{time.Now().UTC().Add(25 * time.Minute).Format(time.RFC3339)}
 		case i < 37:
 			data["event-time"] = []string{time.Now().UTC().Add(250 * time.Minute).Format(time.RFC3339)}
+			data["tags"] = []string{"event,party"}
 		case i < 50:
 			data["event-time"] = []string{time.Now().UTC().Add(2500 * time.Minute).Format(time.RFC3339)}
 		default:
@@ -90,6 +91,7 @@ func TestLive(t *testing.T) {
 		Token              gp.Token
 		After              string
 		Until              string
+		Filter             string
 		ExpectedStatusCode int
 		ExpectedType       string
 		ExpectedCount      int
@@ -124,6 +126,14 @@ func TestLive(t *testing.T) {
 			ExpectedType:       "[]gp.PostSmall",
 			ExpectedCount:      10,
 		},
+		{
+			Token:              token,
+			After:              time.Now().UTC().Add(30 * time.Minute).Format(time.RFC3339),
+			Filter:             "party",
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedType:       "[]gp.PostSmall",
+			ExpectedCount:      2,
+		},
 	}
 	client := &http.Client{}
 	for _, test := range tests {
@@ -133,6 +143,9 @@ func TestLive(t *testing.T) {
 		data["token"] = []string{test.Token.Token}
 		if len(test.Until) > 0 {
 			data["until"] = []string{test.Until}
+		}
+		if len(test.Filter) > 0 {
+			data["filter"] = []string{test.Filter}
 		}
 
 		resp, err := client.Get(baseURL + "live?" + data.Encode())

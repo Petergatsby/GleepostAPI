@@ -334,7 +334,8 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		after := r.FormValue("after")
 		until := r.FormValue("until")
-		posts, err := api.UserGetLive(userID, after, until, api.Config.PostPageSize)
+		category := r.FormValue("filter")
+		posts, err := api.UserGetLive(userID, after, until, api.Config.PostPageSize, category)
 		if err != nil {
 			code := 500
 			if err == lib.EBADTIME {

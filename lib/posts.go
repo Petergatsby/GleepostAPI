@@ -133,7 +133,7 @@ func parseTime(tstring string) (t time.Time, err error) {
 }
 
 //UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
-func (api *API) UserGetLive(userID gp.UserID, after, until string, count int) (posts []gp.PostSmall, err error) {
+func (api *API) UserGetLive(userID gp.UserID, after, until string, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	afterTime, err := parseTime(after)
 	if err != nil {
@@ -147,13 +147,13 @@ func (api *API) UserGetLive(userID gp.UserID, after, until string, count int) (p
 	if err != nil {
 		return
 	}
-	return api.getLive(primary.ID, afterTime, untilTime, count, userID)
+	return api.getLive(primary.ID, afterTime, untilTime, count, userID, category)
 }
 
 //getLive returns the first count events happening after after, within network netId.
-func (api *API) getLive(netID gp.NetworkID, after, until time.Time, count int, userID gp.UserID) (posts []gp.PostSmall, err error) {
+func (api *API) getLive(netID gp.NetworkID, after, until time.Time, count int, userID gp.UserID, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	posts, err = api._getLive(netID, after, until, count)
+	posts, err = api._getLive(netID, after, until, count, category)
 	if err != nil {
 		return
 	}
@@ -1136,18 +1136,29 @@ func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pen
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
-func (api *API) _getLive(netID gp.NetworkID, after time.Time, until time.Time, count int) (posts []gp.PostSmall, err error) {
+func (api *API) _getLive(netID gp.NetworkID, after time.Time, until time.Time, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, `by`, time, text, network_id " +
 		"FROM wall_posts " +
-		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
-		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? AND value < ? " +
-		"ORDER BY value ASC LIMIT 0, ?"
+		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id "
+	if len(category) > 0 {
+		q += categoryClause
+	}
+	q += "WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? AND value < ? "
+	if len(category) > 0 {
+		q += whereCategory
+	}
+	q += "ORDER BY value ASC LIMIT 0, ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(netID, after.Unix(), until.Unix(), count)
+	var rows *sql.Rows
+	if len(category) > 0 {
+		rows, err = s.Query(netID, after.Unix(), until.Unix(), category, count)
+	} else {
+		rows, err = s.Query(netID, after.Unix(), until.Unix(), count)
+	}
 	if err != nil {
 		return
 	}

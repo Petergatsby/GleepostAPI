@@ -778,9 +778,11 @@ If the poll has ended already:
 ##GET /live
 required parameters: `id`, `token`, `after`
 
-Optional parameters: `until`
+Optional parameters: `until`, `filter`
 
 `after` and `until` must be either an RFC3339 formatted time string, or a unix timestamp.
+
+If `filter` is provided, it will only return posts in this category.
 
 Live returns the 20 events whose event-time is soonest after `after`, which are happening before `until`.
 
