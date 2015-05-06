@@ -333,7 +333,8 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		after := r.FormValue("after")
-		posts, err := api.UserGetLive(userID, after, api.Config.PostPageSize)
+		until := r.FormValue("until")
+		posts, err := api.UserGetLive(userID, after, until, api.Config.PostPageSize)
 		if err != nil {
 			code := 500
 			if err == lib.EBADTIME {

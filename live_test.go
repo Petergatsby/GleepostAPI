@@ -24,6 +24,8 @@ func liveInit() error {
 		return err
 	}
 
+	truncate("wall_posts", "post_attribs", "post_categories")
+
 	client := &http.Client{}
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
@@ -114,13 +116,25 @@ func TestLive(t *testing.T) {
 			ExpectedType:       "gp.APIerror",
 			ExpectedError:      "Could not parse as a time",
 		},
+		{
+			Token:              token,
+			After:              time.Now().UTC().Format(time.RFC3339),
+			Until:              time.Now().Add(10 * time.Minute).Format(time.RFC3339),
+			ExpectedStatusCode: http.StatusOK,
+			ExpectedType:       "[]gp.PostSmall",
+			ExpectedCount:      10,
+		},
 	}
 	client := &http.Client{}
 	for _, test := range tests {
 		data := make(url.Values)
 		data["after"] = []string{test.After}
-		data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
-		data["token"] = []string{token.Token}
+		data["id"] = []string{fmt.Sprintf("%d", test.Token.UserID)}
+		data["token"] = []string{test.Token.Token}
+		if len(test.Until) > 0 {
+			data["until"] = []string{test.Until}
+		}
+
 		resp, err := client.Get(baseURL + "live?" + data.Encode())
 		if err != nil {
 			t.Fatal("Error getting live events:", err)
