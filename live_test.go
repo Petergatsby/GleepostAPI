@@ -245,6 +245,14 @@ func TestLiveSummary(t *testing.T) {
 			ExpectedType:       "gp.APIerror",
 			ExpectedError:      "Could not parse as a time",
 		},
+		{
+			Token:              token,
+			ExpectedStatusCode: 200,
+			After:              time.Now().Format(time.RFC3339),
+			Until:              time.Now().Add(-1 * time.Minute).Format(time.RFC3339),
+			ExpectedType:       "gp.LiveSummary",
+			ExpectedSummary:    gp.LiveSummary{CatCounts: make(map[string]int)},
+		},
 	}
 	for _, test := range tests {
 		data := make(url.Values)
