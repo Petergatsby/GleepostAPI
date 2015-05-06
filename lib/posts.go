@@ -704,15 +704,7 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 		if err != nil {
 			return
 		}
-		postID, err = api.addPost(userID, text, netID, pending)
-		if err != nil {
-			return
-		}
-		err = api.tagPost(postID, tags...)
-		if err != nil {
-			return
-		}
-		err = api.setPostAttribs(postID, attribs)
+		postID, err = api.addPost(userID, text, netID, pending, tags, attribs)
 		if err != nil {
 			return
 		}
@@ -1174,7 +1166,7 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 }
 
 //AddPost creates a post, returning the created ID. It only handles the core of the post; other attributes, images and so on must be created separately.
-func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pending bool) (postID gp.PostID, err error) {
+func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pending bool, tags []string, attribs map[string]string) (postID gp.PostID, err error) {
 	s, err := api.sc.Prepare("INSERT INTO wall_posts(`by`, `text`, network_id, pending) VALUES (?,?,?,?)")
 	if err != nil {
 		return
@@ -1184,7 +1176,15 @@ func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pen
 		return 0, err
 	}
 	_postID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
 	postID = gp.PostID(_postID)
+	err = api.tagPost(postID, tags...)
+	if err != nil {
+		return 0, err
+	}
+	err = api.setPostAttribs(postID, attribs)
 	if err != nil {
 		return 0, err
 	}
