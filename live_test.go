@@ -228,6 +228,17 @@ func TestLiveSummary(t *testing.T) {
 				CatCounts: map[string]int{"party": 2, "event": 12, "sports": 10},
 			},
 		},
+		{
+			Token:              token,
+			After:              time.Now().Format(time.RFC3339),
+			Until:              time.Now().Add(15 * time.Minute).Format(time.RFC3339),
+			ExpectedStatusCode: 200,
+			ExpectedType:       "gp.LiveSummary",
+			ExpectedSummary: gp.LiveSummary{
+				Posts:     10,
+				CatCounts: map[string]int{"event": 10, "sports": 10},
+			},
+		},
 	}
 	for _, test := range tests {
 		data := make(url.Values)
