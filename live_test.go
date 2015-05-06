@@ -163,7 +163,7 @@ func TestLive(t *testing.T) {
 		}
 		switch {
 		case test.ExpectedType == "[]gp.PostSmall":
-			posts := make([]gp.PostSmall, 0)
+			var posts []gp.PostSmall
 			dec := json.NewDecoder(resp.Body)
 			err = dec.Decode(&posts)
 			if err != nil {
