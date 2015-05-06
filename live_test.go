@@ -239,6 +239,12 @@ func TestLiveSummary(t *testing.T) {
 				CatCounts: map[string]int{"event": 10, "sports": 10},
 			},
 		},
+		{
+			Token:              token,
+			ExpectedStatusCode: 400,
+			ExpectedType:       "gp.APIerror",
+			ExpectedError:      "Could not parse as a time",
+		},
 	}
 	for _, test := range tests {
 		data := make(url.Values)
