@@ -87,6 +87,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /live [[GET]](#get-live)
 
+/live_summary [[GET]](#get-live_summary)
+
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
 
 /conversations/live [[GET]](#get-conversationslive)
@@ -843,6 +845,26 @@ example responses:
 	"timestamp":"2014-02-05T07:00:54Z"}]
 	}
 ]
+```
+
+##GET /live_summary
+
+required parameters:
+`id`, `token`, `after`, `until`
+
+`after` and `until` must be either an RFC3339 formatted time string, or a unix timestamp.
+
+This endpoint summarizes the state of the Campus Live (ie, upcoming events) between the two times `after` and `until`.
+
+```json
+{
+	"total-posts":123,
+	"by-category":{
+		"party":43,
+		"sports":12,
+		"food":68,
+	}
+}
 ```
 
 ##GET /networks/[network-id]
