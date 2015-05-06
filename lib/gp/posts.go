@@ -116,6 +116,7 @@ type SubjectivePoll struct {
 	YourVote string `json:"your-vote,omitempty"`
 }
 
+//LiveSummary is a summary of the events in a particular time period.
 type LiveSummary struct {
 	Posts     int            `json:"total-posts"`
 	CatCounts map[string]int `json:"by-category"`

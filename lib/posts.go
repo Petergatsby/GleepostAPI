@@ -132,6 +132,7 @@ func parseTime(tstring string) (t time.Time, err error) {
 	return
 }
 
+//UserGetLiveSummary gives a summary of the upcoming events in this user's university.
 func (api *API) UserGetLiveSummary(userID gp.UserID, after, until string) (summary gp.LiveSummary, err error) {
 	afterTime, err := parseTime(after)
 	if err != nil {
