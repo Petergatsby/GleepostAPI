@@ -116,7 +116,7 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 		if err != nil {
 			log.Println("Error pulling in profile changes from facebook:", err)
 		}
-		token, err = api.createAndStoreToken(userID)
+		token, err = api.Auth.createAndStoreToken(userID)
 		return
 	case err == NoSuchUser: //No gleepost user already associated with this fb user.
 		//If we have an error here, that means that there is no associated gleepost user account.
@@ -188,7 +188,7 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (t
 			err = e
 			return
 		}
-		token, err = api.createAndStoreToken(id)
+		token, err = api.Auth.createAndStoreToken(id)
 		return
 	}
 	if err == nil {
@@ -383,7 +383,7 @@ func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (tok
 			return
 		}
 		//Login
-		token, err = api.createAndStoreToken(id)
+		token, err = api.Auth.createAndStoreToken(id)
 		if err != nil {
 			return
 		}
@@ -395,7 +395,7 @@ func (api *API) AttemptLoginWithInvite(email, invite string, FBUser uint64) (tok
 
 //AttemptAssociationWithCredentials tries to connect a particular facebook account to a particular user account.
 func (api *API) AttemptAssociationWithCredentials(email, pass, fbToken string) (err error) {
-	id, err := api.validatePass(email, pass)
+	id, err := api.Auth.validatePass(email, pass)
 	if err != nil {
 		log.Println(err)
 		err = BadLogin

@@ -22,6 +22,7 @@ import (
 
 //API contains all the configuration and sub-modules the Gleepost API requires to function.
 type API struct {
+	Auth          *Authenticator
 	cache         *cache.Cache
 	db            *sql.DB
 	sc            *psc.StatementCache
@@ -59,6 +60,7 @@ func New(conf conf.Config) (api *API) {
 	db.SetMaxIdleConns(100)
 	api.sc = psc.NewCache(db)
 	api.db = db
+	api.Auth = &Authenticator{cache: api.cache, sc: api.sc}
 	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	api.Viewer = &viewer{cache: api.cache, sc: api.sc}
 	return

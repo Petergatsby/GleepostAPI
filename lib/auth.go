@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
+	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
 var (
@@ -32,34 +34,58 @@ var (
 	NoSuchUser = gp.APIerror{Reason: "That user does not exist."}
 )
 
+//Authenticator handles user authentication.
+type Authenticator struct {
+	cache *cache.Cache
+	sc    *psc.StatementCache
+}
+
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
 //it issues a token which expires now
 func createToken(userID gp.UserID) gp.Token {
 	random, err := randomString()
 	if err != nil {
 		log.Println(err)
-		return (gp.Token{UserID: userID, Token: "foo", Expiry: time.Now().UTC()})
+		return gp.Token{UserID: userID, Token: "foo", Expiry: time.Now().UTC()}
 	}
 	expiry := time.Now().AddDate(1, 0, 0).UTC().Round(time.Second)
 	token := gp.Token{UserID: userID, Token: random, Expiry: expiry}
-	return (token)
+	return token
 }
 
-//ValidateToken returns true if this id:token pair is valid (or if LoginOverride) and false otherwise (or if there's a db error).
-func (api *API) ValidateToken(id gp.UserID, token string) bool {
+//ValidateToken returns true if this id:token pair is valid and false otherwise (or if there's a db error).
+func (auth *Authenticator) ValidateToken(id gp.UserID, token string) bool {
 	//If the api.db is down, this will fail for everyone who doesn't have a api.cached
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
-	if api.cache.TokenExists(id, token) {
+	if auth.cache.TokenExists(id, token) {
 		return true
 	}
-	return api.tokenExists(id, token)
+	return auth.tokenExists(id, token)
+}
+
+//TokenExists returns true if this user:token pair exists, false otherwise (or in the case of error)
+func (auth *Authenticator) tokenExists(id gp.UserID, token string) bool {
+	var expiry string
+	s, err := auth.sc.Prepare("SELECT expiry FROM tokens WHERE user_id = ? AND token = ?")
+	if err != nil {
+		return false
+	}
+	err = s.QueryRow(id, token).Scan(&expiry)
+	if err != nil {
+		return false
+	}
+	t, _ := time.Parse(mysqlTime, expiry)
+	if t.After(time.Now()) {
+		return true
+	}
+	return false
 }
 
 //ValidatePass returns the id of the user with this email:pass pair, or err if the comparison is not valid.
-func (api *API) validatePass(email string, pass string) (id gp.UserID, err error) {
+func (auth *Authenticator) validatePass(email string, pass string) (id gp.UserID, err error) {
 	passBytes := []byte(pass)
-	hash, id, err := api.getHash(email)
+	hash, id, err := auth.getHash(email)
 	if err != nil {
 		return 0, err
 	}
@@ -70,20 +96,40 @@ func (api *API) validatePass(email string, pass string) (id gp.UserID, err error
 	return id, nil
 }
 
+//GetHash returns this user's password hash (by username).
+func (auth *Authenticator) getHash(user string) (hash []byte, id gp.UserID, err error) {
+	s, err := auth.sc.Prepare("SELECT id, password FROM users WHERE email = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user).Scan(&id, &hash)
+	return
+}
+
 //CreateAndStoreToken issues an access token for this user.
-func (api *API) createAndStoreToken(id gp.UserID) (gp.Token, error) {
+func (auth *Authenticator) createAndStoreToken(id gp.UserID) (gp.Token, error) {
 	token := createToken(id)
-	err := api.addToken(token)
-	api.cache.PutToken(token)
+	err := auth.addToken(token)
+	auth.cache.PutToken(token)
 	if err != nil {
 		return token, err
 	}
 	return token, nil
 }
 
+//AddToken records this session token in the database.
+func (auth *Authenticator) addToken(token gp.Token) (err error) {
+	s, err := auth.sc.Prepare("INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(token.UserID, token.Token, token.Expiry)
+	return
+}
+
 //AttemptLogin will (a) return BadLogin if your email:pass combination isn't correct; (b) return a non-nil verification status (if your account is not yet verified) and (c) if neither of the above, issue you a session token.
 func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification gp.Status, err error) {
-	id, err := api.validatePass(email, pass)
+	id, err := api.Auth.validatePass(email, pass)
 	if err != nil {
 		err = BadLogin
 		return
@@ -96,7 +142,7 @@ func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification g
 		verification = gp.NewStatus("unverified", email)
 		return
 	}
-	token, err = api.createAndStoreToken(id)
+	token, err = api.Auth.createAndStoreToken(id)
 	return
 }
 
@@ -433,16 +479,6 @@ func (api *API) ResetPass(userID gp.UserID, token string, newPass string) (err e
 	return
 }
 
-//GetHash returns this user's password hash (by username).
-func (api *API) getHash(user string) (hash []byte, id gp.UserID, err error) {
-	s, err := api.sc.Prepare("SELECT id, password FROM users WHERE email = ?")
-	if err != nil {
-		return
-	}
-	err = s.QueryRow(user).Scan(&id, &hash)
-	return
-}
-
 //GetHashByID returns this user's password hash.
 func (api *API) getHashByID(id gp.UserID) (hash []byte, err error) {
 	s, err := api.sc.Prepare("SELECT password FROM users WHERE id = ?")
@@ -530,37 +566,5 @@ func (api *API) deletePasswordRecovery(userID gp.UserID, token string) (err erro
 		return
 	}
 	_, err = s.Exec(userID, token)
-	return
-}
-
-/********************************************************************
-		Token
-********************************************************************/
-
-//TokenExists returns true if this user:token pair exists, false otherwise (or in the case of error)
-func (api *API) tokenExists(id gp.UserID, token string) bool {
-	var expiry string
-	s, err := api.sc.Prepare("SELECT expiry FROM tokens WHERE user_id = ? AND token = ?")
-	if err != nil {
-		return false
-	}
-	err = s.QueryRow(id, token).Scan(&expiry)
-	if err != nil {
-		return false
-	}
-	t, _ := time.Parse(mysqlTime, expiry)
-	if t.After(time.Now()) {
-		return (true)
-	}
-	return (false)
-}
-
-//AddToken records this session token in the database.
-func (api *API) addToken(token gp.Token) (err error) {
-	s, err := api.sc.Prepare("INSERT INTO tokens (user_id, token, expiry) VALUES (?, ?, ?)")
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(token.UserID, token.Token, token.Expiry)
 	return
 }

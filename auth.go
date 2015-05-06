@@ -44,7 +44,7 @@ func authenticate(r *http.Request) (userID gp.UserID, err error) {
 			token = credentialsFromHeader[1]
 		}
 	}
-	success := api.ValidateToken(userID, token)
+	success := api.Auth.ValidateToken(userID, token)
 	if success {
 		go api.Count(1, "gleepost.auth.authenticate.fail")
 		return userID, nil
