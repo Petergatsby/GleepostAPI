@@ -79,11 +79,11 @@ type stubMailer struct {
 }
 
 func (s *stubMailer) SendPlaintext(to, subject, body string) error {
-	log.Println("Sending plaintext:", to, subject, body)
+	log.Println("Sending plaintext:", to, subject)
 	return nil
 }
 
 func (s *stubMailer) SendHTML(to, subject, body string) error {
-	log.Println("Sending html email:", to, subject, body)
+	log.Println("Sending html email:", to, subject)
 	return nil
 }
