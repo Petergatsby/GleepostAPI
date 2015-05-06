@@ -15,17 +15,33 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
+type verificationTest struct {
+	Email              string
+	Pass               string
+	First              string
+	Last               string
+	VerifyTwice        bool
+	TestValidToken     bool
+	ExpectedStatusCode int
+	ExpectedError      string
+}
+
+func initVerification(tests []verificationTest) (err error) {
+	err = initDB()
+	if err != nil {
+		return
+	}
+
+	for _, t := range tests {
+		err = registerUser(t.Email, t.Pass, t.First, t.Last)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
 func TestVerification(t *testing.T) {
-	err := initDB()
-	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
-	}
-
-	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
-	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
-	}
-
 	config := conf.GetConfig()
 	api = lib.New(*config)
 	api.Mail = mail.NewMock()
@@ -35,16 +51,6 @@ func TestVerification(t *testing.T) {
 
 	client := &http.Client{}
 
-	type verificationTest struct {
-		Email              string
-		Pass               string
-		First              string
-		Last               string
-		VerifyTwice        bool
-		TestValidToken     bool
-		ExpectedStatusCode int
-		ExpectedError      string
-	}
 	testGood := verificationTest{
 		Email:              "verification_test1@fakestanford.edu",
 		Pass:               "TestingPass",
@@ -74,18 +80,18 @@ func TestVerification(t *testing.T) {
 		ExpectedError:      "Bad verification token",
 	}
 	tests := []verificationTest{testGood, testTwice, testBad}
+
+	err := initVerification(tests)
+	if err != nil {
+		t.Fatalf("Error initializing verification test state: %v\n", err)
+	}
+
+	db, err := sql.Open("mysql", conf.GetConfig().Mysql.ConnectionString())
+	if err != nil {
+		t.Fatalf("Error opening db: %v\n", err)
+	}
+
 	for testNumber, vt := range tests {
-
-		data := make(url.Values)
-		data["email"] = []string{vt.Email}
-		data["pass"] = []string{vt.Pass}
-		data["first"] = []string{vt.First}
-		data["last"] = []string{vt.Last}
-		resp, err := client.PostForm(baseURL+"register", data)
-
-		if err != nil {
-			t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
-		}
 
 		var token string
 		if vt.TestValidToken {
@@ -96,7 +102,7 @@ func TestVerification(t *testing.T) {
 		} else {
 			token = "12345lolololtest"
 		}
-		resp, err = client.PostForm(baseURL+"verify/"+token, make(url.Values))
+		resp, err := client.PostForm(baseURL+"verify/"+token, make(url.Values))
 		if err != nil {
 			t.Fatalf("Test%v: Error with verification request: %v\n", testNumber, err)
 		}
@@ -141,5 +147,16 @@ func TestVerification(t *testing.T) {
 
 func getToken(db *sql.DB, email string) (token string, err error) {
 	err = db.QueryRow("SELECT token FROM verification JOIN users ON users.id = verification.user_id WHERE users.email = ?", email).Scan(&token)
+	return
+}
+
+func registerUser(email, pass, first, last string) (err error) {
+	client := &http.Client{}
+	data := make(url.Values)
+	data["email"] = []string{email}
+	data["pass"] = []string{pass}
+	data["first"] = []string{first}
+	data["last"] = []string{last}
+	_, err = client.PostForm(baseURL+"register", data)
 	return
 }
