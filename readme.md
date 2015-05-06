@@ -776,11 +776,13 @@ If the poll has ended already:
 ```
 
 ##GET /live
-required parameters: id, token, after
+required parameters: `id`, `token`, `after`
 
-[after] must be either an RFC3339 formatted time string, or a unix timestamp.
+Optional parameters: `until`
 
-Live returns the 20 events whose event-time is soonest after "after".
+`after` and `until` must be either an RFC3339 formatted time string, or a unix timestamp.
+
+Live returns the 20 events whose event-time is soonest after `after`, which are happening before `until`.
 
 example responses:
 (http 200)

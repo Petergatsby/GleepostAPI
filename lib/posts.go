@@ -119,29 +119,41 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 	return
 }
 
-//UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
-func (api *API) UserGetLive(userID gp.UserID, after string, count int) (posts []gp.PostSmall, err error) {
-	posts = make([]gp.PostSmall, 0)
-	t, enotstringtime := time.Parse(after, time.RFC3339)
+func parseTime(tstring string) (t time.Time, err error) {
+	t, enotstringtime := time.Parse(time.RFC3339, tstring)
 	if enotstringtime != nil {
-		unix, enotunixtime := strconv.ParseInt(after, 10, 64)
+		unix, enotunixtime := strconv.ParseInt(tstring, 10, 64)
 		if enotunixtime != nil {
 			err = EBADTIME
 			return
 		}
 		t = time.Unix(unix, 0)
 	}
+	return
+}
+
+//UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
+func (api *API) UserGetLive(userID gp.UserID, after, until string, count int) (posts []gp.PostSmall, err error) {
+	posts = make([]gp.PostSmall, 0)
+	afterTime, err := parseTime(after)
+	if err != nil {
+		return
+	}
+	untilTime, err := parseTime(until)
+	if err != nil {
+		untilTime = time.Now().AddDate(10, 0, 0).UTC()
+	}
 	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.getLive(primary.ID, t, count, userID)
+	return api.getLive(primary.ID, afterTime, untilTime, count, userID)
 }
 
 //getLive returns the first count events happening after after, within network netId.
-func (api *API) getLive(netID gp.NetworkID, after time.Time, count int, userID gp.UserID) (posts []gp.PostSmall, err error) {
+func (api *API) getLive(netID gp.NetworkID, after, until time.Time, count int, userID gp.UserID) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
-	posts, err = api._getLive(netID, after, count)
+	posts, err = api._getLive(netID, after, until, count)
 	if err != nil {
 		return
 	}
@@ -1124,18 +1136,18 @@ func (api *API) addPost(userID gp.UserID, text string, network gp.NetworkID, pen
 }
 
 //GetLive returns a list of events whose event time is after "after", ordered by time.
-func (api *API) _getLive(netID gp.NetworkID, after time.Time, count int) (posts []gp.PostSmall, err error) {
+func (api *API) _getLive(netID gp.NetworkID, after time.Time, until time.Time, count int) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
 	q := "SELECT wall_posts.id, `by`, time, text, network_id " +
 		"FROM wall_posts " +
 		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
-		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? " +
+		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? AND value < ? " +
 		"ORDER BY value ASC LIMIT 0, ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(netID, after.Unix(), count)
+	rows, err := s.Query(netID, after.Unix(), until.Unix(), count)
 	if err != nil {
 		return
 	}

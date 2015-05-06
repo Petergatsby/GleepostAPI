@@ -150,4 +150,33 @@ If the poll has ended already:
 
 ###Networks
 
+A Network is a collection of users and posts; each university is a Network.
+
+```json
+{
+	"id":1,
+	"name":"University of Leeds"
+}
+```
+
+Users may also create networks within their university; these are Groups. These have some additional parameters:
+
+```json
+{
+	"id":5345, 
+	"name":"Even Cooler Group", 
+	"description":"Pretty cool, no?", 
+	"url":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg", 
+	"creator": {
+		"id":2491,
+		"name":"Patrick",
+		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
+	},
+	"privacy":"private",
+	"size":1234,
+	"conversation":5678,
+	"last_activity":"2014-11-06T23:36:24Z"
+}
+```
+
 ###Approve
