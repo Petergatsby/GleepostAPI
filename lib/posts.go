@@ -823,25 +823,6 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 	return nil
 }
 
-//getPostAttribs returns all the custom attributes of a post.
-func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
-	attribs = make(map[string]interface{})
-	atts, err := api._getPostAttribs(post)
-	for attrib, val := range atts {
-		switch {
-		case attrib == "event-time":
-			var unix int64
-			unix, err = strconv.ParseInt(val, 10, 64)
-			if err == nil {
-				attribs[attrib] = time.Unix(unix, 0)
-			}
-		default:
-			attribs[attrib] = val
-		}
-	}
-	return
-}
-
 //UserAttend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
@@ -1387,7 +1368,7 @@ func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
 }
 
 //GetPostAttribs returns a map of all attributes associated with post.
-func (api *API) _getPostAttribs(post gp.PostID) (attribs map[string]string, err error) {
+func (api *API) getPostAttribs(post gp.PostID) (attribs map[string]interface{}, err error) {
 	s, err := api.sc.Prepare("SELECT attrib, value FROM post_attribs WHERE post_id=?")
 	if err != nil {
 		return
@@ -1397,14 +1378,23 @@ func (api *API) _getPostAttribs(post gp.PostID) (attribs map[string]string, err 
 		return
 	}
 	defer rows.Close()
-	attribs = make(map[string]string)
+	attribs = make(map[string]interface{})
 	for rows.Next() {
 		var attrib, val string
 		err = rows.Scan(&attrib, &val)
 		if err != nil {
 			return
 		}
-		attribs[attrib] = val
+		switch {
+		case attrib == "event-time":
+			var unix int64
+			unix, err = strconv.ParseInt(val, 10, 64)
+			if err == nil {
+				attribs[attrib] = time.Unix(unix, 0)
+			}
+		default:
+			attribs[attrib] = val
+		}
 	}
 	return
 }
