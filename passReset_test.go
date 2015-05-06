@@ -175,19 +175,9 @@ func TestPassReset(t *testing.T) {
 			t.Fatalf("Test%v: Error making http request: %v\n", testNumber, err)
 		}
 
-		var userID string
-		err = db.QueryRow("SELECT users.id FROM users WHERE users.email = ?", prt.Email).Scan(&userID)
+		userID, resetToken, err := getResetToken(db, prt.Email)
 		if err != nil {
 			t.Fatalf("Test%v: Error finding reset token: %v\n", testNumber, err)
-		}
-
-		var resetToken string
-		err = db.QueryRow("SELECT token FROM password_recovery WHERE password_recovery.user = ?", userID).Scan(&resetToken)
-		if err != nil {
-			t.Fatalf("Test%v: Error finding reset token: %v\n", testNumber, err)
-		}
-		if resetToken == "" {
-			t.Fatalf("Test%v: Incorrect reset token retrieved: %v\n", testNumber, resetToken)
 		}
 
 		if prt.RequestTwice {
@@ -239,4 +229,14 @@ func TestPassReset(t *testing.T) {
 			t.Fatalf("Test%v: Something completely unexpected happened", testNumber)
 		}
 	}
+}
+
+func getResetToken(db *sql.DB, email string) (userID string, token string, err error) {
+	err = db.QueryRow("SELECT users.id FROM users WHERE users.email = ?", email).Scan(&userID)
+	if err != nil {
+		return
+	}
+
+	err = db.QueryRow("SELECT token FROM password_recovery WHERE password_recovery.user = ?", userID).Scan(&token)
+	return
 }
