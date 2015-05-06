@@ -115,3 +115,8 @@ type SubjectivePoll struct {
 	Poll
 	YourVote string `json:"your-vote,omitempty"`
 }
+
+type LiveSummary struct {
+	Posts     int            `json:"total-posts"`
+	CatCounts map[string]int `json:"by-category"`
+}

@@ -38,6 +38,8 @@ func init() {
 	base.Handle("/posts/{id:[0-9]+}/votes", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/live", timeHandler(api, http.HandlerFunc(liveHandler))).Methods("GET")
 	base.Handle("/live", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/live_summary", timeHandler(api, http.HandlerFunc(liveSummaryHandler))).Methods("GET")
+	base.Handle("/live_summary", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func ignored(key string) bool {
@@ -345,6 +347,27 @@ func liveHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, posts, 200)
+	}
+}
+
+func liveSummaryHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		after := r.FormValue("after")
+		until := r.FormValue("until")
+		summary, err := api.UserGetLiveSummary(userID, after, until)
+		if err != nil {
+			code := 500
+			if err == lib.EBADTIME {
+				code = 400
+			}
+			jsonErr(w, err, code)
+			return
+		}
+		jsonResponse(w, summary, 200)
 	}
 }
 

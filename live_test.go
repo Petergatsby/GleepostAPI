@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,6 +41,7 @@ func liveInit() error {
 		switch {
 		case i < 10:
 			data["event-time"] = []string{time.Now().UTC().Add(5 * time.Minute).Format(time.RFC3339)}
+			data["tags"] = []string{"event,sports"}
 		case i < 35:
 			data["event-time"] = []string{time.Now().UTC().Add(25 * time.Minute).Format(time.RFC3339)}
 		case i < 37:
@@ -169,6 +171,96 @@ func TestLive(t *testing.T) {
 			}
 			if len(posts) != test.ExpectedCount {
 				t.Fatalf("Got an unexpected number of posts - got %d but expected %d\n", len(posts), test.ExpectedCount)
+			}
+		case test.ExpectedType == "gp.APIerror":
+			errResp := gp.APIerror{}
+			dec := json.NewDecoder(resp.Body)
+			err = dec.Decode(&errResp)
+			if err != nil {
+				t.Fatal("Couldn't decode as APIerror", err)
+			}
+			if errResp.Reason != test.ExpectedError {
+				t.Fatalf("Expected %s but got %s\n", test.ExpectedError, errResp.Reason)
+			}
+		}
+	}
+}
+
+func TestLiveSummary(t *testing.T) {
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.TW = lib.StubTranscodeWorker{}
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
+
+	err := liveInit()
+
+	if err != nil {
+		t.Fatal("Error setting up live summary test:", err)
+	}
+
+	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
+	if err != nil {
+		t.Fatal("Error logging in:", err)
+	}
+
+	client := &http.Client{}
+
+	type summaryTest struct {
+		Token              gp.Token
+		After              string
+		Until              string
+		ExpectedStatusCode int
+		ExpectedType       string
+		ExpectedSummary    gp.LiveSummary
+		ExpectedError      string
+	}
+	tests := []summaryTest{
+		{
+			Token:              token,
+			After:              time.Now().Format(time.RFC3339),
+			Until:              time.Now().AddDate(1, 0, 0).Format(time.RFC3339),
+			ExpectedStatusCode: 200,
+			ExpectedType:       "gp.LiveSummary",
+			ExpectedSummary: gp.LiveSummary{
+				Posts:     50,
+				CatCounts: map[string]int{"party": 2, "event": 12, "sports": 10},
+			},
+		},
+	}
+	for _, test := range tests {
+		data := make(url.Values)
+		data["after"] = []string{test.After}
+		data["id"] = []string{fmt.Sprintf("%d", test.Token.UserID)}
+		data["token"] = []string{test.Token.Token}
+		if len(test.Until) > 0 {
+			data["until"] = []string{test.Until}
+		}
+		resp, err := client.Get(baseURL + "live_summary?" + data.Encode())
+		if err != nil {
+			t.Fatal("Error getting summary of live events:", err)
+		}
+		if resp.StatusCode != test.ExpectedStatusCode {
+			errResp := gp.APIerror{}
+			dec := json.NewDecoder(resp.Body)
+			dec.Decode(&errResp)
+			log.Println(errResp)
+			t.Fatalf("Expected status code %d but got %d\n", test.ExpectedStatusCode, resp.StatusCode)
+		}
+		switch {
+		case test.ExpectedType == "gp.LiveSummary":
+			summary := gp.LiveSummary{}
+			dec := json.NewDecoder(resp.Body)
+			err = dec.Decode(&summary)
+			if err != nil {
+				t.Fatal("Couldn't decode as ", test.ExpectedType, err)
+			}
+			if summary.Posts != test.ExpectedSummary.Posts {
+				t.Fatalf("Didn't get the right number of posts: got %d but expected %d\n", summary.Posts, test.ExpectedSummary.Posts)
+			}
+			if !reflect.DeepEqual(summary.CatCounts, test.ExpectedSummary.CatCounts) {
+				t.Fatalf("Summary counts did not match: expected %v but got %v\n", test.ExpectedSummary.CatCounts, summary.CatCounts)
 			}
 		case test.ExpectedType == "gp.APIerror":
 			errResp := gp.APIerror{}

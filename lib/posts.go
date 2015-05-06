@@ -132,6 +132,61 @@ func parseTime(tstring string) (t time.Time, err error) {
 	return
 }
 
+func (api *API) UserGetLiveSummary(userID gp.UserID, after, until string) (summary gp.LiveSummary, err error) {
+	afterTime, err := parseTime(after)
+	if err != nil {
+		return
+	}
+	untilTime, err := parseTime(until)
+	if err != nil {
+		return
+	}
+	primary, err := api.getUserUniversity(userID)
+	if err != nil {
+		return
+	}
+
+	return api.getLiveSummary(primary.ID, afterTime, untilTime)
+}
+
+func (api *API) getLiveSummary(netID gp.NetworkID, after, until time.Time) (summary gp.LiveSummary, err error) {
+	q := "SELECT COUNT(*) FROM wall_posts " +
+		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " +
+		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? AND value < ? "
+	totalStmt, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = totalStmt.QueryRow(netID, after.Unix(), until.Unix()).Scan(&summary.Posts)
+	if err != nil {
+		return
+	}
+	q = "SELECT categories.tag, COUNT(*) FROM wall_posts " +
+		"JOIN post_attribs ON wall_posts.id = post_attribs.post_id " + categoryClause +
+		"WHERE deleted = 0 AND pending = 0 AND network_id = ? AND attrib = 'event-time' AND value > ? AND value < ? " +
+		"GROUP BY categories.tag"
+	catsStmt, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := catsStmt.Query(netID, after.Unix(), until.Unix())
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	summary.CatCounts = make(map[string]int)
+	for rows.Next() {
+		var cat string
+		var count int
+		err = rows.Scan(&cat, &count)
+		if err != nil {
+			return
+		}
+		summary.CatCounts[cat] = count
+	}
+	return
+}
+
 //UserGetLive gets the live events (soonest first, starting from after) from the perspective of userId.
 func (api *API) UserGetLive(userID gp.UserID, after, until string, count int, category string) (posts []gp.PostSmall, err error) {
 	posts = make([]gp.PostSmall, 0)
