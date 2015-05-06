@@ -856,6 +856,8 @@ required parameters:
 
 This endpoint summarizes the state of the Campus Live (ie, upcoming events) between the two times `after` and `until`.
 
+Note that the contents of `by-category` are not expected to sum to `total-posts`; an event may be in several categories (eg. `event` and `party`) and therefore be counted in several categories.
+
 ```json
 {
 	"total-posts":123,
