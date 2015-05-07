@@ -13,22 +13,28 @@ import (
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
-func TestCreateNetwork(t *testing.T) {
+func initCreateNetwork() error {
 	err := initDB()
 	if err != nil {
-		t.Fatalf("Error initializing db: %v\n", err)
+		return err
 	}
 	err = initAdmin()
 	if err != nil {
-		t.Fatalf("Error initializing admin status: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+func TestCreateNetwork(t *testing.T) {
+	err := initCreateNetwork()
+	if err != nil {
+		t.Fatalf("Error initializing test state: %v\n", err)
 	}
 
 	config := conf.GetConfig()
 	api = lib.New(*config)
-	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
