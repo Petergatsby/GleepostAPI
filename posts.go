@@ -185,7 +185,7 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 400)
 			case err == lib.CommentTooLong:
 				jsonErr(w, err, 400)
-			case err == lib.NoSuchUpload:
+			case err == gp.NoSuchPost:
 				jsonErr(w, err, 400)
 			case err == lib.ENOTALLOWED:
 				jsonErr(w, err, 403)

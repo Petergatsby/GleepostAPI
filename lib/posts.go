@@ -1287,7 +1287,7 @@ func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
 	err = s.QueryRow(postID).Scan(&post.Network, &by, &t, &post.Text)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			err = NoSuchUpload
+			err = gp.NoSuchPost
 		}
 		return
 	}

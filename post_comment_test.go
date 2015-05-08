@@ -73,7 +73,7 @@ func TestPostComment(t *testing.T) {
 		Text:               "This one was not so funny, it didn't exist",
 		PostID:             1123,
 		ExpectedStatusCode: http.StatusBadRequest,
-		ExpectedError:      "That upload doesn't exist",
+		ExpectedError:      "No such post",
 	}
 
 	tests := []postCommentTest{goodTest, emptyTest, noPostTest, hugeTextTest}
