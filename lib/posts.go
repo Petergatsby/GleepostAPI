@@ -26,6 +26,8 @@ var (
 	EBADTIME = gp.APIerror{Reason: "Could not parse as a time"}
 	//CommentTooShort happens if you try to post an empty comment.
 	CommentTooShort = gp.APIerror{Reason: "Comment too short"}
+	//CommentTooLong happens if you try to post a comment with over 1024 chars.
+	CommentTooLong = gp.APIerror{Reason: "Comment too long"}
 	//NoSuchUpload = You tried to attach a URL you didn't upload to tomething
 	NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
 	//PostNoContent = You tried to create a post that does not contain any content
@@ -439,6 +441,9 @@ func (api *API) likesAndCount(post gp.PostID) (count int, likes []gp.LikeFull, e
 func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (commID gp.CommentID, err error) {
 	if len(text) == 0 {
 		err = CommentTooShort
+		return
+	} else if len(text) > 1024 {
+		err = CommentTooLong
 		return
 	}
 	post, err := api.GetPost(postID)
@@ -1281,6 +1286,9 @@ func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
 	var t string
 	err = s.QueryRow(postID).Scan(&post.Network, &by, &t, &post.Text)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			err = NoSuchUpload
+		}
 		return
 	}
 	post.By, err = api.getUser(by)

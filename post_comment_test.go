@@ -30,6 +30,11 @@ func TestPostComment(t *testing.T) {
 		t.Fatalf("Error logging in: %v", err)
 	}
 
+	var largeText string
+	for x := 0; x <= 1024; x++ {
+		largeText += "l"
+	}
+
 	type postCommentTest struct {
 		UserID             gp.UserID
 		Token              string
@@ -54,15 +59,24 @@ func TestPostComment(t *testing.T) {
 		ExpectedStatusCode: http.StatusBadRequest,
 		ExpectedError:      "Comment too short",
 	}
+	hugeTextTest := postCommentTest{
+		UserID:             token.UserID,
+		Token:              token.Token,
+		Text:               largeText,
+		PostID:             1,
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedError:      "Comment too long",
+	}
 	noPostTest := postCommentTest{
 		UserID:             token.UserID,
 		Token:              token.Token,
 		Text:               "This one was not so funny, it didn't exist",
 		PostID:             1123,
-		ExpectedStatusCode: http.StatusInternalServerError,
+		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedError:      "That upload doesn't exist",
 	}
 
-	tests := []postCommentTest{goodTest, emptyTest, noPostTest}
+	tests := []postCommentTest{goodTest, emptyTest, noPostTest, hugeTextTest}
 
 	createSimplePost(token, "Simple test post")
 
@@ -90,15 +104,13 @@ func TestPostComment(t *testing.T) {
 
 		dec := json.NewDecoder(resp.Body)
 
-		// if pct.ExpectedStatusCode == http.StatusCreated {
-		// var created int
-		// err = dec.Decode(&created)
-		// if err != nil {
-		// 	t.Fatalf("Test%v: %v", testNumber, err)
-		// }
-		// fmt.Println(created)
-		// } else
-		if pct.ExpectedStatusCode == http.StatusBadRequest {
+		if pct.ExpectedStatusCode == http.StatusCreated {
+			var created gp.Created
+			err = dec.Decode(&created)
+			if err != nil {
+				t.Fatalf("Test%v: %v", testNumber, err)
+			}
+		} else if pct.ExpectedStatusCode == http.StatusBadRequest {
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
 			if pct.ExpectedError != errorValue.Reason {
