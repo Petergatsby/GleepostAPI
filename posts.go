@@ -186,6 +186,10 @@ func postComments(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case err == lib.CommentTooShort:
 				jsonErr(w, err, 400)
+			case err == lib.CommentTooLong:
+				jsonErr(w, err, 400)
+			case err == gp.NoSuchPost:
+				jsonErr(w, err, 400)
 			case err == lib.ENOTALLOWED:
 				jsonErr(w, err, 403)
 			default:
