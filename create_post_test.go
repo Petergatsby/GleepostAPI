@@ -27,8 +27,6 @@ func TestCreatePost(t *testing.T) {
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
 
-	client := &http.Client{}
-
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
 		t.Fatalf("Error logging in: %v\n", err)

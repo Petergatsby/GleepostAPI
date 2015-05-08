@@ -27,8 +27,6 @@ func TestRegister(t *testing.T) {
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
 
-	client := &http.Client{}
-
 	type registrationTest struct {
 		Email              string
 		Pass               string

@@ -16,7 +16,6 @@ import (
 )
 
 func TestPostComment(t *testing.T) {
-	client := &http.Client{}
 
 	config := conf.GetConfig()
 	api = lib.New(*config)
@@ -121,7 +120,6 @@ func TestPostComment(t *testing.T) {
 }
 
 func createSimplePost(token gp.Token, text string) error {
-	client := &http.Client{}
 
 	data := make(url.Values)
 	data["token"] = []string{token.Token}

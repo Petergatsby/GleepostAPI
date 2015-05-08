@@ -17,6 +17,7 @@ import (
 )
 
 var baseURL = "http://localhost:8083/api/v1/"
+var client = &http.Client{}
 
 func TestLogin(t *testing.T) {
 	err := initDB()
@@ -198,7 +199,6 @@ func truncate(tables ...string) error {
 
 func loginRequest(email, pass string) (resp *http.Response, err error) {
 	data := make(url.Values)
-	client := &http.Client{}
 	data["email"] = []string{email}
 	data["pass"] = []string{pass}
 	resp, err = client.PostForm(baseURL+"login", data)

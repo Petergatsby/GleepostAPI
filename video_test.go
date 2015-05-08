@@ -51,7 +51,6 @@ func TestVideo(t *testing.T) {
 			ExpectedStatusCode: http.StatusCreated,
 		},
 	}
-	client := &http.Client{}
 	url := baseURL + "videos"
 	for _, test := range tests {
 		req, err := newfileUploadRequest(url, nil, "video", test.Video)

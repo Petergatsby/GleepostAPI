@@ -36,8 +36,6 @@ func TestViewPost(t *testing.T) {
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
 
-	client := &http.Client{}
-
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 
 	goodTest := viewPostTest{
@@ -204,8 +202,6 @@ func initPosts(tests []viewPostTest) error {
 	if err != nil {
 		return err
 	}
-
-	client := &http.Client{}
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
