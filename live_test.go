@@ -27,8 +27,6 @@ func liveInit() error {
 
 	truncate("wall_posts", "post_attribs", "post_categories")
 
-	client := &http.Client{}
-
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
 		return err
@@ -137,7 +135,6 @@ func TestLive(t *testing.T) {
 			ExpectedCount:      2,
 		},
 	}
-	client := &http.Client{}
 	for _, test := range tests {
 		data := make(url.Values)
 		data["after"] = []string{test.After}
@@ -204,8 +201,6 @@ func TestLiveSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error logging in:", err)
 	}
-
-	client := &http.Client{}
 
 	type summaryTest struct {
 		Token              gp.Token
