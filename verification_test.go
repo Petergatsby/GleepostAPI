@@ -49,8 +49,6 @@ func TestVerification(t *testing.T) {
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
 
-	client := &http.Client{}
-
 	testGood := verificationTest{
 		Email:              "verification_test1@fakestanford.edu",
 		Pass:               "TestingPass",

@@ -95,7 +95,6 @@ func TestChangePass(t *testing.T) {
 
 func changePassRequest(token gp.Token, oldPass string, newPass string) (resp *http.Response, err error) {
 	data := make(url.Values)
-	client := &http.Client{}
 	data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
 	data["token"] = []string{token.Token}
 	data["old"] = []string{oldPass}
@@ -106,7 +105,6 @@ func changePassRequest(token gp.Token, oldPass string, newPass string) (resp *ht
 
 func testingGetSession(email, pass string) (token gp.Token, err error) {
 	data := make(url.Values)
-	client := &http.Client{}
 	data["email"] = []string{email}
 	data["pass"] = []string{pass}
 

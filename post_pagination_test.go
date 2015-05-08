@@ -17,8 +17,6 @@ import (
 
 func TestPostPagination(t *testing.T) {
 
-	client := &http.Client{}
-
 	config := conf.GetConfig()
 	api = lib.New(*config)
 	api.Mail = mail.NewMock()
@@ -132,8 +130,6 @@ func initManyPosts(tests int) error {
 	}
 
 	truncate("wall_posts")
-
-	client := &http.Client{}
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {

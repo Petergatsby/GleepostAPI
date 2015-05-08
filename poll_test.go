@@ -37,8 +37,6 @@ func TestCreatePoll(t *testing.T) {
 		t.Fatalf("Couldn't log in: %v\n", err)
 	}
 
-	client := &http.Client{}
-
 	type createPollTest struct {
 		Token              gp.Token
 		Text               string
@@ -218,8 +216,6 @@ func TestVote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't log in: %v\n", err)
 	}
-
-	client := &http.Client{}
 
 	type voteTest struct {
 		Token              gp.Token

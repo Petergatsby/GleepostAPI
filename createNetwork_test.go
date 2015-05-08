@@ -39,8 +39,6 @@ func TestCreateNetwork(t *testing.T) {
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
 
-	client := &http.Client{}
-
 	type netCreationTest struct {
 		Email              string //To get a session
 		Pass               string //To get a session

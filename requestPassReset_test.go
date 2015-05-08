@@ -32,8 +32,6 @@ func TestRequestPassReset(t *testing.T) {
 	server := httptest.NewServer(r)
 	baseURL = server.URL + "/api/v1/"
 
-	client := &http.Client{}
-
 	type requestPassResetTest struct {
 		Email              string
 		Pass               string
