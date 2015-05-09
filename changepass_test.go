@@ -25,6 +25,7 @@ func TestChangePass(t *testing.T) {
 	api = lib.New(*config)
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	type changePassTest struct {
@@ -99,7 +100,14 @@ func changePassRequest(token gp.Token, oldPass string, newPass string) (resp *ht
 	data["token"] = []string{token.Token}
 	data["old"] = []string{oldPass}
 	data["new"] = []string{newPass}
-	resp, err = client.PostForm(baseURL+"profile/change_pass", data)
+	req, err := http.NewRequest("POST", baseURL+"profile/change_pass", strings.NewReader(data.Encode()))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Close = true
+
+	resp, err = client.Do(req)
 	return
 }
 

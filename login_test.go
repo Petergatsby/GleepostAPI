@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ func TestLogin(t *testing.T) {
 	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	type loginTest struct {
@@ -136,15 +138,12 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 	err = truncate("network", "net_rules", "users", "user_network", "uploads", "post_images")
 	if err != nil {
 		return err
 	}
-	stmt, err := db.Prepare("INSERT INTO `network` (`name`, `is_university`, `privacy`, `user_group`) VALUES (?, ?, NULL, ?)")
-	if err != nil {
-		return err
-	}
-	res, err := stmt.Exec("Fake Stanford", true, true)
+	res, err := db.Exec("INSERT INTO `network` (`name`, `is_university`, `privacy`, `user_group`) VALUES (?, ?, NULL, ?)", "Fake Stanford", true, true)
 	if err != nil {
 		return err
 	}
@@ -152,11 +151,7 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
-	stmt, err = db.Prepare("INSERT INTO `net_rules` (network_id, rule_type, rule_value) VALUES (?, ?, ?)")
-	if err != nil {
-		return err
-	}
-	_, err = stmt.Exec(id, "email", "fakestanford.edu")
+	_, err = db.Exec("INSERT INTO `net_rules` (network_id, rule_type, rule_value) VALUES (?, ?, ?)", id, "email", "fakestanford.edu")
 	if err != nil {
 		return err
 	}
@@ -185,6 +180,7 @@ func truncate(tables ...string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 	if err != nil {
 		return err
 	}
@@ -201,6 +197,13 @@ func loginRequest(email, pass string) (resp *http.Response, err error) {
 	data := make(url.Values)
 	data["email"] = []string{email}
 	data["pass"] = []string{pass}
-	resp, err = client.PostForm(baseURL+"login", data)
+	req, err := http.NewRequest("POST", baseURL+"login", strings.NewReader(data.Encode()))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Close = true
+
+	resp, err = client.Do(req)
 	return
 }

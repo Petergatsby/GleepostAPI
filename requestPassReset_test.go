@@ -30,6 +30,7 @@ func TestRequestPassReset(t *testing.T) {
 	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	type requestPassResetTest struct {

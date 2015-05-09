@@ -20,13 +20,6 @@ func passResetInit(db *sql.DB, tests []passResetTest) (err error) {
 		return
 	}
 
-	config := conf.GetConfig()
-	api = lib.New(*config)
-	api.Mail = mail.NewMock()
-	api.Start()
-	server := httptest.NewServer(r)
-	baseURL = server.URL + "/api/v1/"
-
 	for _, t := range tests {
 		data := make(url.Values)
 		data["email"] = []string{t.Email}
@@ -68,6 +61,14 @@ func TestPassReset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
+
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	defer server.Close()
+	baseURL = server.URL + "/api/v1/"
 
 	testGood := passResetTest{
 		Email:              "pass_reset_test1@fakestanford.edu",

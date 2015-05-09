@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/draaglom/GleepostAPI/lib"
@@ -37,6 +38,7 @@ func TestCreateNetwork(t *testing.T) {
 	api = lib.New(*config)
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	type netCreationTest struct {
@@ -88,7 +90,11 @@ func TestCreateNetwork(t *testing.T) {
 		data["token"] = []string{token.Token}
 		data["university"] = []string{fmt.Sprintf("%t", nct.University)}
 		data["name"] = []string{nct.Name}
-		resp, err := client.PostForm(baseURL+"networks", data)
+		req, _ := http.NewRequest("POST", baseURL+"networks", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Close = true
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Fatalf("Test%v: Error making request: %s\n", testNumber, err)
 		}

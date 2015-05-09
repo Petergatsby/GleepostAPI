@@ -30,6 +30,7 @@ func TestVideo(t *testing.T) {
 	api.TW = lib.StubTranscodeWorker{}
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	type videoTest struct {

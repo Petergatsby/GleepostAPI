@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/draaglom/GleepostAPI/lib"
@@ -25,6 +26,7 @@ func TestCreatePost(t *testing.T) {
 	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
@@ -92,7 +94,11 @@ func TestCreatePost(t *testing.T) {
 		data["url"] = []string{cpt.Image}
 		data["video"] = []string{cpt.Video}
 
-		postResp, err := client.PostForm(baseURL+"posts", data)
+		req, _ := http.NewRequest("POST", baseURL+"posts", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Close = true
+
+		postResp, err := client.Do(req)
 		if err != nil {
 			t.Fatalf("Test%v: Error with post request: %v", testNumber, err)
 		}

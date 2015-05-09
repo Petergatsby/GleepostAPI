@@ -27,9 +27,9 @@ func TestCreatePoll(t *testing.T) {
 
 	config := conf.GetConfig()
 	api = lib.New(*config)
-	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
@@ -206,6 +206,7 @@ func TestVote(t *testing.T) {
 	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	err = initPolls()

@@ -74,6 +74,7 @@ func TestLive(t *testing.T) {
 	api.TW = lib.StubTranscodeWorker{}
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	err := liveInit()
@@ -147,7 +148,10 @@ func TestLive(t *testing.T) {
 			data["filter"] = []string{test.Filter}
 		}
 
-		resp, err := client.Get(baseURL + "live?" + data.Encode())
+		req, _ := http.NewRequest("GET", baseURL+"live?"+data.Encode(), nil)
+		req.Close = true
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Fatal("Error getting live events:", err)
 		}
@@ -189,6 +193,7 @@ func TestLiveSummary(t *testing.T) {
 	api.TW = lib.StubTranscodeWorker{}
 	api.Start()
 	server := httptest.NewServer(r)
+	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
 
 	err := liveInit()
@@ -257,7 +262,10 @@ func TestLiveSummary(t *testing.T) {
 		if len(test.Until) > 0 {
 			data["until"] = []string{test.Until}
 		}
-		resp, err := client.Get(baseURL + "live_summary?" + data.Encode())
+		req, _ := http.NewRequest("GET", baseURL+"live_summary?"+data.Encode(), nil)
+		req.Close = true
+
+		resp, err := client.Do(req)
 		if err != nil {
 			t.Fatal("Error getting summary of live events:", err)
 		}
