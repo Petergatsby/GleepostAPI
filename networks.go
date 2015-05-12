@@ -156,6 +156,7 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		go api.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
 			go api.Count(1, url+".400")
