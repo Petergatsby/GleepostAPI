@@ -58,6 +58,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.PostCount = postCount
+	go api.esIndexUser(otherID)
 	return
 }
 
@@ -252,7 +253,7 @@ func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
-	log.Println("DB hit: GetProfile(%d)\n", id)
+	log.Printf("DB hit: GetProfile(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER

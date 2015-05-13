@@ -134,6 +134,7 @@ type Config struct {
 	Email                EmailConfig
 	Facebook             FacebookConfig
 	Statsd               string
+	ElasticSearch        string
 }
 
 //PusherConfig represents the configuration for sending push notifications to a particular app.
