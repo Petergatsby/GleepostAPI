@@ -11,7 +11,6 @@ import (
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestGetNotifications(t *testing.T) {
@@ -21,10 +20,10 @@ func TestGetNotifications(t *testing.T) {
 	server := httptest.NewServer(r)
 	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
-	
+
 	err := initDB()
 	if err != nil {
-		return err
+		t.Fatalf("Error initialising db: %v", err)
 	}
 
 	truncate("notifications")
