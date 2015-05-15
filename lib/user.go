@@ -145,6 +145,10 @@ func (api *API) UserSetName(id gp.UserID, firstName, lastName string) (err error
 		return
 	}
 	_, err = s.Exec(firstName, lastName, id)
+	if err != nil {
+		return
+	}
+	api.esIndexUser(userID)
 	return
 }
 
@@ -157,7 +161,12 @@ func (api *API) UserSetProfileImage(id gp.UserID, url string) (err error) {
 	if !exists {
 		return NoSuchUpload
 	}
-	return api.setProfileImage(id, url)
+	err = api.setProfileImage(id, url)
+	if err != nil {
+		return
+	}
+	api.esIndexUser(userID)
+	return
 }
 
 func (api *API) setProfileImage(id gp.UserID, url string) (err error) {
