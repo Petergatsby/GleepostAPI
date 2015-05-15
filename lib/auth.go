@@ -235,6 +235,7 @@ func (api *API) createUser(first, last string, pass string, email string) (userI
 	if err != nil {
 		return 0, err
 	}
+	api.esIndexUser(userID)
 	return
 }
 

@@ -11,7 +11,7 @@ import (
 func (api *API) esIndexUser(userID gp.UserID) {
 	user, err := api._getProfile(userID)
 	if err != nil {
-		log.Println(user)
+		log.Println("Error getting profile for elasticsearch index:", userID, err)
 	}
 	user.Network, err = api.getUserUniversity(user.ID)
 	if err != nil {
