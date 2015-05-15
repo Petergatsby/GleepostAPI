@@ -31,8 +31,6 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			case *e == lib.ENOTALLOWED:
 				jsonResponse(w, e, 403)
-			case *e == lib.ETOOSHORT:
-				jsonResponse(w, e, 400)
 			default:
 				jsonErr(w, err, 500)
 			}

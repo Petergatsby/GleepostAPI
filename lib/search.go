@@ -3,15 +3,11 @@ package lib
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/mattbaird/elastigo/lib"
 )
-
-//ETOOSHORT represents a search query which is too short.
-var ETOOSHORT = gp.APIerror{Reason: "Your query must be at least 2 characters long"}
 
 //UserSearchUsersInNetwork returns all the users with names beginning with first, last in netId, or ENOTALLOWED if user isn't part of this network.
 //last may be omitted but first must be at least 2 characters.
@@ -23,8 +19,6 @@ func (api *API) userSearchUsersInNetwork(user gp.UserID, query string, netID gp.
 		return
 	case !in:
 		return users, &ENOTALLOWED
-	case len(query) < 2:
-		return users, &ETOOSHORT
 	default:
 		log.Printf("Searching network %d for user %s\n", netID, query)
 		return api.searchUsersInNetwork(query, netID)
@@ -58,7 +52,7 @@ func (api *API) searchUsersInNetwork(query string, netID gp.NetworkID) (users []
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
 	//do not actually do this: vulnerable to injection
-	esQuery := fmt.Sprintf("{ \"query\" : { \"term\" : { \"full_name\" : \"%s\" } } }", query)
+	esQuery := userQuery(query, netID)
 	results, err := c.Search("gleepost", "users", nil, esQuery)
 	if err != nil {
 		return
@@ -72,6 +66,30 @@ func (api *API) searchUsersInNetwork(query string, netID gp.NetworkID) (users []
 		users = append(users, user)
 	}
 	return
+}
+
+type esquery struct {
+	Query innerquery `json:"query"`
+}
+type innerquery struct {
+	Bool boolquery `json:"bool"`
+}
+type boolquery struct {
+	Should []matcher `json:"should"`
+}
+type matcher struct {
+	Match map[string]string `json:"match"`
+}
+
+func userQuery(query string, netID gp.NetworkID) (esQuery esquery) {
+	fields := []string{"name", "name.partial", "name.metaphone", "full_name", "full_name.partial", "full_name.metaphone"}
+	for _, field := range fields {
+		match := make(map[string]string)
+		matcher := matcher{Match: match}
+		matcher.Match[field] = query
+		esQuery.Query.Bool.Should = append(esQuery.Query.Bool.Should, matcher)
+	}
+	return esQuery
 }
 
 //SearchGroups searches for groups which are 'within' parent; it currently just matches %name%.
