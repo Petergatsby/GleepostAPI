@@ -148,7 +148,7 @@ func (api *API) UserSetName(id gp.UserID, firstName, lastName string) (err error
 	if err != nil {
 		return
 	}
-	api.esIndexUser(userID)
+	api.esIndexUser(id)
 	return
 }
 
@@ -165,7 +165,7 @@ func (api *API) UserSetProfileImage(id gp.UserID, url string) (err error) {
 	if err != nil {
 		return
 	}
-	api.esIndexUser(userID)
+	api.esIndexUser(id)
 	return
 }
 
