@@ -46,20 +46,21 @@ func (api *API) esBulkIndexUsers() {
 		err = rows.Scan(&userID)
 		if err != nil {
 			log.Println("error running elasticsearch dump:", err)
-			return
+			continue
 		}
 		user, err := api._getProfile(userID)
 		if err != nil {
 			log.Println("Error getting profile for elasticsearch index:", userID, err)
-			return
+			continue
 		}
 		user.Network, err = api.getUserUniversity(user.ID)
 		if err != nil {
-			log.Println("Error getting profile for elasticsearch index:", userID, err)
-			return
+			log.Println("Error getting user university for elasticsearch index:", userID, err)
+			continue
 		}
 		indexer.Index("gleepost", "users", fmt.Sprintf("%d", userID), "", nil, user, true)
 	}
+	log.Println("All users indexed in ElasticSearch")
 	return
 
 }

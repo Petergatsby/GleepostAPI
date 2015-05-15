@@ -3,6 +3,7 @@ package lib
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -72,7 +73,17 @@ type esquery struct {
 	Query innerquery `json:"query"`
 }
 type innerquery struct {
+	Filtered filteredquery `json:"filtered"`
+}
+type filteredquery struct {
+	Filter filter          `json:"filter"`
+	Query  innerinnerquery `json:"query"`
+}
+type innerinnerquery struct {
 	Bool boolquery `json:"bool"`
+}
+type filter struct {
+	Term map[string]string `json:"term"`
 }
 type boolquery struct {
 	Should []matcher `json:"should"`
@@ -83,11 +94,14 @@ type matcher struct {
 
 func userQuery(query string, netID gp.NetworkID) (esQuery esquery) {
 	fields := []string{"name", "name.partial", "name.metaphone", "full_name", "full_name.partial", "full_name.metaphone"}
+	term := make(map[string]string)
+	term["network.id"] = fmt.Sprintf("%d", netID)
+	esQuery.Query.Filtered.Filter.Term = term
 	for _, field := range fields {
 		match := make(map[string]string)
 		matcher := matcher{Match: match}
 		matcher.Match[field] = query
-		esQuery.Query.Bool.Should = append(esQuery.Query.Bool.Should, matcher)
+		esQuery.Query.Filtered.Query.Bool.Should = append(esQuery.Query.Filtered.Query.Bool.Should, matcher)
 	}
 	return esQuery
 }
