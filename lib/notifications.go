@@ -37,6 +37,8 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT 20) AS `wp` ORDER BY `id` DESC"
 	case mode == OBEFORE:
 		notificationSelect += " AND notifications.id < ? ORDER BY `id` DESC LIMIT 20"
+	default:
+		notificationSelect += " ORDER BY `id` DESC LIMIT 20"
 	}
 	s, err := api.sc.Prepare(notificationSelect)
 	if err != nil {
