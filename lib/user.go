@@ -58,6 +58,7 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.PostCount = postCount
+	go api.esIndexUser(otherID)
 	return
 }
 
@@ -144,6 +145,10 @@ func (api *API) UserSetName(id gp.UserID, firstName, lastName string) (err error
 		return
 	}
 	_, err = s.Exec(firstName, lastName, id)
+	if err != nil {
+		return
+	}
+	api.esIndexUser(id)
 	return
 }
 
@@ -156,7 +161,12 @@ func (api *API) UserSetProfileImage(id gp.UserID, url string) (err error) {
 	if !exists {
 		return NoSuchUpload
 	}
-	return api.setProfileImage(id, url)
+	err = api.setProfileImage(id, url)
+	if err != nil {
+		return
+	}
+	api.esIndexUser(id)
+	return
 }
 
 func (api *API) setProfileImage(id gp.UserID, url string) (err error) {
@@ -252,7 +262,7 @@ func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
-	log.Println("DB hit: GetProfile(%d)\n", id)
+	log.Printf("DB hit: GetProfile(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER

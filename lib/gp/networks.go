@@ -28,6 +28,12 @@ type Group struct {
 	Conversation ConversationID `json:"conversation,omitempty"`
 }
 
+//ParentedGroup is a group which indicates its parent network (ie, its university)
+type ParentedGroup struct {
+	Group
+	Parent NetworkID `json:"parent,omitempty"`
+}
+
 //GroupMembership is a group and a user's membership status in that group.
 type GroupMembership struct {
 	Group

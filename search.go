@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -23,11 +22,8 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		vars := mux.Vars(r)
-		query := strings.Split(vars["query"], " ")
-		for i := range query {
-			query[i] = strings.TrimSpace(query[i])
-		}
-		users, err := api.UserSearchUsersInPrimaryNetwork(userID, query[0], strings.Join(query[1:], " "))
+		query := vars["query"]
+		users, err := api.UserSearchUsersInPrimaryNetwork(userID, query)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			switch {
@@ -35,8 +31,6 @@ func searchUsers(w http.ResponseWriter, r *http.Request) {
 				jsonErr(w, err, 500)
 			case *e == lib.ENOTALLOWED:
 				jsonResponse(w, e, 403)
-			case *e == lib.ETOOSHORT:
-				jsonResponse(w, e, 400)
 			default:
 				jsonErr(w, err, 500)
 			}

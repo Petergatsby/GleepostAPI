@@ -172,6 +172,7 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 			if e != nil {
 				log.Println("Error adding new group members to conversation:", e)
 			}
+			api.esIndexGroup(group)
 		}
 		return
 	}
@@ -189,6 +190,8 @@ func (api *API) UserJoinGroup(userID gp.UserID, group gp.NetworkID) (err error) 
 			return
 		}
 		err = api.joinGroupConversation(userID, group)
+
+		api.esIndexGroup(group)
 		return
 	default:
 		return &ENOTALLOWED
@@ -327,6 +330,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 		} else {
 			log.Println(err)
 		}
+		api.esIndexGroup(network.ID)
 		return
 	}
 }
