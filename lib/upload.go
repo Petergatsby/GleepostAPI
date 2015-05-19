@@ -9,8 +9,8 @@ import (
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
+	"github.com/mitchellh/goamz/aws"
+	"github.com/mitchellh/goamz/s3"
 )
 
 func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {

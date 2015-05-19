@@ -10,7 +10,7 @@ import (
 	"mime/multipart"
 	"os"
 
-	"launchpad.net/goamz/s3"
+	"github.com/mitchellh/goamz/s3"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )

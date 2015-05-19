@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"launchpad.net/goamz/s3"
+	"github.com/mitchellh/goamz/s3"
 
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
