@@ -25,8 +25,76 @@ func toLocKey(notificationType string) (locKey string) {
 }
 
 //GetUserNotifications returns all unseen notifications for this user, and the seen ones as well if includeSeen is true.
-func (api *API) GetUserNotifications(id gp.UserID, includeSeen bool) (notifications []gp.Notification, err error) {
-	return api.getUserNotifications(id, includeSeen)
+func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includeSeen bool) (notifications []gp.Notification, err error) {
+	notifications = make([]gp.Notification, 0)
+	var notificationSelect string
+	notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ?"
+	if !includeSeen {
+		notificationSelect += " AND seen = 0"
+	}
+	switch {
+	case mode == OAFTER:
+		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT 20) AS `wp` ORDER BY `id` DESC"
+	case mode == OBEFORE:
+		notificationSelect += " AND notifications.id < ? ORDER BY `id` DESC LIMIT 20"
+	}
+	s, err := api.sc.Prepare(notificationSelect)
+	if err != nil {
+		return
+	}
+	var rows *sql.Rows
+	if mode == 0 {
+		rows, err = s.Query(id)
+	} else {
+		rows, err = s.Query(id, index)
+	}
+
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var notification gp.Notification
+		var t string
+		var postID, netID sql.NullInt64
+		var preview sql.NullString
+		var by gp.UserID
+		if err = rows.Scan(&notification.ID, &notification.Type, &t, &by, &postID, &netID, &preview, &notification.Seen); err != nil {
+			return
+		}
+		notification.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return
+		}
+		notification.By, err = api.getUser(by)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if postID.Valid {
+			notification.Post = gp.PostID(postID.Int64)
+		}
+		if netID.Valid {
+			notification.Group = gp.NetworkID(netID.Int64)
+		}
+		if preview.Valid {
+			notification.Preview = preview.String
+		}
+		notifications = append(notifications, notification)
+	}
+	return
+}
+
+func (api *API) userUnreadNotifications(id gp.UserID) (count int, err error) {
+	notificationSelect := "SELECT count(id), type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? AND seen = 0"
+	s, err := api.sc.Prepare(notificationSelect)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow().Scan(&count)
+
+	return
 }
 
 //MarkNotificationsSeen marks all notifications up to upTo seen for this user.
@@ -347,56 +415,6 @@ func unreadNotificationCount(sc *psc.StatementCache, userID gp.UserID) (count in
 		return
 	}
 	err = s.QueryRow(userID).Scan(&count)
-	return
-}
-
-//GetUserNotifications returns all the notifications for a given user, optionally including the seen ones.
-func (api *API) getUserNotifications(id gp.UserID, includeSeen bool) (notifications []gp.Notification, err error) {
-	notifications = make([]gp.Notification, 0)
-	var notificationSelect string
-	if !includeSeen {
-		notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? AND seen = 0 ORDER BY `id` DESC"
-	} else {
-		notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? ORDER BY `id` DESC LIMIT 0, 20"
-	}
-	s, err := api.sc.Prepare(notificationSelect)
-	if err != nil {
-		return
-	}
-	rows, err := s.Query(id)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var notification gp.Notification
-		var t string
-		var postID, netID sql.NullInt64
-		var preview sql.NullString
-		var by gp.UserID
-		if err = rows.Scan(&notification.ID, &notification.Type, &t, &by, &postID, &netID, &preview, &notification.Seen); err != nil {
-			return
-		}
-		notification.Time, err = time.Parse(mysqlTime, t)
-		if err != nil {
-			return
-		}
-		notification.By, err = api.getUser(by)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if postID.Valid {
-			notification.Post = gp.PostID(postID.Int64)
-		}
-		if netID.Valid {
-			notification.Group = gp.NetworkID(netID.Int64)
-		}
-		if preview.Valid {
-			notification.Preview = preview.String
-		}
-		notifications = append(notifications, notification)
-	}
 	return
 }
 
