@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -52,7 +51,6 @@ func (api *API) searchUsersInNetwork(query string, netID gp.NetworkID) (users []
 	users = make([]gp.FullNameUser, 0)
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
-	//do not actually do this: vulnerable to injection
 	esQuery := userQuery(query, netID)
 	results, err := c.Search("gleepost", "users", nil, esQuery)
 	if err != nil {
@@ -107,47 +105,30 @@ func userQuery(query string, netID gp.NetworkID) (esQuery esquery) {
 }
 
 //SearchGroups searches for groups which are 'within' parent; it currently just matches %name%.
-func (api *API) searchGroups(parent gp.NetworkID, name string) (groups []gp.Group, err error) {
+func (api *API) searchGroups(parent gp.NetworkID, query string) (groups []gp.Group, err error) {
 	groups = make([]gp.Group, 0)
-	q := "SELECT id, name, cover_img, `desc`, creator, privacy " +
-		"FROM network " +
-		"WHERE user_group = 1 " +
-		"AND parent = ? " +
-		"AND privacy != 'secret' " +
-		"AND name LIKE ?"
-	name = "%" + name + "%"
-	s, err := api.sc.Prepare(q)
+	c := elastigo.NewConn()
+	c.Domain = api.Config.ElasticSearch
+	fields := []string{"name", "description"}
+	esQuery := esquery{}
+	term := make(map[string]string)
+	term["parent"] = fmt.Sprintf("%d", parent)
+	esQuery.Query.Filtered.Filter.Term = term
+	for _, field := range fields {
+		match := make(map[string]string)
+		matcher := matcher{Match: match}
+		matcher.Match[field] = query
+		esQuery.Query.Filtered.Query.Bool.Should = append(esQuery.Query.Filtered.Query.Bool.Should, matcher)
+	}
+	results, err := c.Search("gleepost", "networks", nil, esQuery)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(parent, name)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	var img, desc, privacy sql.NullString
-	var creator sql.NullInt64
-	for rows.Next() {
-		group := gp.Group{}
-		err = rows.Scan(&group.ID, &group.Name, &img, &desc, &creator, &privacy)
+	for _, hit := range results.Hits.Hits {
+		var group gp.Group
+		err = json.Unmarshal(*hit.Source, &group)
 		if err != nil {
 			return
-		}
-		if img.Valid {
-			group.Image = img.String
-		}
-		if creator.Valid {
-			u, err := api.getUser(gp.UserID(creator.Int64))
-			if err == nil {
-				group.Creator = &u
-			}
-			group.MemberCount, _ = api.groupMemberCount(group.ID)
-		}
-		if desc.Valid {
-			group.Desc = desc.String
-		}
-		if privacy.Valid {
-			group.Privacy = privacy.String
 		}
 		groups = append(groups, group)
 	}
