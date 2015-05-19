@@ -12,14 +12,12 @@ import (
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func TestPostPagination(t *testing.T) {
 
 	config := conf.GetConfig()
 	api = lib.New(*config)
-	api.Mail = mail.NewMock()
 	api.Start()
 	server := httptest.NewServer(r)
 	defer server.Close()

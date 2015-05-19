@@ -23,7 +23,6 @@ func TestChangePass(t *testing.T) {
 
 	config := conf.GetConfig()
 	api = lib.New(*config)
-	api.Start()
 	server := httptest.NewServer(r)
 	defer server.Close()
 	baseURL = server.URL + "/api/v1/"
