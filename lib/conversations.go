@@ -725,7 +725,7 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 		return
 	}
 	rows, err := s.Query(convID, userID, convID, index, count)
-	log.Println("DB hit: GetMessages(user: %d, convID: %d, mode: %d, index: %d, count: %d)\n", userID, convID, mode, index, count)
+	log.Printf("DB hit: GetMessages(user: %d, convID: %d, mode: %d, index: %d, count: %d)\n", userID, convID, mode, index, count)
 	if err != nil {
 		return
 	}
