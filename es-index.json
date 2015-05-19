@@ -1,4 +1,3 @@
-PUT /gleepost
 {
   "mappings": {
     "users": {
@@ -39,6 +38,28 @@ PUT /gleepost
             },
             "type" : "multi_field"
           }
+      }
+    },
+    "networks" : {
+      "properties": {
+        "name": {
+          "fields": {
+            "metaphone": {
+              "type": "string",
+              "analyzer": "name_metaphone"
+            },
+            "partial": {
+              "search_analyzer": "full_name",
+              "index_analyzer": "partial_name",
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "analyzer": "full_name"
+            }
+          },
+          "type": "multi_field"
+        }
       }
     }
   },

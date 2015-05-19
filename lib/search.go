@@ -109,7 +109,7 @@ func (api *API) searchGroups(parent gp.NetworkID, query string) (groups []gp.Gro
 	groups = make([]gp.Group, 0)
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
-	fields := []string{"name", "description"}
+	fields := []string{"name", "name.partial", "name.metaphone", "description"}
 	esQuery := esquery{}
 	term := make(map[string]string)
 	term["parent"] = fmt.Sprintf("%d", parent)
