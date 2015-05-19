@@ -72,6 +72,7 @@ func (api *API) esBulkIndexGroups() {
 		if privacy.Valid {
 			group.Privacy = privacy.String
 		}
+		log.Println("Indexing group:", group.ID, group.Name)
 		indexer.Index("gleepost", "networks", fmt.Sprintf("%d", group.ID), "", nil, group, true)
 	}
 	log.Println("All non-secret groups indexed in ElasticSearch")
