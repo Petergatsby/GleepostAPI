@@ -2,6 +2,7 @@ package conf
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,9 +14,11 @@ import (
 var (
 	config     *Config
 	configLock = new(sync.RWMutex)
+	confPath   = flag.String("conf", "conf.json", "path to config file")
 )
 
 func init() {
+	flag.Parse()
 	configInit()
 }
 
@@ -40,7 +43,7 @@ func configInit() {
 }
 
 func loadConfig(fail bool) {
-	file, err := ioutil.ReadFile("conf.json")
+	file, err := ioutil.ReadFile(*confPath)
 	if err != nil {
 		log.Println("Opening config failed: ", err)
 		if fail {
