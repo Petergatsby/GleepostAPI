@@ -82,8 +82,6 @@ func (api *API) Start() {
 	} else {
 		api.statsd = statsd
 	}
-	go api.esBulkIndexUsers()
-	go api.esBulkIndexGroups()
 }
 
 //Time reports the time for this stat to statsd. (use it with defer)

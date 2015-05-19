@@ -77,3 +77,9 @@ func (api *API) esBulkIndexGroups() {
 	log.Println("All non-secret groups indexed in ElasticSearch")
 	return
 }
+
+//ElasticSearchBulkReindex adds all users/groups to the search index.
+func (api *API) ElasticSearchBulkReindex() {
+	api.esBulkIndexUsers()
+	api.esBulkIndexGroups()
+}
