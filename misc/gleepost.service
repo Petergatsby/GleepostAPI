@@ -1,0 +1,6 @@
+[Unit]
+Description=Gleepost API server
+
+[Service]
+ExecStart=/home/admin/go/src/github.com/draaglom/GleepostAPI/GleepostAPI -conf=/home/admin/go/src/github.com/draaglom/GleepostAPI/conf.json
+Restart=always
