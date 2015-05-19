@@ -404,12 +404,12 @@ You omitted `poll-expiry` (or it was invalid):
 {"error":"Poll ending in the past"}
 ```
 
-`poll-expiry` was in the future, but too soon:
+`poll-expiry` was in the future, but within 15 minutes:
 ```json
 {"error":"Poll ending too soon"}
 ```
 
-`poll-expiry` too far in the future:
+`poll-expiry` too far in the future (more than a month + a day away):
 ```json
 {"error":"Poll ending too late"}
 ```
