@@ -179,4 +179,12 @@ Users may also create networks within their university; these are Groups. These 
 }
 ```
 
+####Joining a network
+
+Only Groups may be joined. To do so, there are two options:
+
+If a group's `privacy` is `public`, you are allowed to add yourself to the network directly; just [POST to /networks/:id/users](#post-networksnetwork-idusers) with your own ID. 
+
+If a group's `privacy` is `private`, you may request access to the group by sending a [POST to /networks/:id/requests](#post-networksnetwork-idrequests).
+
 ###Approve

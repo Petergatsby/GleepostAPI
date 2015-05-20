@@ -85,6 +85,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /networks/[network-id]/admins/[user-id] [[DELETE]](#delete-networksnetwork-idadminsuser-id)
 
+/networks/[network-id]/requests [[POST]](#post-networksnetwork-idrequests)
+
 /live [[GET]](#get-live)
 
 /live_summary [[GET]](#get-live_summary)
@@ -1143,6 +1145,21 @@ Returns the updated admin list.
 ##DELETE /networks/[network-id]/admins/[user-id]
 Delete administrative permissions for this user. You must be an administrator or group creator to use.
 If you are allowed to downgrade this user, the result will be 204.
+
+##POST /networks/[network-id]/requests
+Request access to this group.
+
+If the network you have requested does not exist (or you cannot see it) the result will be a 404:
+```json
+{"error": "No such network"}
+```
+
+If the network is visible to you but you cannot request access to it (because it is public, a university, or you are already a member) the result will be 403:
+```json
+{"error": "You're not allowed to do that!"}
+```
+
+On success, the response will be 201.
 
 ##GET /conversations/live
 
