@@ -8,6 +8,7 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/go-sql-driver/mysql"
 )
 
 //ENoRole is given when you try to specify a role which doesn't exist.
@@ -1112,6 +1113,19 @@ func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err err
 		//Can't request access to a public group
 		err = ENOTALLOWED
 		return
+	}
+	s, err := api.sc.Prepare("INSERT INTO network_requests(user_id, network_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userID, netID)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok {
+			if err.Number == 1062 {
+				//Drop duplicates silently
+				return nil
+			}
+		}
 	}
 	return
 }
