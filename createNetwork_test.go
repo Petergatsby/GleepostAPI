@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -105,7 +104,6 @@ func TestCreateNetwork(t *testing.T) {
 		case nct.ExpectedType == "Network":
 			network := gp.Network{}
 			err = dec.Decode(&network)
-			log.Println(network)
 			if err != nil {
 				t.Fatalf("Test%v: Failed to decode as %s: %v\n", testNumber, nct.ExpectedType, err)
 			}

@@ -16,6 +16,9 @@ var ENoRole = gp.APIerror{Reason: "Invalid role"}
 //NobodyAdded is returned when you call UserAddToGroup with no arguments.
 var NobodyAdded = gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}
 
+//NoSuchNetwork occurs when performing an action against a network which doesn't exist (or the user can't see).
+var NoSuchNetwork = gp.APIerror{Reason: "No such network"}
+
 var levels = map[string]int{
 	"creator":       9,
 	"administrator": 8,
@@ -1056,5 +1059,59 @@ func groupName(sc *psc.StatementCache, group gp.NetworkID) (name string, err err
 		return
 	}
 	err = s.QueryRow(group).Scan(&name)
+	return
+}
+
+//UserRequestAccess allows a user to request access to a private group. It's idempotent; requesting multiple times will silently drop the extra requests.
+func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err error) {
+	in, err := api.userInNetwork(userID, netID)
+	if err != nil {
+		return
+	}
+	if in {
+		//Can't request access to a network you're already in
+		err = ENOTALLOWED
+		return
+	}
+	isGroup, err := api.isGroup(netID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			//Can't request access to a network which doesn't exist
+			err = NoSuchNetwork
+		}
+		return
+	}
+	if !isGroup {
+		//Can't request access to a university
+		err = NoSuchNetwork
+		return
+	}
+	parent, err := api.networkParent(netID)
+	if err != nil {
+		return
+	}
+	in, err = api.userInNetwork(userID, parent)
+	if err != nil {
+		return
+	}
+	if !in {
+		//Can't request access to a group in another university
+		err = NoSuchNetwork
+		return
+	}
+	net, err := api.getNetwork(netID)
+	if err != nil {
+		return
+	}
+	if net.Privacy == "secret" {
+		//Can't request access to a secret group
+		err = NoSuchNetwork
+		return
+	}
+	if net.Privacy == "public" {
+		//Can't request access to a public group
+		err = ENOTALLOWED
+		return
+	}
 	return
 }
