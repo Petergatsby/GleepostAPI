@@ -77,6 +77,7 @@ func TestVideo(t *testing.T) {
 			t.Fatal("Upload status should be 'uploaded'")
 		}
 	}
+	truncate("video_jobs")
 }
 
 func newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Request, error) {
