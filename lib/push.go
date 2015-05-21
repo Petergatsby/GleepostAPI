@@ -229,12 +229,11 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 }
 
 func (api *API) badgeCount(user gp.UserID) (count int, err error) {
-	notifications, err := api.GetUserNotifications(user, false)
+	count, err = api.userUnreadNotifications(user)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	count = len(notifications)
 	unread, e := api.UnreadMessageCount(user, true)
 	if e == nil {
 		count += unread

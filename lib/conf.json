@@ -7,6 +7,7 @@
 	"CommentCache":100,
 	"MessagePageSize":20,
 	"PostPageSize":20,
+	"NotificationPageSize":20,
 	"CommentPageSize":20,
 	"ConversationPageSize":20,
 	"OnlineTimeout":300,
