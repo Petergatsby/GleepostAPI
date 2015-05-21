@@ -61,7 +61,13 @@ func TestNotificationPagination(t *testing.T) {
 		ExpectedStartingPostIndex: 0,
 		ExpectedEndingPostIndex:   0,
 	}
-	tests := []notificationPaginationTest{beforeTest, afterTest, beforeEmptyTest, afterEmptyTest}
+	emptyTest := notificationPaginationTest{
+		Command:                   "",
+		ExpectedPosts:             20,
+		ExpectedStartingPostIndex: 100,
+		ExpectedEndingPostIndex:   81,
+	}
+	tests := []notificationPaginationTest{beforeTest, afterTest, beforeEmptyTest, afterEmptyTest, emptyTest}
 	for testNumber, npt := range tests {
 		respValue, err := getPaginatedNotifications(token, npt.Command)
 		if err != nil {

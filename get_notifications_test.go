@@ -86,10 +86,10 @@ func TestGetNotifications(t *testing.T) {
 	}
 }
 
-func getNotifications(token gp.Token, include_seen string) ([]gp.Notification, error) {
+func getNotifications(token gp.Token, includeSeen string) ([]gp.Notification, error) {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", baseURL+"notifications?include_seen="+include_seen, nil)
+	req, err := http.NewRequest("GET", baseURL+"notifications?include_seen="+includeSeen, nil)
 	req.Header.Set("X-GP-Auth", fmt.Sprintf("%d", token.UserID)+"-"+token.Token)
 	if err != nil {
 		return nil, err

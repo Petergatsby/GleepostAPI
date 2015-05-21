@@ -34,21 +34,21 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 	}
 	switch {
 	case mode == OAFTER:
-		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT 20) AS `wp` ORDER BY `id` DESC"
+		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT ?) AS `wp` ORDER BY `id` DESC"
 	case mode == OBEFORE:
-		notificationSelect += " AND notifications.id < ? ORDER BY `id` DESC LIMIT 20"
+		notificationSelect += " AND notifications.id < ? ORDER BY `id` DESC LIMIT ?"
 	default:
-		notificationSelect += " ORDER BY `id` DESC LIMIT 20"
+		notificationSelect += " ORDER BY `id` DESC LIMIT ?"
 	}
 	s, err := api.sc.Prepare(notificationSelect)
 	if err != nil {
 		return
 	}
 	var rows *sql.Rows
-	if mode == 0 {
-		rows, err = s.Query(id)
+	if mode == OSTART {
+		rows, err = s.Query(id, api.Config.NotificationPageSize)
 	} else {
-		rows, err = s.Query(id, index)
+		rows, err = s.Query(id, index, api.Config.NotificationPageSize)
 	}
 
 	if err != nil {
@@ -89,7 +89,7 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 }
 
 func (api *API) userUnreadNotifications(id gp.UserID) (count int, err error) {
-	notificationSelect := "SELECT count(id), type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ? AND seen = 0"
+	notificationSelect := "SELECT count(id) FROM notifications WHERE recipient = ? AND seen = 0"
 	s, err := api.sc.Prepare(notificationSelect)
 	if err != nil {
 		return

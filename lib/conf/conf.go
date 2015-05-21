@@ -123,6 +123,7 @@ type Config struct {
 	Port                 string
 	MessagePageSize      int
 	PostPageSize         int
+	NotificationPageSize int
 	CommentPageSize      int
 	ConversationPageSize int
 	OnlineTimeout        int
