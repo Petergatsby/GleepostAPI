@@ -1949,6 +1949,8 @@ required parameters: id, token
 
 optional parameters: include_seen = (true|false)
 
+before=[id] after=[id] returns a list of 20 posts ordered by time, starting before/after [id]
+
 Returns all unread notifications for user [id]
 
 If include_seen is false, then only the notifications which have not been seen yet will be returned. This is the default behaviour if include_seen is unspecified.
