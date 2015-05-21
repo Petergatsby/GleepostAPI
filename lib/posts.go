@@ -380,7 +380,7 @@ func (api *API) getPostImages(postID gp.PostID) (images []string) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Printf("DB hit: getImages postID(%d)\n", postID)
+	log.Printf("db.getPostImages(%d)\n", postID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -406,7 +406,7 @@ func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Printf("DB hit: getVideos postID(%d)\n", postID)
+	log.Printf("db.getPostVideos(%d)\n", postID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -457,7 +457,7 @@ func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, er
 
 //GetLikes returns all the likes for a particular post.
 func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
-	log.Println("GetLikes", post)
+	log.Printf("GetLikes(%d)", post)
 	l, err := api._getLikes(post)
 	if err != nil {
 		return
@@ -1291,7 +1291,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 		return
 	}
 	rows, err := s.Query(postID, start, count)
-	log.Printf("DB hit: GetComments(%d, %d, %d)\n", postID, start, count)
+	log.Printf("db.GetComments(%d, %d, %d)\n", postID, start, count)
 	if err != nil {
 		return comments, err
 	}

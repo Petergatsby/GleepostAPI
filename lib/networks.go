@@ -536,7 +536,7 @@ func (api *API) getRules() (rules []gp.Rule, err error) {
 		return
 	}
 	rows, err := s.Query()
-	log.Println("DB hit: GetRules()")
+	log.Println("db.GetRules()")
 	if err != nil {
 		return
 	}

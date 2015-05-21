@@ -435,7 +435,7 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	if err != nil {
 		return
 	}
-	log.Printf("DB hit: createConversation(userID: %d, participants: %v, primary: %t, group: %d)\n", id, participants, primary, group)
+	log.Printf("db.createConversation(userID: %d, participants: %v, primary: %t, group: %d)\n", id, participants, primary, group)
 	var pids []gp.UserID
 	for _, u := range participants {
 		pids = append(pids, u.ID)

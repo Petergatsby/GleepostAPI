@@ -241,7 +241,7 @@ func getUser(sc *psc.StatementCache, id gp.UserID) (user gp.User, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
-	log.Printf("DB hit: db.GetUser(%d)\n", id)
+	log.Printf("db.GetUser(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = &gp.ENOSUCHUSER
@@ -262,7 +262,7 @@ func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
-	log.Printf("DB hit: GetProfile(%d)\n", id)
+	log.Printf("db.GetProfile(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER
