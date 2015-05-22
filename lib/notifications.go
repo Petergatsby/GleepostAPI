@@ -266,7 +266,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	d.LocKey = toLocKey(notification.Type)
 	d.LocArgs = []string{notification.By.Name}
 	switch {
-	case notification.Type == "added_group" || notification.Type == "group_post":
+	case notification.Type == "added_group" || notification.Type == "group_post" || notification.Type == "group_request":
 		var name string
 		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
@@ -304,7 +304,7 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 	data["type"] = toLocKey(notification.Type)
 	data["for"] = recipient
 	switch {
-	case notification.Type == "added_group" || notification.Type == "group_post":
+	case notification.Type == "added_group" || notification.Type == "group_post" || notification.Type == "group_request":
 		var name string
 		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
@@ -313,6 +313,9 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		data["group-id"] = notification.Group
 		data["group-name"] = name
 		switch {
+		case notification.Type == "group_request":
+			data["poster"] = notification.By.Name
+			CollapseKey = "Somoene requested to join your group."
 		case notification.Type == "group_post":
 			data["poster"] = notification.By.Name
 			CollapseKey = "Somoene posted in your group."
