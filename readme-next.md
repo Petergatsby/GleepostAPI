@@ -148,6 +148,23 @@ If the poll has ended already:
 	}
 ```
 
+ - Someone requested access to a group you administrate
+
+```json
+	{
+		"id":3008,
+		"type":"group_request",
+		"network":12345,
+		"time":"2014-11-12T22:51:35Z",
+		"user":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"seen":false
+	}
+```
+
 ###Networks
 
 A Network is a collection of users and posts; each university is a Network.

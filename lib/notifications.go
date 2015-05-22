@@ -314,7 +314,7 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		data["group-name"] = name
 		switch {
 		case notification.Type == "group_request":
-			data["poster"] = notification.By.Name
+			data["requester"] = notification.By.Name
 			CollapseKey = "Somoene requested to join your group."
 		case notification.Type == "group_post":
 			data["poster"] = notification.By.Name

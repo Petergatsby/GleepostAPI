@@ -327,3 +327,37 @@ Version is the new app version number.
 }
 
 ```
+
+##Someone requested to join a group you administrate
+
+(iOS)
+
+```json
+{
+    "aps":{
+         "alert":{
+             "loc-key":"group_request",
+             "loc-args":["Patrick", "Super Private Group"],
+         },
+         "badge":12345,
+         "sound":"default"
+     },
+     "group-id":6789
+}
+```
+
+(Android)
+
+```json
+{
+    "registration_ids":["APA91bF58RwLEXNBMoKxy5s1sxmxQXL8MYgGmdgAyWw5YFzNyrH876WWL20Il7j8vxCqw6Ube8puw5JkRvIaIDws94iRInE7jfHqXq-EZ34RtdHeil7cuCp-xIYMDbsE3b50W1eTlRNdHRAG0SODHfbg1yORcJ9Beg"],
+    "collapse_key":"Someone requested to join your group.",
+    "data": {
+         "for":8,
+         "group-name":"Super Private Group",
+         "group-id":6789,
+         "requester":"Patrick",
+         "type":"group_request"
+    }
+}
+```
