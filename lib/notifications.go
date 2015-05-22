@@ -185,6 +185,33 @@ func (v voteEvent) notify(n NotificationObserver) (err error) {
 	return
 }
 
+type requestEvent struct {
+	userID  gp.UserID
+	groupID gp.NetworkID
+}
+
+func (r requestEvent) notify(n NotificationObserver) (err error) {
+	admins, err := api.getNetworkAdmins(r.groupID)
+	if err != nil {
+		return
+	}
+	creator, err := api.networkCreator(r.groupID)
+	if err != nil {
+		return
+	}
+	err = n.createNotification("group_request", r.userID, creator.ID, 0, r.groupID, "")
+	if err != nil {
+		return
+	}
+	for _, admin := range admins {
+		err = n.createNotification("group_request", r.userID, admin.ID, 0, r.groupID, "")
+		if err != nil {
+			return
+		}
+	}
+	return nil
+}
+
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (n NotificationObserver) push(notification gp.Notification, recipient gp.UserID) {
 	devices, err := getDevices(n.sc, recipient, "gleepost")

@@ -1126,6 +1126,8 @@ func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err err
 				return nil
 			}
 		}
+		return
 	}
+	api.notifObserver.Notify(requestEvent{userID: userID, groupID: netID})
 	return
 }
