@@ -59,6 +59,7 @@ type NotificationObserver struct {
 	sc     *psc.StatementCache
 	cache  *cache.Cache
 	pusher *push.Pusher
+	users  *Users
 }
 
 //Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
@@ -411,7 +412,7 @@ func (api *API) getUserNotifications(id gp.UserID, includeSeen bool) (notificati
 		if err != nil {
 			return
 		}
-		notification.By, err = api.getUser(by)
+		notification.By, err = api.users.byID(by)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -451,7 +452,7 @@ func (n NotificationObserver) _createNotification(ntype string, by gp.UserID, re
 		Time: time.Now().UTC(),
 		Seen: false,
 	}
-	notification.By, err = getUser(n.sc, by)
+	notification.By, err = n.users.byID(by)
 	if err != nil {
 		return
 	}

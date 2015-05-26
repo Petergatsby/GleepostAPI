@@ -254,7 +254,7 @@ func (api *API) AttemptResendVerification(email string) error {
 		}
 		return err
 	default:
-		user, err := api.getUser(userID)
+		user, err := api.users.byID(userID)
 		if err != nil {
 			return err
 		}
@@ -424,7 +424,7 @@ func (api *API) RequestReset(email string) (err error) {
 	if err != nil {
 		return
 	}
-	user, err := api.getUser(userID)
+	user, err := api.users.byID(userID)
 	if err != nil {
 		return
 	}

@@ -10,9 +10,28 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-//GetUser returns the User with this ID.
-func (api *API) getUser(id gp.UserID) (user gp.User, err error) {
-	user, err = getUser(api.sc, id)
+type Users struct {
+	sc *psc.StatementCache
+}
+
+//returns ENOSUCHUSER if this user doesn't exist
+func (u Users) byID(id gp.UserID) (user gp.User, err error) {
+	var av sql.NullString
+	s, err := u.sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
+	log.Printf("db.GetUser(%d)\n", id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = &gp.ENOSUCHUSER
+		}
+		return
+	}
+	if av.Valid {
+		user.Avatar = av.String
+	}
 	return
 }
 
@@ -108,7 +127,7 @@ func (api *API) inviteURL(token, email string) string {
 
 func (api *API) issueInviteEmail(email string, userID gp.UserID, netID gp.NetworkID, token string) (err error) {
 	var from gp.User
-	from, err = api.getUser(userID)
+	from, err = api.users.byID(userID)
 	if err != nil {
 		return
 	}
@@ -230,27 +249,6 @@ func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) 
 		return
 	}
 	_, err = s.Exec(tagline, userID)
-	return
-}
-
-//GetUser returns this user, or ENOSUCHUSER if they don't exist.
-func getUser(sc *psc.StatementCache, id gp.UserID) (user gp.User, err error) {
-	var av sql.NullString
-	s, err := sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
-	if err != nil {
-		return
-	}
-	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
-	log.Printf("db.GetUser(%d)\n", id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			err = &gp.ENOSUCHUSER
-		}
-		return
-	}
-	if av.Valid {
-		user.Avatar = av.String
-	}
 	return
 }
 

@@ -557,7 +557,7 @@ func (api *API) reviewHistory(postID gp.PostID) (history []gp.ReviewEvent, err e
 		if reason.Valid {
 			event.Reason = reason.String
 		}
-		user, UsrErr := api.getUser(by)
+		user, UsrErr := api.users.byID(by)
 		if UsrErr != nil {
 			return history, UsrErr
 		}

@@ -464,7 +464,7 @@ func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 	}
 	for _, like := range l {
 		lf := gp.LikeFull{}
-		lf.User, err = api.getUser(like.UserID)
+		lf.User, err = api.users.byID(like.UserID)
 		if err == nil {
 			lf.Time = like.Time
 			likes = append(likes, lf)
@@ -530,7 +530,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		if err == nil {
 			api.notifObserver.Notify(commentEvent{userID: userID, recipientID: post.By.ID, postID: postID, text: text})
 			comment := gp.Comment{ID: commID, Post: postID, Time: time.Now().UTC(), Text: text}
-			comment.By, err = api.getUser(userID)
+			comment.By, err = api.users.byID(userID)
 			if err != nil {
 				log.Println(err)
 				return
@@ -1103,7 +1103,7 @@ func (api *API) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.Po
 		if err != nil {
 			return posts, err
 		}
-		post.By, err = api.getUser(by)
+		post.By, err = api.users.byID(by)
 		if err == nil {
 			post.CommentCount = api.getCommentCount(post.ID)
 			post.Images = api.getPostImages(post.ID)
@@ -1306,7 +1306,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 			return comments, err
 		}
 		comment.Time, _ = time.Parse(mysqlTime, timeString)
-		comment.By, err = api.getUser(by)
+		comment.By, err = api.users.byID(by)
 		if err != nil {
 			log.Printf("error getting user %d: %v\n", by, err)
 		}
@@ -1332,7 +1332,7 @@ func (api *API) userGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, e
 	if err != nil {
 		return
 	}
-	post.By, err = api.getUser(by)
+	post.By, err = api.users.byID(by)
 	if err != nil {
 		return
 	}
@@ -1362,7 +1362,7 @@ func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
 		}
 		return
 	}
-	post.By, err = api.getUser(by)
+	post.By, err = api.users.byID(by)
 	if err != nil {
 		return
 	}

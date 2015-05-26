@@ -323,7 +323,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 			return
 		}
 		var user gp.User
-		user, err = api.getUser(userID)
+		user, err = api.users.byID(userID)
 		if err != nil {
 			return
 		}
@@ -498,7 +498,7 @@ func (api *API) getUserUniversity(id gp.UserID) (network gp.GroupMembership, err
 		network.Desc = desc.String
 	}
 	if creator.Valid {
-		u, err := api.getUser(gp.UserID(creator.Int64))
+		u, err := api.users.byID(gp.UserID(creator.Int64))
 		if err == nil {
 			network.Creator = &u
 		}
@@ -600,7 +600,7 @@ func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []
 			network.Desc = desc.String
 		}
 		if creator.Valid {
-			u, err := api.getUser(gp.UserID(creator.Int64))
+			u, err := api.users.byID(gp.UserID(creator.Int64))
 			if err == nil {
 				network.Creator = &u
 			}
@@ -665,7 +665,7 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID) (groups []gp.
 			network.Desc = desc.String
 		}
 		if creator.Valid {
-			u, err := api.getUser(gp.UserID(creator.Int64))
+			u, err := api.users.byID(gp.UserID(creator.Int64))
 			if err == nil {
 				network.Creator = &u
 			}
@@ -714,7 +714,7 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 		network.Desc = desc.String
 	}
 	if creator.Valid {
-		u, err := api.getUser(gp.UserID(creator.Int64))
+		u, err := api.users.byID(gp.UserID(creator.Int64))
 		if err == nil {
 			network.Creator = &u
 		}
@@ -745,7 +745,7 @@ func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string
 	group.Desc = desc
 	group.Privacy = privacy
 	group.MemberCount = 1
-	u, err := api.getUser(creator)
+	u, err := api.users.byID(creator)
 	if err == nil {
 		group.Creator = &u
 	} else {

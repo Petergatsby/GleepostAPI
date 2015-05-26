@@ -34,6 +34,7 @@ type API struct {
 	notifObserver NotificationObserver
 	TW            TranscodeWorker
 	Viewer        Viewer
+	users         *Users
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"

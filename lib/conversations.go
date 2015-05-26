@@ -96,7 +96,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 		reuse = true
 	}
 	var participants []gp.User
-	user, err := api.getUser(initiator)
+	user, err := api.users.byID(initiator)
 	if err != nil {
 		return
 	}
@@ -114,7 +114,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 			return conversation, e
 		}
 		if canContact {
-			user, err = api.getUser(id)
+			user, err = api.users.byID(id)
 			if err != nil {
 				return
 			}
@@ -189,7 +189,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	if err != nil {
 		return
 	}
-	user, err := api.getUser(userID)
+	user, err := api.users.byID(userID)
 	if err != nil {
 		return
 	}
@@ -379,7 +379,7 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	if err != nil {
 		return
 	}
-	user, err := api.getUser(userID)
+	user, err := api.users.byID(userID)
 	if err != nil {
 		return
 	}
@@ -633,7 +633,7 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 	for rows.Next() {
 		var id gp.UserID
 		err = rows.Scan(&id)
-		user, err := api.getUser(id)
+		user, err := api.users.byID(id)
 		if err == nil {
 			participants = append(participants, user)
 		}
@@ -662,7 +662,7 @@ func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err er
 	if err != nil {
 		return message, err
 	}
-	message.By, err = api.getUser(by)
+	message.By, err = api.users.byID(by)
 	if err != nil {
 		log.Printf("error getting user %d %v", by, err)
 	}
@@ -742,7 +742,7 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 		if err != nil {
 			log.Printf("%v", err)
 		}
-		message.By, err = api.getUser(by)
+		message.By, err = api.users.byID(by)
 		if err != nil {
 			log.Println("Error getting this message's sender:", err)
 			continue
