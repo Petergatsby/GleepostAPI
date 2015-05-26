@@ -365,9 +365,11 @@ func (api *API) Verify(token string) (err error) {
 		}
 		return
 	}
-	fbid, err := api.fBVerify(token)
+	fbid, err := api.fBVerificationExists(token)
 	if err != nil {
-		log.Println("Error verifying (facebook)", err)
+		if err != NoSuchVerificationToken {
+			log.Println("Error verifying (facebook)", err)
+		}
 		return
 	}
 	email, err := api.fBGetEmail(fbid)
