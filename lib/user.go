@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
@@ -11,18 +12,19 @@ import (
 )
 
 type Users struct {
-	sc *psc.StatementCache
+	sc      *psc.StatementCache
+	statter PrefixStatter
 }
 
 //returns ENOSUCHUSER if this user doesn't exist
 func (u Users) byID(id gp.UserID) (user gp.User, err error) {
+	defer u.statter.Time(time.Now(), "users.db.byID")
 	var av sql.NullString
 	s, err := u.sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
 	if err != nil {
 		return
 	}
 	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
-	log.Printf("db.GetUser(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = &gp.ENOSUCHUSER

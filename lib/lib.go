@@ -89,6 +89,7 @@ func (api *API) Start() {
 		log.Printf("Statsd failed: %s\nMake sure you have the right address in your conf.json\n", err)
 	} else {
 		api.Statsd = PrefixStatter{statter: statsd, DevelopmentMode: api.Config.DevelopmentMode}
+		api.users.statter = api.Statsd
 	}
 }
 
