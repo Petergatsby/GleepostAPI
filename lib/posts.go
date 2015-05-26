@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
-	OSTART = iota
-	//OBEFORE - This resource will be retreived starting from the entries which happened chronologically right before the index.
-	OBEFORE
-	//OAFTER - Opposite of OBEFORE.
-	OAFTER
+	//ByOffsetDescending - This resource will be paginated by starting at a given offset
+	ByOffsetDescending = iota
+	//ChronologicallyBeforeID - This resource will be paginated by giving the posts immediately chronologically older than this ID.
+	ChronologicallyBeforeID
+	//ChronologicallyAfterID - This resource will be paginated by giving the posts immediately chronoligically more recent than this ID. The order within the collection will remain the same, however.
+	ChronologicallyAfterID
 )
 
 var (
@@ -1138,11 +1138,11 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 		q = baseQuery + notDeleted + notPending + byPoster
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinear
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfter + orderChronological
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1230,12 +1230,12 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 		q = baseQuery + notDeleted + notPending + byNetwork
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinear
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfter + orderReverseChronological
 		q = fmt.Sprintf(reverse, q)
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1444,11 +1444,11 @@ func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 		q = baseQuery + notDeleted + notPending + byUserGroups
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinear
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfter + orderChronological
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1515,11 +1515,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 		q += notDeleted + notPending + byVisibleAttendance
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinearAttend
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfterAtt + orderChronologicalAttend
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBeforeAtt + orderChronologicalAttend
 	}
 	s, err := api.sc.Prepare(q)
@@ -1529,11 +1529,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 	}
 	var rows *sql.Rows
 	switch {
-	case len(category) > 0 && mode != OSTART:
+	case len(category) > 0 && mode != ByOffsetDescending:
 		rows, err = s.Query(perspective, user, category, index, user, count)
-	case len(category) > 0 && mode == OSTART:
+	case len(category) > 0 && mode == ByOffsetDescending:
 		rows, err = s.Query(perspective, user, category, index, count)
-	case mode != OSTART:
+	case mode != ByOffsetDescending:
 		rows, err = s.Query(perspective, user, index, user, count)
 	default:
 		rows, err = s.Query(perspective, user, index, count)

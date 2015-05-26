@@ -271,7 +271,7 @@ func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		log.Println(err)
 	}
-	conv.Messages, err = api.getMessages(userID, convID, OSTART, start, count)
+	conv.Messages, err = api.getMessages(userID, convID, ByOffsetDescending, start, count)
 	return
 }
 
@@ -581,7 +581,7 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, coun
 	if err != nil {
 		log.Println(err)
 	}
-	conversation.Messages, err = api.getMessages(userID, convID, OSTART, 0, count)
+	conversation.Messages, err = api.getMessages(userID, convID, ByOffsetDescending, 0, count)
 	return
 }
 
@@ -699,21 +699,21 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 	var s *sql.Stmt
 	var q string
 	switch {
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id > ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id < ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +

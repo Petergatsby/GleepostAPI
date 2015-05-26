@@ -621,12 +621,12 @@ func (api *API) getNetworkApproved(netID gp.NetworkID, mode int, index int64, co
 		"WHERE wall_posts.deleted = 0 AND pending = 0 AND post_reviews.action = 'approved' " +
 		"AND network_id = ? "
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += "ORDER BY post_reviews.timestamp DESC LIMIT ?, ?"
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += "AND wall_posts.time > (SELECT time FROM wall_posts WHERE post_id = ?) " +
 			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += "AND wall_posts.time < (SELECT time FROM wall_posts WHERE post_id = ?) " +
 			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
 	}
@@ -688,12 +688,12 @@ func (api *API) getNetworkRejected(netID gp.NetworkID, mode int, index int64, co
 		"WHERE wall_posts.deleted = 0 AND pending = 2 AND post_reviews.action = 'rejected' " +
 		"AND network_id = ? "
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += "ORDER BY post_reviews.timestamp DESC LIMIT ?, ?"
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += "AND wall_posts.time > (SELECT time FROM wall_posts WHERE post_id = ?) " +
 			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += "AND wall_posts.time < (SELECT time FROM wall_posts WHERE post_id = ?) " +
 			"ORDER BY post_reviews.timestamp DESC LIMIT 0, ?"
 	}
