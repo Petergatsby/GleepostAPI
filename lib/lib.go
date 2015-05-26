@@ -73,6 +73,9 @@ func New(conf conf.Config) (api *API) {
 //Start connects to various services & makes the API ready to go.
 func (api *API) Start() {
 	api.pushers = make(map[string]*push.Pusher)
+	if len(api.Config.Pushers) == 0 {
+		log.Println("No pushers configured. Are you sure this is right?")
+	}
 	for _, psh := range api.Config.Pushers {
 		api.pushers[psh.AppName] = push.New(psh)
 	}

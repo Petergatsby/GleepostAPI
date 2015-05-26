@@ -87,7 +87,10 @@ func (api *API) iosBadge(device string, badge int) (err error) {
 	pn := apns.NewPushNotification()
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
-	err = api.pushers["gleepost"].IOSPush(pn)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		pusher.IOSPush(pn)
+	}
 	return
 }
 
@@ -99,7 +102,10 @@ func (api *API) androidNotification(device string, count int, user gp.UserID) (e
 	msg := gcm.NewMessage(data, device)
 	msg.CollapseKey = "New Notification"
 
-	err = api.pushers["gleepost"].AndroidPush(msg)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		err = pusher.AndroidPush(msg)
+	}
 	return
 }
 
@@ -124,7 +130,10 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 		pn.Set("group", message.Group)
 	}
 	pn.Set("profile_image", message.By.Avatar)
-	err = api.pushers["gleepost"].IOSPush(pn)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		err = pusher.IOSPush(pn)
+	}
 	return
 }
 
@@ -137,7 +146,11 @@ func (api *API) androidPushMessage(device string, message gp.Message, convID gp.
 	}
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
-	return api.pushers["gleepost"].AndroidPush(msg)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		err = pusher.AndroidPush(msg)
+	}
+	return
 }
 
 //FeedbackDaemon checks the APNS feedback service every frequency seconds.
@@ -167,7 +180,10 @@ func (api *API) iOSNewConversationNotification(device string, conv gp.Conversati
 	pn.DeviceToken = device
 	pn.AddPayload(payload)
 	pn.Set("conv", conv)
-	err = api.pushers["gleepost"].IOSPush(pn)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		err = pusher.IOSPush(pn)
+	}
 	return
 }
 
@@ -176,7 +192,11 @@ func (api *API) androidNewConversationNotification(device string, conv gp.Conver
 	msg := gcm.NewMessage(data, device)
 	msg.TimeToLive = 0
 	msg.CollapseKey = "You have a new conversation!"
-	return api.pushers["gleepost"].AndroidPush(msg)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		err = pusher.AndroidPush(msg)
+	}
+	return
 }
 
 //SendUpdateNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
@@ -224,7 +244,10 @@ func (api *API) iOSUpdateNotification(device gp.Device, message string, version 
 	pn.DeviceToken = device.ID
 	pn.AddPayload(payload)
 	pn.Set("version", version)
-	err = api.pushers["gleepost"].IOSPush(pn)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		pusher.IOSPush(pn)
+	}
 	return
 }
 
