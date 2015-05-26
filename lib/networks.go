@@ -365,7 +365,7 @@ func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users 
 	case !in || !group:
 		return users, &ENOTALLOWED
 	default:
-		return api.getNetworkAdmins(netID)
+		return api.nm.getNetworkAdmins(netID)
 	}
 }
 
@@ -444,7 +444,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 
 //UserIsNetworkOwner returns true if userID created netID, and err if the database is down.
 func (api *API) userIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner bool, err error) {
-	creator, err := api.networkCreator(netID)
+	creator, err := api.nm.networkCreator(netID)
 	return (creator == userID), err
 }
 
@@ -766,10 +766,10 @@ func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
 }
 
 //GetNetworkAdmins returns all the administrators of the group netID
-func (api *API) getNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
+func (nm *NetworkManager) getNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
 	memberQuery := "SELECT user_id, users.avatar, users.firstname, users.official, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
-	s, err := api.sc.Prepare(memberQuery)
+	s, err := nm.sc.Prepare(memberQuery)
 	if err != nil {
 		return
 	}
@@ -855,9 +855,9 @@ func (api *API) setNetworkImage(netID gp.NetworkID, url string) (err error) {
 }
 
 //NetworkCreator returns the user who created this network.
-func (api *API) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
+func (nm *NetworkManager) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
 	qCreator := "SELECT creator FROM network WHERE id = ?"
-	s, err := api.sc.Prepare(qCreator)
+	s, err := nm.sc.Prepare(qCreator)
 	if err != nil {
 		return
 	}
@@ -1129,5 +1129,25 @@ func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err err
 		return
 	}
 	api.notifObserver.Notify(requestEvent{userID: userID, groupID: netID})
+	return
+}
+
+type NetworkManager struct {
+	sc *psc.StatementCache
+}
+
+func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, err error) {
+	admins, err := nm.getNetworkAdmins(netID)
+	if err != nil {
+		return
+	}
+	creator, err := nm.networkCreator(netID)
+	if err != nil {
+		return
+	}
+	staff = append(staff, creator)
+	for _, admin := range admins {
+		staff = append(staff, admin.ID)
+	}
 	return
 }

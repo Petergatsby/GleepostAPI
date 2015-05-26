@@ -60,6 +60,7 @@ type NotificationObserver struct {
 	cache  *cache.Cache
 	pusher *push.Pusher
 	users  *Users
+	nm     *NetworkManager
 }
 
 //Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
@@ -73,9 +74,9 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher, sc *psc.StatementCache) NotificationObserver {
+func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
 	events := make(chan NotificationEvent)
-	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher}
+	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher, users: users, nm: nm}
 	go n.spin()
 	return n
 }
@@ -192,20 +193,12 @@ type requestEvent struct {
 }
 
 func (r requestEvent) notify(n NotificationObserver) (err error) {
-	admins, err := api.getNetworkAdmins(r.groupID)
+	staff, err := n.nm.networkStaff(r.groupID)
 	if err != nil {
 		return
 	}
-	creator, err := api.networkCreator(r.groupID)
-	if err != nil {
-		return
-	}
-	err = n.createNotification("group_request", r.userID, creator.ID, 0, r.groupID, "")
-	if err != nil {
-		return
-	}
-	for _, admin := range admins {
-		err = n.createNotification("group_request", r.userID, admin.ID, 0, r.groupID, "")
+	for _, st := range staff {
+		err = n.createNotification("group_request", r.userID, st, 0, r.groupID, "")
 		if err != nil {
 			return
 		}
