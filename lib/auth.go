@@ -352,16 +352,18 @@ func (api *API) issueRecoveryEmail(email string, user gp.User, token string) (er
 func (api *API) Verify(token string) (err error) {
 	id, err := api.verificationTokenExists(token)
 	if err == nil {
-		log.Println("Verification token exists (normal-mode)")
 		err = api.verify(id)
 		if err == nil {
-			log.Println("User has verified successfully")
 			var email string
 			email, err = api.getEmail(id)
 			if err != nil {
+				log.Println("Error getting user email:", err)
 				return
 			}
 			err = api.acceptAllInvites(id, email)
+		}
+		if err != nil {
+			log.Println("Error with verification/accepting invites:", err)
 		}
 		return
 	}
