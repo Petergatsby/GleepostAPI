@@ -82,6 +82,9 @@ func (api *API) Start() {
 	gp, ok := api.pushers["gleepost"]
 	if ok {
 		api.notifObserver = NewObserver(api.db, api.cache, gp, api.sc, api.users, api.nm)
+	} else {
+		log.Println("No \"gleepost\" pusher; using blackhole pusher")
+		api.notifObserver = NewObserver(api.db, api.cache, push.NewFake(), api.sc, api.users, api.nm)
 	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {

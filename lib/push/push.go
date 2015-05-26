@@ -46,6 +46,20 @@ func (pusher *realPusher) CheckFeedbackService(f Feedbacker) {
 	}
 }
 
+type fakePusher struct{}
+
+func (f *fakePusher) CheckFeedbackService(feed Feedbacker) {
+	return
+}
+
+func (f *fakePusher) AndroidPush(*gcm.Message) error {
+	return nil
+}
+
+func (f *fakePusher) IOSPush(*apns.PushNotification) error {
+	return nil
+}
+
 //New constructs a Pusher from a Config
 func New(conf conf.PusherConfig) (pusher Pusher) {
 	log.Println("Building pusher")
@@ -73,6 +87,11 @@ func New(conf conf.PusherConfig) (pusher Pusher) {
 	}
 	pusher = p
 	return
+}
+
+//NewFake gives a pusher which simply blackholes every notification.
+func NewFake() Pusher {
+	return &fakePusher{}
 }
 
 //AndroidPush sends a gcm.Message to its recipient.
