@@ -55,7 +55,7 @@ func New(conf conf.Config) (api *API) {
 	api.Mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
 	db, err := sql.Open("mysql", conf.Mysql.ConnectionString())
 	if err != nil {
-		log.Println("error getting db:", err)
+		log.Fatal("error getting db:", err)
 	}
 	db.SetMaxIdleConns(100)
 	api.sc = psc.NewCache(db)
