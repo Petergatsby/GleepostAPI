@@ -47,10 +47,10 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 	}
 	conversations, err := api.GetConversations(userID, start, api.Config.ConversationPageSize)
 	if err != nil {
-		go api.Count(1, "gleepost.conversations.get.500")
+		go api.Statsd.Count(1, "gleepost.conversations.get.500")
 		jsonErr(w, err, 500)
 	} else {
-		go api.Count(1, "gleepost.conversations.get.200")
+		go api.Statsd.Count(1, "gleepost.conversations.get.200")
 		jsonResponse(w, conversations, 200)
 	}
 }
@@ -58,7 +58,7 @@ func getConversations(w http.ResponseWriter, r *http.Request) {
 func postConversations(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	if err != nil {
-		go api.Count(1, "gleepost.conversations.get.400")
+		go api.Statsd.Count(1, "gleepost.conversations.get.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
@@ -76,19 +76,19 @@ func postConversations(w http.ResponseWriter, r *http.Request) {
 	e, ok := err.(*gp.APIerror)
 	switch {
 	case ok && *e == gp.ENOSUCHUSER:
-		go api.Count(1, "gleepost.conversations.get.400")
+		go api.Statsd.Count(1, "gleepost.conversations.get.400")
 		jsonResponse(w, e, 400)
 	case ok && *e == lib.ENOTALLOWED:
-		go api.Count(1, "gleepost.conversations.get.403")
+		go api.Statsd.Count(1, "gleepost.conversations.get.403")
 		jsonResponse(w, e, 403)
 	case err != nil && (err == lib.ETOOMANY || err == lib.ETOOFEW):
-		go api.Count(1, "gleepost.conversations.get.400")
+		go api.Statsd.Count(1, "gleepost.conversations.get.400")
 		jsonResponse(w, e, 400)
 	case err != nil:
-		go api.Count(1, "gleepost.conversations.get.500")
+		go api.Statsd.Count(1, "gleepost.conversations.get.500")
 		jsonErr(w, err, 500)
 	default:
-		go api.Count(1, "gleepost.conversations.get.201")
+		go api.Statsd.Count(1, "gleepost.conversations.get.201")
 		jsonResponse(w, conversation, 201)
 	}
 }
@@ -109,7 +109,7 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("gleepost.conversations.%d.get", _convID)
 	userID, err := authenticate(r)
 	if err != nil {
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
@@ -123,18 +123,18 @@ func getSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
 			if maybeRedirect(w, r, convID, "/api/v1/conversations/%d", 301) {
-				go api.Count(1, url+".301")
+				go api.Statsd.Count(1, url+".301")
 				return
 			}
-			go api.Count(1, url+".403")
+			go api.Statsd.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 		} else {
-			go api.Count(1, url+".500")
+			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)
 		}
 		return
 	}
-	go api.Count(1, url+".200")
+	go api.Statsd.Count(1, url+".200")
 	jsonResponse(w, conv, 200)
 }
 
@@ -145,7 +145,7 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("gleepost.conversations.%d.delete", convID)
 	userID, err := authenticate(r)
 	if err != nil {
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
@@ -154,18 +154,18 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
 			if maybeRedirect(w, r, convID, "api/v1/conversations/%d", 301) {
-				go api.Count(1, url+".301")
+				go api.Statsd.Count(1, url+".301")
 				return
 			}
-			go api.Count(1, url+".403")
+			go api.Statsd.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
 		}
-		go api.Count(1, url+".500")
+		go api.Statsd.Count(1, url+".500")
 		jsonErr(w, err, 500)
 		return
 	}
-	go api.Count(1, url+".204")
+	go api.Statsd.Count(1, url+".204")
 	w.WriteHeader(204)
 }
 
@@ -176,7 +176,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("gleepost.conversations.%d.messages.get", convID)
 	userID, err := authenticate(r)
 	if err != nil {
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
@@ -187,17 +187,17 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
 			if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
-				go api.Count(1, url+".301")
+				go api.Statsd.Count(1, url+".301")
 				return
 			}
-			go api.Count(1, url+".403")
+			go api.Statsd.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
 		}
-		go api.Count(1, url+".500")
+		go api.Statsd.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, messages, 200)
 	}
 }
@@ -218,17 +218,17 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
 			if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
-				go api.Count(1, url+".301")
+				go api.Statsd.Count(1, url+".301")
 				return
 			}
-			api.Count(1, url+".403")
+			api.Statsd.Count(1, url+".403")
 			jsonResponse(w, e, 403)
 			return
 		}
-		go api.Count(1, url+".500")
+		go api.Statsd.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
-		go api.Count(1, url+".201")
+		go api.Statsd.Count(1, url+".201")
 		jsonResponse(w, &gp.Created{ID: uint64(messageID)}, 201)
 	}
 }
@@ -240,7 +240,7 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("gleepost.conversations.%d.messages.put", convID)
 	userID, err := authenticate(r)
 	if err != nil {
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	}
@@ -252,19 +252,19 @@ func putMessages(w http.ResponseWriter, r *http.Request) {
 	err = api.MarkConversationSeen(userID, convID, upTo)
 	if err != nil {
 		if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
-			go api.Count(1, url+".301")
+			go api.Statsd.Count(1, url+".301")
 			return
 		}
-		go api.Count(1, url+".500")
+		go api.Statsd.Count(1, url+".500")
 		jsonErr(w, err, 500)
 	} else {
 		conversation, err := api.GetConversation(userID, convID)
 		if err != nil {
-			go api.Count(1, url+".500")
+			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, conversation, 200)
 	}
 }
@@ -273,16 +273,16 @@ func readAll(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, "gleepost.conversations.read_all.post.400")
+		go api.Statsd.Count(1, "gleepost.conversations.read_all.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		err = api.MarkAllConversationsSeen(userID)
 		if err != nil {
-			go api.Count(1, "gleepost.conversations.read_all.post.500")
+			go api.Statsd.Count(1, "gleepost.conversations.read_all.post.500")
 			jsonResponse(w, err, 500)
 			return
 		}
-		go api.Count(1, "gleepost.conversations.read_all.post.204")
+		go api.Statsd.Count(1, "gleepost.conversations.read_all.post.204")
 		w.WriteHeader(204)
 	}
 }
@@ -291,17 +291,17 @@ func muteBadges(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, "gleepost.conversations.mute_badges.post.400")
+		go api.Statsd.Count(1, "gleepost.conversations.mute_badges.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		t := time.Now().UTC()
 		err = api.UserMuteBadges(userID, t)
 		if err != nil {
-			go api.Count(1, "gleepost.conversations.mute_badges.post.500")
+			go api.Statsd.Count(1, "gleepost.conversations.mute_badges.post.500")
 			jsonResponse(w, err, 500)
 			return
 		}
-		go api.Count(1, "gleepost.conversations.mute_badges.post.204")
+		go api.Statsd.Count(1, "gleepost.conversations.mute_badges.post.204")
 		w.WriteHeader(204)
 	}
 }
@@ -312,7 +312,7 @@ func postParticipants(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
@@ -328,14 +328,14 @@ func postParticipants(w http.ResponseWriter, r *http.Request) {
 		participants, err := api.UserAddParticipants(userID, convID, users...)
 		if err != nil {
 			if maybeRedirect(w, r, convID, "api/v1/conversations/%d/messages", 301) {
-				go api.Count(1, url+".301")
+				go api.Statsd.Count(1, url+".301")
 				return
 			}
 			jsonErr(w, err, 400)
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			return
 		}
 		jsonResponse(w, participants, 201)
-		go api.Count(1, url+".201")
+		go api.Statsd.Count(1, url+".201")
 	}
 }

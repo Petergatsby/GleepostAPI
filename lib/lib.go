@@ -8,8 +8,6 @@ import (
 	"io"
 	"log"
 
-	"time"
-
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -30,7 +28,7 @@ type API struct {
 	Mail          mail.Mailer
 	Config        conf.Config
 	pushers       map[string]push.Pusher
-	statsd        g2s.Statter
+	Statsd        PrefixStatter
 	notifObserver NotificationObserver
 	TW            TranscodeWorker
 	Viewer        Viewer
@@ -90,31 +88,7 @@ func (api *API) Start() {
 	if err != nil {
 		log.Printf("Statsd failed: %s\nMake sure you have the right address in your conf.json\n", err)
 	} else {
-		api.statsd = statsd
-	}
-}
-
-//Time reports the time for this stat to statsd. (use it with defer)
-func (api *API) Time(start time.Time, bucket string) {
-	//TODO: Move the stats stuff into its own module?
-	duration := time.Since(start)
-	bucket = api.statsdPrefix() + bucket
-	if api.statsd != nil {
-		api.statsd.Timing(1.0, bucket, duration)
-	}
-}
-
-func (api *API) statsdPrefix() string {
-	if api.Config.DevelopmentMode {
-		return "dev."
-	}
-	return "prod."
-}
-
-//Count wraps a g2s.Statter giving an automatic version prefix and a single location to set the report probability.
-func (api *API) Count(count int, bucket string) {
-	if api.statsd != nil {
-		api.statsd.Counter(1.0, api.statsdPrefix()+bucket, count)
+		api.Statsd = PrefixStatter{statter: statsd, DevelopmentMode: api.Config.DevelopmentMode}
 	}
 }
 

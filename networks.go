@@ -67,11 +67,11 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 		}
 		networks, err := api.UserGetUserGroups(userID, otherID)
 		if err != nil {
-			go api.Count(1, url+".500")
+			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, networks, 200)
 	}
 }
@@ -82,12 +82,12 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 16)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -96,15 +96,15 @@ func getNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, network, 200)
 	}
 }
@@ -114,7 +114,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		name := r.FormValue("name")
@@ -125,7 +125,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		var network interface{}
 		switch {
 		case len(name) == 0:
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonResponse(w, missingParamErr("name"), 400)
 		case err != nil || !university:
 			network, err = api.CreateGroup(userID, name, url, desc, privacy)
@@ -135,13 +135,13 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		}
 		switch {
 		case err == lib.ENOTALLOWED:
-			go api.Count(1, url+".403")
+			go api.Statsd.Count(1, url+".403")
 			jsonResponse(w, err, 403)
 		case err != nil:
-			go api.Count(1, url+".500")
+			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)
 		default:
-			go api.Count(1, url+".201")
+			go api.Statsd.Count(1, url+".201")
 			jsonResponse(w, network, 201)
 		}
 	}
@@ -155,13 +155,13 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -186,18 +186,18 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else if err == lib.NobodyAdded {
-				go api.Count(1, url+".400")
+				go api.Statsd.Count(1, url+".400")
 				jsonResponse(w, err, 400)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
-		go api.Count(1, url+".204")
+		go api.Statsd.Count(1, url+".204")
 		w.WriteHeader(204)
 	}
 }
@@ -212,7 +212,7 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -226,10 +226,10 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					e, ok := err.(*gp.APIerror)
 					if ok && *e == lib.ENOTALLOWED {
-						go api.Count(1, url+".403")
+						go api.Statsd.Count(1, url+".403")
 						jsonResponse(w, e, 403)
 					} else {
-						go api.Count(1, url+".500")
+						go api.Statsd.Count(1, url+".500")
 						jsonErr(w, err, 500)
 					}
 					return
@@ -240,14 +240,14 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, users, 200)
 	}
 }
@@ -259,12 +259,12 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -273,14 +273,14 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, users, 200)
 	}
 }
@@ -291,12 +291,12 @@ func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -308,15 +308,15 @@ func deleteNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
-		go api.Count(1, url+".204")
+		go api.Statsd.Count(1, url+".204")
 		w.WriteHeader(204)
 	}
 }
@@ -327,12 +327,12 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -341,14 +341,14 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, users, 200)
 	}
 }
@@ -359,7 +359,7 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
@@ -367,15 +367,15 @@ func getGroupPosts(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, posts, 200)
 	}
 }
@@ -386,12 +386,12 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -401,10 +401,10 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
@@ -413,15 +413,15 @@ func putNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 			return
 		}
-		go api.Count(1, url+".200")
+		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, group, 200)
 	}
 }
@@ -432,12 +432,12 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, url+".400")
+		go api.Statsd.Count(1, url+".400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		_netID, err := strconv.ParseUint(vars["network"], 10, 64)
 		if err != nil {
-			go api.Count(1, url+".400")
+			go api.Statsd.Count(1, url+".400")
 			jsonErr(w, err, 400)
 			return
 		}
@@ -446,14 +446,14 @@ func deleteUserNetwork(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
-				go api.Count(1, url+".403")
+				go api.Statsd.Count(1, url+".403")
 				jsonResponse(w, e, 403)
 			} else {
-				go api.Count(1, url+".500")
+				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
 		}
-		go api.Count(1, url+".204")
+		go api.Statsd.Count(1, url+".204")
 		w.WriteHeader(204)
 	}
 }
