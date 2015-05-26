@@ -18,7 +18,7 @@ type Users struct {
 
 //returns ENOSUCHUSER if this user doesn't exist
 func (u Users) byID(id gp.UserID) (user gp.User, err error) {
-	defer u.statter.Time(time.Now(), "users.db.byID")
+	defer u.statter.Time(time.Now(), "users.byID.db")
 	var av sql.NullString
 	s, err := u.sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
 	if err != nil {
