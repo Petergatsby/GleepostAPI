@@ -11,6 +11,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
+//Users provides access to the users model.
 type Users struct {
 	sc      *psc.StatementCache
 	statter PrefixStatter

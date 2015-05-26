@@ -467,6 +467,7 @@ func (api *API) createFBVerification(fbid uint64, token string) (err error) {
 	return
 }
 
+//NoSuchVerificationToken is returned when the user provides a nonexistent verification token.
 var NoSuchVerificationToken = gp.APIerror{Reason: "No such verification token"}
 
 //FBVerificationExists returns the user this verification token is for, or an error if there is none.

@@ -9,13 +9,13 @@ import (
 	"github.com/draaglom/gcm"
 )
 
+//Pusher is able to push notifications to iOS and android devices.
 type Pusher interface {
 	CheckFeedbackService(Feedbacker)
 	AndroidPush(*gcm.Message) error
 	IOSPush(*apns.PushNotification) error
 }
 
-//Pusher is able to push notifications to iOS and android devices.
 type realPusher struct {
 	APNSconfig conf.APNSConfig
 	GCMconfig  conf.GCMConfig

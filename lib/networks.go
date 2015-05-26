@@ -1132,6 +1132,7 @@ func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err err
 	return
 }
 
+//NetworkManager provides access to network data.
 type NetworkManager struct {
 	sc *psc.StatementCache
 }
