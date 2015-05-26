@@ -86,7 +86,7 @@ func (api *API) Start() {
 	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {
-		log.Printf("Statsd failed: %s\nMake sure you have the right address in your conf.json\n", err)
+		log.Printf("Statsd failed: %s\n", err)
 	} else {
 		api.Statsd = PrefixStatter{statter: statsd, DevelopmentMode: api.Config.DevelopmentMode}
 		api.users.statter = api.Statsd
