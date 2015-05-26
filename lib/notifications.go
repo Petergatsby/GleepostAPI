@@ -58,7 +58,7 @@ type NotificationObserver struct {
 	db     *sql.DB
 	sc     *psc.StatementCache
 	cache  *cache.Cache
-	pusher *push.Pusher
+	pusher push.Pusher
 	users  *Users
 	nm     *NetworkManager
 }
@@ -74,7 +74,7 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
+func NewObserver(db *sql.DB, cache *cache.Cache, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
 	events := make(chan NotificationEvent)
 	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher, users: users, nm: nm}
 	go n.spin()
