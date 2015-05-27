@@ -25,6 +25,7 @@ func init() {
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(goneHandler))).Methods("PUT")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteSpecificConversation))).Methods("DELETE")
+	base.Handle("/conversations/{id:[0-9]+}/", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(getMessages))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(postMessages))).Methods("POST")
