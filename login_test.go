@@ -122,6 +122,13 @@ func BenchmarkLogin(b *testing.B) {
 	if err != nil {
 		b.FailNow()
 	}
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	defer server.Close()
+	baseURL = server.URL + "/api/v1/"
 	email := "patrick@fakestanford.edu"
 	pass := "TestingPass"
 	for i := 0; i < b.N; i++ {
