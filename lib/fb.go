@@ -265,11 +265,6 @@ func fBAvatar(username string) (avatar string) {
 	return fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", username)
 }
 
-//FBVerify takes a verification token (previously sent to the user's email) and returns the facebook id of the (to-be-verified) facebook user or an error if the invite isn't valid.
-func (api *API) fBVerify(token string) (fbid uint64, err error) {
-	return api.fBVerificationExists(token)
-}
-
 //FBGetEmail returns the email address we have on file for this facebook id, or an error if we don't have one.
 func (api *API) fBGetEmail(fbid uint64) (email string, err error) {
 	s, err := api.sc.Prepare("SELECT email FROM facebook WHERE fb_id = ?")
@@ -472,6 +467,9 @@ func (api *API) createFBVerification(fbid uint64, token string) (err error) {
 	return
 }
 
+//NoSuchVerificationToken is returned when the user provides a nonexistent verification token.
+var NoSuchVerificationToken = gp.APIerror{Reason: "No such verification token"}
+
 //FBVerificationExists returns the user this verification token is for, or an error if there is none.
 func (api *API) fBVerificationExists(token string) (fbid uint64, err error) {
 	s, err := api.sc.Prepare("SELECT fb_id FROM facebook_verification WHERE token = ?")
@@ -479,5 +477,8 @@ func (api *API) fBVerificationExists(token string) (fbid uint64, err error) {
 		return
 	}
 	err = s.QueryRow(token).Scan(&fbid)
+	if err == sql.ErrNoRows {
+		err = NoSuchVerificationToken
+	}
 	return
 }

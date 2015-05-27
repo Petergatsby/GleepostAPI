@@ -8,6 +8,7 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/go-sql-driver/mysql"
 )
 
 //ENoRole is given when you try to specify a role which doesn't exist.
@@ -15,6 +16,9 @@ var ENoRole = gp.APIerror{Reason: "Invalid role"}
 
 //NobodyAdded is returned when you call UserAddToGroup with no arguments.
 var NobodyAdded = gp.APIerror{Reason: "Must add either user(s), facebook user(s) or an email"}
+
+//NoSuchNetwork occurs when performing an action against a network which doesn't exist (or the user can't see).
+var NoSuchNetwork = gp.APIerror{Reason: "No such network"}
 
 var levels = map[string]int{
 	"creator":       9,
@@ -319,7 +323,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 			return
 		}
 		var user gp.User
-		user, err = api.getUser(userID)
+		user, err = api.users.byID(userID)
 		if err != nil {
 			return
 		}
@@ -361,7 +365,7 @@ func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users 
 	case !in || !group:
 		return users, &ENOTALLOWED
 	default:
-		return api.getNetworkAdmins(netID)
+		return api.nm.getNetworkAdmins(netID)
 	}
 }
 
@@ -440,7 +444,7 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 
 //UserIsNetworkOwner returns true if userID created netID, and err if the database is down.
 func (api *API) userIsNetworkOwner(userID gp.UserID, netID gp.NetworkID) (owner bool, err error) {
-	creator, err := api.networkCreator(netID)
+	creator, err := api.nm.networkCreator(netID)
 	return (creator == userID), err
 }
 
@@ -494,7 +498,7 @@ func (api *API) getUserUniversity(id gp.UserID) (network gp.GroupMembership, err
 		network.Desc = desc.String
 	}
 	if creator.Valid {
-		u, err := api.getUser(gp.UserID(creator.Int64))
+		u, err := api.users.byID(gp.UserID(creator.Int64))
 		if err == nil {
 			network.Creator = &u
 		}
@@ -532,7 +536,7 @@ func (api *API) getRules() (rules []gp.Rule, err error) {
 		return
 	}
 	rows, err := s.Query()
-	log.Println("DB hit: GetRules()")
+	log.Println("db.GetRules()")
 	if err != nil {
 		return
 	}
@@ -596,7 +600,7 @@ func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []
 			network.Desc = desc.String
 		}
 		if creator.Valid {
-			u, err := api.getUser(gp.UserID(creator.Int64))
+			u, err := api.users.byID(gp.UserID(creator.Int64))
 			if err == nil {
 				network.Creator = &u
 			}
@@ -661,7 +665,7 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID) (groups []gp.
 			network.Desc = desc.String
 		}
 		if creator.Valid {
-			u, err := api.getUser(gp.UserID(creator.Int64))
+			u, err := api.users.byID(gp.UserID(creator.Int64))
 			if err == nil {
 				network.Creator = &u
 			}
@@ -710,7 +714,7 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 		network.Desc = desc.String
 	}
 	if creator.Valid {
-		u, err := api.getUser(gp.UserID(creator.Int64))
+		u, err := api.users.byID(gp.UserID(creator.Int64))
 		if err == nil {
 			network.Creator = &u
 		}
@@ -741,7 +745,7 @@ func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string
 	group.Desc = desc
 	group.Privacy = privacy
 	group.MemberCount = 1
-	u, err := api.getUser(creator)
+	u, err := api.users.byID(creator)
 	if err == nil {
 		group.Creator = &u
 	} else {
@@ -762,10 +766,10 @@ func (api *API) isGroup(netID gp.NetworkID) (group bool, err error) {
 }
 
 //GetNetworkAdmins returns all the administrators of the group netID
-func (api *API) getNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
+func (nm *NetworkManager) getNetworkAdmins(netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
 	memberQuery := "SELECT user_id, users.avatar, users.firstname, users.official, user_network.role, user_network.role_level FROM user_network JOIN users ON user_network.user_id = users.id WHERE user_network.network_id = ? AND user_network.role = 'administrator'"
-	s, err := api.sc.Prepare(memberQuery)
+	s, err := nm.sc.Prepare(memberQuery)
 	if err != nil {
 		return
 	}
@@ -851,9 +855,9 @@ func (api *API) setNetworkImage(netID gp.NetworkID, url string) (err error) {
 }
 
 //NetworkCreator returns the user who created this network.
-func (api *API) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
+func (nm *NetworkManager) networkCreator(netID gp.NetworkID) (creator gp.UserID, err error) {
 	qCreator := "SELECT creator FROM network WHERE id = ?"
-	s, err := api.sc.Prepare(qCreator)
+	s, err := nm.sc.Prepare(qCreator)
 	if err != nil {
 		return
 	}
@@ -1056,5 +1060,95 @@ func groupName(sc *psc.StatementCache, group gp.NetworkID) (name string, err err
 		return
 	}
 	err = s.QueryRow(group).Scan(&name)
+	return
+}
+
+//UserRequestAccess allows a user to request access to a private group. It's idempotent; requesting multiple times will silently drop the extra requests.
+func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err error) {
+	in, err := api.userInNetwork(userID, netID)
+	if err != nil {
+		return
+	}
+	if in {
+		//Can't request access to a network you're already in
+		err = ENOTALLOWED
+		return
+	}
+	isGroup, err := api.isGroup(netID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			//Can't request access to a network which doesn't exist
+			err = NoSuchNetwork
+		}
+		return
+	}
+	if !isGroup {
+		//Can't request access to a university
+		err = NoSuchNetwork
+		return
+	}
+	parent, err := api.networkParent(netID)
+	if err != nil {
+		return
+	}
+	in, err = api.userInNetwork(userID, parent)
+	if err != nil {
+		return
+	}
+	if !in {
+		//Can't request access to a group in another university
+		err = NoSuchNetwork
+		return
+	}
+	net, err := api.getNetwork(netID)
+	if err != nil {
+		return
+	}
+	if net.Privacy == "secret" {
+		//Can't request access to a secret group
+		err = NoSuchNetwork
+		return
+	}
+	if net.Privacy == "public" {
+		//Can't request access to a public group
+		err = ENOTALLOWED
+		return
+	}
+	s, err := api.sc.Prepare("INSERT INTO network_requests(user_id, network_id) VALUES (?, ?)")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(userID, netID)
+	if err != nil {
+		if err, ok := err.(*mysql.MySQLError); ok {
+			if err.Number == 1062 {
+				//Drop duplicates silently
+				return nil
+			}
+		}
+		return
+	}
+	api.notifObserver.Notify(requestEvent{userID: userID, groupID: netID})
+	return
+}
+
+//NetworkManager provides access to network data.
+type NetworkManager struct {
+	sc *psc.StatementCache
+}
+
+func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, err error) {
+	admins, err := nm.getNetworkAdmins(netID)
+	if err != nil {
+		return
+	}
+	creator, err := nm.networkCreator(netID)
+	if err != nil {
+		return
+	}
+	staff = append(staff, creator)
+	for _, admin := range admins {
+		staff = append(staff, admin.ID)
+	}
 	return
 }

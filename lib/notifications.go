@@ -33,9 +33,9 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 		notificationSelect += " AND seen = 0"
 	}
 	switch {
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT ?) AS `wp` ORDER BY `id` DESC"
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		notificationSelect += " AND notifications.id < ? ORDER BY `id` DESC LIMIT ?"
 	default:
 		notificationSelect += " ORDER BY `id` DESC LIMIT ?"
@@ -45,7 +45,7 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 		return
 	}
 	var rows *sql.Rows
-	if mode == OSTART {
+	if mode == ByOffsetDescending {
 		rows, err = s.Query(id, api.Config.NotificationPageSize)
 	} else {
 		rows, err = s.Query(id, index, api.Config.NotificationPageSize)
@@ -69,7 +69,7 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 		if err != nil {
 			return
 		}
-		notification.By, err = api.getUser(by)
+		notification.By, err = api.users.byID(by)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -128,7 +128,9 @@ type NotificationObserver struct {
 	db     *sql.DB
 	sc     *psc.StatementCache
 	cache  *cache.Cache
-	pusher *push.Pusher
+	pusher push.Pusher
+	users  *Users
+	nm     *NetworkManager
 }
 
 //Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
@@ -142,9 +144,9 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, cache *cache.Cache, pusher *push.Pusher, sc *psc.StatementCache) NotificationObserver {
+func NewObserver(db *sql.DB, cache *cache.Cache, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
 	events := make(chan NotificationEvent)
-	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher}
+	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher, users: users, nm: nm}
 	go n.spin()
 	return n
 }
@@ -255,6 +257,25 @@ func (v voteEvent) notify(n NotificationObserver) (err error) {
 	return
 }
 
+type requestEvent struct {
+	userID  gp.UserID
+	groupID gp.NetworkID
+}
+
+func (r requestEvent) notify(n NotificationObserver) (err error) {
+	staff, err := n.nm.networkStaff(r.groupID)
+	if err != nil {
+		return
+	}
+	for _, st := range staff {
+		err = n.createNotification("group_request", r.userID, st, 0, r.groupID, "")
+		if err != nil {
+			return
+		}
+	}
+	return nil
+}
+
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (n NotificationObserver) push(notification gp.Notification, recipient gp.UserID) {
 	devices, err := getDevices(n.sc, recipient, "gleepost")
@@ -309,7 +330,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	d.LocKey = toLocKey(notification.Type)
 	d.LocArgs = []string{notification.By.Name}
 	switch {
-	case notification.Type == "added_group" || notification.Type == "group_post":
+	case notification.Type == "added_group" || notification.Type == "group_post" || notification.Type == "group_request":
 		var name string
 		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
@@ -347,7 +368,7 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 	data["type"] = toLocKey(notification.Type)
 	data["for"] = recipient
 	switch {
-	case notification.Type == "added_group" || notification.Type == "group_post":
+	case notification.Type == "added_group" || notification.Type == "group_post" || notification.Type == "group_request":
 		var name string
 		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
@@ -356,6 +377,9 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		data["group-id"] = notification.Group
 		data["group-name"] = name
 		switch {
+		case notification.Type == "group_request":
+			data["requester"] = notification.By.Name
+			CollapseKey = "Somoene requested to join your group."
 		case notification.Type == "group_post":
 			data["poster"] = notification.By.Name
 			CollapseKey = "Somoene posted in your group."
@@ -441,7 +465,7 @@ func (n NotificationObserver) _createNotification(ntype string, by gp.UserID, re
 		Time: time.Now().UTC(),
 		Seen: false,
 	}
-	notification.By, err = getUser(n.sc, by)
+	notification.By, err = n.users.byID(by)
 	if err != nil {
 		return
 	}

@@ -96,7 +96,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 		reuse = true
 	}
 	var participants []gp.User
-	user, err := api.getUser(initiator)
+	user, err := api.users.byID(initiator)
 	if err != nil {
 		return
 	}
@@ -114,7 +114,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 			return conversation, e
 		}
 		if canContact {
-			user, err = api.getUser(id)
+			user, err = api.users.byID(id)
 			if err != nil {
 				return
 			}
@@ -189,7 +189,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	if err != nil {
 		return
 	}
-	user, err := api.getUser(userID)
+	user, err := api.users.byID(userID)
 	if err != nil {
 		return
 	}
@@ -271,7 +271,7 @@ func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		log.Println(err)
 	}
-	conv.Messages, err = api.getMessages(userID, convID, OSTART, start, count)
+	conv.Messages, err = api.getMessages(userID, convID, ByOffsetDescending, start, count)
 	return
 }
 
@@ -379,7 +379,7 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	if err != nil {
 		return
 	}
-	user, err := api.getUser(userID)
+	user, err := api.users.byID(userID)
 	if err != nil {
 		return
 	}
@@ -435,7 +435,7 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	if err != nil {
 		return
 	}
-	log.Printf("DB hit: createConversation(userID: %d, participants: %v, primary: %t, group: %d)\n", id, participants, primary, group)
+	log.Printf("db.createConversation(userID: %d, participants: %v, primary: %t, group: %d)\n", id, participants, primary, group)
 	var pids []gp.UserID
 	for _, u := range participants {
 		pids = append(pids, u.ID)
@@ -581,7 +581,7 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, coun
 	if err != nil {
 		log.Println(err)
 	}
-	conversation.Messages, err = api.getMessages(userID, convID, OSTART, 0, count)
+	conversation.Messages, err = api.getMessages(userID, convID, ByOffsetDescending, 0, count)
 	return
 }
 
@@ -633,7 +633,7 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 	for rows.Next() {
 		var id gp.UserID
 		err = rows.Scan(&id)
-		user, err := api.getUser(id)
+		user, err := api.users.byID(id)
 		if err == nil {
 			participants = append(participants, user)
 		}
@@ -662,7 +662,7 @@ func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err er
 	if err != nil {
 		return message, err
 	}
-	message.By, err = api.getUser(by)
+	message.By, err = api.users.byID(by)
 	if err != nil {
 		log.Printf("error getting user %d %v", by, err)
 	}
@@ -699,21 +699,21 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 	var s *sql.Stmt
 	var q string
 	switch {
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id > ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id < ? " +
 			"ORDER BY `timestamp` DESC LIMIT ?"
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
 			"WHERE chat_messages.conversation_id = ? " +
@@ -742,7 +742,7 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 		if err != nil {
 			log.Printf("%v", err)
 		}
-		message.By, err = api.getUser(by)
+		message.By, err = api.users.byID(by)
 		if err != nil {
 			log.Println("Error getting this message's sender:", err)
 			continue

@@ -153,13 +153,13 @@ func interpretPagination(startString, beforeString, afterString string) (mode in
 	}
 	switch {
 	case after > 0:
-		mode = lib.OAFTER
+		mode = lib.ChronologicallyAfterID
 		index = after
 	case before > 0:
-		mode = lib.OBEFORE
+		mode = lib.ChronologicallyBeforeID
 		index = before
 	default:
-		mode = lib.OSTART
+		mode = lib.ByOffsetDescending
 		index = start
 	}
 	return

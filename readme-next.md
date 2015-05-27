@@ -148,6 +148,23 @@ If the poll has ended already:
 	}
 ```
 
+ - Someone requested access to a group you administrate
+
+```json
+	{
+		"id":3008,
+		"type":"group_request",
+		"network":12345,
+		"time":"2014-11-12T22:51:35Z",
+		"user":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"seen":false
+	}
+```
+
 ###Networks
 
 A Network is a collection of users and posts; each university is a Network.
@@ -178,5 +195,13 @@ Users may also create networks within their university; these are Groups. These 
 	"last_activity":"2014-11-06T23:36:24Z"
 }
 ```
+
+####Joining a network
+
+Only Groups may be joined. To do so, there are two options:
+
+If a group's `privacy` is `public`, you are allowed to add yourself to the network directly; just [POST to /networks/:id/users](#post-networksnetwork-idusers) with your own ID. 
+
+If a group's `privacy` is `private`, you may request access to the group by sending a [POST to /networks/:id/requests](#post-networksnetwork-idrequests).
 
 ###Approve

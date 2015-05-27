@@ -4,15 +4,37 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/go-sql-driver/mysql"
 )
 
-//GetUser returns the User with this ID.
-func (api *API) getUser(id gp.UserID) (user gp.User, err error) {
-	user, err = getUser(api.sc, id)
+//Users provides access to the users model.
+type Users struct {
+	sc      *psc.StatementCache
+	statter PrefixStatter
+}
+
+//returns ENOSUCHUSER if this user doesn't exist
+func (u Users) byID(id gp.UserID) (user gp.User, err error) {
+	defer u.statter.Time(time.Now(), "users.byID.db")
+	var av sql.NullString
+	s, err := u.sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = &gp.ENOSUCHUSER
+		}
+		return
+	}
+	if av.Valid {
+		user.Avatar = av.String
+	}
 	return
 }
 
@@ -108,7 +130,7 @@ func (api *API) inviteURL(token, email string) string {
 
 func (api *API) issueInviteEmail(email string, userID gp.UserID, netID gp.NetworkID, token string) (err error) {
 	var from gp.User
-	from, err = api.getUser(userID)
+	from, err = api.users.byID(userID)
 	if err != nil {
 		return
 	}
@@ -189,7 +211,7 @@ func (api *API) userIsOnline(id gp.UserID) bool {
 //UserHasPosted returns true if user has ever created a post from the perspective of perspective.
 //TODO: Implement a direct version
 func (api *API) userHasPosted(user gp.UserID, perspective gp.UserID) (posted bool, err error) {
-	posts, err := api.GetUserPosts(user, perspective, OSTART, 0, 1, "")
+	posts, err := api.GetUserPosts(user, perspective, ByOffsetDescending, 0, 1, "")
 	if err != nil {
 		return
 	}
@@ -233,27 +255,6 @@ func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) 
 	return
 }
 
-//GetUser returns this user, or ENOSUCHUSER if they don't exist.
-func getUser(sc *psc.StatementCache, id gp.UserID) (user gp.User, err error) {
-	var av sql.NullString
-	s, err := sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
-	if err != nil {
-		return
-	}
-	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
-	log.Printf("DB hit: db.GetUser(%d)\n", id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			err = &gp.ENOSUCHUSER
-		}
-		return
-	}
-	if av.Valid {
-		user.Avatar = av.String
-	}
-	return
-}
-
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 	var av, desc, lastName sql.NullString
@@ -262,7 +263,7 @@ func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 		return
 	}
 	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
-	log.Printf("DB hit: GetProfile(%d)\n", id)
+	log.Printf("db.GetProfile(%d)\n", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER

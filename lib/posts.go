@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	//OSTART - This resource will be retreived starting at an index position ("posts starting from the n-th")
-	OSTART = iota
-	//OBEFORE - This resource will be retreived starting from the entries which happened chronologically right before the index.
-	OBEFORE
-	//OAFTER - Opposite of OBEFORE.
-	OAFTER
+	//ByOffsetDescending - This resource will be paginated by starting at a given offset
+	ByOffsetDescending = iota
+	//ChronologicallyBeforeID - This resource will be paginated by giving the posts immediately chronologically older than this ID.
+	ChronologicallyBeforeID
+	//ChronologicallyAfterID - This resource will be paginated by giving the posts immediately chronoligically more recent than this ID. The order within the collection will remain the same, however.
+	ChronologicallyAfterID
 )
 
 var (
@@ -37,11 +37,6 @@ var (
 	//InvalidVideo = You tried to post with an invalid video
 	InvalidVideo = gp.APIerror{Reason: "That is not a valid video"}
 )
-
-//GetPost returns a particular Post
-func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
-	return api.getPost(postID)
-}
 
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
 func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
@@ -380,7 +375,7 @@ func (api *API) getPostImages(postID gp.PostID) (images []string) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Printf("DB hit: getImages postID(%d)\n", postID)
+	log.Printf("db.getPostImages(%d)\n", postID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -406,7 +401,7 @@ func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Printf("DB hit: getVideos postID(%d)\n", postID)
+	log.Printf("db.getPostVideos(%d)\n", postID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -457,14 +452,14 @@ func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, er
 
 //GetLikes returns all the likes for a particular post.
 func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
-	log.Println("GetLikes", post)
+	log.Printf("GetLikes(%d)", post)
 	l, err := api._getLikes(post)
 	if err != nil {
 		return
 	}
 	for _, like := range l {
 		lf := gp.LikeFull{}
-		lf.User, err = api.getUser(like.UserID)
+		lf.User, err = api.users.byID(like.UserID)
 		if err == nil {
 			lf.Time = like.Time
 			likes = append(likes, lf)
@@ -514,7 +509,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		err = CommentTooLong
 		return
 	}
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -530,7 +525,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		if err == nil {
 			api.notifObserver.Notify(commentEvent{userID: userID, recipientID: post.By.ID, postID: postID, text: text})
 			comment := gp.Comment{ID: commID, Post: postID, Time: time.Now().UTC(), Text: text}
-			comment.By, err = api.getUser(userID)
+			comment.By, err = api.users.byID(userID)
 			if err != nil {
 				log.Println(err)
 				return
@@ -543,7 +538,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 
 //UserAddPostImage adds an image (by url) to a post.
 func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string) (images []string, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -599,7 +594,7 @@ func (api *API) addPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.Vide
 
 //UserAddPostVideo attaches a video to a post, or errors if the user isn't allowed.
 func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (videos []gp.Video, err error) {
-	p, err := api.GetPost(postID)
+	p, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -766,7 +761,7 @@ func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
 
 //UserSetLike marks a post as "liked" or "unliked" by this user.
 func (api *API) UserSetLike(user gp.UserID, postID gp.PostID, liked bool) (err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -832,7 +827,7 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
 func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err error) {
-	post, err := api.GetPost(event)
+	post, err := api.getPost(event)
 	if err != nil {
 		return
 	}
@@ -986,7 +981,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 }
 
 func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -998,7 +993,7 @@ func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err 
 
 //UserGetEventAttendees returns all the attendees of a given event, or ENOTALLOWED if user isn't in its network.
 func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attendeeSummary gp.AttendeeSummary, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -1018,7 +1013,7 @@ func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attende
 
 //UserGetEventPopularity returns popularity (an arbitrary score between 0 and 100), and the number of attendees. If user isn't in the same network as the event, it will return ENOTALLOWED instead.
 func (api *API) userGetEventPopularity(user gp.UserID, postID gp.PostID) (popularity int, attendees int, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -1031,17 +1026,6 @@ func (api *API) userGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 		return api.getEventPopularity(postID)
 	}
 }
-
-const (
-	//WNETWORK is posts in this network.
-	WNETWORK = iota
-	//WUSER is posts by this user.
-	WUSER
-	//WGROUPS is posts in all groups this user belongs to.
-	WGROUPS
-	//WATTENDS is events this user has attended
-	WATTENDS
-)
 
 const (
 	//Base
@@ -1103,7 +1087,7 @@ func (api *API) scanPostRows(rows *sql.Rows, expandNetworks bool) (posts []gp.Po
 		if err != nil {
 			return posts, err
 		}
-		post.By, err = api.getUser(by)
+		post.By, err = api.users.byID(by)
 		if err == nil {
 			post.CommentCount = api.getCommentCount(post.ID)
 			post.Images = api.getPostImages(post.ID)
@@ -1138,11 +1122,11 @@ func (api *API) getUserPosts(userID, perspective gp.UserID, mode int, index int6
 		q = baseQuery + notDeleted + notPending + byPoster
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinear
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfter + orderChronological
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1230,12 +1214,12 @@ func (api *API) _getPosts(netID gp.NetworkID, mode int, index int64, count int, 
 		q = baseQuery + notDeleted + notPending + byNetwork
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinear
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfter + orderReverseChronological
 		q = fmt.Sprintf(reverse, q)
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1291,7 +1275,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 		return
 	}
 	rows, err := s.Query(postID, start, count)
-	log.Printf("DB hit: GetComments(%d, %d, %d)\n", postID, start, count)
+	log.Printf("db.GetComments(%d, %d, %d)\n", postID, start, count)
 	if err != nil {
 		return comments, err
 	}
@@ -1306,7 +1290,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 			return comments, err
 		}
 		comment.Time, _ = time.Parse(mysqlTime, timeString)
-		comment.By, err = api.getUser(by)
+		comment.By, err = api.users.byID(by)
 		if err != nil {
 			log.Printf("error getting user %d: %v\n", by, err)
 		}
@@ -1332,7 +1316,7 @@ func (api *API) userGetPost(userID gp.UserID, postID gp.PostID) (post gp.Post, e
 	if err != nil {
 		return
 	}
-	post.By, err = api.getUser(by)
+	post.By, err = api.users.byID(by)
 	if err != nil {
 		return
 	}
@@ -1362,7 +1346,7 @@ func (api *API) getPost(postID gp.PostID) (post gp.Post, err error) {
 		}
 		return
 	}
-	post.By, err = api.getUser(by)
+	post.By, err = api.users.byID(by)
 	if err != nil {
 		return
 	}
@@ -1444,11 +1428,11 @@ func (api *API) userGetGroupsPosts(user gp.UserID, mode int, index int64, count 
 		q = baseQuery + notDeleted + notPending + byUserGroups
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinear
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfter + orderChronological
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBefore + orderChronological
 	}
 	s, err := api.sc.Prepare(q)
@@ -1515,11 +1499,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 		q += notDeleted + notPending + byVisibleAttendance
 	}
 	switch {
-	case mode == OSTART:
+	case mode == ByOffsetDescending:
 		q += orderLinearAttend
-	case mode == OAFTER:
+	case mode == ChronologicallyAfterID:
 		q += whereAfterAtt + orderChronologicalAttend
-	case mode == OBEFORE:
+	case mode == ChronologicallyBeforeID:
 		q += whereBeforeAtt + orderChronologicalAttend
 	}
 	s, err := api.sc.Prepare(q)
@@ -1529,11 +1513,11 @@ func (api *API) userAttending(perspective, user gp.UserID, category string, mode
 	}
 	var rows *sql.Rows
 	switch {
-	case len(category) > 0 && mode != OSTART:
+	case len(category) > 0 && mode != ByOffsetDescending:
 		rows, err = s.Query(perspective, user, category, index, user, count)
-	case len(category) > 0 && mode == OSTART:
+	case len(category) > 0 && mode == ByOffsetDescending:
 		rows, err = s.Query(perspective, user, category, index, count)
-	case mode != OSTART:
+	case mode != ByOffsetDescending:
 		rows, err = s.Query(perspective, user, index, user, count)
 	default:
 		rows, err = s.Query(perspective, user, index, count)

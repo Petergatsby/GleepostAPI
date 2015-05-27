@@ -19,7 +19,7 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
 	case err != nil:
-		go api.Count(1, "gleepost.devices.post.400")
+		go api.Statsd.Count(1, "gleepost.devices.post.400")
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		deviceType := r.FormValue("type")
@@ -32,10 +32,10 @@ func postDevice(w http.ResponseWriter, r *http.Request) {
 		device, err := api.AddDevice(userID, deviceType, deviceID, application)
 		log.Println(device, err)
 		if err != nil {
-			go api.Count(1, "gleepost.devices.post.500")
+			go api.Statsd.Count(1, "gleepost.devices.post.500")
 			jsonErr(w, err, 500)
 		} else {
-			go api.Count(1, "gleepost.devices.post.201")
+			go api.Statsd.Count(1, "gleepost.devices.post.201")
 			jsonResponse(w, device, 201)
 		}
 	}
@@ -53,11 +53,11 @@ func deleteDevice(w http.ResponseWriter, r *http.Request) {
 	default:
 		err := api.DeleteDevice(userID, vars["id"])
 		if err != nil {
-			go api.Count(1, url+".500")
+			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
-		go api.Count(1, url+".204")
+		go api.Statsd.Count(1, url+".204")
 		w.WriteHeader(204)
 		return
 	}

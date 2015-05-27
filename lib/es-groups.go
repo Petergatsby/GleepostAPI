@@ -60,7 +60,7 @@ func (api *API) esBulkIndexGroups() {
 			group.Image = img.String
 		}
 		if creator.Valid {
-			u, err := api.getUser(gp.UserID(creator.Int64))
+			u, err := api.users.byID(gp.UserID(creator.Int64))
 			if err == nil {
 				group.Creator = &u
 			}

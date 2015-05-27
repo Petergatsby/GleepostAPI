@@ -10,7 +10,13 @@ import (
 )
 
 //Pusher is able to push notifications to iOS and android devices.
-type Pusher struct {
+type Pusher interface {
+	CheckFeedbackService(Feedbacker)
+	AndroidPush(*gcm.Message) error
+	IOSPush(*apns.PushNotification) error
+}
+
+type realPusher struct {
 	APNSconfig conf.APNSConfig
 	GCMconfig  conf.GCMConfig
 	Connection *apns.Connection
@@ -20,7 +26,7 @@ type Pusher struct {
 type Feedbacker func(string, uint32) error
 
 //CheckFeedbackService receives any bad device tokens from APNS and processes the result with f.
-func (pusher Pusher) CheckFeedbackService(f Feedbacker) {
+func (pusher *realPusher) CheckFeedbackService(f Feedbacker) {
 	url := "feedback.sandbox.push.apple.com:2196"
 	if pusher.APNSconfig.Production {
 		url = "feedback.push.apple.com:2196"
@@ -40,21 +46,35 @@ func (pusher Pusher) CheckFeedbackService(f Feedbacker) {
 	}
 }
 
+type fakePusher struct{}
+
+func (f *fakePusher) CheckFeedbackService(feed Feedbacker) {
+	return
+}
+
+func (f *fakePusher) AndroidPush(*gcm.Message) error {
+	return nil
+}
+
+func (f *fakePusher) IOSPush(*apns.PushNotification) error {
+	return nil
+}
+
 //New constructs a Pusher from a Config
-func New(conf conf.PusherConfig) (pusher *Pusher) {
+func New(conf conf.PusherConfig) (pusher Pusher) {
 	log.Println("Building pusher")
-	pusher = new(Pusher)
-	pusher.APNSconfig = conf.APNS
-	pusher.GCMconfig = conf.GCM
+	p := new(realPusher)
+	p.APNSconfig = conf.APNS
+	p.GCMconfig = conf.GCM
 	url := "gateway.sandbox.push.apple.com:2195"
-	if pusher.APNSconfig.Production {
+	if p.APNSconfig.Production {
 		url = "gateway.push.apple.com:2195"
 	}
 	log.Println("Pusher is using url:", url)
-	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
+	client := apns.NewClient(url, p.APNSconfig.CertFile, p.APNSconfig.KeyFile)
 	conn := apns.NewConnection(client)
-	pusher.Connection = conn
-	errs := pusher.Connection.Errors()
+	p.Connection = conn
+	errs := p.Connection.Errors()
 	go func(c <-chan apns.BadPushNotification) {
 		for {
 			n := <-c
@@ -65,11 +85,17 @@ func New(conf conf.PusherConfig) (pusher *Pusher) {
 	if err != nil {
 		log.Println("ERROR STARTING APNS CONNECTION:", err)
 	}
+	pusher = p
 	return
 }
 
+//NewFake gives a pusher which simply blackholes every notification.
+func NewFake() Pusher {
+	return &fakePusher{}
+}
+
 //AndroidPush sends a gcm.Message to its recipient.
-func (pusher *Pusher) AndroidPush(msg *gcm.Message) (err error) {
+func (pusher *realPusher) AndroidPush(msg *gcm.Message) (err error) {
 	m, _ := json.Marshal(msg)
 	log.Printf("%s\n", m)
 	sender := &gcm.Sender{ApiKey: pusher.GCMconfig.APIKey}
@@ -79,7 +105,7 @@ func (pusher *Pusher) AndroidPush(msg *gcm.Message) (err error) {
 }
 
 //IOSPush sends an apns notification to its recipient.
-func (pusher *Pusher) IOSPush(pn *apns.PushNotification) (err error) {
+func (pusher *realPusher) IOSPush(pn *apns.PushNotification) (err error) {
 	if pusher != nil {
 		pusher.Connection.Enqueue(pn)
 	}

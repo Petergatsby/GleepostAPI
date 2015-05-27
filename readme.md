@@ -85,6 +85,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /networks/[network-id]/admins/[user-id] [[DELETE]](#delete-networksnetwork-idadminsuser-id)
 
+/networks/[network-id]/requests [[GET]](#get-networksnetwork-idrequests) [[POST]](#post-networksnetwork-idrequests)
+
 /live [[GET]](#get-live)
 
 /live_summary [[GET]](#get-live_summary)
@@ -1144,6 +1146,38 @@ Returns the updated admin list.
 Delete administrative permissions for this user. You must be an administrator or group creator to use.
 If you are allowed to downgrade this user, the result will be 204.
 
+##GET /networks/[network-id]/requests
+List the outstanding requests to join this network.
+
+```json
+[
+	{
+		"requester": {
+			"id": 2395,
+			"name": "Younes",
+			"profile_image": "https://s3-eu-west-1.amazonaws.com/gpimg/73f2d43f3b58838712f40a0a0f9b39fc6d589661ef3eb44f395773c1f7817165.jpg"
+		},
+		"requested-at":"2014-01-31T09:43:28Z",
+		"status":"pending"
+	}
+]
+```
+
+##POST /networks/[network-id]/requests
+Request access to this group.
+
+If the network you have requested does not exist (or you cannot see it) the result will be a 404:
+```json
+{"error": "No such network"}
+```
+
+If the network is visible to you but you cannot request access to it (because it is public, a university, or you are already a member) the result will be 403:
+```json
+{"error": "You're not allowed to do that!"}
+```
+
+On success, the response will be 201.
+
 ##GET /conversations/live
 
 ###Deprecated.
@@ -2043,6 +2077,18 @@ HTTP 200
 		"id":3007,
 		"type":"rejected_post",
 		"post":12345,
+		"time":"2014-11-12T22:51:35Z",
+		"user":{
+			"id":2783,
+			"name":"Amy",
+			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+		},
+		"seen":false
+	},
+	{
+		"id":3008,
+		"type":"group_request",
+		"network":12345,
 		"time":"2014-11-12T22:51:35Z",
 		"user":{
 			"id":2783,

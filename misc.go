@@ -119,7 +119,7 @@ func timeHandler(api *lib.API, next http.Handler) http.Handler {
 		start := time.Now()
 		next.ServeHTTP(w, r)
 		metric := statsdMetricName(r)
-		api.Time(start, metric)
+		api.Statsd.Time(start, metric)
 	})
 }
 
