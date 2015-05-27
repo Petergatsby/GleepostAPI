@@ -85,7 +85,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /networks/[network-id]/admins/[user-id] [[DELETE]](#delete-networksnetwork-idadminsuser-id)
 
-/networks/[network-id]/requests [[POST]](#post-networksnetwork-idrequests)
+/networks/[network-id]/requests [[GET]](#get-networksnetwork-idrequests) [[POST]](#post-networksnetwork-idrequests)
 
 /live [[GET]](#get-live)
 
@@ -1145,6 +1145,23 @@ Returns the updated admin list.
 ##DELETE /networks/[network-id]/admins/[user-id]
 Delete administrative permissions for this user. You must be an administrator or group creator to use.
 If you are allowed to downgrade this user, the result will be 204.
+
+##GET /networks/[network-id]/requests
+List the outstanding requests to join this network.
+
+```json
+[
+	{
+		"requester": {
+			"id": 2395,
+			"name": "Younes",
+			"profile_image": "https://s3-eu-west-1.amazonaws.com/gpimg/73f2d43f3b58838712f40a0a0f9b39fc6d589661ef3eb44f395773c1f7817165.jpg"
+		},
+		"requested-at":"2014-01-31T09:43:28Z",
+		"status":"pending"
+	}
+]
+```
 
 ##POST /networks/[network-id]/requests
 Request access to this group.

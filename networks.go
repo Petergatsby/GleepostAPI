@@ -30,6 +30,7 @@ func init() {
 	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(getNetworkAdmins))).Methods("GET")
 	base.Handle("/networks/{network:[0-9]+}/admins", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}/requests", timeHandler(api, http.HandlerFunc(postNetworkRequests))).Methods("POST")
+	base.Handle("/networks/{network:[0-9]+}/requests", timeHandler(api, http.HandlerFunc(getNetworkRequests))).Methods("GET")
 	base.Handle("/networks/{network:[0-9]+}/requests", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteNetworkAdmins))).Methods("DELETE")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
@@ -480,5 +481,18 @@ func postNetworkRequests(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(204)
+	}
+}
+
+func getNetworkRequests(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_netID, _ := strconv.ParseUint(vars["network"], 10, 64)
+		netID := gp.NetworkID(_netID)
+		requests, err = api.NetworkRequests(userID, netID)
 	}
 }
