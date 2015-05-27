@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -493,6 +494,8 @@ func getNetworkRequests(w http.ResponseWriter, r *http.Request) {
 	default:
 		_netID, _ := strconv.ParseUint(vars["network"], 10, 64)
 		netID := gp.NetworkID(_netID)
-		requests, err = api.NetworkRequests(userID, netID)
+		//requests, err = api.NetworkRequests(userID, netID)
+		log.Println(userID, netID)
+
 	}
 }
