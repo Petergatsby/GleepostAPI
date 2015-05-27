@@ -1028,17 +1028,6 @@ func (api *API) userGetEventPopularity(user gp.UserID, postID gp.PostID) (popula
 }
 
 const (
-	//WNETWORK is posts in this network.
-	WNETWORK = iota
-	//WUSER is posts by this user.
-	WUSER
-	//WGROUPS is posts in all groups this user belongs to.
-	WGROUPS
-	//WATTENDS is events this user has attended
-	WATTENDS
-)
-
-const (
 	//Base
 	baseQuery = "SELECT wall_posts.id, `by`, wall_posts.time, text, network_id FROM wall_posts "
 	//Joins
