@@ -38,11 +38,6 @@ var (
 	InvalidVideo = gp.APIerror{Reason: "That is not a valid video"}
 )
 
-//GetPost returns a particular Post
-func (api *API) GetPost(postID gp.PostID) (post gp.Post, err error) {
-	return api.getPost(postID)
-}
-
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
 func (api *API) UserGetPost(userID gp.UserID, postID gp.PostID) (post gp.PostFull, err error) {
 	canView, err := api.canViewPost(userID, postID)
@@ -514,7 +509,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 		err = CommentTooLong
 		return
 	}
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -543,7 +538,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 
 //UserAddPostImage adds an image (by url) to a post.
 func (api *API) UserAddPostImage(userID gp.UserID, postID gp.PostID, url string) (images []string, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -599,7 +594,7 @@ func (api *API) addPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.Vide
 
 //UserAddPostVideo attaches a video to a post, or errors if the user isn't allowed.
 func (api *API) UserAddPostVideo(userID gp.UserID, postID gp.PostID, videoID gp.VideoID) (videos []gp.Video, err error) {
-	p, err := api.GetPost(postID)
+	p, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -766,7 +761,7 @@ func (api *API) tagPost(post gp.PostID, tags ...string) (err error) {
 
 //UserSetLike marks a post as "liked" or "unliked" by this user.
 func (api *API) UserSetLike(user gp.UserID, postID gp.PostID, liked bool) (err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -832,7 +827,7 @@ func (api *API) setPostAttribs(post gp.PostID, attribs map[string]string) (err e
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
 func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err error) {
-	post, err := api.GetPost(event)
+	post, err := api.getPost(event)
 	if err != nil {
 		return
 	}
@@ -986,7 +981,7 @@ func (api *API) UserEditPost(userID gp.UserID, postID gp.PostID, text string, at
 }
 
 func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -998,7 +993,7 @@ func (api *API) canEdit(userID gp.UserID, postID gp.PostID) (editable bool, err 
 
 //UserGetEventAttendees returns all the attendees of a given event, or ENOTALLOWED if user isn't in its network.
 func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attendeeSummary gp.AttendeeSummary, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
@@ -1018,7 +1013,7 @@ func (api *API) UserGetEventAttendees(user gp.UserID, postID gp.PostID) (attende
 
 //UserGetEventPopularity returns popularity (an arbitrary score between 0 and 100), and the number of attendees. If user isn't in the same network as the event, it will return ENOTALLOWED instead.
 func (api *API) userGetEventPopularity(user gp.UserID, postID gp.PostID) (popularity int, attendees int, err error) {
-	post, err := api.GetPost(postID)
+	post, err := api.getPost(postID)
 	if err != nil {
 		return
 	}
