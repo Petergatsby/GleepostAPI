@@ -175,12 +175,13 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 			_upTo = 0
 		}
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		notificationID := gp.NotificationID(_upTo)
 		err = api.MarkNotificationsSeen(userID, notificationID)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
-			notifications, err := api.GetUserNotifications(userID, includeSeen)
+			notifications, err := api.GetUserNotifications(userID, mode, index, includeSeen)
 			if err != nil {
 				jsonErr(w, err, 500)
 			} else {
@@ -189,7 +190,8 @@ func notificationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "GET":
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
-		notifications, err := api.GetUserNotifications(userID, includeSeen)
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		notifications, err := api.GetUserNotifications(userID, mode, index, includeSeen)
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
