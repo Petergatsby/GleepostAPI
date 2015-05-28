@@ -10,6 +10,8 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/gorilla/mux"
+
+	_ "net/http/pprof"
 )
 
 var (
@@ -32,6 +34,10 @@ func main() {
 	}
 
 	go api.KeepPostsInFuture(30 * time.Minute)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	log.Println("Starting HTTP server")
 	server := &http.Server{
