@@ -530,13 +530,13 @@ func (api *API) masterGroup(netID gp.NetworkID) (master gp.NetworkID, err error)
 
 //GetRules returns all the network matching rules for every network.
 func (api *API) getRules() (rules []gp.Rule, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.getRules.db")
 	ruleSelect := "SELECT network_id, rule_type, rule_value FROM net_rules"
 	s, err := api.sc.Prepare(ruleSelect)
 	if err != nil {
 		return
 	}
 	rows, err := s.Query()
-	log.Println("db.GetRules()")
 	if err != nil {
 		return
 	}

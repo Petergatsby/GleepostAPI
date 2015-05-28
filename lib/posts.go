@@ -1279,6 +1279,7 @@ func (api *API) createComment(postID gp.PostID, userID gp.UserID, text string) (
 
 //GetComments returns up to count comments for this post.
 func (api *API) getComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.comments.byPostID.db")
 	comments = make([]gp.Comment, 0)
 	q := "SELECT id, `by`, text, `timestamp` " +
 		"FROM post_comments " +
@@ -1289,7 +1290,6 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 		return
 	}
 	rows, err := s.Query(postID, start, count)
-	log.Printf("db.GetComments(%d, %d, %d)\n", postID, start, count)
 	if err != nil {
 		return comments, err
 	}
