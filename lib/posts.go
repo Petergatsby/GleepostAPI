@@ -368,6 +368,7 @@ func (api *API) getCommentCount(id gp.PostID) (count int) {
 
 //GetPostImages returns all the images attached to postID.
 func (api *API) getPostImages(postID gp.PostID) (images []string) {
+	defer api.Statsd.Time(time.Now(), "gleepost.postImages.byPostID.db")
 	s, err := api.sc.Prepare("SELECT url FROM post_images WHERE post_id = ?")
 	if err != nil {
 		log.Println(err)
@@ -375,7 +376,6 @@ func (api *API) getPostImages(postID gp.PostID) (images []string) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Printf("db.getPostImages(%d)\n", postID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -394,6 +394,7 @@ func (api *API) getPostImages(postID gp.PostID) (images []string) {
 
 //GetPostVideos returns all the videos attached to postID.
 func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
+	defer api.Statsd.Time(time.Now(), "gleepost.postVideos.byPostID.db")
 	s, err := api.sc.Prepare("SELECT url, mp4_url, webm_url FROM uploads JOIN post_videos ON upload_id = video_id WHERE post_id = ? AND status = 'ready'")
 	if err != nil {
 		log.Println(err)
@@ -401,7 +402,6 @@ func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
 	}
 	rows, err := s.Query(postID)
 	defer rows.Close()
-	log.Printf("db.getPostVideos(%d)\n", postID)
 	if err != nil {
 		log.Println(err)
 		return
