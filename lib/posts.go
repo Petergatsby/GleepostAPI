@@ -452,20 +452,34 @@ func (api *API) postCategories(post gp.PostID) (categories []gp.PostCategory, er
 
 //GetLikes returns all the likes for a particular post.
 func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
-	log.Printf("GetLikes(%d)", post)
-	l, err := api._getLikes(post)
+	defer api.Statsd.Time(time.Now(), "gleepost.likes.byPostID.db")
+	s, err := api.sc.Prepare("SELECT user_id, timestamp FROM post_likes WHERE post_id = ?")
 	if err != nil {
 		return
 	}
-	for _, like := range l {
-		lf := gp.LikeFull{}
-		lf.User, err = api.users.byID(like.UserID)
-		if err == nil {
-			lf.Time = like.Time
-			likes = append(likes, lf)
-		} else {
-			log.Println("No such user:", like.UserID)
+	rows, err := s.Query(post)
+	defer rows.Close()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		var t string
+		var like gp.LikeFull
+		var userID gp.UserID
+		err = rows.Scan(&userID, &t)
+		if err != nil {
+			return
 		}
+		like.Time, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return
+		}
+		like.User, err = api.users.byID(userID)
+		if err != nil {
+			log.Println("Bad like: no such user:", userID)
+			continue
+		}
+		likes = append(likes, like)
 	}
 	return
 }
