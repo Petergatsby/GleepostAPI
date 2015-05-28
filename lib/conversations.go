@@ -672,7 +672,7 @@ func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err er
 
 //AddMessage records this message in the database. System represents whether this is a system- or user-generated message.
 func (api *API) addMessage(convID gp.ConversationID, userID gp.UserID, text string, system bool) (id gp.MessageID, err error) {
-	log.Printf("Adding message to db: %d, %d %s, system: %v\n", convID, userID, text, system)
+	defer api.Statsd.Time(time.Now(), "gleepost.messages.add.db")
 	s, err := api.sc.Prepare("INSERT INTO chat_messages (conversation_id, `from`, `text`, `system`) VALUES (?,?,?,?)")
 	if err != nil {
 		return
@@ -801,7 +801,6 @@ func unreadMessageCount(sc *psc.StatementCache, user gp.UserID, useThreshold boo
 		if err != nil {
 			return
 		}
-		log.Printf("Conversation %d, last read message was %d\n", convID, lastID)
 		_count := 0
 		if !useThreshold {
 			err = sUnreadCount.QueryRow(convID, lastID, deletedID).Scan(&_count)
@@ -809,7 +808,6 @@ func unreadMessageCount(sc *psc.StatementCache, user gp.UserID, useThreshold boo
 			err = sUnreadCount.QueryRow(convID, lastID, user, deletedID).Scan(&_count)
 		}
 		if err == nil {
-			log.Printf("Conversation %d, unread message count was %d\n", convID, _count)
 			count += _count
 		} else {
 			log.Println("Error calculating badge for:", convID, _count, user, err)

@@ -42,7 +42,6 @@ func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.
 }
 
 func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
-	log.Println("Trying to send a push notification")
 	recipients, err := api.getParticipants(convID, false)
 	if err != nil {
 		log.Println(err)
@@ -50,7 +49,6 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	}
 	for _, user := range recipients {
 		if user.ID != message.By.ID {
-			log.Println("Trying to send a push notification to", user.Name)
 			devices, err := getDevices(api.sc, user.ID, "gleepost")
 			if err != nil {
 				log.Println(err)
@@ -75,7 +73,7 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 					}
 				}
 			}
-			log.Printf("Sent notification to %s's %d devices\n", user.Name, count)
+			log.Printf("Sent %d notifications successfully to %s's %d devices\n", count, user.Name, len(devices))
 		}
 	}
 }
