@@ -411,6 +411,7 @@ var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 
 //CreateConversation generates a new conversation with these participants and an initiator id.
 func (api *API) _createConversation(id gp.UserID, participants []gp.User, primary bool, group gp.NetworkID) (conversation gp.Conversation, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.conversations.create.db")
 	var s *sql.Stmt
 	if group > 0 {
 		s, err = api.sc.Prepare("INSERT INTO conversations (initiator, primary_conversation, group_id) VALUES (?, ?, ?)")

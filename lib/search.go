@@ -3,7 +3,6 @@ package lib
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/mattbaird/elastigo/lib"
@@ -20,7 +19,6 @@ func (api *API) userSearchUsersInNetwork(user gp.UserID, query string, netID gp.
 	case !in:
 		return users, &ENOTALLOWED
 	default:
-		log.Printf("Searching network %d for user %s\n", netID, query)
 		return api.searchUsersInNetwork(query, netID)
 	}
 }

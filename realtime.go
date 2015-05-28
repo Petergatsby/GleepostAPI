@@ -80,8 +80,8 @@ func gWebsocketReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) 
 		}
 		err := ws.ReadJSON(&c)
 		if err != nil {
+			log.Println("Error reading from websocket:", err)
 			ws.Close()
-			log.Println(err)
 			return
 		}
 		var postChans []gp.PostID
@@ -97,8 +97,6 @@ func gWebsocketReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) 
 		for _, i := range postChans {
 			chans = append(chans, cache.PostChannel(i))
 		}
-		log.Println(c)
-		log.Println(chans)
 
 		events.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
 	}

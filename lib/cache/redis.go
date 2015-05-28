@@ -89,21 +89,16 @@ func (c *Cache) Subscribe(messages chan []byte, userID gp.UserID) {
 //EventSubscribe subscribes to the channels in subscription, and returns them as a combined MsgQueue.
 func (c *Cache) EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	commands := make(chan gp.QueueCommand)
-	log.Println("Made a new command channel")
 	messages := make(chan []byte)
-	log.Println("Made a new message channel")
 	events = gp.MsgQueue{Commands: commands, Messages: messages}
 	conn := c.pool.Get()
-	log.Println("Got a redis connection")
 	psc := redis.PubSubConn{Conn: conn}
 	for _, s := range subscriptions {
 		psc.Subscribe(s)
 	}
-	log.Println("Subscribed to some stuff: ", subscriptions)
 	go controller(&psc, events.Commands)
-	log.Println("Launched a goroutine to listen for unsub")
 	go messageReceiver(&psc, events.Messages)
-	log.Println("Launched a goroutine to get messages")
+	log.Println("New websocket connection created.")
 	return events
 }
 
@@ -111,18 +106,16 @@ func messageReceiver(psc *redis.PubSubConn, messages chan<- []byte) {
 	for {
 		switch n := psc.Receive().(type) {
 		case redis.Message:
-			log.Printf("Got a message: %s", n.Data)
 			messages <- n.Data
 		case redis.Subscription:
-			log.Println("Saw a subscription event: ", n.Count)
 			if n.Count == 0 {
+				log.Println("Websocket client has unsubscribed from everything; closing connection.")
 				close(messages)
 				psc.Conn.Close()
 				return
 			}
 		case error:
 			log.Println("Saw an error: ", n)
-			log.Println(n)
 			close(messages)
 			return
 		}
