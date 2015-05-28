@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -13,10 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func liveInit() error {
@@ -68,14 +64,7 @@ func liveInit() error {
 
 func TestLive(t *testing.T) {
 
-	config := conf.GetConfig()
-	api = lib.New(*config)
-	api.Mail = mail.NewMock()
-	api.TW = lib.StubTranscodeWorker{}
-	api.Start()
-	server := httptest.NewServer(r)
-	defer server.Close()
-	baseURL = server.URL + "/api/v1/"
+	once.Do(setup)
 
 	err := liveInit()
 
@@ -188,13 +177,7 @@ func TestLive(t *testing.T) {
 }
 
 func TestLiveSummary(t *testing.T) {
-	config := conf.GetConfig()
-	api = lib.New(*config)
-	api.TW = lib.StubTranscodeWorker{}
-	api.Start()
-	server := httptest.NewServer(r)
-	defer server.Close()
-	baseURL = server.URL + "/api/v1/"
+	once.Do(setup)
 
 	err := liveInit()
 

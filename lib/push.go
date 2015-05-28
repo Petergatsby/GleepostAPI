@@ -261,6 +261,5 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 	} else {
 		log.Println(e)
 	}
-	log.Printf("Badging %d with %d notifications (%d from unread)\n", user, count, unread)
 	return
 }

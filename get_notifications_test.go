@@ -5,21 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 func TestGetNotifications(t *testing.T) {
-	config := conf.GetConfig()
-	api = lib.New(*config)
-	api.Start()
-	server := httptest.NewServer(r)
-	defer server.Close()
-	baseURL = server.URL + "/api/v1/"
+	once.Do(setup)
 
 	err := initDB()
 	if err != nil {

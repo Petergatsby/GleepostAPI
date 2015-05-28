@@ -7,13 +7,10 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
@@ -23,13 +20,7 @@ func TestVideo(t *testing.T) {
 		t.Fatalf("Error initializing db: %v\n", err)
 	}
 
-	config := conf.GetConfig()
-	api = lib.New(*config)
-	api.TW = lib.StubTranscodeWorker{}
-	api.Start()
-	server := httptest.NewServer(r)
-	defer server.Close()
-	baseURL = server.URL + "/api/v1/"
+	once.Do(setup)
 
 	type videoTest struct {
 		Token              gp.Token

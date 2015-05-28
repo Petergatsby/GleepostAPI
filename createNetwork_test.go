@@ -8,11 +8,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/draaglom/GleepostAPI/lib/mail"
 )
 
 func initCreateNetwork() error {
@@ -27,17 +29,25 @@ func initCreateNetwork() error {
 	return nil
 }
 
+var once sync.Once
+
+func setup() {
+	config := conf.GetConfig()
+	api = lib.New(*config)
+	api.TW = lib.StubTranscodeWorker{}
+	api.Mail = mail.NewMock()
+	api.Start()
+	server := httptest.NewServer(r)
+	baseURL = server.URL + "/api/v1/"
+}
+
 func TestCreateNetwork(t *testing.T) {
 	err := initCreateNetwork()
 	if err != nil {
 		t.Fatalf("Error initializing test state: %v\n", err)
 	}
 
-	config := conf.GetConfig()
-	api = lib.New(*config)
-	server := httptest.NewServer(r)
-	defer server.Close()
-	baseURL = server.URL + "/api/v1/"
+	once.Do(setup)
 
 	type netCreationTest struct {
 		Email              string //To get a session
