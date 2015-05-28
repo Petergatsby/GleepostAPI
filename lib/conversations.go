@@ -467,6 +467,7 @@ func (api *API) addConversationParticipants(adder gp.UserID, participants []gp.U
 
 //GetConversations returns this user's conversations;
 func (api *API) getConversations(userID gp.UserID, start int64, count int) (conversations []gp.ConversationSmall, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.conversations.byUserID.db")
 	conversations = make([]gp.ConversationSmall, 0)
 	var s *sql.Stmt
 	q := "SELECT conversation_participants.conversation_id, MAX( chat_messages.`timestamp` ) AS last_mod " +
@@ -485,7 +486,6 @@ func (api *API) getConversations(userID gp.UserID, start int64, count int) (conv
 		return
 	}
 	rows, err := s.Query(userID, start, count)
-	log.Printf("DB hit: GetConversations(userID: %d, start: %d, count: %d)\n", userID, start, count)
 	if err != nil {
 		return conversations, err
 	}
@@ -611,6 +611,7 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 
 //GetParticipants returns all of the participants in conv, or omits the ones who have deleted this conversation if includeDeleted is false.
 func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.User, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.participants.byConversationID.db")
 	q := "SELECT participant_id " +
 		"FROM conversation_participants " +
 		"JOIN users ON conversation_participants.participant_id = users.id " +
@@ -623,7 +624,6 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 		return
 	}
 	rows, err := s.Query(conv)
-	log.Printf("DB hit: GetParticipants(conv: %d, includeDeleted: %t)\n", conv, includeDeleted)
 	if err != nil {
 		log.Printf("Error getting participant: %v", err)
 		return
@@ -643,6 +643,7 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 
 //GetLastMessage retrieves the most recent message in conversation id.
 func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.messages.lastMessage.byConversationID.db")
 	var timeString string
 	var by gp.UserID
 	//Ordered by id rather than timestamp because timestamps are limited to 1-second resolution
@@ -657,8 +658,6 @@ func (api *API) getLastMessage(id gp.ConversationID) (message gp.Message, err er
 		return
 	}
 	err = s.QueryRow(id).Scan(&message.ID, &by, &message.Text, &timeString, &message.System)
-	log.Printf("DB hit: db.GetLastMessage(%d)\n", id)
-	log.Println("Message is:", message, "Len of message.Text:", len(message.Text))
 	if err != nil {
 		return message, err
 	}
@@ -695,6 +694,7 @@ func (api *API) addMessage(convID gp.ConversationID, userID gp.UserID, text stri
 //TODO: This could return a message which doesn't embed a user
 //BUG(Patrick): Should return an error when sel isn't right!
 func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.messages.byConversationID.db")
 	messages = make([]gp.Message, 0)
 	var s *sql.Stmt
 	var q string
@@ -725,7 +725,6 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 		return
 	}
 	rows, err := s.Query(convID, userID, convID, index, count)
-	log.Printf("DB hit: GetMessages(user: %d, convID: %d, mode: %d, index: %d, count: %d)\n", userID, convID, mode, index, count)
 	if err != nil {
 		return
 	}
@@ -736,11 +735,13 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 		var by gp.UserID
 		err = rows.Scan(&message.ID, &by, &message.Text, &timeString, &message.System)
 		if err != nil {
-			log.Printf("%v", err)
+			log.Println("Error getting message in conversation:", convID, err)
+			continue
 		}
 		message.Time, err = time.Parse(mysqlTime, timeString)
 		if err != nil {
-			log.Printf("%v", err)
+			log.Println("Message had invalid timestamp:", err)
+			continue
 		}
 		message.By, err = api.users.byID(by)
 		if err != nil {
