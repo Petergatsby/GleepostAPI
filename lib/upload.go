@@ -71,8 +71,8 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 }
 
 func cloudfrontify(url string) (cdnurl string) {
-	cloudfrontCali := "http://d3itv2rmlfeij9.cloudfront.net/"
-	cloudfrontImg := "http://d2tc2ce3464r63.cloudfront.net/"
+	cloudfrontCali := "https://d3itv2rmlfeij9.cloudfront.net/"
+	cloudfrontImg := "https://d2tc2ce3464r63.cloudfront.net/"
 	if strings.Contains(url, "gpcali") {
 		bits := strings.Split(url, "/")
 		final := bits[len(bits)-1]
