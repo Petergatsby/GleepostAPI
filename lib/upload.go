@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"strings"
+	"time"
 
 	"log"
 
@@ -137,6 +138,7 @@ func (api *API) GetUploadStatus(user gp.UserID, upload gp.VideoID) (UploadStatus
 //Status must be one of "uploaded", "transcode", "transfer", "done".
 //If provided, urls[0] will be its mp4 format and urls[1] its webm..
 func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.uploads.setStatus.db")
 	var q string
 	var s *sql.Stmt
 	if uploadStatus.ID == 0 {
@@ -145,7 +147,6 @@ func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, er
 		q = "REPLACE INTO uploads(user_id, type, status, mp4_url, webm_url, url, upload_id) VALUES (?, 'video', ?, ?, ?, ?, ?)"
 		ID = uploadStatus.ID
 	}
-	log.Println(q)
 	s, err = api.sc.Prepare(q)
 	if err != nil {
 		return
@@ -158,8 +159,9 @@ func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, er
 	switch {
 	case uploadStatus.ID == 0:
 		//First time, create an ID
-		log.Println("UploadStatus.ID == 0")
 		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status)
+		_ID, _ := res.LastInsertId()
+		ID = gp.VideoID(_ID)
 	case uploadStatus.Uploaded == true:
 		//If it's done, record the urls of the files
 		res, err = s.Exec(uploadStatus.Owner, uploadStatus.Status, uploadStatus.MP4, uploadStatus.WebM, thumb, uploadStatus.ID)
@@ -169,10 +171,6 @@ func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, er
 	}
 	if err != nil {
 		log.Println(err)
-		return
-	} else if uploadStatus.ID == 0 {
-		_ID, _ := res.LastInsertId()
-		ID = gp.VideoID(_ID)
 	}
 	return
 }
