@@ -94,8 +94,7 @@ func (api *API) userUnreadNotifications(id gp.UserID) (count int, err error) {
 	if err != nil {
 		return
 	}
-	err = s.QueryRow().Scan(&count)
-
+	err = s.QueryRow(id).Scan(&count)
 	return
 }
 

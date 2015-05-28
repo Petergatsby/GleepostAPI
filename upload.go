@@ -30,9 +30,7 @@ func postVideoUpload(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		shouldRotate, _ := strconv.ParseBool(r.FormValue("rotate"))
-		log.Println("Entering upload handler")
 		file, header, err := r.FormFile("video")
-		log.Println("Got file from request body")
 		if err != nil {
 			jsonErr(w, err, 400)
 			return
