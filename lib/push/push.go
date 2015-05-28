@@ -32,7 +32,6 @@ func (pusher *realPusher) CheckFeedbackService(f Feedbacker) {
 		url = "feedback.push.apple.com:2196"
 	}
 	client := apns.NewClient(url, pusher.APNSconfig.CertFile, pusher.APNSconfig.KeyFile)
-	log.Println("Connected to feedback service", url)
 	go client.ListenForFeedback()
 	for {
 		select {
@@ -40,7 +39,6 @@ func (pusher *realPusher) CheckFeedbackService(f Feedbacker) {
 			log.Println("Bad device:", resp.DeviceToken, resp.Timestamp)
 			f(resp.DeviceToken, resp.Timestamp)
 		case <-apns.ShutdownChannel:
-			log.Println("feedback service ended")
 			return
 		}
 	}
