@@ -166,6 +166,7 @@ func deleteSpecificConversation(w http.ResponseWriter, r *http.Request) {
 		jsonErr(w, err, 500)
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	go api.Statsd.Count(1, url+".204")
 	w.WriteHeader(204)
 }
