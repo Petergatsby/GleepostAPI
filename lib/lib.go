@@ -90,6 +90,7 @@ func (api *API) Start() {
 	} else {
 		api.Statsd = PrefixStatter{statter: statsd, DevelopmentMode: api.Config.DevelopmentMode}
 		api.users.statter = api.Statsd
+		api.notifObserver.stats = api.Statsd
 	}
 }
 

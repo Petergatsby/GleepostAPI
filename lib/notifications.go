@@ -130,6 +130,7 @@ type NotificationObserver struct {
 	pusher push.Pusher
 	users  *Users
 	nm     *NetworkManager
+	stats  PrefixStatter
 }
 
 //Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
@@ -424,7 +425,7 @@ func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) 
 		log.Println(err)
 		return
 	}
-	unread, e := unreadMessageCount(n.sc, user, true)
+	unread, e := unreadMessageCount(n.sc, n.stats, user, true)
 	if e == nil {
 		count += unread
 	} else {

@@ -322,7 +322,7 @@ func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 
 //UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations, optionally ignoring ones before the user's configured threshold time.
 func (api *API) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
-	return unreadMessageCount(api.sc, user, useThreshold)
+	return unreadMessageCount(api.sc, api.Statsd, user, useThreshold)
 }
 
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
@@ -772,8 +772,8 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 
 //UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
 //TODO(Patrick) - convert this into a single query
-func unreadMessageCount(sc *psc.StatementCache, user gp.UserID, useThreshold bool) (count int, err error) {
-	defer api.Statsd.Time(time.Now(), "gleepost.conversations.unread.db")
+func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.UserID, useThreshold bool) (count int, err error) {
+	defer stats.Time(time.Now(), "gleepost.conversations.unread.db")
 	t := time.Now()
 
 	qParticipate := "SELECT conversation_id, last_read, deletion_threshold FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
