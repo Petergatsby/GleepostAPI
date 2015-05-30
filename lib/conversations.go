@@ -436,7 +436,6 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	if err != nil {
 		return
 	}
-	log.Printf("db.createConversation(userID: %d, participants: %v, primary: %t, group: %d)\n", id, participants, primary, group)
 	var pids []gp.UserID
 	for _, u := range participants {
 		pids = append(pids, u.ID)
@@ -774,6 +773,9 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 //UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
 //TODO(Patrick) - convert this into a single query
 func unreadMessageCount(sc *psc.StatementCache, user gp.UserID, useThreshold bool) (count int, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.conversations.unread.db")
+	t := time.Now()
+
 	qParticipate := "SELECT conversation_id, last_read, deletion_threshold FROM conversation_participants WHERE participant_id = ? AND deleted = 0"
 	sParticipate, err := sc.Prepare(qParticipate)
 	if err != nil {
@@ -811,9 +813,10 @@ func unreadMessageCount(sc *psc.StatementCache, user gp.UserID, useThreshold boo
 		if err == nil {
 			count += _count
 		} else {
-			log.Println("Error calculating badge for:", convID, _count, user, err)
+			log.Println("Error calculating unread message count for:", convID, _count, user, err)
 		}
 	}
+	log.Println("Unread message count time elapsed:", time.Now().Sub(t))
 	return count, nil
 }
 
