@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -55,7 +56,9 @@ func gorillaWS(w http.ResponseWriter, r *http.Request) {
 			}
 			err := conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
-				log.Println("Saw an error: ", err)
+				if err != websocket.ErrCloseSent {
+					log.Println("Saw an error: ", err)
+				}
 				events.Commands <- gp.QueueCommand{Command: "UNSUBSCRIBE", Value: []string{}}
 				close(events.Commands)
 				return
@@ -63,7 +66,9 @@ func gorillaWS(w http.ResponseWriter, r *http.Request) {
 		case <-heartbeat:
 			err := conn.WriteControl(websocket.PingMessage, []byte("hello"), time.Now().Add(1*time.Second))
 			if err != nil {
-				log.Println("Saw an error pinging: ", err)
+				if err != websocket.ErrCloseSent {
+					log.Println("Saw an error pinging: ", err)
+				}
 				events.Commands <- gp.QueueCommand{Command: "UNSUBSCRIBE", Value: []string{}}
 				close(events.Commands)
 				return
@@ -80,7 +85,9 @@ func gWebsocketReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) 
 		}
 		err := ws.ReadJSON(&c)
 		if err != nil {
-			log.Println("Error reading from websocket:", err)
+			if err != io.EOF {
+				log.Println("Error reading from websocket:", err)
+			}
 			ws.Close()
 			return
 		}
