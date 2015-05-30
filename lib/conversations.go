@@ -401,11 +401,6 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	return
 }
 
-//ConversationMergedInto returns the id of the conversation this one has merged with, or err if it hasn't merged.
-func (api *API) ConversationMergedInto(convID gp.ConversationID) (mergedInto gp.ConversationID, err error) {
-	return api.conversationMergedInto(convID)
-}
-
 //NoSuchConversation happens when you try to find the primary conversation for a pair of users and it doesn't exist.
 var NoSuchConversation = gp.APIerror{Reason: "No such conversation"}
 
@@ -774,7 +769,6 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 //TODO(Patrick) - convert this into a single query
 func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.UserID, useThreshold bool) (count int, err error) {
 	defer stats.Time(time.Now(), "gleepost.conversations.unread.db")
-	t := time.Now()
 
 	qUnreadCount := "SELECT count(*) FROM chat_messages JOIN conversation_participants ON chat_messages.conversation_id = conversation_participants.conversation_id WHERE conversation_participants.participant_id = ? AND chat_messages.id > conversation_participants.last_read AND chat_messages.id > conversation_participants.deletion_threshold AND chat_messages.`system` = 0"
 	if useThreshold {
@@ -792,7 +786,6 @@ func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.Use
 	if err != nil {
 		log.Println("Error calculating unread count:", err)
 	}
-	log.Println("Unread message count time elapsed:", time.Now().Sub(t))
 	return count, nil
 }
 
@@ -851,7 +844,7 @@ func (api *API) getPrimaryConversation(participantA, participantB gp.UserID) (co
 var ErrNotMerged = gp.APIerror{Reason: "Conversation not merged"}
 
 //ConversationMergedInto returns the id of the conversation this one has merged with, or err if it hasn't merged.
-func (api *API) conversationMergedInto(convID gp.ConversationID) (merged gp.ConversationID, err error) {
+func (api *API) ConversationMergedInto(convID gp.ConversationID) (merged gp.ConversationID, err error) {
 	q := "SELECT merged FROM conversations WHERE id = ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
