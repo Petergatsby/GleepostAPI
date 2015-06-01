@@ -15,6 +15,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
+	"github.com/garyburd/redigo/redis"
 	"github.com/peterbourgon/g2s"
 )
 
@@ -61,7 +62,7 @@ func New(conf conf.Config) (api *API) {
 	db.SetMaxIdleConns(100)
 	api.sc = psc.NewCache(db)
 	api.db = db
-	api.Auth = &Authenticator{cache: api.cache, sc: api.sc}
+	api.Auth = &Authenticator{cache: api.cache, sc: api.sc, pool: redis.NewPool(cache.GetDialer(conf.Redis), 100)}
 	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
 	api.Viewer = &viewer{cache: api.cache, sc: api.sc}
 	api.users = &Users{sc: api.sc}

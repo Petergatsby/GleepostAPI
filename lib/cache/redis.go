@@ -24,11 +24,12 @@ type Cache struct {
 func New(conf conf.RedisConfig) (cache *Cache) {
 	cache = new(Cache)
 	cache.config = conf
-	cache.pool = redis.NewPool(getDialer(conf), 100)
+	cache.pool = redis.NewPool(GetDialer(conf), 100)
 	return
 }
 
-func getDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
+//GetDialer enables dialing in a redis.Pool
+func GetDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 	f := func() (redis.Conn, error) {
 		conn, err := redis.Dial(conf.Proto, conf.Address)
 		return conn, err

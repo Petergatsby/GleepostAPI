@@ -11,6 +11,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/garyburd/redigo/redis"
 )
 
 var (
@@ -38,6 +39,19 @@ var (
 type Authenticator struct {
 	cache *cache.Cache
 	sc    *psc.StatementCache
+	pool  *redis.Pool
+}
+
+//tokenCached returns true if this id:token pair exists.
+func (auth *Authenticator) tokenCached(id gp.UserID, token string) bool {
+	conn := auth.pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d:token:%s", id, token)
+	exists, err := redis.Bool(conn.Do("EXISTS", key))
+	if err != nil {
+		return false
+	}
+	return exists
 }
 
 //createToken generates a new gp.Token which expires in 24h. If something goes wrong,
@@ -58,7 +72,7 @@ func (auth *Authenticator) ValidateToken(id gp.UserID, token string) bool {
 	//If the api.db is down, this will fail for everyone who doesn't have a api.cached
 	//token, and so no new requests will be sent.
 	//I'm calling that a "feature" for now.
-	if auth.cache.TokenExists(id, token) {
+	if auth.tokenCached(id, token) {
 		return true
 	}
 	return auth.tokenExists(id, token)
@@ -110,11 +124,21 @@ func (auth *Authenticator) getHash(user string) (hash []byte, id gp.UserID, err 
 func (auth *Authenticator) createAndStoreToken(id gp.UserID) (gp.Token, error) {
 	token := createToken(id)
 	err := auth.addToken(token)
-	auth.cache.PutToken(token)
+	go auth.cacheToken(token)
 	if err != nil {
 		return token, err
 	}
 	return token, nil
+}
+
+//cacheToken records this token in the cache until it expires.
+func (auth *Authenticator) cacheToken(token gp.Token) {
+	conn := auth.pool.Get()
+	defer conn.Close()
+	expiry := int(token.Expiry.Sub(time.Now()).Seconds())
+	key := fmt.Sprintf("users:%d:token:%s", token.UserID, token.Token)
+	conn.Send("SETEX", key, expiry, token.Expiry)
+	conn.Flush()
 }
 
 //AddToken records this session token in the database.
