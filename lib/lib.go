@@ -34,6 +34,7 @@ type API struct {
 	Viewer        Viewer
 	users         *Users
 	nm            *NetworkManager
+	Presences     Presences
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -65,6 +66,7 @@ func New(conf conf.Config) (api *API) {
 	api.Viewer = &viewer{cache: api.cache, sc: api.sc}
 	api.users = &Users{sc: api.sc}
 	api.nm = &NetworkManager{sc: api.sc}
+	api.Presences = Presences{cache: api.cache}
 	return
 }
 

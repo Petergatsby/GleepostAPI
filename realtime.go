@@ -13,12 +13,13 @@ import (
 )
 
 func init() {
-	base.HandleFunc("/ws", gorillaWS)
+	base.HandleFunc("/ws", wsHandler)
 }
 
-type postSubscriptionAction struct {
+type action struct {
 	Action   string `json:"action"`
 	Channels []int  `json:"posts"`
+	Form     string `json:"form"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -27,7 +28,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func gorillaWS(w http.ResponseWriter, r *http.Request) {
+func wsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -45,7 +46,7 @@ func gorillaWS(w http.ResponseWriter, r *http.Request) {
 	chans := lib.ConversationChannelKeys([]gp.User{{ID: userID}})
 	chans = append(chans, lib.NotificationChannelKey(userID))
 	events := api.EventSubscribe(chans)
-	go gWebsocketReader(conn, events, userID)
+	go wsReader(conn, events, userID)
 	heartbeat := time.Tick(30 * time.Second)
 	for {
 		select {
@@ -77,8 +78,8 @@ func gorillaWS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func gWebsocketReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) {
-	var c postSubscriptionAction
+func wsReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) {
+	var c action
 	for {
 		if ws == nil {
 			return
@@ -91,20 +92,29 @@ func gWebsocketReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) 
 			ws.Close()
 			return
 		}
-		var postChans []gp.PostID
-		for _, i := range c.Channels {
-			postChans = append(postChans, gp.PostID(i))
-		}
-		postChans, err = api.CanSubscribePosts(userID, postChans)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		var chans []string
-		for _, i := range postChans {
-			chans = append(chans, cache.PostChannel(i))
-		}
+		switch {
+		case c.Action == "presence":
+			log.Println("presence", c)
+			err := api.Presences.Broadcast(userID, c.Form)
+			if err != nil {
+				log.Println("Error broadcasting presence:", err)
+			}
+		default:
+			var postChans []gp.PostID
+			for _, i := range c.Channels {
+				postChans = append(postChans, gp.PostID(i))
+			}
+			postChans, err = api.CanSubscribePosts(userID, postChans)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			var chans []string
+			for _, i := range postChans {
+				chans = append(chans, cache.PostChannel(i))
+			}
 
-		events.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
+			events.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
+		}
 	}
 }
