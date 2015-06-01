@@ -37,9 +37,6 @@ func GetDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 	return f
 }
 
-//ErrEmptyCache is a cache miss
-var ErrEmptyCache = gp.APIerror{Reason: "Not in redis!"}
-
 /********************************************************************
 		Messages
 ********************************************************************/

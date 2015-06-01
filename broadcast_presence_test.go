@@ -26,6 +26,7 @@ func TestSendPresence(t *testing.T) {
 	if err != nil {
 		t.Fatal("Couldn't acquire wss connection:", err)
 	}
+	defer ws.Close()
 	if resp.StatusCode != 101 {
 		t.Fatal("Didn't get", http.StatusSwitchingProtocols)
 
