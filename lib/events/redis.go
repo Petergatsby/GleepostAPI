@@ -41,17 +41,6 @@ func GetDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 		Messages
 ********************************************************************/
 
-//Publish takes a Message and publishes it to all participants (to be eventually consumed over websocket)
-func (b *Broker) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationID) {
-	conn := b.pool.Get()
-	defer conn.Close()
-	JSONmsg, _ := json.Marshal(gp.RedisMessage{Message: msg, Conversation: convID})
-	for _, user := range participants {
-		conn.Send("PUBLISH", user.ID, JSONmsg)
-	}
-	conn.Flush()
-}
-
 //PublishEvent broadcasts an event of type etype with location "where" and a payload of data encoded as JSON to all of channels.
 func (b *Broker) PublishEvent(etype string, where string, data interface{}, channels []string) {
 	conn := b.pool.Get()

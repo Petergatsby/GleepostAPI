@@ -25,12 +25,6 @@ type Read struct {
 	LastRead MessageID `json:"last_read"`
 }
 
-//RedisMessage is a message with a ConversationID so that someone on the other end of a queue can place it in the correct context.
-type RedisMessage struct {
-	Message
-	Conversation ConversationID `json:"conversation_id"`
-}
-
 //Conversation is a container for a bunch of messages.
 type Conversation struct {
 	ID           ConversationID `json:"id"`

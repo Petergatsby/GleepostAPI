@@ -204,8 +204,6 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	}
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
-		//Note to self: What is the difference between Publish and PublishEvent?
-		go api.broker.Publish(msg, participants, convID)
 		chans := ConversationChannelKeys(participants)
 		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
@@ -391,8 +389,6 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 		System: true}
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
-		//Note to self: What is the difference between Publish and PublishEvent?
-		go api.broker.Publish(msg, participants, convID)
 		chans := ConversationChannelKeys(participants)
 		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
