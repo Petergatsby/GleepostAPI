@@ -10,37 +10,6 @@ import (
 	"github.com/draaglom/gcm"
 )
 
-func (api *API) newConversationPush(initiator gp.User, other gp.UserID, conv gp.ConversationID) (err error) {
-	log.Printf("Notifiying user %d that they've got a new conversation with %s (%d)\n", other, initiator.Name, initiator.ID)
-	devices, e := getDevices(api.sc, other, "gleepost")
-	if e != nil {
-		log.Println(e)
-		return
-	}
-	count := 0
-	for _, device := range devices {
-		switch {
-		case device.Type == "ios":
-			err = api.iOSNewConversationNotification(device.ID, conv, other, initiator)
-			if err != nil {
-				log.Println("Error sending new conversation push notification:", err)
-			} else {
-				count++
-			}
-		case device.Type == "android":
-			err = api.androidNewConversationNotification(device.ID, conv, other, initiator)
-			if err != nil {
-				log.Println("Error sending new conversation push notification:", err)
-			} else {
-				count++
-			}
-		}
-	}
-	log.Printf("Notified %d's %d devices\n", other, count)
-	return
-
-}
-
 func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	recipients, err := api.getParticipants(convID, false)
 	if err != nil {
@@ -76,20 +45,6 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 			log.Printf("Sent %d notifications successfully to %s's %d devices\n", count, user.Name, len(devices))
 		}
 	}
-}
-
-//iosBadge sets this device's badge, or returns an error.
-func (api *API) iosBadge(device string, badge int) (err error) {
-	payload := apns.NewPayload()
-	payload.Badge = badge
-	pn := apns.NewPushNotification()
-	pn.DeviceToken = device
-	pn.AddPayload(payload)
-	pusher, ok := api.pushers["gleepost"]
-	if ok {
-		pusher.IOSPush(pn)
-	}
-	return
 }
 
 //androidNotification sends a "You have new notifications" push to this device.
@@ -161,40 +116,6 @@ func (api *API) FeedbackDaemon(frequency int) {
 			go psh.CheckFeedbackService(api.DeviceFeedback)
 		}
 	}
-}
-
-func (api *API) iOSNewConversationNotification(device string, conv gp.ConversationID, user gp.UserID, with gp.User) (err error) {
-	payload := apns.NewPayload()
-	d := apns.NewAlertDictionary()
-	d.LocKey = "NEW_CONV"
-	d.LocArgs = []string{with.Name}
-	payload.Alert = d
-	payload.Sound = "default"
-	payload.Badge, err = api.badgeCount(user)
-	if err != nil {
-		log.Println(err)
-	}
-	pn := apns.NewPushNotification()
-	pn.DeviceToken = device
-	pn.AddPayload(payload)
-	pn.Set("conv", conv)
-	pusher, ok := api.pushers["gleepost"]
-	if ok {
-		err = pusher.IOSPush(pn)
-	}
-	return
-}
-
-func (api *API) androidNewConversationNotification(device string, conv gp.ConversationID, user gp.UserID, with gp.User) (err error) {
-	data := map[string]interface{}{"type": "NEW_CONV", "with": with.Name, "with-id": with.ID, "conv": conv, "for": user}
-	msg := gcm.NewMessage(data, device)
-	msg.TimeToLive = 0
-	msg.CollapseKey = "You have a new conversation!"
-	pusher, ok := api.pushers["gleepost"]
-	if ok {
-		err = pusher.AndroidPush(msg)
-	}
-	return
 }
 
 //SendUpdateNotification sends an update notification to all devices which, when pressed, prompts the user to update if version > installed version.
