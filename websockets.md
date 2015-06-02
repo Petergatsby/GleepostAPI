@@ -178,3 +178,7 @@ If you unsubscribe from an empty list of posts, this is treated as unsubscribing
 ```json
 {"action":"UNSUBSCRIBE", "posts":[]}
 ```
+
+##Presence
+
+A user can broadcast their presence 

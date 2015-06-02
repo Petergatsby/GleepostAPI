@@ -881,25 +881,3 @@ func (api *API) isPrimaryConversation(convID gp.ConversationID) (primary bool, e
 	err = s.QueryRow(convID).Scan(&primary)
 	return
 }
-
-func (api *API) everyConversationParticipants(user gp.UserID) (participants []gp.UserID, err error) {
-	defer api.Statsd.Time(time.Now(), "gleepost.conversations.everyConversationParticipants.db")
-	s, err := api.sc.Prepare("SELECT DISTINCT(participant_id) FROM conversation_participants WHERE conversation_id IN (SELECT conversation_id from conversation_participants WHERE participant_id = ? AND deleted = 0)")
-	if err != nil {
-		return
-	}
-	rows, err := s.Query(user)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	var u gp.UserID
-	for rows.Next() {
-		_, err = rows.Scan(&u)
-		if err != nil {
-			return
-		}
-		participants = append(participants, u)
-	}
-	return
-}

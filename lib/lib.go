@@ -67,7 +67,7 @@ func New(conf conf.Config) (api *API) {
 	api.Viewer = &viewer{broker: api.broker, sc: api.sc}
 	api.users = &Users{sc: api.sc}
 	api.nm = &NetworkManager{sc: api.sc}
-	api.Presences = Presences{broker: api.broker}
+	api.Presences = Presences{broker: api.broker, sc: api.sc}
 	return
 }
 
@@ -94,6 +94,7 @@ func (api *API) Start() {
 		api.Statsd = PrefixStatter{statter: statsd, DevelopmentMode: api.Config.DevelopmentMode}
 		api.users.statter = api.Statsd
 		api.notifObserver.stats = api.Statsd
+		api.Presences.Statsd = api.Statsd
 	}
 }
 
