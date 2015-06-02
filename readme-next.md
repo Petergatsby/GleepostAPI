@@ -130,6 +130,8 @@ If the poll has ended already:
 ###Presence
 Within a conversation, each user has a parameter `presence`, indicating their last activity within the app, and the form factor they were active on (`desktop` or `mobile`).
 
+Note: `desktop` presence supersedes `mobile`; if a user is connected with both a desktop and a mobile device, other users will see `desktop`.
+
 ```json
 {
 	"form":"mobile",
