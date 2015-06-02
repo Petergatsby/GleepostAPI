@@ -60,6 +60,8 @@ func (p Presences) setPresence(userID gp.UserID, FormFactor string) {
 	conn.Flush()
 }
 
+var noPresence = gp.APIerror{Reason: "User has no presence"}
+
 func (p Presences) getPresence(userID gp.UserID) (presence gp.Presence, err error) {
 	conn := p.pool.Get()
 	defer conn.Close()
@@ -74,9 +76,14 @@ func (p Presences) getPresence(userID gp.UserID) (presence gp.Presence, err erro
 	if err != nil {
 		return
 	}
-	mobileT, _ := time.Parse(time.RFC3339, mobileTs)
-	desktopT, _ := time.Parse(time.RFC3339, desktopTs)
+	mobileT, errMo := time.Parse(time.RFC3339, mobileTs)
+	desktopT, errDesk := time.Parse(time.RFC3339, desktopTs)
 
+	if errMo != nil && errDesk != nil {
+		err = noPresence
+		return
+	}
+	//If the user is signed into a desktop and a mobile at the same time, prefer desktop.
 	if mobileT.After(desktopT.Add(30 * time.Second)) {
 		presence.At = mobileT
 		presence.Form = "mobile"

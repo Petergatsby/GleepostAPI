@@ -437,9 +437,11 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	}
 	for _, u := range participants {
 		presence, err := api.Presences.getPresence(u.ID)
+		userPresence := gp.UserPresence{User: u}
 		if err == nil {
-			conversation.Participants = append(conversation.Participants, gp.UserPresence{User: u, Presence: &presence})
+			userPresence.Presence = &presence
 		}
+		conversation.Participants = append(conversation.Participants, userPresence)
 	}
 	conversation.LastActivity = time.Now().UTC()
 	conversation.Group = group
@@ -635,11 +637,11 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 			continue
 		}
 		presence, err := api.Presences.getPresence(id)
-		if err != nil {
-			log.Println("Error getting participant presence:", err)
-		} else {
-			participants = append(participants, gp.UserPresence{User: user, Presence: &presence})
+		userPresence := gp.UserPresence{User: user}
+		if err == nil {
+			userPresence.Presence = &presence
 		}
+		participants = append(participants, userPresence)
 	}
 	return participants, nil
 }
