@@ -47,21 +47,6 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	}
 }
 
-//androidNotification sends a "You have new notifications" push to this device.
-//user is included because GCM doesn't really like deregistering, so we include the
-//recipient id in the notification so the app can filter itself.
-func (api *API) androidNotification(device string, count int, user gp.UserID) (err error) {
-	data := map[string]interface{}{"count": count, "for": user}
-	msg := gcm.NewMessage(data, device)
-	msg.CollapseKey = "New Notification"
-
-	pusher, ok := api.pushers["gleepost"]
-	if ok {
-		err = pusher.AndroidPush(msg)
-	}
-	return
-}
-
 func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID) (err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
