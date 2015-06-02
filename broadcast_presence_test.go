@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/websocket"
 )
 
@@ -26,6 +27,7 @@ func TestSendPresence(t *testing.T) {
 		t.Fatal("Couldn't acquire wss connection:", err)
 	}
 	defer ws.Close()
+	defer ws.WriteControl(websocket.CloseMessage, []byte("bye"), time.Now().Add(1*time.Second))
 	if resp.StatusCode != 101 {
 		t.Fatal("Didn't get", http.StatusSwitchingProtocols)
 
@@ -33,7 +35,17 @@ func TestSendPresence(t *testing.T) {
 	action := action{Action: "presence", Form: "desktop"}
 	err = ws.WriteJSON(action)
 	if err != nil {
-		log.Println("Error writing status to ws:", err)
+		t.Fatal("Error writing status to ws:", err)
 	}
-	//check own presence
+	evt := gp.Event{}
+	err = ws.ReadJSON(&evt)
+	if err != nil {
+		t.Fatal("Couldn't read from websocket:", err)
+	}
+	if evt.Type != "presence" {
+		t.Fatal("Expected `presence` but got:", evt.Type)
+	}
+	if evt.Location != fmt.Sprintf("/user/%d", token.UserID) {
+		t.Fatal("Unexpected location, got:", evt.Location)
+	}
 }
