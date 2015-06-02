@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/websocket"
 )
@@ -111,7 +110,7 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			}
 			var chans []string
 			for _, i := range postChans {
-				chans = append(chans, events.PostChannel(i))
+				chans = append(chans, lib.PostChannel(i))
 			}
 
 			messages.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
