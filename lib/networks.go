@@ -553,6 +553,7 @@ func (api *API) getRules() (rules []gp.Rule, err error) {
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
 func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.GroupMembership, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.networks.byUser.db")
 	networks = make([]gp.GroupMembership, 0)
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
 		"user_network.role_level, network.name, " +
@@ -574,7 +575,6 @@ func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []
 		return
 	}
 	rows, err := s.Query(id)
-	log.Printf("DB hit: GetUserNetworks(%d, %t)\n", id, userGroupsOnly)
 	if err != nil {
 		return
 	}
