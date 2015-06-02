@@ -1216,7 +1216,7 @@ returns a list of 20 of your conversations ordered by most recent message, start
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 			"presence":{
 				"form":"mobile",
-				"at":2015-06-02T15:58:00Z"
+				"at":"2015-06-02T15:58:00Z"
 			}
 		},
 		{

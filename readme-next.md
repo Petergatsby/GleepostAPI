@@ -133,7 +133,7 @@ Within a conversation, each user has a parameter `presence`, indicating their la
 ```json
 {
 	"form":"mobile",
-	"at":2015-06-02T15:58:00Z"
+	"at":"2015-06-02T15:58:00Z"
 }
 ```
 
@@ -170,7 +170,7 @@ In addition, participants in a conversation will have their presence indicated w
 			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
 			"presence":{
 				"form":"mobile",
-				"at":2015-06-02T15:58:00Z"
+				"at":"2015-06-02T15:58:00Z"
 			}
 		},
 		{
