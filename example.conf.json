@@ -1,16 +1,10 @@
 {
 	"DevelopmentMode":true,
 	"Port":"8083",
-	"NewPushEnabled":true,
-	"MessageCache":1000,
-	"PostCache":5000,
-	"CommentCache":100,
 	"MessagePageSize":20,
 	"PostPageSize":20,
 	"CommentPageSize":20,
 	"ConversationPageSize":20,
-	"OnlineTimeout":300,
-	"Expiry":600,
 	"Mysql": {
 		"MaxConns":100,
 		"User":"root",
@@ -59,7 +53,5 @@
 		"AppId":"",
 		"AppSecret":""
 	},
-	"Futures":[
-	],
 	"Statsd":""
 }

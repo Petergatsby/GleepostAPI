@@ -127,6 +127,76 @@ If the poll has ended already:
 
 ###Conversations
 
+###Presence
+Within a conversation, each user has a parameter `presence`, indicating their last activity within the app, and the form factor they were active on (`desktop` or `mobile`).
+
+```json
+{
+	"form":"mobile",
+	"at":2015-06-02T15:58:00Z"
+}
+```
+
+Clients should set their presence; while the app is active, the client should submit their presence every 30 seconds by sending a message on their websocket connection:
+(again, `form` must be `desktop` or `mobile`)
+
+```json
+{"action":"presence","form":"mobile"}
+```
+
+Clients with an active websocket connection will receive presence updates regularly from all users who participate in any of their conversations.
+
+```json
+{
+	"type":"presence",
+	"location":"/user/123",
+	"data":{
+		"user":123,
+		"form":"mobile",
+		"at":"2015-06-02T11:24:01Z"
+	}
+}
+```
+
+In addition, participants in a conversation will have their presence indicated within their user object:
+
+```json
+[
+	{"id":1,
+	"participants": [
+		{
+			"id":9,
+			"name":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
+			"presence":{
+				"form":"mobile",
+				"at":2015-06-02T15:58:00Z"
+			}
+		},
+		{
+			"id":23,
+			"name":"PeterGatsby",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
+	],
+	"read":[{"user":9,"last_read":1000}],
+	"lastActivity":"2013-09-05T13:09:38Z",
+	"mostRecentMessage": {"id":1234214, "by":{"id":9, "name":"Patrick"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+	"expiry": { "time": "2013-11-13T22:11:32.956855553Z", "ended":false },
+	"unread": 123
+	},
+	{"id":2,
+	"participants": [
+		{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":232515, "name":"Ling", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+	],
+	"lastActivity":"2013-09-05T13:09:38Z",
+	"mostRecentMessage": {"id":123512624, "by":{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}, "text":"idk lol", "timestamp":"2013-09-05T13:09:38Z"},
+	"unread": 123
+	}
+]
+```
+
 ###Messages
 
 ###Notifications

@@ -200,14 +200,6 @@ func (api *API) setProfileImage(id gp.UserID, url string) (err error) {
 	return
 }
 
-func (api *API) userPing(id gp.UserID) {
-	api.cache.UserPing(id, api.Config.OnlineTimeout)
-}
-
-func (api *API) userIsOnline(id gp.UserID) bool {
-	return api.cache.UserIsOnline(id)
-}
-
 //UserHasPosted returns true if user has ever created a post from the perspective of perspective.
 //TODO: Implement a direct version
 func (api *API) userHasPosted(user gp.UserID, perspective gp.UserID) (posted bool, err error) {

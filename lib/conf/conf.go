@@ -79,11 +79,8 @@ func (c *MysqlConfig) ConnectionString() string {
 
 //RedisConfig represents the cache configuration.
 type RedisConfig struct {
-	Proto        string
-	Address      string
-	MessageCache int //Max number of messages per conversation to cache
-	PostCache    int //Max number of posts per network to cache
-	CommentCache int //Max number of comments per post to cache
+	Proto   string
+	Address string
 }
 
 //AWSConfig contains AWS credentials.
@@ -129,8 +126,6 @@ type Config struct {
 	NotificationPageSize int
 	CommentPageSize      int
 	ConversationPageSize int
-	OnlineTimeout        int
-	Expiry               int
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig

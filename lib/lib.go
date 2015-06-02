@@ -8,20 +8,21 @@ import (
 	"io"
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/mail"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
+	"github.com/garyburd/redigo/redis"
 	"github.com/peterbourgon/g2s"
 )
 
 //API contains all the configuration and sub-modules the Gleepost API requires to function.
 type API struct {
 	Auth          *Authenticator
-	cache         *cache.Cache
+	broker        *events.Broker
 	db            *sql.DB
 	sc            *psc.StatementCache
 	fb            *FB
@@ -34,6 +35,7 @@ type API struct {
 	Viewer        Viewer
 	users         *Users
 	nm            *NetworkManager
+	Presences     Presences
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -49,7 +51,7 @@ var (
 //New creates an API from a gp.Config
 func New(conf conf.Config) (api *API) {
 	api = new(API)
-	api.cache = cache.New(conf.Redis)
+	api.broker = events.New(conf.Redis)
 	api.Config = conf
 	api.fb = &FB{config: conf.Facebook}
 	api.Mail = mail.New(conf.Email.FromHeader, conf.Email.From, conf.Email.User, conf.Email.Pass, conf.Email.Server, conf.Email.Port)
@@ -60,11 +62,13 @@ func New(conf conf.Config) (api *API) {
 	db.SetMaxIdleConns(100)
 	api.sc = psc.NewCache(db)
 	api.db = db
-	api.Auth = &Authenticator{cache: api.cache, sc: api.sc}
-	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.cache)
-	api.Viewer = &viewer{cache: api.cache, sc: api.sc}
+	pool := redis.NewPool(events.GetDialer(conf.Redis), 100)
+	api.Auth = &Authenticator{sc: api.sc, pool: pool}
+	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.broker)
+	api.Viewer = &viewer{broker: api.broker, sc: api.sc}
 	api.users = &Users{sc: api.sc}
 	api.nm = &NetworkManager{sc: api.sc}
+	api.Presences = Presences{broker: api.broker, sc: api.sc, pool: pool}
 	return
 }
 
@@ -79,10 +83,10 @@ func (api *API) Start() {
 	}
 	gp, ok := api.pushers["gleepost"]
 	if ok {
-		api.notifObserver = NewObserver(api.db, api.cache, gp, api.sc, api.users, api.nm)
+		api.notifObserver = NewObserver(api.db, api.broker, gp, api.sc, api.users, api.nm)
 	} else {
 		log.Println("No \"gleepost\" pusher; using blackhole pusher")
-		api.notifObserver = NewObserver(api.db, api.cache, push.NewFake(), api.sc, api.users, api.nm)
+		api.notifObserver = NewObserver(api.db, api.broker, push.NewFake(), api.sc, api.users, api.nm)
 	}
 	statsd, err := g2s.Dial("udp", api.Config.Statsd)
 	if err != nil {
@@ -91,6 +95,7 @@ func (api *API) Start() {
 		api.Statsd = PrefixStatter{statter: statsd, DevelopmentMode: api.Config.DevelopmentMode}
 		api.users.statter = api.Statsd
 		api.notifObserver.stats = api.Statsd
+		api.Presences.Statsd = api.Statsd
 	}
 }
 

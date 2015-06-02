@@ -2,9 +2,10 @@ package lib
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 )
@@ -16,8 +17,8 @@ type Viewer interface {
 }
 
 type viewer struct {
-	cache *cache.Cache
-	sc    *psc.StatementCache
+	broker *events.Broker
+	sc     *psc.StatementCache
 }
 
 //RecordViews saves a bunch of post views, after purging views that the user couldn't have done. It also triggers a views-change event on all the posts involved.
@@ -69,7 +70,6 @@ func (v *viewer) recordViews(views []gp.PostView) (err error) {
 
 func (v *viewer) publishNewViewCounts(views []gp.PostView) {
 	done := make(map[gp.PostID]bool)
-	var counts []gp.PostViewCount
 
 	for _, view := range views {
 		_, ok := done[view.Post]
@@ -79,11 +79,15 @@ func (v *viewer) publishNewViewCounts(views []gp.PostView) {
 				log.Println(err)
 				continue
 			}
-			counts = append(counts, gp.PostViewCount{Post: view.Post, Count: count})
+			go v.broker.PublishEvent("views", fmt.Sprintf("/posts/%d", view.Post), gp.PostViewCount{Post: view.Post, Count: count}, []string{PostChannel(view.Post)})
 			done[view.Post] = true
 		}
 	}
-	go v.cache.PublishViewCounts(counts...)
+}
+
+//PostChannel returns the namme of the channel for this post's events
+func PostChannel(post gp.PostID) string {
+	return fmt.Sprintf("posts.%d", post)
 }
 
 //PostViewCount returns the number of total views this post has had.

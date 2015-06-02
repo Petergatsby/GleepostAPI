@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 )
@@ -353,7 +352,7 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 	}
 }
 
-//GetCommentCount returns the total number of comments for this post, trying the cache first (so it could be inaccurate)
+//GetCommentCount returns the total number of comments for this post
 func (api *API) getCommentCount(id gp.PostID) (count int) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ?")
 	if err != nil {
@@ -544,7 +543,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 				log.Println(err)
 				return
 			}
-			go api.cache.PublishEvent("comment", "/posts/"+strconv.Itoa(int(postID)), comment, []string{cache.PostChannel(postID)})
+			go api.broker.PublishEvent("comment", "/posts/"+strconv.Itoa(int(postID)), comment, []string{PostChannel(postID)})
 		}
 		return commID, err
 	}

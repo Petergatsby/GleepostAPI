@@ -65,7 +65,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 					return e
 				}
 				chans := ConversationChannelKeys(conv.Participants)
-				go api.cache.PublishEvent("read", conversationURI(convID), read, chans)
+				go api.broker.PublishEvent("read", conversationURI(convID), read, chans)
 			}
 			return
 		}
@@ -152,7 +152,7 @@ func (api *API) canContact(initiator gp.UserID, recipient gp.UserID) (contactabl
 //NewConversationEvent publishes an event to all listening participants to let them know they have a new conversation.
 func (api *API) newConversationEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
-	go api.cache.PublishEvent("new-conversation", conversationURI(conversation.ID), conversation, chans)
+	go api.broker.PublishEvent("new-conversation", conversationURI(conversation.ID), conversation, chans)
 }
 
 //EndConversationEvent publishes an event to all listening participants to let them know the conversation is terminated.
@@ -163,13 +163,13 @@ func (api *API) endConversationEvent(conversation gp.ConversationID) {
 		return
 	}
 	chans := ConversationChannelKeys(conv.Participants)
-	go api.cache.PublishEvent("ended-conversation", conversationURI(conversation), conv, chans)
+	go api.broker.PublishEvent("ended-conversation", conversationURI(conversation), conv, chans)
 }
 
 //ConversationChangedEvent publishes an event to all listening participants that this conversation has changed in some way, typically because its expiry has been removed.
 func (api *API) conversationChangedEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
-	go api.cache.PublishEvent("changed-conversation", conversationURI(conversation.ID), conversation, chans)
+	go api.broker.PublishEvent("changed-conversation", conversationURI(conversation.ID), conversation, chans)
 }
 
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
@@ -204,10 +204,8 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	}
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
-		//Note to self: What is the difference between Publish and PublishEvent?
-		go api.cache.Publish(msg, participants, convID)
 		chans := ConversationChannelKeys(participants)
-		go api.cache.PublishEvent("message", conversationURI(convID), msg, chans)
+		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
@@ -221,7 +219,7 @@ func conversationURI(convID gp.ConversationID) (uri string) {
 }
 
 //ConversationChannelKeys returns all of the message channel keys for these users (typically used to publish messages to all participants of a conversation)
-func ConversationChannelKeys(participants []gp.User) (keys []string) {
+func ConversationChannelKeys(participants []gp.UserPresence) (keys []string) {
 	for _, u := range participants {
 		keys = append(keys, fmt.Sprintf("c:%d", u.ID))
 	}
@@ -331,8 +329,8 @@ func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 }
 
 //UserAddParticipants adds new user(s) to this conversation, iff userID is in conversation && userID and participants share at least one network (ie, university)
-func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants []gp.User, err error) {
-	updatedParticipants = make([]gp.User, 0)
+func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants []gp.UserPresence, err error) {
+	updatedParticipants = make([]gp.UserPresence, 0)
 	if !api.UserCanViewConversation(userID, convID) {
 		log.Println("Adding participants: adder can't see the conversation themself")
 		err = &ENOTALLOWED
@@ -391,10 +389,8 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 		System: true}
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
-		//Note to self: What is the difference between Publish and PublishEvent?
-		go api.cache.Publish(msg, participants, convID)
 		chans := ConversationChannelKeys(participants)
-		go api.cache.PublishEvent("message", conversationURI(convID), msg, chans)
+		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
@@ -439,7 +435,14 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	if err != nil {
 		return
 	}
-	conversation.Participants = participants
+	for _, u := range participants {
+		presence, err := api.Presences.getPresence(u.ID)
+		userPresence := gp.UserPresence{User: u}
+		if err == nil {
+			userPresence.Presence = &presence
+		}
+		conversation.Participants = append(conversation.Participants, userPresence)
+	}
 	conversation.LastActivity = time.Now().UTC()
 	conversation.Group = group
 	return
@@ -605,7 +608,7 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 }
 
 //GetParticipants returns all of the participants in conv, or omits the ones who have deleted this conversation if includeDeleted is false.
-func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.User, err error) {
+func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.UserPresence, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.participants.byConversationID.db")
 	q := "SELECT participant_id " +
 		"FROM conversation_participants " +
@@ -620,18 +623,25 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 	}
 	rows, err := s.Query(conv)
 	if err != nil {
-		log.Printf("Error getting participant: %v", err)
+		log.Println("Error getting participant:", err)
 		return
 	}
 	defer rows.Close()
-	participants = make([]gp.User, 0, 5)
+	participants = make([]gp.UserPresence, 0, 5)
 	for rows.Next() {
 		var id gp.UserID
 		err = rows.Scan(&id)
 		user, err := api.users.byID(id)
-		if err == nil {
-			participants = append(participants, user)
+		if err != nil {
+			log.Println("Error getting participant:", err)
+			continue
 		}
+		presence, err := api.Presences.getPresence(id)
+		userPresence := gp.UserPresence{User: user}
+		if err == nil {
+			userPresence.Presence = &presence
+		}
+		participants = append(participants, userPresence)
 	}
 	return participants, nil
 }
