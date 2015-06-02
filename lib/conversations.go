@@ -65,7 +65,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 					return e
 				}
 				chans := ConversationChannelKeys(conv.Participants)
-				go api.cache.PublishEvent("read", conversationURI(convID), read, chans)
+				go api.broker.PublishEvent("read", conversationURI(convID), read, chans)
 			}
 			return
 		}
@@ -152,7 +152,7 @@ func (api *API) canContact(initiator gp.UserID, recipient gp.UserID) (contactabl
 //NewConversationEvent publishes an event to all listening participants to let them know they have a new conversation.
 func (api *API) newConversationEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
-	go api.cache.PublishEvent("new-conversation", conversationURI(conversation.ID), conversation, chans)
+	go api.broker.PublishEvent("new-conversation", conversationURI(conversation.ID), conversation, chans)
 }
 
 //EndConversationEvent publishes an event to all listening participants to let them know the conversation is terminated.
@@ -163,13 +163,13 @@ func (api *API) endConversationEvent(conversation gp.ConversationID) {
 		return
 	}
 	chans := ConversationChannelKeys(conv.Participants)
-	go api.cache.PublishEvent("ended-conversation", conversationURI(conversation), conv, chans)
+	go api.broker.PublishEvent("ended-conversation", conversationURI(conversation), conv, chans)
 }
 
 //ConversationChangedEvent publishes an event to all listening participants that this conversation has changed in some way, typically because its expiry has been removed.
 func (api *API) conversationChangedEvent(conversation gp.Conversation) {
 	chans := ConversationChannelKeys(conversation.Participants)
-	go api.cache.PublishEvent("changed-conversation", conversationURI(conversation.ID), conversation, chans)
+	go api.broker.PublishEvent("changed-conversation", conversationURI(conversation.ID), conversation, chans)
 }
 
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
@@ -205,9 +205,9 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
 		//Note to self: What is the difference between Publish and PublishEvent?
-		go api.cache.Publish(msg, participants, convID)
+		go api.broker.Publish(msg, participants, convID)
 		chans := ConversationChannelKeys(participants)
-		go api.cache.PublishEvent("message", conversationURI(convID), msg, chans)
+		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
@@ -392,9 +392,9 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
 		//Note to self: What is the difference between Publish and PublishEvent?
-		go api.cache.Publish(msg, participants, convID)
+		go api.broker.Publish(msg, participants, convID)
 		chans := ConversationChannelKeys(participants)
-		go api.cache.PublishEvent("message", conversationURI(convID), msg, chans)
+		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}

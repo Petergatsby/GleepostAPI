@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/websocket"
 )
@@ -78,7 +78,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func wsReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) {
+func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 	var c action
 	for {
 		if ws == nil {
@@ -111,10 +111,10 @@ func wsReader(ws *websocket.Conn, events gp.MsgQueue, userID gp.UserID) {
 			}
 			var chans []string
 			for _, i := range postChans {
-				chans = append(chans, cache.PostChannel(i))
+				chans = append(chans, events.PostChannel(i))
 			}
 
-			events.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
+			messages.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
 		}
 	}
 }

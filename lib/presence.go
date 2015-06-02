@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 )
 
 type Presences struct {
-	cache *cache.Cache
+	broker *events.Broker
 }
 
 type Presence struct {
@@ -31,7 +31,7 @@ func (p Presences) Broadcast(userID gp.UserID, FormFactor string) error {
 	//TODO: Write to redis (formFactor, time.Now())
 	chans := ConversationChannelKeys([]gp.User{{ID: userID}})
 	event := presenceEvent{UserID: userID, Form: FormFactor, At: time.Now()}
-	go p.cache.PublishEvent("presence", userURL(userID), event, chans)
+	go p.broker.PublishEvent("presence", userURL(userID), event, chans)
 	return nil
 }
 

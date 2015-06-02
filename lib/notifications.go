@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/push"
@@ -111,7 +111,7 @@ func (n NotificationObserver) createNotification(ntype string, by gp.UserID, rec
 	notification, err := n._createNotification(ntype, by, recipient, postID, netID, preview)
 	if err == nil {
 		n.push(notification, recipient)
-		go n.cache.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
+		go n.broker.PublishEvent("notification", "/notifications", notification, []string{NotificationChannelKey(recipient)})
 	}
 	return
 }
@@ -126,7 +126,7 @@ type NotificationObserver struct {
 	events chan NotificationEvent
 	db     *sql.DB
 	sc     *psc.StatementCache
-	cache  *cache.Cache
+	broker *events.Broker
 	pusher push.Pusher
 	users  *Users
 	nm     *NetworkManager
@@ -144,9 +144,9 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, cache *cache.Cache, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
+func NewObserver(db *sql.DB, broker *events.Broker, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
 	events := make(chan NotificationEvent)
-	n := NotificationObserver{events: events, db: db, sc: sc, cache: cache, pusher: pusher, users: users, nm: nm}
+	n := NotificationObserver{events: events, db: db, sc: sc, broker: broker, pusher: pusher, users: users, nm: nm}
 	go n.spin()
 	return n
 }

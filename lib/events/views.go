@@ -1,4 +1,4 @@
-package cache
+package events
 
 import (
 	"encoding/json"
@@ -11,8 +11,8 @@ import (
 
 //PublishViewCounts publishes the updated view counts given to it in the channel posts.:id.views, to be consumed by a websocket subscriber.
 //It doesn't perform rate limiting, deduplication or sanity checking of any kind; this is the caller's responsibility.
-func (c *Cache) PublishViewCounts(counts ...gp.PostViewCount) {
-	conn := c.pool.Get()
+func (b *Broker) PublishViewCounts(counts ...gp.PostViewCount) {
+	conn := b.pool.Get()
 	defer conn.Close()
 	log.Println(counts)
 	for _, cnt := range counts {

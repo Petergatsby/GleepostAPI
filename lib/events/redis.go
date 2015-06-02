@@ -1,4 +1,4 @@
-package cache
+package events
 
 import (
 	"encoding/json"
@@ -14,15 +14,15 @@ import (
 		General
 ********************************************************************/
 
-//Cache represents a redis cache configuration + pool of connections to operate against.
-type Cache struct {
+//Broker represents a redis cache configuration + pool of connections to operate against.
+type Broker struct {
 	pool   *redis.Pool
 	config conf.RedisConfig
 }
 
-//New constructs a new Cache from config.
-func New(conf conf.RedisConfig) (cache *Cache) {
-	cache = new(Cache)
+//New constructs a new Broker from config.
+func New(conf conf.RedisConfig) (cache *Broker) {
+	cache = new(Broker)
 	cache.config = conf
 	cache.pool = redis.NewPool(GetDialer(conf), 100)
 	return
@@ -42,8 +42,8 @@ func GetDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 ********************************************************************/
 
 //Publish takes a Message and publishes it to all participants (to be eventually consumed over websocket)
-func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationID) {
-	conn := c.pool.Get()
+func (b *Broker) Publish(msg gp.Message, participants []gp.User, convID gp.ConversationID) {
+	conn := b.pool.Get()
 	defer conn.Close()
 	JSONmsg, _ := json.Marshal(gp.RedisMessage{Message: msg, Conversation: convID})
 	for _, user := range participants {
@@ -53,8 +53,8 @@ func (c *Cache) Publish(msg gp.Message, participants []gp.User, convID gp.Conver
 }
 
 //PublishEvent broadcasts an event of type etype with location "where" and a payload of data encoded as JSON to all of channels.
-func (c *Cache) PublishEvent(etype string, where string, data interface{}, channels []string) {
-	conn := c.pool.Get()
+func (b *Broker) PublishEvent(etype string, where string, data interface{}, channels []string) {
+	conn := b.pool.Get()
 	defer conn.Close()
 	event := gp.Event{Type: etype, Location: where, Data: data}
 	JSONEvent, _ := json.Marshal(event)
@@ -66,8 +66,8 @@ func (c *Cache) PublishEvent(etype string, where string, data interface{}, chann
 
 //Subscribe connects to userID's event channel and sends any messages over the messages chan.
 //TODO: Delete Printf
-func (c *Cache) Subscribe(messages chan []byte, userID gp.UserID) {
-	conn := c.pool.Get()
+func (b *Broker) Subscribe(messages chan []byte, userID gp.UserID) {
+	conn := b.pool.Get()
 	defer conn.Close()
 	psc := redis.PubSubConn{Conn: conn}
 	psc.Subscribe(userID)
@@ -85,11 +85,11 @@ func (c *Cache) Subscribe(messages chan []byte, userID gp.UserID) {
 }
 
 //EventSubscribe subscribes to the channels in subscription, and returns them as a combined MsgQueue.
-func (c *Cache) EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
+func (b *Broker) EventSubscribe(subscriptions []string) (events gp.MsgQueue) {
 	commands := make(chan gp.QueueCommand)
 	messages := make(chan []byte)
 	events = gp.MsgQueue{Commands: commands, Messages: messages}
-	conn := c.pool.Get()
+	conn := b.pool.Get()
 	psc := redis.PubSubConn{Conn: conn}
 	for _, s := range subscriptions {
 		psc.Subscribe(s)

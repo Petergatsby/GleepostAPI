@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
-	"github.com/draaglom/GleepostAPI/lib/cache"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/garyburd/redigo/redis"
@@ -37,9 +36,8 @@ var (
 
 //Authenticator handles user authentication.
 type Authenticator struct {
-	cache *cache.Cache
-	sc    *psc.StatementCache
-	pool  *redis.Pool
+	sc   *psc.StatementCache
+	pool *redis.Pool
 }
 
 //tokenCached returns true if this id:token pair exists.

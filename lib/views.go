@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 )
@@ -16,8 +16,8 @@ type Viewer interface {
 }
 
 type viewer struct {
-	cache *cache.Cache
-	sc    *psc.StatementCache
+	broker *events.Broker
+	sc     *psc.StatementCache
 }
 
 //RecordViews saves a bunch of post views, after purging views that the user couldn't have done. It also triggers a views-change event on all the posts involved.
@@ -83,7 +83,7 @@ func (v *viewer) publishNewViewCounts(views []gp.PostView) {
 			done[view.Post] = true
 		}
 	}
-	go v.cache.PublishViewCounts(counts...)
+	go v.broker.PublishViewCounts(counts...)
 }
 
 //PostViewCount returns the number of total views this post has had.

@@ -12,18 +12,18 @@ import (
 
 	"github.com/mitchellh/goamz/s3"
 
-	"github.com/draaglom/GleepostAPI/lib/cache"
+	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
 )
 
 type transcodeWorker struct {
-	db    *sql.DB
-	sc    *psc.StatementCache
-	tq    transcode.Queue
-	b     *s3.Bucket
-	cache *cache.Cache
+	db     *sql.DB
+	sc     *psc.StatementCache
+	tq     transcode.Queue
+	b      *s3.Bucket
+	broker *events.Broker
 }
 
 //TranscodeWorker reads jobs from a queue, transcodes them and marks them as "done" in the queue.
@@ -33,8 +33,8 @@ type TranscodeWorker interface {
 	handleDone()
 }
 
-func newTranscodeWorker(db *sql.DB, sc *psc.StatementCache, tq transcode.Queue, b *s3.Bucket, cache *cache.Cache) (t TranscodeWorker) {
-	t = transcodeWorker{db: db, sc: sc, tq: tq, b: b, cache: cache}
+func newTranscodeWorker(db *sql.DB, sc *psc.StatementCache, tq transcode.Queue, b *s3.Bucket, broker *events.Broker) (t TranscodeWorker) {
+	t = transcodeWorker{db: db, sc: sc, tq: tq, b: b, broker: broker}
 	go t.claimLoop()
 	go t.handleDone()
 	return
@@ -161,7 +161,7 @@ func (t transcodeWorker) maybeReady(jobID uint64) {
 		return
 	}
 	video.Status = "ready"
-	t.cache.PublishEvent("video-ready", fmt.Sprintf("/videos/%d", video.ID), video, []string{NotificationChannelKey(video.Owner)})
+	t.broker.PublishEvent("video-ready", fmt.Sprintf("/videos/%d", video.ID), video, []string{NotificationChannelKey(video.Owner)})
 
 }
 
