@@ -87,7 +87,7 @@ func (v *viewer) publishNewViewCounts(views []gp.PostView) {
 
 //PostChannel returns the namme of the channel for this post's events
 func PostChannel(post gp.PostID) string {
-	return fmt.Sprintf("posts.%d.views", post)
+	return fmt.Sprintf("posts.%d", post)
 }
 
 //PostViewCount returns the number of total views this post has had.
