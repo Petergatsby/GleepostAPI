@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/go-sql-driver/mysql"
 )
@@ -107,7 +106,7 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 	if err == nil {
 		poll, err = api.getPoll(postID)
 		if err == nil {
-			go api.broker.PublishEvent("vote", "/posts/"+strconv.Itoa(int(postID)), poll, []string{events.PostChannel(postID)})
+			go api.broker.PublishEvent("vote", "/posts/"+strconv.Itoa(int(postID)), poll, []string{PostChannel(postID)})
 		}
 		api.notifObserver.Notify(voteEvent{userID: userID, postID: postID})
 	}

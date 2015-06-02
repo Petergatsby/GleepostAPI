@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 )
@@ -544,7 +543,7 @@ func (api *API) CreateComment(postID gp.PostID, userID gp.UserID, text string) (
 				log.Println(err)
 				return
 			}
-			go api.broker.PublishEvent("comment", "/posts/"+strconv.Itoa(int(postID)), comment, []string{events.PostChannel(postID)})
+			go api.broker.PublishEvent("comment", "/posts/"+strconv.Itoa(int(postID)), comment, []string{PostChannel(postID)})
 		}
 		return commID, err
 	}
