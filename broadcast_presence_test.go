@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -36,6 +35,5 @@ func TestSendPresence(t *testing.T) {
 	if err != nil {
 		log.Println("Error writing status to ws:", err)
 	}
-	time.Sleep(3)
 	//check own presence
 }

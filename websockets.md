@@ -181,4 +181,23 @@ If you unsubscribe from an empty list of posts, this is treated as unsubscribing
 
 ##Presence
 
-A user can broadcast their presence 
+A user can broadcast their presence by sending the following event over their websocket connection:
+(valid `form`s are `desktop` or `mobile`
+
+```json
+{"action":"presence", "form":"desktop"} 
+```
+
+All users who share conversations with this user will receive a `presence` event:
+
+```json
+{
+	"type":"presence",
+	"location":"/user/123",
+	"data":{
+		"user":123,
+		"form":"mobile",
+		"at":"2015-06-02T11:24:01Z"
+	}
+}
+```
