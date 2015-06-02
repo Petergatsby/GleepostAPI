@@ -17,10 +17,6 @@ type Presences struct {
 	Statsd PrefixStatter
 }
 
-//Presence represents a user's presence (how recently they were online, and on which form factor) within the app.
-type Presence struct {
-}
-
 type presenceEvent struct {
 	UserID gp.UserID `json:"user"`
 	Form   string    `json:"form"`
@@ -54,7 +50,7 @@ func userURL(userID gp.UserID) (url string) {
 	return fmt.Sprintf("/user/%d", userID)
 }
 
-func (p Presences) getPresence(userID gp.UserID) (presence Presence, err error) {
+func (p Presences) getPresence(userID gp.UserID) (presence gp.Presence, err error) {
 
 	return
 }

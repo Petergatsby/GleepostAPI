@@ -30,7 +30,6 @@ func TestSendPresence(t *testing.T) {
 	defer ws.WriteControl(websocket.CloseMessage, []byte("bye"), time.Now().Add(1*time.Second))
 	if resp.StatusCode != 101 {
 		t.Fatal("Didn't get", http.StatusSwitchingProtocols)
-
 	}
 	action := action{Action: "presence", Form: "desktop"}
 	err = ws.WriteJSON(action)

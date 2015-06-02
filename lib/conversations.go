@@ -219,7 +219,7 @@ func conversationURI(convID gp.ConversationID) (uri string) {
 }
 
 //ConversationChannelKeys returns all of the message channel keys for these users (typically used to publish messages to all participants of a conversation)
-func ConversationChannelKeys(participants []gp.User) (keys []string) {
+func ConversationChannelKeys(participants []gp.UserPresence) (keys []string) {
 	for _, u := range participants {
 		keys = append(keys, fmt.Sprintf("c:%d", u.ID))
 	}
@@ -329,8 +329,8 @@ func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 }
 
 //UserAddParticipants adds new user(s) to this conversation, iff userID is in conversation && userID and participants share at least one network (ie, university)
-func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants []gp.User, err error) {
-	updatedParticipants = make([]gp.User, 0)
+func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants []gp.UserPresence, err error) {
+	updatedParticipants = make([]gp.UserPresence, 0)
 	if !api.UserCanViewConversation(userID, convID) {
 		log.Println("Adding participants: adder can't see the conversation themself")
 		err = &ENOTALLOWED
@@ -435,7 +435,12 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	if err != nil {
 		return
 	}
-	conversation.Participants = participants
+	for _, u := range participants {
+		presence, err := api.Presences.getPresence(u.ID)
+		if err == nil {
+			conversation.Participants = append(conversation.Participants, gp.UserPresence{User: u, Presence: &presence})
+		}
+	}
 	conversation.LastActivity = time.Now().UTC()
 	conversation.Group = group
 	return
@@ -601,7 +606,7 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 }
 
 //GetParticipants returns all of the participants in conv, or omits the ones who have deleted this conversation if includeDeleted is false.
-func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.User, err error) {
+func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (participants []gp.UserPresence, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.participants.byConversationID.db")
 	q := "SELECT participant_id " +
 		"FROM conversation_participants " +
@@ -616,17 +621,24 @@ func (api *API) getParticipants(conv gp.ConversationID, includeDeleted bool) (pa
 	}
 	rows, err := s.Query(conv)
 	if err != nil {
-		log.Printf("Error getting participant: %v", err)
+		log.Println("Error getting participant:", err)
 		return
 	}
 	defer rows.Close()
-	participants = make([]gp.User, 0, 5)
+	participants = make([]gp.UserPresence, 0, 5)
 	for rows.Next() {
 		var id gp.UserID
 		err = rows.Scan(&id)
 		user, err := api.users.byID(id)
-		if err == nil {
-			participants = append(participants, user)
+		if err != nil {
+			log.Println("Error getting participant:", err)
+			continue
+		}
+		presence, err := api.Presences.getPresence(id)
+		if err != nil {
+			log.Println("Error getting participant presence:", err)
+		} else {
+			participants = append(participants, gp.UserPresence{User: user, Presence: &presence})
 		}
 	}
 	return participants, nil

@@ -42,7 +42,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	chans := lib.ConversationChannelKeys([]gp.User{{ID: userID}})
+	chans := lib.ConversationChannelKeys([]gp.UserPresence{{User: gp.User{ID: userID}}})
 	chans = append(chans, lib.NotificationChannelKey(userID))
 	events := api.EventSubscribe(chans)
 	go wsReader(conn, events, userID)
@@ -93,7 +93,6 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 		}
 		switch {
 		case c.Action == "presence":
-			log.Println("presence", c)
 			err := api.Presences.Broadcast(userID, c.Form)
 			if err != nil {
 				log.Println("Error broadcasting presence:", err)

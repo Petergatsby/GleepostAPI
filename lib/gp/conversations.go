@@ -29,7 +29,7 @@ type Read struct {
 type Conversation struct {
 	ID           ConversationID `json:"id"`
 	LastActivity time.Time      `json:"lastActivity,omitempty"`
-	Participants []User         `json:"participants"`   //Participants can send messages to and read from this conversation.
+	Participants []UserPresence `json:"participants"`   //Participants can send messages to and read from this conversation.
 	Read         []Read         `json:"read,omitempty"` //Read represents the most recent message each user has seen.
 	Unread       int            `json:"unread,omitempty"`
 	Group        NetworkID      `json:"group,omitempty"`
@@ -45,4 +45,16 @@ type ConversationSmall struct {
 type ConversationAndMessages struct {
 	Conversation
 	Messages []Message `json:"messages"`
+}
+
+//UserPresence represents a user + their presence in a conversation.
+type UserPresence struct {
+	User
+	Presence *Presence `json:"presence,omitempty"`
+}
+
+//Presence represents a user's presence (how recently they were online, and on which form factor) within the app.
+type Presence struct {
+	Form string    `json:"form"`
+	At   time.Time `json:"at"`
 }
