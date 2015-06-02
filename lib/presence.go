@@ -8,6 +8,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/events"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/garyburd/redigo/redis"
 )
 
 //Presences handles users' presence.
@@ -15,6 +16,7 @@ type Presences struct {
 	broker *events.Broker
 	sc     *psc.StatementCache
 	Statsd PrefixStatter
+	pool   *redis.Pool
 }
 
 type presenceEvent struct {
@@ -31,7 +33,7 @@ func (p Presences) Broadcast(userID gp.UserID, FormFactor string) error {
 	if FormFactor != "desktop" && FormFactor != "mobile" {
 		return InvalidFormFactor
 	}
-	//TODO: Write to redis (formFactor, time.Now())
+	p.setPresence(userID, FormFactor)
 	people, err := p.everyConversationParticipants(userID)
 	if err != nil {
 		log.Println(err)
@@ -41,7 +43,7 @@ func (p Presences) Broadcast(userID gp.UserID, FormFactor string) error {
 	for _, u := range people {
 		chans = append(chans, fmt.Sprintf("c:%d", u))
 	}
-	event := presenceEvent{UserID: userID, Form: FormFactor, At: time.Now()}
+	event := presenceEvent{UserID: userID, Form: FormFactor, At: time.Now().UTC()}
 	go p.broker.PublishEvent("presence", userURL(userID), event, chans)
 	return nil
 }
@@ -50,8 +52,38 @@ func userURL(userID gp.UserID) (url string) {
 	return fmt.Sprintf("/user/%d", userID)
 }
 
-func (p Presences) getPresence(userID gp.UserID) (presence gp.Presence, err error) {
+func (p Presences) setPresence(userID gp.UserID, FormFactor string) {
+	conn := p.pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d:presence:%s", userID, FormFactor)
+	conn.Send("SET", key, time.Now().UTC().Format(time.RFC3339))
+	conn.Flush()
+}
 
+func (p Presences) getPresence(userID gp.UserID) (presence gp.Presence, err error) {
+	conn := p.pool.Get()
+	defer conn.Close()
+	mobileKey := fmt.Sprintf("users:%d:presence:mobile", userID)
+	desktopKey := fmt.Sprintf("users:%d:presence:desktop", userID)
+	reply, err := redis.Values(conn.Do("MGET", mobileKey, desktopKey))
+	if err != nil {
+		return
+	}
+	var mobileTs, desktopTs string
+	_, err = redis.Scan(reply, &mobileTs, &desktopTs)
+	if err != nil {
+		return
+	}
+	mobileT, _ := time.Parse(time.RFC3339, mobileTs)
+	desktopT, _ := time.Parse(time.RFC3339, desktopTs)
+
+	if mobileT.After(desktopT.Add(30 * time.Second)) {
+		presence.At = mobileT
+		presence.Form = "mobile"
+	} else {
+		presence.At = desktopT
+		presence.Form = "desktop"
+	}
 	return
 }
 

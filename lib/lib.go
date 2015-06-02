@@ -62,12 +62,13 @@ func New(conf conf.Config) (api *API) {
 	db.SetMaxIdleConns(100)
 	api.sc = psc.NewCache(db)
 	api.db = db
-	api.Auth = &Authenticator{sc: api.sc, pool: redis.NewPool(events.GetDialer(conf.Redis), 100)}
+	pool := redis.NewPool(events.GetDialer(conf.Redis), 100)
+	api.Auth = &Authenticator{sc: api.sc, pool: pool}
 	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.broker)
 	api.Viewer = &viewer{broker: api.broker, sc: api.sc}
 	api.users = &Users{sc: api.sc}
 	api.nm = &NetworkManager{sc: api.sc}
-	api.Presences = Presences{broker: api.broker, sc: api.sc}
+	api.Presences = Presences{broker: api.broker, sc: api.sc, pool: pool}
 	return
 }
 
