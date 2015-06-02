@@ -1210,8 +1210,20 @@ returns a list of 20 of your conversations ordered by most recent message, start
 [
 	{"id":1,
 	"participants": [
-		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
-		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+		{
+			"id":9,
+			"name":"Patrick",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
+			"presence":{
+				"form":"mobile",
+				"at":2015-06-02T15:58:00Z"
+			}
+		},
+		{
+			"id":23,
+			"name":"PeterGatsby",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		}
 	],
 	"read":[{"user":9,"last_read":1000}],
 	"lastActivity":"2013-09-05T13:09:38Z",
