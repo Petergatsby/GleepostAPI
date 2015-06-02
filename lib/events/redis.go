@@ -86,7 +86,6 @@ func controller(psc *redis.PubSubConn, commands <-chan gp.QueueCommand) {
 		if !ok {
 			return
 		}
-		log.Println("Got a command: ", command)
 		switch {
 		case command.Command == "UNSUBSCRIBE":
 			channels := make([]interface{}, len(command.Value))
