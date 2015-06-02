@@ -2,17 +2,12 @@ package events
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/garyburd/redigo/redis"
 )
-
-/********************************************************************
-		General
-********************************************************************/
 
 //Broker represents a redis cache configuration + pool of connections to operate against.
 type Broker struct {
@@ -37,10 +32,6 @@ func GetDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 	return f
 }
 
-/********************************************************************
-		Messages
-********************************************************************/
-
 //PublishEvent broadcasts an event of type etype with location "where" and a payload of data encoded as JSON to all of channels.
 func (b *Broker) PublishEvent(etype string, where string, data interface{}, channels []string) {
 	conn := b.pool.Get()
@@ -51,26 +42,6 @@ func (b *Broker) PublishEvent(etype string, where string, data interface{}, chan
 		conn.Send("PUBLISH", channel, JSONEvent)
 	}
 	conn.Flush()
-}
-
-//Subscribe connects to userID's event channel and sends any messages over the messages chan.
-//TODO: Delete Printf
-func (b *Broker) Subscribe(messages chan []byte, userID gp.UserID) {
-	conn := b.pool.Get()
-	defer conn.Close()
-	psc := redis.PubSubConn{Conn: conn}
-	psc.Subscribe(userID)
-	defer psc.Unsubscribe(userID)
-	for {
-		switch n := psc.Receive().(type) {
-		case redis.Message:
-			messages <- n.Data
-		case redis.Subscription:
-			fmt.Printf("%s: %s %d\n", n.Channel, n.Kind, n.Count)
-		default:
-			log.Printf("Other: %v", n)
-		}
-	}
 }
 
 //EventSubscribe subscribes to the channels in subscription, and returns them as a combined MsgQueue.
