@@ -58,7 +58,7 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 				if err != nil {
 					return
 				}
-				read := gp.Read{UserID: id, LastRead: actuallyUpto}
+				read := gp.Read{UserID: id, LastRead: actuallyUpto, At: time.Now().UTC()}
 				conv, e := api.getConversation(id, convID, api.Config.MessagePageSize)
 				if err != nil {
 					log.Println(e)
@@ -760,13 +760,15 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 
 //MarkRead moves this user's "read" marker up to this message in this conversation.
 func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.MessageID) (read gp.MessageID, err error) {
+	now := time.Now().UTC()
 	s, err := api.sc.Prepare("UPDATE conversation_participants " +
-		"SET last_read = (SELECT MAX(id) FROM chat_messages WHERE conversation_id = ? AND id <= ?) " +
+		"SET last_read = (SELECT MAX(id) FROM chat_messages WHERE conversation_id = ? AND id <= ?), " +
+		"read_at = ? " +
 		"WHERE `conversation_id` = ? AND `participant_id` = ?")
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(convID, upTo, convID, id)
+	_, err = s.Exec(convID, upTo, now, convID, id)
 	if err != nil {
 		return
 	}

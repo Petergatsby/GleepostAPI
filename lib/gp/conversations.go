@@ -23,6 +23,7 @@ type Message struct {
 type Read struct {
 	UserID   UserID    `json:"user"`
 	LastRead MessageID `json:"last_read"`
+	At       time.Time `json:"at,omitempty"`
 }
 
 //Conversation is a container for a bunch of messages.
