@@ -1660,18 +1660,6 @@ token=[token]
 
 See [the websockets readme.](websockets.md)
 
-##GET /contacts
-
-###Deprecated.
-
-##POST /contacts
-
-###Deprecated.
-
-##PUT /contacts/[user]
-
-###Deprecated.
-
 ##POST /devices
 required parameters: `type`, `device_id`
 
