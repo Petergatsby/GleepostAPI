@@ -17,6 +17,14 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 		return
 	}
 	for _, user := range recipients {
+		presence, err := api.Presences.getPresence(user.ID)
+		if err != nil && err != noPresence {
+			log.Println("Error getting user presence:", err)
+		}
+		if presence.Form == "desktop" && presence.At.Add(30*time.Second).After(time.Now()) {
+			log.Println("Not pushing to this user (they're active on the desktop in the last 30s)")
+			continue
+		}
 		if user.ID != message.By.ID {
 			devices, err := getDevices(api.sc, user.ID, "gleepost")
 			if err != nil {
