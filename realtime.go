@@ -16,9 +16,11 @@ func init() {
 }
 
 type action struct {
-	Action   string `json:"action"`
-	Channels []int  `json:"posts"`
-	Form     string `json:"form"`
+	Action       string            `json:"action"`
+	Channels     []int             `json:"posts"`
+	Form         string            `json:"form"`
+	Conversation gp.ConversationID `json:"conversation"`
+	Typing       bool              `json:"typing"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -97,6 +99,8 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			if err != nil {
 				log.Println("Error broadcasting presence:", err)
 			}
+		case c.Action == "typing":
+			api.UserIsTyping(userID, c.Conversation, c.Typing)
 		default:
 			var postChans []gp.PostID
 			for _, i := range c.Channels {
