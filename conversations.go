@@ -13,7 +13,6 @@ import (
 )
 
 func init() {
-	base.Handle("/conversations/live", timeHandler(api, http.HandlerFunc(goneHandler)))
 	base.Handle("/conversations/read_all", timeHandler(api, http.HandlerFunc(readAll))).Methods("POST")
 	base.Handle("/conversations/read_all", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/mute_badges", timeHandler(api, http.HandlerFunc(muteBadges))).Methods("POST")
@@ -23,7 +22,6 @@ func init() {
 	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
-	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(goneHandler))).Methods("PUT")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteSpecificConversation))).Methods("DELETE")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
