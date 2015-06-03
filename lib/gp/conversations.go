@@ -21,9 +21,9 @@ type Message struct {
 
 //Read represents the most recent message a user has seen in a particular conversation (it doesn't make much sense without that context).
 type Read struct {
-	UserID   UserID    `json:"user"`
-	LastRead MessageID `json:"last_read"`
-	At       time.Time `json:"at,omitempty"`
+	UserID   UserID     `json:"user"`
+	LastRead MessageID  `json:"last_read"`
+	At       *time.Time `json:"at,omitempty"`
 }
 
 //Conversation is a container for a bunch of messages.

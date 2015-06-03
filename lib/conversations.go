@@ -58,7 +58,8 @@ func (api *API) MarkConversationSeen(id gp.UserID, convID gp.ConversationID, upT
 				if err != nil {
 					return
 				}
-				read := gp.Read{UserID: id, LastRead: actuallyUpto, At: time.Now().UTC()}
+				now := time.Now().UTC()
+				read := gp.Read{UserID: id, LastRead: actuallyUpto, At: &now}
 				conv, e := api.getConversation(id, convID, api.Config.MessagePageSize)
 				if err != nil {
 					log.Println(e)
@@ -604,7 +605,7 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 		if t.Valid {
 			at, err := time.Parse(mysqlTime, t.String)
 			if err != nil {
-				r.At = at
+				r.At = &at
 			}
 		}
 		if r.LastRead > 0 || !omitZeros {
