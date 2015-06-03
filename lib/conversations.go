@@ -764,11 +764,11 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 	s, err := api.sc.Prepare("UPDATE conversation_participants " +
 		"SET last_read = (SELECT MAX(id) FROM chat_messages WHERE conversation_id = ? AND id <= ?), " +
 		"read_at = ? " +
-		"WHERE `conversation_id` = ? AND `participant_id` = ?")
+		"WHERE `conversation_id` = ? AND `participant_id` = ? AND last_read < ?")
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(convID, upTo, now, convID, id)
+	_, err = s.Exec(convID, upTo, now, convID, id, upTo)
 	if err != nil {
 		return
 	}
