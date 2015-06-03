@@ -585,7 +585,7 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, coun
 
 //GetReadStatus returns all the positions the participants in this conversation have read to. If omitZeros is true, it omits participants who haven't read any messages.
 func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []gp.Read, err error) {
-	s, err := api.sc.Prepare("SELECT participant_id, last_read FROM conversation_participants WHERE conversation_id = ?")
+	s, err := api.sc.Prepare("SELECT participant_id, last_read, read_at FROM conversation_participants WHERE conversation_id = ?")
 	if err != nil {
 		return
 	}
@@ -596,9 +596,13 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 	defer rows.Close()
 	for rows.Next() {
 		var r gp.Read
-		err = rows.Scan(&r.UserID, &r.LastRead)
+		var t sql.NullString
+		err = rows.Scan(&r.UserID, &r.LastRead, &t)
 		if err != nil {
 			return
+		}
+		if t.Valid {
+			r.At, _ = time.Parse(mysqlTime, t.String)
 		}
 		if r.LastRead > 0 || !omitZeros {
 			read = append(read, r)
