@@ -98,11 +98,6 @@ func (api *API) userUnreadNotifications(id gp.UserID) (count int, err error) {
 	return
 }
 
-//MarkNotificationsSeen marks all notifications up to upTo seen for this user.
-func (api *API) MarkNotificationsSeen(id gp.UserID, upTo gp.NotificationID) (err error) {
-	return api.markNotificationsSeen(id, upTo)
-}
-
 //createNotification creates a new gleepost notification. location is the id of the object where the notification happened - a post id if the notification is "liked" or "commented", or a network id if the notification type is "added_group". Otherwise, the location will be ignored.
 func (n NotificationObserver) createNotification(ntype string, by gp.UserID, recipient gp.UserID, postID gp.PostID, netID gp.NetworkID, preview string) (err error) {
 	if len(preview) > 97 {
@@ -445,7 +440,7 @@ func unreadNotificationCount(sc *psc.StatementCache, userID gp.UserID) (count in
 }
 
 //MarkNotificationsSeen records that this user has seen all their notifications.
-func (api *API) markNotificationsSeen(user gp.UserID, upTo gp.NotificationID) (err error) {
+func (api *API) MarkNotificationsSeen(user gp.UserID, upTo gp.NotificationID) (err error) {
 	s, err := api.sc.Prepare("UPDATE notifications SET seen = 1 WHERE recipient = ? AND id <= ?")
 	if err != nil {
 		return
