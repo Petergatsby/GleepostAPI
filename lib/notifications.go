@@ -118,14 +118,15 @@ func NotificationChannelKey(id gp.UserID) (channel string) {
 
 //NotificationObserver has the responsibility of producing Notifications for users.
 type NotificationObserver struct {
-	events chan NotificationEvent
-	db     *sql.DB
-	sc     *psc.StatementCache
-	broker *events.Broker
-	pusher push.Pusher
-	users  *Users
-	nm     *NetworkManager
-	stats  PrefixStatter
+	events    chan NotificationEvent
+	db        *sql.DB
+	sc        *psc.StatementCache
+	broker    *events.Broker
+	pusher    push.Pusher
+	users     *Users
+	nm        *NetworkManager
+	stats     PrefixStatter
+	presences Presences
 }
 
 //Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
@@ -139,9 +140,9 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, broker *events.Broker, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager) NotificationObserver {
+func NewObserver(db *sql.DB, broker *events.Broker, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager, presences Presences) NotificationObserver {
 	events := make(chan NotificationEvent)
-	n := NotificationObserver{events: events, db: db, sc: sc, broker: broker, pusher: pusher, users: users, nm: nm}
+	n := NotificationObserver{events: events, db: db, sc: sc, broker: broker, pusher: pusher, users: users, nm: nm, presences: presences}
 	go n.spin()
 	return n
 }
@@ -273,6 +274,14 @@ func (r requestEvent) notify(n NotificationObserver) (err error) {
 
 //Push takes a gleepost notification and sends it as a push notification to all of recipient's devices.
 func (n NotificationObserver) push(notification gp.Notification, recipient gp.UserID) {
+	presence, err := n.presences.getPresence(recipient)
+	if err != nil && err != noPresence {
+		log.Println("Error getting user presence:", err)
+	}
+	if presence.Form == "desktop" && presence.At.Add(30*time.Second).After(time.Now()) {
+		log.Println("Not pushing to this user (they're active on the desktop in the last 30s)")
+		return
+	}
 	devices, err := getDevices(n.sc, recipient, "gleepost")
 	if err != nil {
 		log.Println(err)
