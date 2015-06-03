@@ -602,7 +602,10 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 			return
 		}
 		if t.Valid {
-			r.At, _ = time.Parse(mysqlTime, t.String)
+			at, err := time.Parse(mysqlTime, t.String)
+			if err != nil {
+				r.At = at
+			}
 		}
 		if r.LastRead > 0 || !omitZeros {
 			read = append(read, r)
