@@ -49,6 +49,9 @@ func validatePollInput(expiry time.Time, pollOptions []string) (err error) {
 	case len(pollOptions) > 4:
 		err = TooManyOptions
 	}
+	if err != nil {
+		return
+	}
 	for n, opt := range pollOptions {
 		if len(opt) < 1 {
 			err = optionTooAdjective("short", n)
