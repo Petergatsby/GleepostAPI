@@ -24,7 +24,7 @@ func (api *API) UserIsTyping(userID gp.UserID, conversationID gp.ConversationID,
 		log.Println("Error getting conversation participants:", err)
 		return
 	}
-	event := typingEvent{UserID: userID, Conversation: conversationID, Typing: typing}
+	event := typingEvent{UserID: userID, ConversationID: conversationID, Typing: typing}
 	var chans []string
 	for _, p := range participants {
 		if p.ID != userID {
