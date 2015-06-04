@@ -8,8 +8,9 @@ import (
 )
 
 type typingEvent struct {
-	UserID gp.UserID `json:"user"`
-	Typing bool      `json:"typing"`
+	UserID         gp.UserID         `json:"user"`
+	ConversationID gp.ConversationID `json:"conversation"`
+	Typing         bool              `json:"typing"`
 }
 
 //UserIsTyping broadcasts this user's typing status to everyone else in this conversation.
@@ -23,7 +24,7 @@ func (api *API) UserIsTyping(userID gp.UserID, conversationID gp.ConversationID,
 		log.Println("Error getting conversation participants:", err)
 		return
 	}
-	event := typingEvent{UserID: userID, Typing: typing}
+	event := typingEvent{UserID: userID, Conversation: conversationID, Typing: typing}
 	var chans []string
 	for _, p := range participants {
 		if p.ID != userID {
