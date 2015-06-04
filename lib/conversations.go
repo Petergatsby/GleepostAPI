@@ -21,7 +21,7 @@ var ETOOMANY = gp.APIerror{Reason: "Cannot send a message to more than 10 recipi
 
 //UserDeleteConversation removes this conversation from the list; it also terminates it (if it's a live conversation).
 func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationID) (err error) {
-	if api.UserCanViewConversation(userID, convID) {
+	if api.userCanViewConversation(userID, convID) {
 		var group gp.NetworkID
 		group, err = api.conversationGroup(convID)
 		if group > 0 && err == nil {
@@ -175,7 +175,7 @@ func (api *API) conversationChangedEvent(conversation gp.Conversation) {
 
 //GetConversation retrieves a particular conversation including up to ConversationPageSize most recent messages
 func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (conversation gp.ConversationAndMessages, err error) {
-	if api.UserCanViewConversation(userID, convID) {
+	if api.userCanViewConversation(userID, convID) {
 		return api.getConversation(userID, convID, api.Config.MessagePageSize)
 	}
 	return conversation, &ENOTALLOWED
@@ -183,7 +183,7 @@ func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (con
 
 //AddMessage creates a new message from userId in conversation convId, or returns ENOTALLOWED if the user is not a participant.
 func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
-	if !api.UserCanViewConversation(userID, convID) {
+	if !api.userCanViewConversation(userID, convID) {
 		return messageID, &ENOTALLOWED
 	}
 	messageID, err = api.addMessage(convID, userID, text, false)
@@ -227,8 +227,8 @@ func ConversationChannelKeys(participants []gp.UserPresence) (keys []string) {
 	return keys
 }
 
-//UserCanViewConversation returns true if userID is a participant of convID
-func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.ConversationID) (viewable bool) {
+//userCanViewConversation returns true if userID is a participant of convID
+func (api *API) userCanViewConversation(userID gp.UserID, convID gp.ConversationID) (viewable bool) {
 	participants, err := api.getParticipants(convID, false)
 	if err != nil {
 		log.Println(err)
@@ -244,7 +244,7 @@ func (api *API) UserCanViewConversation(userID gp.UserID, convID gp.Conversation
 
 //UserGetConversation returns the conversation convId if userId is allowed to view it; otherwise returns ENOTALLOWED.
 func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
-	if api.UserCanViewConversation(userID, convID) {
+	if api.userCanViewConversation(userID, convID) {
 		return api.GetFullConversation(userID, convID, start, count)
 	}
 	return conv, &ENOTALLOWED
@@ -288,7 +288,7 @@ func (api *API) conversationLastActivity(userID gp.UserID, convID gp.Conversatio
 //UserGetMessages returns count messages from the conversation convId, or ENOTALLOWED if the user is not allowed to view this conversation.
 func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
-	if api.UserCanViewConversation(userID, convID) {
+	if api.userCanViewConversation(userID, convID) {
 		return api.getMessages(userID, convID, mode, index, count)
 	}
 	return messages, &ENOTALLOWED
@@ -332,7 +332,7 @@ func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
 //UserAddParticipants adds new user(s) to this conversation, iff userID is in conversation && userID and participants share at least one network (ie, university)
 func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, participants ...gp.UserID) (updatedParticipants []gp.UserPresence, err error) {
 	updatedParticipants = make([]gp.UserPresence, 0)
-	if !api.UserCanViewConversation(userID, convID) {
+	if !api.userCanViewConversation(userID, convID) {
 		log.Println("Adding participants: adder can't see the conversation themself")
 		err = &ENOTALLOWED
 		return
@@ -365,7 +365,7 @@ func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, 
 			log.Printf("%d and %d aren't in the same uni\n", userID, p)
 			continue
 		}
-		if api.UserCanViewConversation(p, convID) { //Already in conversation
+		if api.userCanViewConversation(p, convID) { //Already in conversation
 			continue
 		}
 		addableParticipants = append(addableParticipants, p)

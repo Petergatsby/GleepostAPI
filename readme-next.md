@@ -199,6 +199,36 @@ In addition, participants in a conversation will have their presence indicated w
 ]
 ```
 
+###Typing
+
+A client should indicate to other members of a conversation that they are typing, by sending a typing action over their websocket connection:
+
+```json
+{"action":"typing", "conversation":123, "typing":true} 
+```
+
+The other participants in this conversation will get a `typing` event:
+
+```json
+{
+	"type":"typing",
+	"location":"/conversation/123",
+	"data":{
+		"user":456,
+		"conversation":123,
+		"typing":true
+	}
+}
+```
+
+If the client deletes all their input, then they can manually cancel the typing status:
+
+```json
+{"action":"typing", "conversation":123, "typing":false} 
+```
+
+Otherwise, clients should timeout the typing status after a few seconds, or upon receiving a message from that user.
+
 ###Messages
 
 ###Notifications

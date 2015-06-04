@@ -93,8 +93,6 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /conversations [[GET]](#get-conversations) [[POST]](#post-conversations)
 
-/conversations/live [[GET]](#get-conversationslive)
-
 /conversations/read_all [[POST]](#post-conversationsread_all)
 
 /conversations/mute_badges [[POST]](#post-conversationsmute_badges)
@@ -1178,10 +1176,6 @@ If the network is visible to you but you cannot request access to it (because it
 
 On success, the response will be 201.
 
-##GET /conversations/live
-
-###Deprecated.
-
 ##POST /conversations/read_all
 required parameters:
 id=[user-id]
@@ -1323,10 +1317,6 @@ example responses:
 		{"id":1234214, "by":{"id":99999, "name":"Lukas", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
 ]
 ```
-
-##PUT /conversations/[conversation-id]
-
-###Deprecated.
 
 ##POST /conversations/[conversation-id]/messages
 required parameters: id, token, text
@@ -1669,18 +1659,6 @@ id=[user-id]
 token=[token]
 
 See [the websockets readme.](websockets.md)
-
-##GET /contacts
-
-###Deprecated.
-
-##POST /contacts
-
-###Deprecated.
-
-##PUT /contacts/[user]
-
-###Deprecated.
 
 ##POST /devices
 required parameters: `type`, `device_id`
