@@ -11,9 +11,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mitchellh/goamz/s3"
-
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/mitchellh/goamz/aws"
+	"github.com/mitchellh/goamz/s3"
 )
 
 func randomFilename(extension string) string {
@@ -44,17 +44,23 @@ func transientStoreFile(f multipart.File, ext string) (location string, err erro
 	return location, nil
 }
 
+type s3bucket struct {
+	region aws.Region
+	name   string
+}
+
 func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
+	var auth aws.Auth
+	auth.AccessKey, auth.SecretKey = api.Config.AWS.KeyID, api.Config.AWS.SecretKey
+	bucketMapping := map[gp.NetworkID]s3bucket{1911: {region: aws.USWest, name: "gpcali"}}
 	primary, _ := api.getUserUniversity(user)
-	var s *s3.S3
-	var bucket *s3.Bucket
-	s = api.getS3(primary.ID)
-	if primary.ID == 1911 {
-		bucket = s.Bucket("gpcali")
+	s3bucket, ok := bucketMapping[primary.ID]
+	if ok {
+		b = s3.New(auth, s3bucket.region).Bucket(s3bucket.name)
 	} else {
-		bucket = s.Bucket("gpimg")
+		b = s3.New(auth, aws.EUWest).Bucket("gpimg")
 	}
-	return bucket
+	return b
 }
 
 //EnqueueVideo takes a user-uploaded video and enqueues it for processing.

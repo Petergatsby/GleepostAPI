@@ -11,22 +11,8 @@ import (
 	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
 )
-
-func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
-	var auth aws.Auth
-	auth.AccessKey, auth.SecretKey = api.Config.AWS.KeyID, api.Config.AWS.SecretKey
-	//1911 == Stanford.
-	//TODO: Make the bucket a property of the university / group of universities
-	if network == 1911 {
-		s = s3.New(auth, aws.USWest)
-	} else {
-		s = s3.New(auth, aws.EUWest)
-	}
-	return
-}
 
 func inferContentType(header *multipart.FileHeader) (contentType string) {
 	_contenttype, ok := header.Header["Content-Type"]

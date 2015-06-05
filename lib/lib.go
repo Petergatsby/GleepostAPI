@@ -16,6 +16,8 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/push"
 	"github.com/draaglom/GleepostAPI/lib/transcode"
 	"github.com/garyburd/redigo/redis"
+	"github.com/mitchellh/goamz/aws"
+	"github.com/mitchellh/goamz/s3"
 	"github.com/peterbourgon/g2s"
 )
 
@@ -64,7 +66,9 @@ func New(conf conf.Config) (api *API) {
 	api.db = db
 	pool := redis.NewPool(events.GetDialer(conf.Redis), 100)
 	api.Auth = &Authenticator{sc: api.sc, pool: pool}
-	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), api.getS3(1911).Bucket("gpcali"), api.broker)
+	auth := aws.Auth{}
+	auth.AccessKey, auth.SecretKey = conf.AWS.KeyID, conf.AWS.SecretKey
+	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), s3.New(auth, aws.USWest).Bucket("gpcali"), api.broker)
 	api.Viewer = &viewer{broker: api.broker, sc: api.sc}
 	api.users = &Users{sc: api.sc}
 	api.nm = &NetworkManager{sc: api.sc}
