@@ -58,7 +58,7 @@ func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
 	if ok {
 		b = s3.New(auth, s3bucket.region).Bucket(s3bucket.name)
 	} else {
-		b = s3.New(auth, aws.EUWest).Bucket("gpimg")
+		b = s3.New(auth, aws.USWest).Bucket("gpcali")
 	}
 	return b
 }
