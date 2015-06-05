@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/mitchellh/goamz/s3"
@@ -90,7 +92,7 @@ func (t transcodeWorker) claimJobs() (err error) {
 		if err != nil {
 			return
 		}
-		_, ext := inferContentType(source)
+		ext := filepath.Ext(source)
 		location := "/tmp/" + randomFilename(ext)
 		var tmp *os.File
 		tmp, err = os.Create(location)
@@ -190,7 +192,7 @@ func (t transcodeWorker) done(jobID uint64, URL string) (err error) {
 }
 
 func (t transcodeWorker) upload(file string) (URL string, err error) {
-	contentType, _ := inferContentType(file)
+	contentType := mime.TypeByExtension(filepath.Ext(file))
 	if contentType == "" {
 		err = errors.New("Couldn't determine content-type")
 		return

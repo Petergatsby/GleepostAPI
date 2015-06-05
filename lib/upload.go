@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"io/ioutil"
 	"mime/multipart"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,33 +28,18 @@ func (api *API) getS3(network gp.NetworkID) (s *s3.S3) {
 	return
 }
 
-func inferContentType(filename string) (contenttype, ext string) {
-	switch {
-	case strings.HasSuffix(filename, ".jpeg"):
-		fallthrough
-	case strings.HasSuffix(filename, ".jpg"):
-		ext = ".jpg"
-		contenttype = "image/jpeg"
-	case strings.HasSuffix(filename, ".png"):
-		ext = ".png"
-		contenttype = "image/png"
-	case strings.HasSuffix(filename, ".mp4"):
-		ext = ".mp4"
-		contenttype = "video/mp4"
-	case strings.HasSuffix(filename, ".webm"):
-		ext = ".webm"
-		contenttype = "video/webm"
+func inferContentType(header *multipart.FileHeader) (contentType string) {
+	_contenttype, ok := header.Header["Content-Type"]
+	if ok && len(_contenttype) > 0 {
+		contentType = _contenttype[0]
 	}
-	return contenttype, ext
-
+	return
 }
 
 //StoreFile takes an uploaded file, checks if it is allowed (ie, is jpg / png / appropriate video file) and uploads it to s3 (selecting a bucket based on the user who uploaded it).
 func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.FileHeader) (url string, err error) {
-	contenttype, ext := inferContentType(header.Filename)
-	if contenttype == "" {
-		return "", gp.APIerror{Reason: "Unsupported file type"}
-	}
+	contenttype := inferContentType(header)
+	ext := filepath.Ext(header.Filename)
 	filename := randomFilename(ext)
 	bucket := api.getBucket(id)
 	data, err := ioutil.ReadAll(file)

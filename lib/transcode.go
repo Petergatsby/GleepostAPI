@@ -9,6 +9,7 @@ import (
 	"log"
 	"mime/multipart"
 	"os"
+	"path/filepath"
 
 	"github.com/mitchellh/goamz/s3"
 
@@ -58,7 +59,7 @@ func (api *API) getBucket(user gp.UserID) (b *s3.Bucket) {
 
 //EnqueueVideo takes a user-uploaded video and enqueues it for processing.
 func (api *API) EnqueueVideo(user gp.UserID, file multipart.File, header *multipart.FileHeader, shouldRotate bool) (inProgress gp.UploadStatus, err error) {
-	_, ext := inferContentType(header.Filename)
+	ext := filepath.Ext(header.Filename)
 	if ext == "" {
 		return inProgress, errors.New("unsupported video type")
 	}
