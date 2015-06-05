@@ -47,7 +47,7 @@ func TestGetNotifications(t *testing.T) {
 	if len(respValue) != 4 {
 		t.Fatalf("Got %v notifications when expected 4", len(respValue))
 	} else if checkNotificationValidity(respValue) == false {
-		t.Fatalf("Notifications are incorrect", len(respValue))
+		t.Fatal("Notifications weren't valid")
 	}
 
 	err = readNotifications(token, 2)
@@ -63,7 +63,7 @@ func TestGetNotifications(t *testing.T) {
 	if len(respValue) != 2 {
 		t.Fatalf("Got %v notifications when expected 2", len(respValue))
 	} else if checkNotificationValidity(respValue) == false {
-		t.Fatalf("Notifications are incorrect", len(respValue))
+		t.Fatal("Notifications weren't valid")
 	}
 
 	respValue, err = getNotifications(token, "true")
@@ -74,7 +74,7 @@ func TestGetNotifications(t *testing.T) {
 	if len(respValue) != 4 {
 		t.Fatalf("Got %v notifications when expected 4", len(respValue))
 	} else if checkNotificationValidity(respValue) == false {
-		t.Fatalf("Notifications are incorrect", len(respValue))
+		t.Fatal("Notifications weren't valid")
 	}
 }
 
