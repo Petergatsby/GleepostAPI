@@ -70,20 +70,17 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 	return url, err
 }
 
+var cloudfronts = map[string]string{"gpcali": "https://d3itv2rmlfeij9.cloudfront.net/", "gpimg": "https://d2tc2ce3464r63.cloudfront.net/"}
+
 func cloudfrontify(url string) (cdnurl string) {
-	cloudfrontCali := "https://d3itv2rmlfeij9.cloudfront.net/"
-	cloudfrontImg := "https://d2tc2ce3464r63.cloudfront.net/"
-	if strings.Contains(url, "gpcali") {
-		bits := strings.Split(url, "/")
-		final := bits[len(bits)-1]
-		return cloudfrontCali + final
-	} else if strings.Contains(url, "gpimg") {
-		bits := strings.Split(url, "/")
-		final := bits[len(bits)-1]
-		return cloudfrontImg + final
-	} else {
-		return url
+	for bucket, cloudfront := range cloudfronts {
+		if strings.Contains(url, bucket) {
+			bits := strings.Split(url, "/")
+			final := bits[len(bits)-1]
+			return cloudfront + final
+		}
 	}
+	return url
 }
 
 //userAddUpload records that this user has uploaded this URL.
@@ -174,10 +171,6 @@ func (api *API) setUploadStatus(uploadStatus gp.UploadStatus) (ID gp.VideoID, er
 	}
 	return
 }
-
-/********************************************************************
-		Upload
-********************************************************************/
 
 //CreateJob records a Transcoding job into the queue
 func (api *API) createJob(source, target string, rotate bool, parent gp.VideoID) (err error) {
