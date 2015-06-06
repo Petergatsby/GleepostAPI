@@ -191,21 +191,12 @@ func (t transcodeWorker) done(jobID uint64, URL string) (err error) {
 	return
 }
 
-func (t transcodeWorker) upload(file string) (URL string, err error) {
-	contentType := mime.TypeByExtension(filepath.Ext(file))
+func (t transcodeWorker) upload(path string) (URL string, err error) {
+	contentType := mime.TypeByExtension(filepath.Ext(path))
 	if contentType == "" {
 		err = errors.New("Couldn't determine content-type")
 		return
 	}
-	url, err := upload(file, contentType, t.b)
-	if err != nil {
-		return
-	}
-	URL = cloudfrontify(url)
-	return
-}
-
-func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return
@@ -215,10 +206,10 @@ func upload(path, contentType string, b *s3.Bucket) (url string, err error) {
 		return
 	}
 	//The [5:] is assuming all files will be in "/tmp/" (so it extracts their filename from their full path)
-	err = b.PutReader(path[5:], file, fi.Size(), contentType, s3.PublicRead)
+	err = t.b.PutReader(path[5:], file, fi.Size(), contentType, s3.PublicRead)
 	if err != nil {
 		return
 	}
-	url = b.URL(path[5:])
+	URL = cloudfrontify(t.b.URL(path[5:]))
 	return
 }
