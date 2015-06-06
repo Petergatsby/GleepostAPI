@@ -96,7 +96,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		file, header, err := r.FormFile("image")
 		if err != nil {
-			file, header, err = r.FormFile("video")
+			file, header, err = r.FormFile("file")
 			if err != nil {
 				jsonErr(w, err, 400)
 				return
