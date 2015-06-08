@@ -125,6 +125,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /upload [[POST]](#post-upload)
 
+/flow_upload [[POST]](#post-flow_upload) [[GET]](#get-flow_upload)
+
 /videos [[POST]](#post-videos) 
 
 /videos/[video-id] [[GET]](#get-videosvideo-id)
@@ -1702,6 +1704,21 @@ HTTP 201
 ```json
 {"url":"https://s3-eu-west-1.amazonaws.com/gpimg/3acd82c15dd0e698fc59c79e445a464553e57d338a6440601551c7fb28e45bf9.jpg"}
 ```
+
+##POST /flow_upload
+required parameters: id, token
+
+/flow_upload implements flow.js style chunked upload. A completed upload responds in the same fashion as /upload:
+
+HTTP 201
+```json
+{"url":"https://s3-eu-west-1.amazonaws.com/gpimg/3acd82c15dd0e698fc59c79e445a464553e57d338a6440601551c7fb28e45bf9.jpg"}
+```
+
+##GET /flow_upload
+required parameters: id, token
+
+Returns the status of a flow.js upload chunk.
 
 ##POST /videos
 
