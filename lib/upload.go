@@ -2,8 +2,11 @@ package lib
 
 import (
 	"database/sql"
+	"errors"
 	"io/ioutil"
+	"mime"
 	"mime/multipart"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -40,6 +43,32 @@ func (api *API) StoreFile(id gp.UserID, file multipart.File, header *multipart.F
 	url = cloudfrontify(url)
 	err = api.userAddUpload(id, url)
 	return url, err
+}
+
+//StoreFilePath acts the same as StoreFile, but uses io.Reader rather than reading everything into memory at once.
+func (api *API) StoreFilePath(id gp.UserID, path string) (URL string, err error) {
+	bucket := api.getBucket(id)
+	contentType := mime.TypeByExtension(filepath.Ext(path))
+	if contentType == "" {
+		err = errors.New("Couldn't determine content-type")
+		return
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	fi, err := file.Stat()
+	if err != nil {
+		return
+	}
+	//The [5:] is assuming all files will be in "/tmp/" (so it extracts their filename from their full path)
+	err = bucket.PutReader(path[5:], file, fi.Size(), contentType, s3.PublicRead)
+	if err != nil {
+		return
+	}
+	URL = cloudfrontify(bucket.URL(path[5:]))
+	err = api.userAddUpload(id, URL)
+	return
 }
 
 var cloudfronts = map[string]string{"gpcali": "https://d3itv2rmlfeij9.cloudfront.net/", "gpimg": "https://d2tc2ce3464r63.cloudfront.net/"}

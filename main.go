@@ -44,5 +44,6 @@ func main() {
 		Addr:    ":" + config.Port,
 		Handler: r,
 	}
+	go cleanupUploads()
 	server.ListenAndServe()
 }

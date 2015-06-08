@@ -3,10 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
+	"github.com/patdek/gongflow"
 )
 
 //NoSuchUpload = You tried to attach a URL you didn't upload to tomething
@@ -108,6 +112,50 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 400)
 		} else {
 			jsonResponse(w, gp.URLCreated{URL: url}, 201)
+		}
+	}
+}
+
+var tempPath = path.Join(os.TempDir(), "gongflow")
+
+func ngflowUpload(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	ngFlowData, errFlow := gongflow.ChunkFlowData(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	case errFlow != nil:
+		jsonErr(w, errFlow, 500)
+	case r.Method == "GET":
+		msg, code := gongflow.ChunkStatus(tempPath, ngFlowData)
+		jsonResponse(w, msg, code)
+	case r.Method == "POST":
+		filePath, err := gongflow.ChunkUpload(tempPath, ngFlowData, r)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		if filePath != "" {
+			url, err := api.StoreFilePath(userID, filePath)
+			if err != nil {
+				jsonErr(w, err, 400)
+			}
+			jsonResponse(w, gp.URLCreated{URL: url}, 201)
+			return
+		}
+		jsonResponse(w, "continuing to upload chunks", 200)
+	}
+}
+
+func cleanupUploads() {
+	loopDur := time.Duration(1) * time.Minute   // loop every minute
+	tooOldDur := time.Duration(5 * time.Minute) // older than 5 minutes to be deleted
+	t := time.NewTicker(loopDur)
+	// this will "tick" every loopDur forever.
+	for _ = range t.C {
+		err := gongflow.ChunksCleanup(tempPath, tooOldDur) // delete stuff in tempPath older than tooOldDur
+		if err != nil {
+			log.Println(err)
 		}
 	}
 }
