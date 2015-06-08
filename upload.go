@@ -25,6 +25,8 @@ func init() {
 	base.Handle("/videos", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(getVideos))).Methods("GET")
 	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/flow_upload", timeHandler(api, http.HandlerFunc(ngflowUpload))).Methods("GET", "POST")
+	base.Handle("/flow_upload", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func postVideoUpload(w http.ResponseWriter, r *http.Request) {
@@ -151,9 +153,8 @@ func cleanupUploads() {
 	loopDur := time.Duration(1) * time.Minute   // loop every minute
 	tooOldDur := time.Duration(5 * time.Minute) // older than 5 minutes to be deleted
 	t := time.NewTicker(loopDur)
-	// this will "tick" every loopDur forever.
 	for _ = range t.C {
-		err := gongflow.ChunksCleanup(tempPath, tooOldDur) // delete stuff in tempPath older than tooOldDur
+		err := gongflow.ChunksCleanup(tempPath, tooOldDur)
 		if err != nil {
 			log.Println(err)
 		}
