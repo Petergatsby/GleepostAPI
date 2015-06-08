@@ -120,6 +120,11 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 var tempPath = path.Join(os.TempDir(), "gongflow")
 
+func init() {
+	// ensure the tempPath exists
+	os.MkdirAll(tempPath, 0777)
+}
+
 func ngflowUpload(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	ngFlowData, errFlow := gongflow.ChunkFlowData(r)
