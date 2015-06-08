@@ -11,13 +11,13 @@ import (
 )
 
 func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
-	recipients, err := api.getParticipants(convID, false)
+	devices, err := api.pushableDevices(convID)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	for _, user := range recipients {
-		presence, err := api.Presences.getPresence(user.ID)
+	for _, device := range devices {
+		presence, err := api.Presences.getPresence(device.User)
 		if err != nil && err != noPresence {
 			log.Println("Error getting user presence:", err)
 		}
@@ -25,33 +25,42 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 			log.Println("Not pushing to this user (they're active on the desktop in the last 30s)")
 			continue
 		}
-		if user.ID != message.By.ID {
-			devices, err := getDevices(api.sc, user.ID, "gleepost")
-			if err != nil {
-				log.Println(err)
-			}
-			count := 0
-			for _, device := range devices {
-				log.Println("Sending push notification to device: ", device)
-				switch {
-				case device.Type == "ios":
-					err = api.iosPushMessage(device.ID, message, convID, user.ID)
-					if err != nil {
-						log.Println(err)
-					} else {
-						count++
-					}
-				case device.Type == "android":
-					err = api.androidPushMessage(device.ID, message, convID, user.ID)
-					if err != nil {
-						log.Println(err)
-					} else {
-						count++
-					}
+		if device.User != message.By.ID {
+			switch {
+			case device.Type == "ios":
+				err = api.iosPushMessage(device.ID, message, convID, device.User)
+				if err != nil {
+					log.Println("Error sending iOS push message", err)
+				}
+			case device.Type == "android":
+				err = api.androidPushMessage(device.ID, message, convID, device.User)
+				if err != nil {
+					log.Println("Error sending android push message", err)
 				}
 			}
-			log.Printf("Sent %d notifications successfully to %s's %d devices\n", count, user.Name, len(devices))
 		}
+	}
+}
+
+func (api *API) pushableDevices(convID gp.ConversationID) (devices []gp.Device, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.pushable_devices.byConversationID.db")
+	s, err := api.sc.Prepare("SELECT participant_id, device_type, device_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id JOIN devices ON participant_id = devices.user_id WHERE conversation_id = ? AND deleted = 0 AND muted = 0 AND application = 'gleepost'")
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(convID)
+	if err != nil {
+		log.Println("Error getting participant device:", err)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		device := gp.Device{}
+		if err = rows.Scan(&device.User, &device.Type, &device.ID); err != nil {
+			log.Println(err)
+			return
+		}
+		devices = append(devices, device)
 	}
 }
 
