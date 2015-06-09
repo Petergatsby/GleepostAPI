@@ -521,6 +521,10 @@ func (api *API) getConversations(userID gp.UserID, start int64, count int) (conv
 		if err != nil {
 			log.Println("error getting unread count:", err)
 		}
+		conv.Muted, err = api.conversationMuted(userID, conv.ID)
+		if err != nil {
+			log.Println("Error getting muted status:", err)
+		}
 		conversations = append(conversations, conv)
 	}
 	return conversations, nil
