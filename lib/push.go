@@ -62,6 +62,7 @@ func (api *API) pushableDevices(convID gp.ConversationID) (devices []gp.Device, 
 		}
 		devices = append(devices, device)
 	}
+	return
 }
 
 func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID) (err error) {
