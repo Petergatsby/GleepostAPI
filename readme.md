@@ -1292,6 +1292,33 @@ example responses:
 }
 ```
 
+##PUT /conversations/[conversation-id]
+requred parameters:
+muted = `true|false`
+
+Set `muted` = `true` to suppress any push notifications from this conversation; `muted` = `false` to enable them again.
+
+Responds with the full conversation like [[GET /conversations/:id]](#get-conversationsconversation-id).
+
+(HTTP 200)
+```json
+{
+	"id":1,
+	"participants": [
+		{"id":9, "name":"Patrick", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"},
+		{"id":23, "name":"PeterGatsby", "profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"}
+	],
+	"read":[{"user":9,"last_read":1000, "at":"2013-09-05T13:09:38Z"}],
+	"messages": [
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"},
+		{"id":1234214, "by":{"id":23, "name":"PeterGatsby"}, "text":"asl? ;)", "timestamp":"2013-09-05T13:09:38Z"}
+	],
+	"lastActivity":"2013-09-05T13:09:38Z",
+	"unread": 123,
+	"muted": true
+}
+```
 ##DELETE /conversations/[conversation-id]
 required parameters:
 id=[user-id]
@@ -1300,7 +1327,6 @@ token=[token]
 This removes a conversation from your inbox. You will no longer be able to send messages to it, no longer receive notifications, and can no longer view it.
 
 If it is successful, it will respond with HTTP 204.
-
 
 ##GET /conversations/[conversation-id]/messages
 required parameters: id=[user-id], token=[token]
