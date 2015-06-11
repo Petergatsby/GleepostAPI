@@ -133,6 +133,7 @@ func ngflowUpload(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	case errFlow != nil:
+		log.Println(r.FormValue("flowChunkNumber"))
 		jsonErr(w, errFlow, 500)
 	case r.Method == "GET":
 		msg, code := gongflow.ChunkStatus(tempPath, ngFlowData)
