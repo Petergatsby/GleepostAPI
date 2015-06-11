@@ -44,6 +44,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	api.Statsd.Count(1, "gleepost.websockets.open")
 	chans := lib.ConversationChannelKeys([]gp.UserPresence{{User: gp.User{ID: userID}}})
 	chans = append(chans, lib.NotificationChannelKey(userID))
 	events := api.EventSubscribe(chans)

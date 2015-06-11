@@ -129,17 +129,15 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		} else {
 			postID, pending, err = api.UserAddPostToPrimary(userID, text, attribs, videoID, false, url, pollExpiry, pollOptions, ts...)
 		}
-		if err != nil {
-			e, ok := err.(gp.APIerror)
-			switch {
-			case ok && e == lib.ENOTALLOWED:
-				jsonResponse(w, e, 403)
-			case ok:
-				jsonResponse(w, err, 400)
-			default:
-				jsonErr(w, err, 500)
-			}
-		} else {
+		e, ok := err.(gp.APIerror)
+		switch {
+		case ok && e == lib.ENOTALLOWED:
+			jsonResponse(w, e, 403)
+		case ok:
+			jsonResponse(w, err, 400)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
 			jsonResponse(w, &gp.CreatedPost{ID: postID, Pending: pending}, 201)
 		}
 	}

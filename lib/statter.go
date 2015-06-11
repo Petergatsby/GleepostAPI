@@ -35,3 +35,10 @@ func (statter PrefixStatter) Count(count int, bucket string) {
 		statter.statter.Counter(1.0, statter.prefix()+bucket, count)
 	}
 }
+
+//Gauge sends a statsd gauge with a fixed probability and prefix.
+func (statter PrefixStatter) Gauge(gauge string, bucket string) {
+	if statter.statter != nil {
+		statter.statter.Gauge(1.0, statter.prefix()+bucket, gauge)
+	}
+}
