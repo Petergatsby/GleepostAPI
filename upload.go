@@ -26,6 +26,7 @@ func init() {
 	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(getVideos))).Methods("GET")
 	base.Handle("/videos/{id}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/flow_upload", timeHandler(api, http.HandlerFunc(ngflowUpload))).Methods("GET", "POST")
+	base.Handle("/flow_upload", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/flow_upload", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
