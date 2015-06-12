@@ -270,6 +270,10 @@ func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		log.Println(err)
 	}
+	conv.Muted, err = api.conversationMuted(userID, convID)
+	if err != nil {
+		log.Println(err)
+	}
 	conv.Messages, err = api.getMessages(userID, convID, ByOffsetDescending, start, count)
 	return
 }
@@ -517,6 +521,10 @@ func (api *API) getConversations(userID gp.UserID, start int64, count int) (conv
 		if err != nil {
 			log.Println("error getting unread count:", err)
 		}
+		conv.Muted, err = api.conversationMuted(userID, conv.ID)
+		if err != nil {
+			log.Println("Error getting muted status:", err)
+		}
 		conversations = append(conversations, conv)
 	}
 	return conversations, nil
@@ -577,6 +585,10 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, coun
 		log.Println("error getting unread count:", err)
 	}
 	conversation.Group, err = api.conversationGroup(convID)
+	if err != nil {
+		log.Println(err)
+	}
+	conversation.Muted, err = api.conversationMuted(userID, convID)
 	if err != nil {
 		log.Println(err)
 	}
@@ -904,4 +916,28 @@ func (api *API) isPrimaryConversation(convID gp.ConversationID) (primary bool, e
 	}
 	err = s.QueryRow(convID).Scan(&primary)
 	return
+}
+
+//SetMuteStatus marks this conversation as muted (suppressing push notifications) or not.
+func (api *API) SetMuteStatus(userID gp.UserID, convID gp.ConversationID, muted bool) (err error) {
+	canView := api.userCanViewConversation(userID, convID)
+	if !canView {
+		return ENOTALLOWED
+	}
+	s, err := api.sc.Prepare("UPDATE conversation_participants SET muted = ? WHERE participant_id = ? AND conversation_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(muted, userID, convID)
+	return
+}
+
+func (api *API) conversationMuted(userID gp.UserID, convID gp.ConversationID) (muted bool, err error) {
+	s, err := api.sc.Prepare("SELECT muted FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, convID).Scan(&muted)
+	return
+
 }

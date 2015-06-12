@@ -33,6 +33,7 @@ type Conversation struct {
 	Participants []UserPresence `json:"participants"`   //Participants can send messages to and read from this conversation.
 	Read         []Read         `json:"read,omitempty"` //Read represents the most recent message each user has seen.
 	Unread       int            `json:"unread,omitempty"`
+	Muted        bool           `json:"muted,omitempty'`
 	Group        NetworkID      `json:"group,omitempty"`
 }
 

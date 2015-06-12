@@ -23,6 +23,7 @@ func init() {
 	base.Handle("/conversations", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getSpecificConversation))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteSpecificConversation))).Methods("DELETE")
+	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(putConversation))).Methods("PUT")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(getMessages))).Methods("GET")
@@ -337,5 +338,32 @@ func postParticipants(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonResponse(w, participants, 201)
 		go api.Statsd.Count(1, url+".201")
+	}
+}
+
+func putConversation(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	vars := mux.Vars(r)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	default:
+		convID := gp.ConversationID(_convID)
+		muted, _ := strconv.ParseBool(r.FormValue("muted"))
+		err = api.SetMuteStatus(userID, convID, muted)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			conv, err := api.UserGetConversation(userID, convID, 0, api.Config.MessagePageSize)
+			if err != nil {
+				jsonResponse(w, err, 500)
+			}
+			jsonResponse(w, conv, 200)
+		}
 	}
 }
