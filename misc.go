@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"time"
@@ -134,8 +135,11 @@ func authenticatedHandler(api *lib.API, next http.Handler) http.Handler {
 	})
 }
 
+var ids = regexp.MustCompile(`\.\d\.`)
+
 func statsdMetricName(r *http.Request) string {
 	metric := "gleepost." + strings.Replace(r.URL.Path, "/", ".", -1) + "." + strings.ToLower(r.Method)
+	metric = ids.ReplaceAllString(metric, ".by_id.")
 	return metric
 }
 
