@@ -231,6 +231,20 @@ Otherwise, clients should timeout the typing status after a few seconds, or upon
 
 ###Messages
 
+####Formatting
+
+To display a message on the client, follow the following rules:
+
+(1) Replace special embed sequences with their enhanced version; escape those which do not constitute a valid embed.
+`foo &lt;bar&gt; <user:123|@foo> <sup> :+1:`
+becomes
+
+`foo &lt;bar&gt <a href="/user/123">@foo</a> &lt;sup&gt; :+1:`
+
+(2) Replace emoji sequences with unicode or images where appropriate
+
+`foo &lt;bar&gt <a href="/user/123">@foo</a> &lt;sup&gt; <img class="emoji" src="/images/thumbsup.png" />`
+
 ###Notifications
 
  - Someone voted in your poll
