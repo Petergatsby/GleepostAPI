@@ -44,6 +44,10 @@ func TestMessageNormalize(t *testing.T) {
 			before: "hey <@123|@patrick> I mean <@patrick|>",
 			after:  "hey @patrick I mean <@patrick|>",
 		},
+		{
+			before: "hey <@user:123|@patrick> and <@user:456|@tade>",
+			after:  "hey @patrick and @tade",
+		},
 	}
 	for _, test := range tests {
 		if normalizeMessage(test.before) != test.after {

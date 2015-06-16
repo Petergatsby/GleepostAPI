@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -18,6 +19,7 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 		return
 	}
 	for _, device := range devices {
+		mentioned := false
 		presence, err := api.Presences.getPresence(device.User)
 		if err != nil && err != noPresence {
 			log.Println("Error getting user presence:", err)
@@ -26,15 +28,25 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 			log.Println("Not pushing to this user (they're active on the desktop in the last 30s)")
 			continue
 		}
-		if device.User != message.By.ID {
+		muted, err := api.conversationMuted(device.User, convID)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		mentions := api.spotMentions(message.Text, convID)
+		if mentions.Contains(message.By.ID) {
+			mentioned = true
+
+		}
+		if device.User != message.By.ID && (!muted || mentioned) {
 			switch {
 			case device.Type == "ios":
-				err = api.iosPushMessage(device.ID, message, convID, device.User)
+				err = api.iosPushMessage(device.ID, message, convID, device.User, mentioned)
 				if err != nil {
 					log.Println("Error sending iOS push message", err)
 				}
 			case device.Type == "android":
-				err = api.androidPushMessage(device.ID, message, convID, device.User)
+				err = api.androidPushMessage(device.ID, message, convID, device.User, mentioned)
 				if err != nil {
 					log.Println("Error sending android push message", err)
 				}
@@ -45,7 +57,7 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 
 func (api *API) pushableDevices(convID gp.ConversationID) (devices []gp.Device, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.pushable_devices.byConversationID.db")
-	s, err := api.sc.Prepare("SELECT participant_id, device_type, device_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id JOIN devices ON participant_id = devices.user_id WHERE conversation_id = ? AND deleted = 0 AND muted = 0 AND application = 'gleepost'")
+	s, err := api.sc.Prepare("SELECT participant_id, device_type, device_id FROM conversation_participants JOIN users ON conversation_participants.participant_id = users.id JOIN devices ON participant_id = devices.user_id WHERE conversation_id = ? AND deleted = 0 AND application = 'gleepost'")
 	if err != nil {
 		return
 	}
@@ -72,40 +84,16 @@ func normalizeMessage(message string) (textified string) {
 	return normRegex.ReplaceAllString(message, "$1")
 }
 
-func (api *API) iosPushMention(device string, message gp.Message, convID gp.ConversationID, user gp.UserID) (err error) {
+func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID, mentioned bool) (err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
-	d.LocKey = "mention"
-	d.LocArgs = []string{message.By.Name}
-	if len(message.Text) > 64 {
-		//infer
-		d.LocArgs = append(d.LocArgs, message.Text[:64]+"...")
+	if mentioned {
+		d.LocKey = "mentioned"
 	} else {
-		d.LocArgs = append(d.LocArgs, message.Text)
+		d.LocKey = "MSG"
 	}
-	payload.Alert = d
-	payload.Sound = "default"
-	payload.Badge, err = api.badgeCount(user)
-	pn := apns.NewPushNotification()
-	pn.DeviceToken = device
-	pn.AddPayload(payload)
-	pn.Set("conv", convID)
-	if message.Group > 0 {
-		pn.Set("group", message.Group)
-	}
-	pn.Set("profile_image", message.By.Avatar)
-	pusher, ok := api.pushers["gleepost"]
-	if ok {
-		err = pusher.IOSPush(pn)
-	}
-	return
-}
-
-func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID) (err error) {
-	payload := apns.NewPayload()
-	d := apns.NewAlertDictionary()
-	d.LocKey = "MSG"
 	d.LocArgs = []string{message.By.Name}
+	message.Text = normalizeMessage(message.Text)
 	if len(message.Text) > 64 {
 		d.LocArgs = append(d.LocArgs, message.Text[:64]+"...")
 	} else {
@@ -129,8 +117,12 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 	return
 }
 
-func (api *API) androidPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID) (err error) {
+func (api *API) androidPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID, mentioned bool) (err error) {
 	data := map[string]interface{}{"type": "MSG", "sender": message.By.Name, "sender-id": message.By.ID, "conv": convID, "for": user}
+	if mentioned {
+		data["type"] = "mentioned"
+	}
+	message.Text = normalizeMessage(message.Text)
 	if len(message.Text) > 3200 {
 		data["text"] = message.Text[:3200] + "..."
 	} else {
@@ -222,4 +214,46 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 		log.Println(e)
 	}
 	return
+}
+
+var captureIDRegex = regexp.MustCompile(`<@(\d+)\|\w+>`)
+
+func (api *API) spotMentions(message string, convID gp.ConversationID) (mentioned mentioned) {
+	//map to deduplicate multiple mentions
+	m := make(map[gp.UserID]bool)
+	participants, err := api.getParticipants(convID, false)
+	if err != nil {
+		log.Println(err)
+	}
+	ids := captureIDRegex.FindAllString(message, -1)
+	if len(ids) == 0 {
+		return
+	}
+	for _, stringid := range ids {
+		_id, err := strconv.ParseUint(stringid, 10, 64)
+		if err != nil {
+			continue
+		}
+		id := gp.UserID(_id)
+		for _, p := range participants {
+			if id == p.ID {
+				m[id] = true
+			}
+		}
+	}
+	for u := range m {
+		mentioned = append(mentioned, u)
+	}
+	return mentioned
+}
+
+type mentioned []gp.UserID
+
+func (m mentioned) Contains(u gp.UserID) bool {
+	for _, user := range m {
+		if u == user {
+			return true
+		}
+	}
+	return false
 }
