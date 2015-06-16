@@ -3,6 +3,7 @@ package lib
 import (
 	"errors"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -61,6 +62,41 @@ func (api *API) pushableDevices(convID gp.ConversationID) (devices []gp.Device, 
 			return
 		}
 		devices = append(devices, device)
+	}
+	return
+}
+
+var normRegex = regexp.MustCompile(`<@[a-zA-Z0-9\:]+\|(@\w+)>`)
+
+func normalizeMessage(message string) (textified string) {
+	return normRegex.ReplaceAllString(message, "$1")
+}
+
+func (api *API) iosPushMention(device string, message gp.Message, convID gp.ConversationID, user gp.UserID) (err error) {
+	payload := apns.NewPayload()
+	d := apns.NewAlertDictionary()
+	d.LocKey = "mention"
+	d.LocArgs = []string{message.By.Name}
+	if len(message.Text) > 64 {
+		//infer
+		d.LocArgs = append(d.LocArgs, message.Text[:64]+"...")
+	} else {
+		d.LocArgs = append(d.LocArgs, message.Text)
+	}
+	payload.Alert = d
+	payload.Sound = "default"
+	payload.Badge, err = api.badgeCount(user)
+	pn := apns.NewPushNotification()
+	pn.DeviceToken = device
+	pn.AddPayload(payload)
+	pn.Set("conv", convID)
+	if message.Group > 0 {
+		pn.Set("group", message.Group)
+	}
+	pn.Set("profile_image", message.By.Avatar)
+	pusher, ok := api.pushers["gleepost"]
+	if ok {
+		err = pusher.IOSPush(pn)
 	}
 	return
 }
