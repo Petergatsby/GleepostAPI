@@ -5,3 +5,6 @@ Description=Gleepost API server
 WorkingDirectory=/home/admin/go/src/github.com/draaglom/GleepostAPI/
 ExecStart=/home/admin/go/src/github.com/draaglom/GleepostAPI/GleepostAPI -conf=/home/admin/go/src/github.com/draaglom/GleepostAPI/conf.json
 Restart=always
+
+[Install]
+WantedBy=multi-user.target
