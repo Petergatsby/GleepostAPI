@@ -66,7 +66,7 @@ func (api *API) pushableDevices(convID gp.ConversationID) (devices []gp.Device, 
 	return
 }
 
-var normRegex = regexp.MustCompile(`<@[a-zA-Z0-9\:]+\|(@\w+)>`)
+var normRegex = regexp.MustCompile(`<@[\w:]+\|(@\w+)>`)
 
 func normalizeMessage(message string) (textified string) {
 	return normRegex.ReplaceAllString(message, "$1")
