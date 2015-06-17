@@ -216,7 +216,7 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 	return
 }
 
-var captureIDRegex = regexp.MustCompile(`<@(\d+)\|\w+>`)
+var captureIDRegex = regexp.MustCompile(`<@(\w+)\|@?\w+>`)
 
 func (api *API) spotMentions(message string, convID gp.ConversationID) (mentioned mentioned) {
 	m := make(map[gp.UserID]bool)
@@ -230,6 +230,12 @@ func (api *API) spotMentions(message string, convID gp.ConversationID) (mentione
 	}
 	for _, stringids := range ids {
 		for _, stringid := range stringids {
+			log.Println(stringid)
+			if stringid == "all" {
+				for _, p := range participants {
+					m[p.ID] = true
+				}
+			}
 			_id, err := strconv.ParseUint(stringid, 10, 64)
 			if err != nil {
 				continue

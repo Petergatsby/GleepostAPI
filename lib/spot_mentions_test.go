@@ -40,6 +40,11 @@ func TestSpotMentions(t *testing.T) {
 			conversationID:   1,
 			expectedMentions: []gp.UserID{1},
 		},
+		{
+			message:          "hi <@all|@all>",
+			conversationID:   1,
+			expectedMentions: []gp.UserID{1, 2},
+		},
 	}
 	for _, test := range tests {
 		mentioned := api.spotMentions(test.message, test.conversationID)
