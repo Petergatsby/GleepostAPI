@@ -219,25 +219,26 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 var captureIDRegex = regexp.MustCompile(`<@(\d+)\|\w+>`)
 
 func (api *API) spotMentions(message string, convID gp.ConversationID) (mentioned mentioned) {
-	//map to deduplicate multiple mentions
 	m := make(map[gp.UserID]bool)
 	participants, err := api.getParticipants(convID, false)
 	if err != nil {
 		log.Println(err)
 	}
-	ids := captureIDRegex.FindAllString(message, -1)
+	ids := captureIDRegex.FindAllStringSubmatch(message, -1)
 	if len(ids) == 0 {
 		return
 	}
-	for _, stringid := range ids {
-		_id, err := strconv.ParseUint(stringid, 10, 64)
-		if err != nil {
-			continue
-		}
-		id := gp.UserID(_id)
-		for _, p := range participants {
-			if id == p.ID {
-				m[id] = true
+	for _, stringids := range ids {
+		for _, stringid := range stringids {
+			_id, err := strconv.ParseUint(stringid, 10, 64)
+			if err != nil {
+				continue
+			}
+			id := gp.UserID(_id)
+			for _, p := range participants {
+				if id == p.ID {
+					m[id] = true
+				}
 			}
 		}
 	}
