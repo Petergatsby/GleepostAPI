@@ -36,7 +36,6 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 		mentions := api.spotMentions(message.Text, convID)
 		if mentions.Contains(message.By.ID) {
 			mentioned = true
-
 		}
 		if device.User != message.By.ID && (!muted || mentioned) {
 			switch {
@@ -230,7 +229,6 @@ func (api *API) spotMentions(message string, convID gp.ConversationID) (mentione
 	}
 	for _, stringids := range ids {
 		for _, stringid := range stringids {
-			log.Println(stringid)
 			if stringid == "all" {
 				for _, p := range participants {
 					m[p.ID] = true
