@@ -236,7 +236,7 @@ Otherwise, clients should timeout the typing status after a few seconds, or upon
 To display a message on the client, follow the following rules:
 
 (1) Replace special embed sequences with their enhanced version; escape those which do not constitute a valid embed.
-`foo &lt;bar&gt; <user:123|@foo> <sup> :+1:`
+`foo &lt;bar&gt; <@123|@foo> <sup> :+1:`
 becomes
 
 `foo &lt;bar&gt <a href="/user/123">@foo</a> &lt;sup&gt; :+1:`
@@ -244,6 +244,17 @@ becomes
 (2) Replace emoji sequences with unicode or images where appropriate
 
 `foo &lt;bar&gt <a href="/user/123">@foo</a> &lt;sup&gt; <img class="emoji" src="/images/thumbsup.png" />`
+
+####Mentions
+
+A user may _mention_ another user, tagging them with `@name`.
+
+On sending, clients should transform this into the format `<@123|@name>`, where `123` corresponds to that user's ID.
+
+A client may also mention `<@all|@all>`, which matches every participant in the conversation.
+
+Mentioned participants will get a push notification, even if they have muted the conversation.
+
 
 ###Notifications
 

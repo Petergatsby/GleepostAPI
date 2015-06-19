@@ -361,3 +361,23 @@ Version is the new app version number.
     }
 }
 ```
+
+##Someone mentioned you in a conversation
+
+(iOS)
+
+```
+{
+	"aps":{
+		"alert":{
+			"loc-key":"mentioned",
+			"loc-args":["Patrick", "Hey, what's up @silouanos?"]
+		},
+		"badge":12345,
+		"sound":"default"
+	},
+	"conv":123,
+	"group":345,
+	"profile_image":"https://example.com/foo.jpg"
+}
+```

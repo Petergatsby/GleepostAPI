@@ -198,7 +198,8 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 		ID:   gp.MessageID(messageID),
 		By:   user,
 		Text: text,
-		Time: time.Now().UTC()}
+		Time: time.Now().UTC(),
+	}
 	group, err := api.conversationGroup(convID)
 	if group > 0 && err == nil {
 		msg.Group = group
@@ -939,5 +940,4 @@ func (api *API) conversationMuted(userID gp.UserID, convID gp.ConversationID) (m
 	}
 	err = s.QueryRow(userID, convID).Scan(&muted)
 	return
-
 }
