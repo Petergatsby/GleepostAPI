@@ -381,3 +381,38 @@ Version is the new app version number.
 	"profile_image":"https://example.com/foo.jpg"
 }
 ```
+
+##Someone attended your event
+
+(iOS)
+
+```
+{
+    "aps":{
+         "alert":{
+             "loc-key":"attended",
+             "loc-args":["Patrick"],
+         },
+         "badge":12345,
+         "sound":"default"
+     },
+     "post-id":123,
+     "attender-id":456
+}
+```
+
+(Android)
+
+```json
+{
+    "registration_ids":["APA91bF58RwLEXNBMoKxy5s1sxmxQXL8MYgGmdgAyWw5YFzNyrH876WWL20Il7j8vxCqw6Ube8puw5JkRvIaIDws94iRInE7jfHqXq-EZ34RtdHeil7cuCp-xIYMDbsE3b50W1eTlRNdHRAG0SODHfbg1yORcJ9Beg"],
+    "collapse_key":"Someone is attending your event.",
+    "data": {
+         "for":8,
+	 "attender":"Patrick",
+	 "attender-id":123,
+	 "post-id":456,
+         "type":"attended"
+    }
+}
+```
