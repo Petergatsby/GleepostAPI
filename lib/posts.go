@@ -850,7 +850,12 @@ func (api *API) UserAttend(event gp.PostID, user gp.UserID, attending bool) (err
 		err = &ENOTALLOWED
 		return
 	case attending:
-		return api.attend(event, user)
+		var changed bool
+		changed, err = api.attend(event, user)
+		if err == nil && changed {
+			api.notifObserver.Notify(attendEvent{userID: user, recipientID: post.By.ID, postID: event})
+		}
+		return
 	default:
 		return api.unAttend(event, user)
 	}
@@ -1643,13 +1648,23 @@ func (api *API) _getLikes(post gp.PostID) (likes []gp.Like, err error) {
 //Attend adds the user to the "attending" list for this event. It's idempotent, and should only return an error if the database is down.
 //The results are undefined for a post which isn't an event.
 //(ie: it will work even though it shouldn't, until I can get round to enforcing it.)
-func (api *API) attend(event gp.PostID, user gp.UserID) (err error) {
+func (api *API) attend(event gp.PostID, user gp.UserID) (changed bool, err error) {
 	query := "REPLACE INTO event_attendees (post_id, user_id) VALUES (?, ?)"
 	s, err := api.sc.Prepare(query)
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(event, user)
+	res, err := s.Exec(event, user)
+	if err != nil {
+		return
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return
+	}
+	if affected > 0 {
+		changed = true
+	}
 	return
 }
 

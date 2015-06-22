@@ -210,6 +210,19 @@ func (a addedGroupEvent) notify(n NotificationObserver) error {
 	return err
 }
 
+type attendEvent struct {
+	userID      gp.UserID
+	recipientID gp.UserID
+	postID      gp.PostID
+}
+
+func (a attendEvent) notify(n NotificationObserver) (err error) {
+	if a.userID != a.recipientID {
+		err = n.createNotification("attended", a.userID, a.recipientID, a.postID, 0, "")
+	}
+	return err
+}
+
 type commentEvent struct {
 	userID      gp.UserID
 	recipientID gp.UserID
@@ -352,6 +365,9 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	case notification.Type == "commented":
 		pn.Set("commenter-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
+	case notification.Type == "attended":
+		pn.Set("attender-id", notification.By.ID)
+		pn.Set("post-id", notification.Post)
 	case notification.Type == "approved_post":
 		pn.Set("approver-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
@@ -409,6 +425,11 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		data["commenter-id"] = notification.By.ID
 		data["post-id"] = notification.Post
 		CollapseKey = "Someone commented on your post."
+	case notification.Type == "attended":
+		data["attender"] = notification.By.Name
+		data["attender-id"] = notification.By.ID
+		data["post-id"] = notification.Post
+		CollapseKey = "Someone is attending your event."
 	case notification.Type == "poll_vote":
 		data["voter"] = notification.By.Name
 		data["voter-id"] = notification.By.ID
