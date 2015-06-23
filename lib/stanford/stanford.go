@@ -2,7 +2,6 @@ package stanford
 
 import (
 	"bytes"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -23,7 +22,6 @@ func LookUp(email string) (userType string, err error) {
 	}
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := c.Do(r)
-	log.Println(resp.Status)
 	if err != nil {
 		return
 	}
@@ -35,12 +33,13 @@ func LookUp(email string) (userType string, err error) {
 	doc.Find(".affilHead").Each(func(i int, s *goquery.Selection) {
 		if strings.Contains(s.Text(), "Staff") {
 			userType = "staff"
-			return
 		}
 		if strings.Contains(s.Text(), "Faculty") {
 			userType = "faculty"
-			return
 		}
 	})
-	return "student", nil
+	if userType == "" {
+		userType = "student"
+	}
+	return
 }
