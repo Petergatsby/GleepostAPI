@@ -199,6 +199,41 @@
 }
 ```
 
+##Someone commented on a post you commented on
+
+(iOS)
+
+```json
+{
+    "aps":{
+         "alert":{
+             "loc-key":"commented2",
+             "loc-args":["Patrick"],
+         },
+         "badge":12345,
+         "sound":"default"
+     },
+     "commenter-id":6789,
+     "post-id":1234
+}
+```
+
+(Android)
+
+```json
+{
+    "registration_ids":["APA91bF58RwLEXNBMoKxy5s1sxmxQXL8MYgGmdgAyWw5YFzNyrH876WWL20Il7j8vxCqw6Ube8puw5JkRvIaIDws94iRInE7jfHqXq-EZ34RtdHeil7cuCp-xIYMDbsE3b50W1eTlRNdHRAG0SODHfbg1yORcJ9Beg"],
+    "collapse_key":"Someone commented on a post you commented on.",
+    "data": {
+         "for":8,
+         "commenter-id":6789,
+         "commenter":"Patrick",
+         "type":"commented2",
+         "post-id":12345
+    }
+}
+```
+
 ##An admin posted in a group you're in
 
 (iOS)
