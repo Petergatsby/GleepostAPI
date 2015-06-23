@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -220,6 +221,8 @@ func (api *API) testEmail(email string, rules []gp.Rule) bool {
 //If the optional "invite" is set and corresponds to email, it will skip the verification step.
 func (api *API) registerUser(pass, email, first, last, invite string) (newUser gp.NewUser, err error) {
 	email = normalizeEmail(email)
+	first = normaliseName(first)
+	last = normaliseName(last)
 	userID, err := api.createUser(first, last, pass, email)
 	if err != nil {
 		return
@@ -243,6 +246,17 @@ func (api *API) registerUser(pass, email, first, last, invite string) (newUser g
 	}
 	go api.setUserType(userID)
 	return
+}
+
+func normaliseName(name string) (normalised string) {
+	if len(name) > 0 {
+		normalised = strings.ToLower(name)
+		runes := []rune(normalised)
+		runes[0] = unicode.ToUpper(runes[0])
+		normalised = string(runes)
+	}
+	return
+
 }
 
 func (api *API) createUser(first, last string, pass string, email string) (userID gp.UserID, err error) {

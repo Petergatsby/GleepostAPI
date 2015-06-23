@@ -165,6 +165,8 @@ func (api *API) getEmail(id gp.UserID) (email string, err error) {
 
 //UserSetName updates this user's name.
 func (api *API) UserSetName(id gp.UserID, firstName, lastName string) (err error) {
+	firstName = normaliseName(firstName)
+	lastName = normaliseName(lastName)
 	s, err := api.sc.Prepare("UPDATE users SET firstname = ?, lastname = ? where id = ?")
 	if err != nil {
 		return
