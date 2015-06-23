@@ -231,10 +231,19 @@ type commentEvent struct {
 }
 
 func (c commentEvent) notify(n NotificationObserver) (err error) {
+	notified := make(map[gp.UserID]bool) //to suppress dupe notifications
 	if c.userID != c.recipientID {
+		notified[c.recipientID] = true
 		err = n.createNotification("commented", c.userID, c.recipientID, c.postID, 0, c.text)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	//get comments
+	//for comment ...
+	//if commenter != c.userID && notified[commenter] doesn't exist
+	//commented2
+	return
 }
 
 type likeEvent struct {

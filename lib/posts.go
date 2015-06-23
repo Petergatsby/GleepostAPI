@@ -83,7 +83,7 @@ func (api *API) getPostFull(userID gp.UserID, postID gp.PostID) (post gp.PostFul
 		return
 	}
 	post.CommentCount = api.getCommentCount(postID)
-	post.Comments, err = api.getComments(postID, 0, api.Config.CommentPageSize)
+	post.Comments, err = api.comments.getComments(postID, 0, api.Config.CommentPageSize)
 	if err != nil {
 		return
 	}
@@ -348,7 +348,7 @@ func (api *API) UserGetComments(userID gp.UserID, postID gp.PostID, start int64,
 		log.Printf("User %d not in %d\n", userID, p.Network)
 		return comments, &ENOTALLOWED
 	default:
-		return api.getComments(postID, start, count)
+		return api.comments.getComments(postID, start, count)
 	}
 }
 
@@ -1281,15 +1281,21 @@ func (api *API) createComment(postID gp.PostID, userID gp.UserID, text string) (
 	return 0, err
 }
 
+type comments struct {
+	sc    *psc.StatementCache
+	stats PrefixStatter
+	users *Users
+}
+
 //GetComments returns up to count comments for this post.
-func (api *API) getComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
-	defer api.Statsd.Time(time.Now(), "gleepost.comments.byPostID.db")
+func (comm comments) getComments(postID gp.PostID, start int64, count int) (comments []gp.Comment, err error) {
+	defer comm.stats.Time(time.Now(), "gleepost.comments.byPostID.db")
 	comments = make([]gp.Comment, 0)
 	q := "SELECT id, `by`, text, `timestamp` " +
 		"FROM post_comments " +
 		"WHERE post_id = ? " +
 		"ORDER BY `timestamp` DESC LIMIT ?, ?"
-	s, err := api.sc.Prepare(q)
+	s, err := comm.sc.Prepare(q)
 	if err != nil {
 		return
 	}
@@ -1308,7 +1314,7 @@ func (api *API) getComments(postID gp.PostID, start int64, count int) (comments 
 			return comments, err
 		}
 		comment.Time, _ = time.Parse(mysqlTime, timeString)
-		comment.By, err = api.users.byID(by)
+		comment.By, err = comm.users.byID(by)
 		if err != nil {
 			log.Printf("error getting user %d: %v\n", by, err)
 		}

@@ -38,6 +38,7 @@ type API struct {
 	users         *Users
 	nm            *NetworkManager
 	Presences     Presences
+	comments      comments
 }
 
 const inviteCampaignIOS = "http://ad.apps.fm/2sQSPmGhIyIaKGZ01wtHD_E7og6fuV2oOMeOQdRqrE1xKZaHtwHb8iGWO0i4C3przjNn5v5h3werrSfj3HdREnrOdTW3xhZTjoAE5juerBQ8UiWF6mcRlxGSVB6OqmJv"
@@ -73,6 +74,7 @@ func New(conf conf.Config) (api *API) {
 	api.users = &Users{sc: api.sc}
 	api.nm = &NetworkManager{sc: api.sc}
 	api.Presences = Presences{broker: api.broker, sc: api.sc, pool: pool}
+	api.comments = comments{sc: api.sc, users: api.users}
 	return
 }
 
@@ -100,6 +102,7 @@ func (api *API) Start() {
 		api.users.statter = api.Statsd
 		api.notifObserver.stats = api.Statsd
 		api.Presences.Statsd = api.Statsd
+		api.comments.stats = api.Statsd
 	}
 }
 
