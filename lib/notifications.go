@@ -400,9 +400,9 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 		err = errors.New("Bad notification type")
 		return
 	}
+	payload.Alert = d
+	payload.Sound = "default"
 	pn.AddPayload(payload)
-	log.Printf("%#v\n", pn)
-	log.Printf("%#v\n", payload)
 	return
 }
 
