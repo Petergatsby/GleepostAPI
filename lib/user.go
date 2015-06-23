@@ -251,11 +251,11 @@ func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) 
 func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.profile.byID.db")
 	var av, desc, lastName sql.NullString
-	s, err := api.sc.Prepare("SELECT `desc`, avatar, firstname, lastname, official FROM users WHERE id = ?")
+	s, err := api.sc.Prepare("SELECT `desc`, avatar, firstname, lastname, official, type FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official)
+	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official, &user.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER

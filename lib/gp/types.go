@@ -30,6 +30,7 @@ type Profile struct {
 	RSVPCount  int             `json:"rsvp_count,omitempty"`
 	GroupCount int             `json:"group_count,omitempty"`
 	PostCount  int             `json:"post_count,omitempty"`
+	Type       string          `json:"type,omitempty"`
 }
 
 //UserRole represents a user and their role within a particular network
