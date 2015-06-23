@@ -402,6 +402,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	}
 	pn.AddPayload(payload)
 	log.Printf("%#v\n", pn)
+	log.Printf("%#v\n", payload)
 	return
 }
 
