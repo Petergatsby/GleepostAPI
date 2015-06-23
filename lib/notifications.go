@@ -354,6 +354,21 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 	}
 }
 
+var nouns = map[string]string{
+	"accepted_you":  "accepter-id",
+	"added_you":     "adder-id",
+	"liked":         "liker-id",
+	"commented":     "commenter-id",
+	"commented2":    "commenter-id",
+	"attended":      "attender-id",
+	"approved_post": "approver-id",
+	"rejected_post": "rejecter-id",
+	"poll_vote":     "voter-id",
+	"group_request": "requester-id",
+	"group_post":    "poster-id",
+	"added_group":   "adder-id",
+}
+
 func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.UserID, device string) (pn *apns.PushNotification, err error) {
 	payload := apns.NewPayload()
 	d := apns.NewAlertDictionary()
@@ -366,8 +381,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	payload.Badge = badge
 	d.LocKey = toLocKey(notification.Type)
 	d.LocArgs = []string{notification.By.Name}
-	switch {
-	case notification.Type == "added_group" || notification.Type == "group_post" || notification.Type == "group_request":
+	if notification.Group > 0 {
 		var name string
 		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
@@ -375,40 +389,41 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 		}
 		d.LocArgs = append(d.LocArgs, name)
 		pn.Set("group-id", notification.Group)
-	case notification.Type == "accepted_you":
-		pn.Set("accepter-id", notification.By.ID)
-	case notification.Type == "added_you":
-		pn.Set("adder-id", notification.By.ID)
-	case notification.Type == "liked":
-		pn.Set("liker-id", notification.By.ID)
+	}
+	if notification.Post > 0 {
 		pn.Set("post-id", notification.Post)
-	case notification.Type == "commented" || notification.Type == "commented2":
-		pn.Set("commenter-id", notification.By.ID)
-		pn.Set("post-id", notification.Post)
-	case notification.Type == "attended":
-		pn.Set("attender-id", notification.By.ID)
-		pn.Set("post-id", notification.Post)
-	case notification.Type == "approved_post":
-		pn.Set("approver-id", notification.By.ID)
-		pn.Set("post-id", notification.Post)
-	case notification.Type == "rejected_post":
-		pn.Set("rejecter-id", notification.By.ID)
-		pn.Set("post-id", notification.Post)
-	case notification.Type == "poll_vote":
-		pn.Set("voter-id", notification.By.ID)
-		pn.Set("post-id", notification.Post)
+	}
+	noun, ok := nouns[notification.Type]
+	if ok {
+		pn.Set(noun, notification.By.ID)
+	} else {
+		err = errors.New("Bad notification type")
+		return
 	}
 	pn.AddPayload(payload)
 	return
 }
 
+var collapseKeys = map[string]string{
+	"added_group":   "You've been added to a group",
+	"group_post":    "Somoene posted in your group.",
+	"group_request": "Somoene requested to join your group.",
+	"added_you":     "Someone added you to their contacts.",
+	"accepted_you":  "Someone accepted your contact request.",
+	"liked":         "Someone liked your post.",
+	"commented":     "Someone commented on your post.",
+	"commented2":    "Someone commented on a post you commented on.",
+	"attended":      "Someone is attending your event.",
+	"poll_vote":     "Someone voted in your poll.",
+	"approved_post": "Someone approved your post.",
+	"rejected_post": "Someone rejected your post.",
+}
+
 func (n NotificationObserver) toAndroid(notification gp.Notification, recipient gp.UserID, device string) (msg *gcm.Message, err error) {
-	var CollapseKey string
 	data := make(map[string]interface{})
 	data["type"] = toLocKey(notification.Type)
 	data["for"] = recipient
-	switch {
-	case notification.Type == "added_group" || notification.Type == "group_post" || notification.Type == "group_request":
+	if notification.Group > 0 {
 		var name string
 		name, err = groupName(n.sc, notification.Group)
 		if err != nil {
@@ -416,53 +431,20 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		}
 		data["group-id"] = notification.Group
 		data["group-name"] = name
-		switch {
-		case notification.Type == "group_request":
-			data["requester"] = notification.By.Name
-			CollapseKey = "Somoene requested to join your group."
-		case notification.Type == "group_post":
-			data["poster"] = notification.By.Name
-			CollapseKey = "Somoene posted in your group."
-		default:
-			data["adder"] = notification.By.Name
-			CollapseKey = "You've been added to a group"
-		}
-	case notification.Type == "added_you":
-		data["adder"] = notification.By.Name
-		data["adder-id"] = notification.By.ID
-		CollapseKey = "Someone added you to their contacts."
-	case notification.Type == "accepted_you":
-		data["accepter"] = notification.By.Name
-		data["accepter-id"] = notification.By.ID
-		CollapseKey = "Someone accepted your contact request."
-	case notification.Type == "liked":
-		data["liker"] = notification.By.Name
-		data["liker-id"] = notification.By.ID
+	}
+	if notification.Post > 0 {
 		data["post-id"] = notification.Post
-		CollapseKey = "Someone liked your post."
-	case notification.Type == "commented":
-		data["commenter"] = notification.By.Name
-		data["commenter-id"] = notification.By.ID
-		data["post-id"] = notification.Post
-		CollapseKey = "Someone commented on your post."
-	case notification.Type == "commented2":
-		data["commenter"] = notification.By.Name
-		data["commenter-id"] = notification.By.ID
-		data["post-id"] = notification.Post
-		CollapseKey = "Someone commented on a post you commented on."
-	case notification.Type == "attended":
-		data["attender"] = notification.By.Name
-		data["attender-id"] = notification.By.ID
-		data["post-id"] = notification.Post
-		CollapseKey = "Someone is attending your event."
-	case notification.Type == "poll_vote":
-		data["voter"] = notification.By.Name
-		data["voter-id"] = notification.By.ID
-		data["post-id"] = notification.Post
-		CollapseKey = "Someone voted in your poll."
-	default:
+	}
+	CollapseKey, ok := collapseKeys[notification.Type]
+	if !ok {
 		return nil, errors.New("Unknown notification type")
 	}
+	noun, ok := nouns[notification.Type]
+	if !ok {
+		return nil, errors.New("Unknown notification type")
+	}
+	data[noun] = notification.By.ID
+	data[noun[:len(noun)-3]] = notification.By.Name
 	msg = gcm.NewMessage(data, device)
 	msg.CollapseKey = CollapseKey
 	msg.TimeToLive = 0
