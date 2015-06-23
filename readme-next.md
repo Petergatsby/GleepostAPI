@@ -309,6 +309,25 @@ Mentioned participants will get a push notification, even if they have muted the
 	}
 ```
 
+ - Someone commented on a post you've commented on:
+
+nb: if the conditions for this and `commented` are met, you will get a `commented` notification not a `commented2` notification.
+
+```json
+	{
+		"id":3010,
+		"type":"commented2",
+		"post":5,
+		"time":"2013-09-16T16:58:30.771905595Z",
+		"user": {
+			"id":2395,
+			"name":"testing_user",
+			"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+		},
+		"preview":"Great idea for an event, Peter!"
+	}
+```
+
 ###Networks
 
 A Network is a collection of users and posts; each university is a Network.
