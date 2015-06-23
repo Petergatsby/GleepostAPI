@@ -1,4 +1,4 @@
-package main
+package stanford
 
 import (
 	"bytes"
@@ -7,37 +7,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/db"
 	"github.com/puerkitobio/goquery"
 )
 
-func main() {
-	//Connect to the db
-	conf := conf.GetConfig()
-	database := db.New(conf.Mysql)
-
-	emails, err := database.AllEmails()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	staff := 0
-	total := 0
-	for _, email := range emails {
-		teacher, err := lookUp(email)
-		if err != nil {
-			log.Println(err)
-		}
-		if teacher {
-			staff++
-		}
-		total++
-	}
-	log.Println("Staff:", staff, "Total:", total)
-}
-
-func lookUp(email string) (isStaff bool, err error) {
+//LookUp finds this user in the Stanford directory, and returns their type (staff, faculty, student)
+func LookUp(email string) (userType string, err error) {
 	c := &http.Client{}
 	searchURL := "https://stanfordwho.stanford.edu/SWApp/Search.do"
 	params := url.Values{}
@@ -60,11 +34,13 @@ func lookUp(email string) (isStaff bool, err error) {
 	}
 	doc.Find(".affilHead").Each(func(i int, s *goquery.Selection) {
 		if strings.Contains(s.Text(), "Staff") {
-			isStaff = true
+			userType = "staff"
+			return
 		}
 		if strings.Contains(s.Text(), "Faculty") {
-			isStaff = true
+			userType = "faculty"
+			return
 		}
 	})
-	return isStaff, nil
+	return "student", nil
 }
