@@ -127,6 +127,7 @@ type NotificationObserver struct {
 	nm        *NetworkManager
 	stats     PrefixStatter
 	presences Presences
+	comments  comments
 }
 
 //Notify tells the NotificationObserver an event has happened, potentially triggering a notification.
@@ -140,9 +141,9 @@ type NotificationEvent interface {
 }
 
 //NewObserver creates a NotificationObserver
-func NewObserver(db *sql.DB, broker *events.Broker, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager, presences Presences) NotificationObserver {
+func NewObserver(db *sql.DB, broker *events.Broker, pusher push.Pusher, sc *psc.StatementCache, users *Users, nm *NetworkManager, presences Presences, comments comments) NotificationObserver {
 	events := make(chan NotificationEvent)
-	n := NotificationObserver{events: events, db: db, sc: sc, broker: broker, pusher: pusher, users: users, nm: nm, presences: presences}
+	n := NotificationObserver{events: events, db: db, sc: sc, broker: broker, pusher: pusher, users: users, nm: nm, presences: presences, comments: comments}
 	go n.spin()
 	return n
 }
@@ -239,10 +240,20 @@ func (c commentEvent) notify(n NotificationObserver) (err error) {
 	if err != nil {
 		return err
 	}
-	//get comments
-	//for comment ...
-	//if commenter != c.userID && notified[commenter] doesn't exist
-	//commented2
+	comments, err := n.comments.getComments(c.postID, 0, 999)
+	if err != nil {
+		return err
+	}
+	for _, comment := range comments {
+		_, ok := notified[comment.By.ID]
+		if comment.By.ID != c.userID && !ok {
+			notified[comment.By.ID] = true
+			err = n.createNotification("commented2", c.userID, comment.By.ID, c.postID, 0, c.text)
+			if err != nil {
+				return
+			}
+		}
+	}
 	return
 }
 
