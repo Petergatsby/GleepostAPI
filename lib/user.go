@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/draaglom/GleepostAPI/lib/dir"
+	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/go-sql-driver/mysql"
@@ -118,6 +120,7 @@ func (api *API) createUserSpecial(first, last, email, pass string, verified bool
 		}
 	}
 	err = api.setNetwork(userID, primaryNetwork)
+	go api.setUserType(userID)
 	return
 }
 
@@ -343,4 +346,37 @@ func (api *API) getGlobalAdmins() (users []gp.User, err error) {
 		users = append(users, u)
 	}
 	return users, nil
+}
+
+func (api *API) setUserType(user gp.UserID) {
+	network, err := api.getUserUniversity(user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var d dir.Directory
+	if network.Name == "Stanford University" {
+		d = stanford.Dir{}
+	} else {
+		d = dir.NullDirectory{}
+	}
+	email, err := api.getEmail(user)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	userType, err := d.LookUpEmail(email)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	s, err := api.sc.Prepare("UPDATE users SET type = ? WHERE id = ?")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	_, err = s.Exec(userType, user)
+	if err != nil {
+		log.Println(err)
+	}
 }

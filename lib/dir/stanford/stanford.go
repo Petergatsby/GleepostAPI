@@ -9,8 +9,11 @@ import (
 	"github.com/puerkitobio/goquery"
 )
 
-//LookUp finds this user in the Stanford directory, and returns their type (staff, faculty, student)
-func LookUp(email string) (userType string, err error) {
+//Dir is stanford's directory
+type Dir struct{}
+
+//LookUpEmail finds this user in the Stanford directory, and returns their type (staff, faculty, student)
+func (d Dir) LookUpEmail(email string) (userType string, err error) {
 	c := &http.Client{}
 	searchURL := "https://stanfordwho.stanford.edu/SWApp/Search.do"
 	params := url.Values{}
