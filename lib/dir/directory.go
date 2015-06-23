@@ -13,3 +13,5 @@ type NullDirectory struct{}
 func (n NullDirectory) LookUpEmail(email string) (userType string, err error) {
 	return "student", nil
 }
+
+//TODO: add registry & function to return the appropriate directory by university name

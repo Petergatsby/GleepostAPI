@@ -355,9 +355,12 @@ func (api *API) setUserType(user gp.UserID) {
 		return
 	}
 	var d dir.Directory
-	if network.Name == "Stanford University" {
+	switch {
+	case network.Name == "Stanford University":
 		d = stanford.Dir{}
-	} else {
+	case network.Name == "Berkeley University":
+		d = stanford.Dir{}
+	default:
 		d = dir.NullDirectory{}
 	}
 	email, err := api.getEmail(user)
