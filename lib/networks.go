@@ -301,6 +301,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 	case !exists && len(url) > 0:
 		return network, &ENOTALLOWED
 	default:
+		name = normaliseName(name)
 		var primary gp.GroupMembership
 		primary, err = api.getUserUniversity(userID)
 		if err != nil {
