@@ -163,6 +163,7 @@ func (t transcodeWorker) maybeReady(jobID uint64) {
 		return
 	}
 	video.Status = "ready"
+	video.Thumbs = append(video.Thumbs, thumb)
 	t.broker.PublishEvent("video-ready", fmt.Sprintf("/videos/%d", video.ID), video, []string{NotificationChannelKey(video.Owner)})
 
 }
