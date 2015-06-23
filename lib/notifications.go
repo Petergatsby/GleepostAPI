@@ -382,7 +382,7 @@ func (n NotificationObserver) toIOS(notification gp.Notification, recipient gp.U
 	case notification.Type == "liked":
 		pn.Set("liker-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
-	case notification.Type == "commented":
+	case notification.Type == "commented" || notification.Type == "commented2":
 		pn.Set("commenter-id", notification.By.ID)
 		pn.Set("post-id", notification.Post)
 	case notification.Type == "attended":
@@ -445,6 +445,11 @@ func (n NotificationObserver) toAndroid(notification gp.Notification, recipient 
 		data["commenter-id"] = notification.By.ID
 		data["post-id"] = notification.Post
 		CollapseKey = "Someone commented on your post."
+	case notification.Type == "commented2":
+		data["commenter"] = notification.By.Name
+		data["commenter-id"] = notification.By.ID
+		data["post-id"] = notification.Post
+		CollapseKey = "Someone commented on a post you commented on."
 	case notification.Type == "attended":
 		data["attender"] = notification.By.Name
 		data["attender-id"] = notification.By.ID
