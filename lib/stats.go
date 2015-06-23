@@ -84,7 +84,7 @@ func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish ti
 		case stat == POSTS:
 			statF = api.postsForUserBetween
 		case stat == VIEWS:
-			statF = blankF
+			statF = api.viewsForUserBetween
 		case stat == RSVPS:
 			statF = api.rsvpsForUserBetween
 		case stat == INTERACTIONS:
@@ -132,7 +132,7 @@ func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish ti
 		case stat == COMMENTS:
 			statF = api.commentsForPostBetween
 		case stat == VIEWS:
-			continue
+			statF = api.viewsForPostBetween
 		case stat == POSTS:
 			continue
 		case stat == RSVPS:
@@ -358,6 +358,15 @@ func (api *API) rsvpsForUserBetween(user gp.UserID, start time.Time, finish time
 	return
 }
 
+func (api *API) viewsForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_vews JOIN wall_posts ON post_views.post_id = wall_posts.id WHERE `by` = ? AND `ts` > ? AND `ts` < ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(user, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
+	return
+}
+
 //CohortSignedUpBetween returns all the users who signed up between start and finish.
 func (api *API) cohortSignedUpBetween(start time.Time, finish time.Time) (users []gp.UserID, err error) {
 	s, err := api.sc.Prepare("SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?")
@@ -468,4 +477,14 @@ func (api *API) rsvpsForPostBetween(post gp.PostID, start time.Time, finish time
 	}
 	err = s.QueryRow(post, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
+}
+
+func (api *API) viewsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_views WHERE post_id = ? AND `ts` > ? AND `ts` < ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(post, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
+	return
+
 }
