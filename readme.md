@@ -1487,6 +1487,7 @@ example responses:
 	"full_name":"Patrick Molgaard",
 	"rsvp_count":234,
 	"group_count":567,
+	"type":"student",
 	"post_count":8910
 }
 ```
