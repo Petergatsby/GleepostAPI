@@ -359,7 +359,7 @@ func (api *API) rsvpsForUserBetween(user gp.UserID, start time.Time, finish time
 }
 
 func (api *API) viewsForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
-	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_vews JOIN wall_posts ON post_views.post_id = wall_posts.id WHERE `by` = ? AND `ts` > ? AND `ts` < ?")
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_views JOIN wall_posts ON post_views.post_id = wall_posts.id WHERE `by` = ? AND `ts` > ? AND `ts` < ?")
 	if err != nil {
 		return
 	}
