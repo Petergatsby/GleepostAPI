@@ -91,6 +91,11 @@ The option at index N was too long (More than 50 characters):
 {"error":"Option too long: 1"}
 ```
 
+Two or more of your options were identical:
+```json
+{"error":"All options must be distinct"}
+```
+
 #####Voting in a poll
 
 `POST` to `/posts/:id/votes` with `option` = `0`, `1`, `2`, `3`

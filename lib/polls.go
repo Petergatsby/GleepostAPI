@@ -30,6 +30,8 @@ var (
 	PollExpired = gp.APIerror{Reason: "Poll has already ended"}
 	//AlreadyVoted means you tried to vote in a poll that you already voted in.
 	AlreadyVoted = gp.APIerror{Reason: "You already voted"}
+	//DuplicateOption means you submitted two identical poll options
+	DuplicateOption = gp.APIerror{Reason: "All options must be distinct"}
 )
 
 func optionTooAdjective(adj string, n int) gp.APIerror {
@@ -58,6 +60,11 @@ func validatePollInput(expiry time.Time, pollOptions []string) (err error) {
 		}
 		if len(opt) > 50 {
 			err = optionTooAdjective("long", n)
+		}
+		for _, o := range pollOptions[n+1:] {
+			if opt == o {
+				err = DuplicateOption
+			}
 		}
 	}
 	return

@@ -136,8 +136,18 @@ func TestCreatePoll(t *testing.T) {
 		ExpectedStatusCode: 201,
 		ExpectedType:       "CreatedPost",
 	}
+	testDupe := createPollTest{
+		Token:              token,
+		Text:               "This poll has duplicate options.",
+		Tags:               []string{"poll"},
+		PollOptions:        []string{"Hey", "ya", "Hey"},
+		PollExpiry:         strconv.FormatInt(time.Now().Add(24*time.Hour).Unix(), 10),
+		ExpectedStatusCode: 400,
+		ExpectedType:       "Error",
+		ExpectedError:      "All options must be distinct",
+	}
 
-	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong, testUnix}
+	tests := []createPollTest{testGood, testMissingExpiry, testExpiryPast, testTooSoon, testTooLate, testFewOptions, testManyOptions, testShort, testLong, testUnix, testDupe}
 	for testNumber, cpt := range tests {
 		data := make(url.Values)
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
