@@ -15,6 +15,8 @@ func TestPostComment(t *testing.T) {
 
 	once.Do(setup)
 
+	truncate("post_comments")
+
 	token, err := testingGetSession("patrick@fakestanford.edu", "TestingPass")
 	if err != nil {
 		t.Fatalf("Error logging in: %v", err)
