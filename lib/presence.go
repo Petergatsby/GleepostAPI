@@ -56,7 +56,7 @@ func (p Presences) setPresence(userID gp.UserID, FormFactor string) {
 	conn := p.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:presence:%s", userID, FormFactor)
-	conn.Send("SET", key, time.Now().UTC().Format(time.RFC3339))
+	conn.Send("SET", key, time.Now().UTC().Round(time.Second).Format(time.RFC3339))
 	conn.Flush()
 }
 
