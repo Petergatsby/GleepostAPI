@@ -941,3 +941,9 @@ func (api *API) conversationMuted(userID gp.UserID, convID gp.ConversationID) (m
 	err = s.QueryRow(userID, convID).Scan(&muted)
 	return
 }
+
+//ConversationFiles returns a list of the files shared in this conversation.
+func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID) (files []gp.File, err error) {
+	files = append(files, gp.File{})
+	return
+}

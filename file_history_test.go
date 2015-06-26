@@ -36,17 +36,25 @@ func TestFileHistory(t *testing.T) {
 		t.Fatal("Error sending file:", err)
 	}
 	log.Println(msgID)
-	resp, err := client.Get(fmt.Sprintf("%s%s/%d/files", baseURL, "conversations", conv.ID))
+	resp, err := client.Get(fmt.Sprintf("%s%s/%d/files?id=%d&token=%s", baseURL, "conversations", conv.ID, token.UserID, token.Token))
 	if err != nil {
 		t.Fatal("Error getting files list:", err)
 	}
 	if resp.StatusCode != 200 {
 		t.Fatal("Expected status 200 but got:", resp.StatusCode)
-
 	}
-
-	//todo: check /files for this
-
+	dec := json.NewDecoder(resp.Body)
+	files := []gp.File{}
+	err = dec.Decode(&files)
+	if err != nil {
+		t.Fatal("Error unmarshalling files:", err)
+	}
+	if len(files) != 1 {
+		t.Fatal("Expected 1 file but saw:", len(files))
+	}
+	if files[0].Message.ID != msgID {
+		t.Fatal("Didn't see a file corresponding to my message, msgID:", msgID, "vs file:", files[0])
+	}
 }
 
 func createConversation(token gp.Token) (conv gp.ConversationAndMessages, err error) {
