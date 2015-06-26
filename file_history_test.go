@@ -15,7 +15,7 @@ import (
 func TestFileHistory(t *testing.T) {
 	once.Do(setup)
 
-	truncate("conversations", "conversation_participants", "chat_messages")
+	truncate("conversation_files", "conversations", "conversation_participants", "chat_messages")
 
 	err := initDB()
 	if err != nil {

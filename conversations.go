@@ -380,7 +380,7 @@ func getFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	default:
 		convID := gp.ConversationID(_convID)
-		files, err := api.ConversationFiles(userID, convID)
+		files, err := api.ConversationFiles(userID, convID, 0, api.Config.MessagePageSize)
 		switch {
 		case err == lib.ENOTALLOWED:
 			jsonErr(w, err, 403)
