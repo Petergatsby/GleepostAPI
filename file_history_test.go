@@ -31,11 +31,11 @@ func TestFileHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error creating conversation:", err)
 	}
-	msgID, err := sendMessage(token, conv.ID, "hey here's a file: <https://file.host|pdf>")
+	msgText := "hey here's a file: <https://file.host|pdf>"
+	msgID, err := sendMessage(token, conv.ID, msgText)
 	if err != nil {
 		t.Fatal("Error sending file:", err)
 	}
-	log.Println(msgID)
 	resp, err := client.Get(fmt.Sprintf("%s%s/%d/files?id=%d&token=%s", baseURL, "conversations", conv.ID, token.UserID, token.Token))
 	if err != nil {
 		t.Fatal("Error getting files list:", err)
@@ -54,6 +54,15 @@ func TestFileHistory(t *testing.T) {
 	}
 	if files[0].Message.ID != msgID {
 		t.Fatal("Didn't see a file corresponding to my message, msgID:", msgID, "vs file:", files[0])
+	}
+	if files[0].Message.Text != msgText {
+		t.Fatal("Didn't get back the same message I put in? Original:", msgText, "Got back:", files[0].Message.Text)
+	}
+	if files[0].Type != "pdf" {
+		t.Fatal("Expected a", "pdf", "but got a:", files[0].Type)
+	}
+	if files[0].URL != "https://file.host" {
+		t.Fatal("Expected url:", "https://file.host", "but got:", files[0].URL)
 	}
 }
 

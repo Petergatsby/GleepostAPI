@@ -944,6 +944,6 @@ func (api *API) conversationMuted(userID gp.UserID, convID gp.ConversationID) (m
 
 //ConversationFiles returns a list of the files shared in this conversation.
 func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID) (files []gp.File, err error) {
-	files = append(files, gp.File{})
+	files = append(files, gp.File{Type: "pdf", URL: "https://file.host", Message: gp.Message{ID: 1, Text: "hey here's a file: <https://file.host|pdf>"}})
 	return
 }
