@@ -617,7 +617,7 @@ func (api *API) getReadStatus(convID gp.ConversationID, omitZeros bool) (read []
 		}
 		if t.Valid {
 			at, err := time.Parse(mysqlTime, t.String)
-			if err != nil {
+			if err == nil {
 				r.At = &at
 			}
 		}
