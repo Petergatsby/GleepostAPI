@@ -103,6 +103,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /conversations/[conversation-id]/participants [[POST]](#post-conversationsconversation-idparticipants)
 
+/conversation/[conversation-id]/files [[GET]](#get-conversationsconversation-idfiles)
+
 /user [[POST]](#post-user)
 
 /user/[user-id] [[GET]](#get-useruser-id)
@@ -1447,6 +1449,30 @@ In addition, this will trigger a "system" message in this conversation indicatin
 	"system":true,
 	"timestamp":"2015-04-20T16:19:30Z"
 }
+```
+
+##GET /conversations/[conversation-id]/files
+
+A list of files shared in this conversation.
+(http 200)
+
+```json
+[
+  {
+    "url": "https://file.host",
+    "type": "pdf",
+    "message": {
+      "id": 1,
+      "by": {
+        "id": 1,
+        "name": "Patrick",
+        "profile_image": ""
+      },
+      "text": "hey here's a file: <https://file.host|pdf>",
+      "timestamp": "2015-06-29T18:29:18Z"
+    }
+  }
+]
 ```
 
 ##POST /user
