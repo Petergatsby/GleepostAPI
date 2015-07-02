@@ -260,6 +260,19 @@ A client may also mention `<@all|@all>`, which matches every participant in the 
 
 Mentioned participants will get a push notification, even if they have muted the conversation.
 
+###File messaging
+
+To send a file (including images) the client should first upload it with `/upload`; the returned URL should be embedded in the given format:
+
+```
+<https://url.com/file.jpg|jpg>
+```
+
+```
+<https://url.com/file.png|png>
+```
+
+This should then be replaced on the receiving client with an embedded image or file preview (where applicable).
 
 ###Notifications
 
