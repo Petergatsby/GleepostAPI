@@ -379,8 +379,9 @@ func getFiles(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 		return
 	default:
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 		convID := gp.ConversationID(_convID)
-		files, err := api.ConversationFiles(userID, convID, 0, api.Config.MessagePageSize)
+		files, err := api.ConversationFiles(userID, convID, mode, index, api.Config.MessagePageSize)
 		switch {
 		case err == lib.ENOTALLOWED:
 			jsonErr(w, err, 403)

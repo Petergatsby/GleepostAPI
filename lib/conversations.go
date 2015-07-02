@@ -945,17 +945,35 @@ func (api *API) conversationMuted(userID gp.UserID, convID gp.ConversationID) (m
 }
 
 //ConversationFiles returns a list of the files shared in this conversation.
-func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID, index int64, count int) (files []gp.File, err error) {
+func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (files []gp.File, err error) {
 	files = make([]gp.File, 0)
 	if !api.userCanViewConversation(userID, convID) {
 		return files, ENOTALLOWED
 	}
-	q := "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
-		"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
-		"WHERE chat_messages.conversation_id = ? " +
-		"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
-		"AND id > ? " +
-		"ORDER BY `timestamp` DESC LIMIT ?"
+	var q string
+	switch {
+	case mode == ByOffsetDescending:
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"ORDER BY `timestamp` DESC LIMIT ?, ?"
+	case mode == ChronologicallyAfterID:
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"AND id > ? " +
+			"ORDER BY `timestamp` ASC LIMIT ?"
+		q = fmt.Sprintf("SELECT `id`, `from`, `text`, `timestamp`, `system`, `type`, `url` FROM ( %s ) AS `fi` ORDER BY `timestamp` DESC, `id` DESC", q)
+	case mode == ChronologicallyBeforeID:
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"AND id < ? " +
+			"ORDER BY `timestamp` DESC LIMIT ?"
+	}
 
 	s, err := api.sc.Prepare(q)
 	if err != nil {
