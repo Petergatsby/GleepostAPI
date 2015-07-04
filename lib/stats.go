@@ -54,17 +54,17 @@ const (
 //Used for OVERVIEW
 var Stats = []Stat{LIKES, COMMENTS, VIEWS, RSVPS, POSTS}
 
-func blankF(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
+func blankF(user gp.UserID, start, finish time.Time) (count int, err error) {
 	return 0, nil
 }
 
-func blankPF(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+func blankPF(post gp.PostID, start, finish time.Time) (count int, err error) {
 	return 0, nil
 }
 
 //AggregateStatsForUser aggregates the given Stat in the period between start and finish, grouped into buckets of length bucket.
 //If no stats are given, it will return all.
-func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
+func (api *API) AggregateStatsForUser(user gp.UserID, start, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
 	view.Finish = finish.Round(time.Duration(time.Second))
@@ -114,7 +114,7 @@ func (api *API) AggregateStatsForUser(user gp.UserID, start time.Time, finish ti
 }
 
 //AggregateStatsForPost - Same as AggregateStatsForUser, but for an individual post (therefore POSTS is no longer a valid stat).
-func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
+func (api *API) AggregateStatsForPost(post gp.PostID, start, finish time.Time, bucket time.Duration, stats ...Stat) (view *View, err error) {
 	view = newView()
 	view.Start = start.Round(time.Duration(time.Second))
 	view.Finish = finish.Round(time.Duration(time.Second))
@@ -164,7 +164,7 @@ func (api *API) AggregateStatsForPost(post gp.PostID, start time.Time, finish ti
 }
 
 //InteractionsForUserBetween returns the number of interactions this user has received in the period between start and finish.
-func (api *API) interactionsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) interactionsForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
 	likes, err := api.likesForUserBetween(user, start, finish)
 	if err != nil {
 		return
@@ -182,7 +182,7 @@ func (api *API) interactionsForUserBetween(user gp.UserID, start time.Time, fini
 }
 
 //InteractionsForPostBetween - the number of interactions this post has received in the period between start and finish.
-func (api *API) interactionsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) interactionsForPostBetween(post gp.PostID, start, finish time.Time) (count int, err error) {
 	likes, err := api.likesForPostBetween(post, start, finish)
 	if err != nil {
 		return
@@ -202,7 +202,7 @@ func (api *API) interactionsForPostBetween(post gp.PostID, start time.Time, fini
 
 //ActivatedUsersInCohort finds, among the cohort of users signed up between start and finish, all the users who have performed each activity
 //"liked", "commented", "posted", "attended", "initiated", "messaged".
-func (api *API) activatedUsersInCohort(start time.Time, finish time.Time) (ActiveUsers map[string][]gp.UserID, err error) {
+func (api *API) activatedUsersInCohort(start, finish time.Time) (ActiveUsers map[string][]gp.UserID, err error) {
 	ActiveUsers = make(map[string][]gp.UserID)
 	activities := []string{"liked", "commented", "posted", "attended", "initiated", "messaged"}
 	for _, activity := range activities {
@@ -230,7 +230,7 @@ func deduplicate(userLists ...[]gp.UserID) (deduplicated []gp.UserID) {
 }
 
 //SummarizePeriod returns an overview of all the users who have signed up, verified, performed specific actions and performed any action, in a given period.
-func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[string]int) {
+func (api *API) SummarizePeriod(start, finish time.Time) (stats map[string]int) {
 	statFs := make(map[string]func(time.Time, time.Time) ([]gp.UserID, error))
 	stats = make(map[string]int)
 	statFs["signups"] = api.cohortSignedUpBetween
@@ -257,7 +257,7 @@ func (api *API) SummarizePeriod(start time.Time, finish time.Time) (stats map[st
 }
 
 //SummaryEmail sends out an email to everyone in the Admin group, summarizing what the users have done in this period.
-func (api *API) summaryEmail(start time.Time, finish time.Time) {
+func (api *API) summaryEmail(start, finish time.Time) {
 	stats := api.SummarizePeriod(start, finish)
 	title := fmt.Sprintf("Report card for %s - %s\n", start.UTC().Round(time.Hour), finish.UTC().Round(time.Hour))
 	var text string
@@ -319,7 +319,7 @@ func (api *API) PeriodicSummary(start time.Time, interval time.Duration) {
 }
 
 //LikesForUserBetween finds all likes for user's posts in the interval between start and finish.
-func (api *API) likesForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) likesForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
@@ -329,7 +329,7 @@ func (api *API) likesForUserBetween(user gp.UserID, start time.Time, finish time
 }
 
 //CommentsForUserBetween - Same as LikesForUserBetween, but for comments
-func (api *API) commentsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) commentsForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
@@ -339,7 +339,7 @@ func (api *API) commentsForUserBetween(user gp.UserID, start time.Time, finish t
 }
 
 //PostsForUserBetween returns the number of posts a user has made in this interval.
-func (api *API) postsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) postsForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM wall_posts WHERE `by` = ? AND `time` > ? AND `time` < ? AND pending = 0 AND deleted = 0")
 	if err != nil {
 		return
@@ -349,7 +349,7 @@ func (api *API) postsForUserBetween(user gp.UserID, start time.Time, finish time
 }
 
 //RsvpsForUserBetween - Same as LikesForUserBetween, but for "attending"s
-func (api *API) rsvpsForUserBetween(user gp.UserID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) rsvpsForUserBetween(user gp.UserID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id IN (SELECT id FROM wall_posts WHERE `by` = ?) AND `time` > ? AND `time` < ?")
 	if err != nil {
 		return
@@ -368,7 +368,7 @@ func (api *API) viewsForUserBetween(user gp.UserID, start, finish time.Time) (co
 }
 
 //CohortSignedUpBetween returns all the users who signed up between start and finish.
-func (api *API) cohortSignedUpBetween(start time.Time, finish time.Time) (users []gp.UserID, err error) {
+func (api *API) cohortSignedUpBetween(start, finish time.Time) (users []gp.UserID, err error) {
 	s, err := api.sc.Prepare("SELECT id FROM users WHERE `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
@@ -390,7 +390,7 @@ func (api *API) cohortSignedUpBetween(start time.Time, finish time.Time) (users 
 }
 
 //UsersVerifiedInCohort returns all the users who have verified their account in the cohort signed up between start and finish.
-func (api *API) usersVerifiedInCohort(start time.Time, finish time.Time) (users []gp.UserID, err error) {
+func (api *API) usersVerifiedInCohort(start, finish time.Time) (users []gp.UserID, err error) {
 	s, err := api.sc.Prepare("SELECT id FROM users WHERE `verified` = 1 AND `timestamp` > ? AND `timestamp` < ?")
 	rows, err := s.Query(start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime))
 	if err != nil {
@@ -409,7 +409,7 @@ func (api *API) usersVerifiedInCohort(start time.Time, finish time.Time) (users 
 }
 
 //UsersActivityInCohort returns all the users in the cohort (see CohortSignedUpBetween) who performed this activity, where activity is one of: liked, commented, posted, attended, initiated, messaged
-func (api *API) usersActivityInCohort(activity string, start time.Time, finish time.Time) (users []gp.UserID, err error) {
+func (api *API) usersActivityInCohort(activity string, start, finish time.Time) (users []gp.UserID, err error) {
 	var s *sql.Stmt
 	switch {
 	case activity == "liked":
@@ -448,7 +448,7 @@ func (api *API) usersActivityInCohort(activity string, start time.Time, finish t
 }
 
 //LikesForPostBetween returns the number of likes this post has gained in the interval between start and finish.
-func (api *API) likesForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) likesForPostBetween(post gp.PostID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
@@ -459,7 +459,7 @@ func (api *API) likesForPostBetween(post gp.PostID, start time.Time, finish time
 }
 
 //CommentsForPostBetween returns the number of comments this post has gained in the interval between start and finish.
-func (api *API) commentsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) commentsForPostBetween(post gp.PostID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ? AND `timestamp` > ? AND `timestamp` < ?")
 	if err != nil {
 		return
@@ -470,7 +470,7 @@ func (api *API) commentsForPostBetween(post gp.PostID, start time.Time, finish t
 }
 
 //RsvpsForPostBetween returns the number of RSVPs this post has gained in the interval between start and finish.
-func (api *API) rsvpsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) rsvpsForPostBetween(post gp.PostID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM event_attendees WHERE post_id = ? AND `time` > ? AND `time` < ?")
 	if err != nil {
 		return
@@ -479,7 +479,7 @@ func (api *API) rsvpsForPostBetween(post gp.PostID, start time.Time, finish time
 	return
 }
 
-func (api *API) viewsForPostBetween(post gp.PostID, start time.Time, finish time.Time) (count int, err error) {
+func (api *API) viewsForPostBetween(post gp.PostID, start, finish time.Time) (count int, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM post_views WHERE post_id = ? AND `ts` > ? AND `ts` < ?")
 	if err != nil {
 		return
@@ -487,4 +487,53 @@ func (api *API) viewsForPostBetween(post gp.PostID, start time.Time, finish time
 	err = s.QueryRow(post, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
 
+}
+
+func (api *API) attendeesInNetwork(network gp.NetworkID, start, finish time.Time) (count int, err error) {
+	q := "SELECT COUNT(DISTINCT user_id) FROM event_attendees JOIN user_network ON event_attendees.user_id = user_network.user_id " +
+		"JOIN post_attribs ON event_attendees.post_id = post_attribs.post_id " +
+		"WHERE user_network.network_id = ? " +
+		"AND post_attribs.attrib = 'event-time' AND post_attribs.value > ? AND post_attribs.value < ? "
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(network, periodStart.Unix(), periodEnd.Unix()).Scan(&count)
+	return
+}
+
+func (api *API) uniquePostViewers(network gp.NetworkID, start, finish time.Time) (count int, err error) {
+	q := "SELECT COUNT(DISTINCT user_id) FROM post_views JOIN user_network ON post_views.user_id = user_network.user_id " +
+		"WHERE user_network.network_id = ? " +
+		"AND post_views.`ts` > ? AND post_views.`ts` < ?"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	return
+}
+
+func (api *API) uniquePostsViewed(network gp.NetworkID, start, finish time.Time) (count int, err error) {
+	q := "SELECT COUNT(DISTINCT post_id) FROM post_views JOIN user_network ON post_views.user_id = user_network.user_id " +
+		"WHERE user_network.network_id = ? " +
+		"AND post_views.`ts` > ? AND post_views.`ts` < ?"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	return
+}
+
+func (api *API) totalPostsViewed(network gp.NetworkID, start, finish time.Time) (count int, err error) {
+	q := "SELECT COUNT(*) FROM post_views JOIN user_network ON post_views.user_id = user_network.user_id " +
+		"WHERE user_network.network_id = ? " +
+		"AND post_views.`ts` > ? AND post_views.`ts` < ?"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	return
 }
