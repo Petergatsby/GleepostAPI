@@ -563,8 +563,8 @@ func (api *API) totalMessagesSent(network gp.NetworkID, start, finish time.Time)
 }
 
 //Using post-views as a proxy for users being online.
-func (api *API) usersOnline(network gp.NetworkID, start, finish time.Time) (total, students, staff, faculty, alumni int, err error) {
-	q := "SELECT COUNT(DISTINCT user_id), users.type FROM post_views JOIN user_network ON post_views.user_id = user_network.user_id " +
+func (api *API) UsersOnline(network gp.NetworkID, start, finish time.Time) (total, students, staff, faculty, alumni int, err error) {
+	q := "SELECT COUNT(DISTINCT post_views.user_id), users.type FROM post_views JOIN user_network ON post_views.user_id = user_network.user_id " +
 		"JOIN users ON post_views.user_id = users.id " +
 		"WHERE user_network.network_id = ? " +
 		"AND post_views.`ts` > ? AND post_views.`ts` < ? " +
