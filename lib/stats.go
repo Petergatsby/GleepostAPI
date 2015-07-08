@@ -498,7 +498,7 @@ func (api *API) attendeesInNetwork(network gp.NetworkID, start, finish time.Time
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(network, periodStart.Unix(), periodEnd.Unix()).Scan(&count)
+	err = s.QueryRow(network, start.Unix(), finish.Unix()).Scan(&count)
 	return
 }
 
@@ -510,7 +510,7 @@ func (api *API) uniquePostViewers(network gp.NetworkID, start, finish time.Time)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	err = s.QueryRow(network, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
 }
 
@@ -522,7 +522,7 @@ func (api *API) uniquePostsViewed(network gp.NetworkID, start, finish time.Time)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	err = s.QueryRow(network, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
 }
 
@@ -534,7 +534,7 @@ func (api *API) totalPostsViewed(network gp.NetworkID, start, finish time.Time) 
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	err = s.QueryRow(network, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
 }
 
@@ -546,7 +546,7 @@ func (api *API) uniqueMessageSenders(network gp.NetworkID, start, finish time.Ti
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	err = s.QueryRow(network, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
 	return
 }
 
@@ -558,6 +558,44 @@ func (api *API) totalMessagesSent(network gp.NetworkID, start, finish time.Time)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(network, periodStart.UTC().Format(mysqlTime), periodEnd.UTC().Format(mysqlTime)).Scan(&count)
+	err = s.QueryRow(network, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime)).Scan(&count)
+	return
+}
+
+//Using post-views as a proxy for users being online.
+func (api *API) usersOnline(network gp.NetworkID, start, finish time.Time) (total, students, staff, faculty, alumni int, err error) {
+	q := "SELECT COUNT(DISTINCT user_id), users.type FROM post_views JOIN user_network ON post_views.user_id = user_network.user_id " +
+		"JOIN users ON post_views.user_id = users.id " +
+		"WHERE user_network.network_id = ? " +
+		"AND post_views.`ts` > ? AND post_views.`ts` < ? " +
+		"GROUP BY users.type"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(network, start.UTC().Format(mysqlTime), finish.UTC().Format(mysqlTime))
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	var count int
+	var cat string
+	for rows.Next() {
+		err = rows.Scan(&count, &cat)
+		if err != nil {
+			return
+		}
+		switch {
+		case cat == "student":
+			students = count
+		case cat == "staff":
+			staff = count
+		case cat == "faculty":
+			faculty = count
+		case cat == "alumnus":
+			alumni = count
+		}
+	}
+	total = students + staff + faculty + alumni
 	return
 }
