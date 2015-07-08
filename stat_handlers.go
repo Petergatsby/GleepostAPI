@@ -16,6 +16,7 @@ func init() {
 	base.Handle("/stats/user/{id:[0-9]+}/posts/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(individualPostStats))).Methods("GET")
 	base.Handle("/stats/posts/{id:[0-9]+}/{type}/{period}/{start}/{finish}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/stats/network/{id:[0-9]+}/users_online/{start}/{finish}", timeHandler(api, http.HandlerFunc(usersOnlineHandler))).Methods("GET")
 }
 
 func postsStatsHandler(w http.ResponseWriter, r *http.Request) {
@@ -125,5 +126,49 @@ func individualPostStats(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, stats, 200)
+	}
+}
+
+type onlineStats struct {
+	Total    int `json:"total"`
+	Students int `json:"students"`
+	Staff    int `json:"staff"`
+	Faculty  int `json:"faculty"`
+	Alumni   int `json:"alumni"`
+}
+
+func usersOnlineHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		start, err := time.Parse(time.RFC3339, vars["start"])
+		if err != nil {
+			log.Println("Error parsing start time:", err)
+			log.Println("Defaulting to a year ago.")
+			start = time.Now().UTC().AddDate(-1, 0, 0)
+		}
+		finish, err := time.Parse(time.RFC3339, vars["finish"])
+		if err != nil {
+			log.Println("Error parsing end time:", err)
+			log.Println("Defaulting to now.")
+			finish = time.Now().UTC()
+		}
+		if finish.Before(start) {
+			finish = time.Now().UTC()
+		}
+		_network, err := strconv.ParseUint(vars["id"], 10, 64)
+		if err != nil {
+			jsonResponse(w, err, 404)
+		}
+		netID := gp.NetworkID(_network)
+		total, students, staff, faculty, alumni, err := api.UsersOnline(netID, start, finish)
+		if err != nil {
+			jsonResponse(w, err, 500)
+			return
+		}
+		jsonResponse(w, onlineStats{Total: total, Students: students, Staff: staff, Faculty: faculty, Alumni: alumni}, 200)
 	}
 }
