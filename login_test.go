@@ -163,6 +163,10 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
+	_, err = db.Exec("INSERT INTO `user_network` (`user_id`, `network_id`) VALUES (?, ?)", uid+1, id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

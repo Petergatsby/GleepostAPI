@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -211,6 +212,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
+	go api.spotFiles(msg)
 	go api.messagePush(msg, convID)
 	return
 }
@@ -940,4 +942,88 @@ func (api *API) conversationMuted(userID gp.UserID, convID gp.ConversationID) (m
 	}
 	err = s.QueryRow(userID, convID).Scan(&muted)
 	return
+}
+
+//ConversationFiles returns a list of the files shared in this conversation.
+func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (files []gp.File, err error) {
+	files = make([]gp.File, 0)
+	if !api.userCanViewConversation(userID, convID) {
+		return files, ENOTALLOWED
+	}
+	var q string
+	switch {
+	case mode == ByOffsetDescending:
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"ORDER BY `timestamp` DESC LIMIT ?, ?"
+	case mode == ChronologicallyAfterID:
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"AND id > ? " +
+			"ORDER BY `timestamp` ASC LIMIT ?"
+		q = fmt.Sprintf("SELECT `id`, `from`, `text`, `timestamp`, `system`, `type`, `url` FROM ( %s ) AS `fi` ORDER BY `timestamp` DESC, `id` DESC", q)
+	case mode == ChronologicallyBeforeID:
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
+			"WHERE chat_messages.conversation_id = ? " +
+			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
+			"AND id < ? " +
+			"ORDER BY `timestamp` DESC LIMIT ?"
+	}
+
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(convID, userID, convID, index, count)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		file := gp.File{}
+		var message gp.Message
+		var timeString string
+		var by gp.UserID
+		err = rows.Scan(&message.ID, &by, &message.Text, &timeString, &message.System, &file.Type, &file.URL)
+		if err != nil {
+			log.Println("Error getting message in conversation:", convID, err)
+			continue
+		}
+		message.Time, err = time.Parse(mysqlTime, timeString)
+		if err != nil {
+			log.Println("Message had invalid timestamp:", err)
+			continue
+		}
+		message.By, err = api.users.byID(by)
+		if err != nil {
+			log.Println("Error getting this message's sender:", err)
+			continue
+		}
+		file.Message = message
+		files = append(files, file)
+	}
+	return
+}
+
+var fileRegex = regexp.MustCompile(`<(https?\:\/\/.*)\|(\w+)>`)
+
+func (api *API) spotFiles(msg gp.Message) {
+	s, err := api.sc.Prepare("INSERT INTO conversation_files (message_id, `type`, `url`) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	files := fileRegex.FindAllStringSubmatch(msg.Text, -1)
+	for _, file := range files {
+		_, err := s.Exec(msg.ID, file[2], file[1])
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
 }

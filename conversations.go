@@ -33,6 +33,8 @@ func init() {
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/conversations/{id:[0-9]+}/participants", timeHandler(api, http.HandlerFunc(postParticipants))).Methods("POST")
 	base.Handle("/conversations/{id:[0-9]+}/participants", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/conversations/{id:[0-9]+}/files", timeHandler(api, http.HandlerFunc(getFiles))).Methods("GET")
+	base.Handle("/conversations/{id:[0-9]+}/files", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
 func getConversations(w http.ResponseWriter, r *http.Request) {
@@ -364,6 +366,29 @@ func putConversation(w http.ResponseWriter, r *http.Request) {
 				jsonResponse(w, err, 500)
 			}
 			jsonResponse(w, conv, 200)
+		}
+	}
+}
+
+func getFiles(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	vars := mux.Vars(r)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	default:
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		convID := gp.ConversationID(_convID)
+		files, err := api.ConversationFiles(userID, convID, mode, index, api.Config.MessagePageSize)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			jsonResponse(w, files, 200)
 		}
 	}
 }

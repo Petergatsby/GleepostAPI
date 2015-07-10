@@ -8,8 +8,7 @@ type MessageID uint64
 //ConversationID identifies a conversation.
 type ConversationID uint64
 
-//Message does not contain a conversation ID. If you need that, see RedisMessage.
-//TODO: Combine them?
+//Message is a particular message to a particular conversation.
 type Message struct {
 	ID     MessageID `json:"id"`
 	By     User      `json:"by"`
