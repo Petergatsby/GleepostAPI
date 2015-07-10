@@ -73,7 +73,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /posts/[post-id]/votes [[POST]](#post-postspost-idvotes)
 
-/networks [[POST]](#post-networks)
+/networks [[GET]](#get-networks) [[POST]](#post-networks)
 
 /networks/[network-id] [[GET]](#get-networksnetwork-id) [[PUT]](#put-networksnetwork-id)
 
@@ -925,6 +925,33 @@ If you created this group, you can change the group's image. If you didn't creat
 		"level":1
 	}
 }
+```
+
+##GET /networks
+
+Returns a list of 20 of the networks which are visible to you, ordered by popularity (number of members).
+
+optional parameters:
+
+`start`: the pagination offset for the list
+
+Response:
+
+(http 200)
+```json
+[
+  {
+    "id": 2,
+    "name": "funsies",
+    "creator": {
+      "id": 2,
+      "name": "Beetle",
+      "profile_image": ""
+    },
+    "privacy": "private",
+    "size": 12345
+  }
+]
 ```
 
 ##POST /networks
