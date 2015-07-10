@@ -507,8 +507,8 @@ func getNetworks(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
-		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
-		groups, err := api.GroupsByMembershipCount(userID, mode, index, api.Config.GroupPageSize)
+		index, _ := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		groups, err := api.GroupsByMembershipCount(userID, index, api.Config.GroupPageSize)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return

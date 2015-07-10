@@ -1153,7 +1153,7 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 	return
 }
 
-func (api *API) GroupsByMembershipCount(userID gp.UserID, mode int, index int64, count int) (groups []gp.Group, err error) {
+func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int) (groups []gp.Group, err error) {
 	q := "SELECT id, name, cover_img, `desc`, creator, privacy, COUNT(user_id) as cnt " +
 		"FROM network " +
 		"JOIN user_network ON network.id = user_network.network_id " +
@@ -1161,7 +1161,8 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, mode int, index int64,
 		"AND privacy != 'secret' " +
 		"AND parent = ? " +
 		"GROUP BY network.id " +
-		"ORDER BY cnt DESC "
+		"ORDER BY cnt DESC " +
+		"LIMIT ?, ?"
 	groups = make([]gp.Group, 0)
 	primary, err := api.getUserUniversity(userID)
 	if err != nil {
@@ -1171,7 +1172,7 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, mode int, index int64,
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(primary.ID)
+	rows, err := s.Query(primary.ID, index, count)
 	if err != nil {
 		return
 	}
