@@ -126,6 +126,7 @@ type Config struct {
 	NotificationPageSize int
 	CommentPageSize      int
 	ConversationPageSize int
+	GroupPageSize        int
 	Mysql                MysqlConfig
 	Redis                RedisConfig
 	AWS                  AWSConfig

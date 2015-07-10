@@ -1152,3 +1152,55 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 	}
 	return
 }
+
+func (api *API) GroupsByMembershipCount(userID gp.UserID, mode int, index int64, count int) (groups []gp.Group, err error) {
+	q := "SELECT id, name, cover_img, `desc`, creator, privacy, COUNT(user_id) as cnt " +
+		"FROM network " +
+		"JOIN user_network ON network.id = user_network.network_id " +
+		"WHERE user_group = 1 " +
+		"AND privacy != 'secret' " +
+		"AND parent = ? " +
+		"GROUP BY network.id " +
+		"ORDER BY cnt DESC "
+	groups = make([]gp.Group, 0)
+	primary, err := api.getUserUniversity(userID)
+	if err != nil {
+		return
+	}
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(primary.ID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	var img, desc, privacy sql.NullString
+	var creator sql.NullInt64
+	for rows.Next() {
+		group := gp.Group{}
+		err = rows.Scan(&group.ID, &group.Name, &img, &desc, &creator, &privacy, &group.MemberCount)
+		if err != nil {
+			log.Println("Scan err:", err)
+			continue
+		}
+		if img.Valid {
+			group.Image = img.String
+		}
+		if creator.Valid {
+			u, err := api.users.byID(gp.UserID(creator.Int64))
+			if err == nil {
+				group.Creator = &u
+			}
+		}
+		if desc.Valid {
+			group.Desc = desc.String
+		}
+		if privacy.Valid {
+			group.Privacy = privacy.String
+		}
+		groups = append(groups, group)
+	}
+	return
+}

@@ -13,6 +13,7 @@ import (
 )
 
 func init() {
+	base.Handle("/networks", timeHandler(api, http.HandlerFunc(getNetworks))).Methods("GET")
 	base.Handle("/networks", timeHandler(api, http.HandlerFunc(postNetworks))).Methods("POST")
 	base.Handle("/networks", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
@@ -497,5 +498,21 @@ func getNetworkRequests(w http.ResponseWriter, r *http.Request) {
 		//requests, err = api.NetworkRequests(userID, netID)
 		log.Println(userID, netID)
 
+	}
+}
+
+func getNetworks(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		groups, err := api.GroupsByMembershipCount(userID, mode, index, api.Config.GroupPageSize)
+		if err != nil {
+			jsonErr(w, err, 500)
+			return
+		}
+		jsonResponse(w, groups, 200)
 	}
 }
