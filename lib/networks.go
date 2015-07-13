@@ -1161,7 +1161,7 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		"AND privacy != 'secret' " +
 		"AND parent = ? " +
 		"GROUP BY network.id " +
-		"ORDER BY cnt DESC " +
+		"ORDER BY cnt DESC, id ASC " +
 		"LIMIT ?, ?"
 	groups = make([]gp.Group, 0)
 	primary, err := api.getUserUniversity(userID)
