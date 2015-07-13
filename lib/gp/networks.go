@@ -40,6 +40,7 @@ type GroupMembership struct {
 	UnreadCount  int `json:"unread,omitempty"`
 	Role         `json:"role"`
 	LastActivity *time.Time `json:"last_activity,omitempty"`
+	NewPosts     int        `json:"new_posts,omitempty"`
 }
 
 //Rule represents a condition that makes a user part of a particular Network. At the moment the only possible Rule.Type is "email";

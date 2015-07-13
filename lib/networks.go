@@ -605,15 +605,33 @@ func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []
 				network.Creator = &u
 			}
 			network.MemberCount, _ = api.groupMemberCount(network.ID)
-			//TODO(patrick) - maybe don't display group conversation id if you're not a member.
 			network.Conversation, _ = api.groupConversation(network.ID)
 			network.UnreadCount, _ = api.userConversationUnread(id, network.Conversation)
+			network.NewPosts, err = api.groupNewPosts(id, network.ID)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 		if privacy.Valid {
 			network.Privacy = privacy.String
 		}
 		networks = append(networks, network)
 	}
+	return
+}
+
+func (api *API) groupNewPosts(userID gp.UserID, groupID gp.NetworkID) (count int, err error) {
+	q := "SELECT COUNT(DISTINCT id) FROM wall_posts " +
+		"WHERE wall_posts.network_id = ? " +
+		"AND wall_posts.id > " +
+		"(SELECT COALESCE(MAX(post_views.post_id), 0) FROM post_views " +
+		"JOIN wall_posts ON post_views.post_id = wall_posts.id " +
+		"WHERE post_views.user_id = ? AND wall_posts.network_id = ?) "
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(groupID, userID, groupID).Scan(&count)
 	return
 }
 
