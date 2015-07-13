@@ -111,6 +111,7 @@ func TestRequestAccess(t *testing.T) {
 			}
 		}
 	}
+	truncate("networks", "user_network")
 }
 
 func initGroups() error {
