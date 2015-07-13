@@ -2002,6 +2002,7 @@ Example response: (http 200)
 		"size":1234,
 		"conversation":5678,
 		"unread":3,
+		"new_posts":4,
 		"last_activity":"2014-11-06T23:36:24Z"
 	}
 ]
