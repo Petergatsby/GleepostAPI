@@ -1228,5 +1228,42 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 //NetworkRequests enumerates the outstanding requests to join this network.
 func (api *API) NetworkRequests(userID gp.UserID, netID gp.NetworkID) (requests []gp.NetRequest, err error) {
 	requests = make([]gp.NetRequest, 0)
+	in, err := api.userInNetwork(userID, netID)
+	if err != nil {
+		return
+	}
+	if !in {
+		err = ENOTALLOWED
+		return
+	}
+	q := "SELECT user_id, request_time FROM network_requests WHERE network_id = ? AND status = 'pending'"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	rows, err := s.Query(netID)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	var id gp.UserID
+	var t string
+	for rows.Next() {
+		req := gp.NetRequest{}
+		err = rows.Scan(&id, &t)
+		if err != nil {
+			return
+		}
+		req.Requester, err = api.users.byID(id)
+		if err != nil {
+			return
+		}
+		req.ReqTime, err = time.Parse(mysqlTime, t)
+		if err != nil {
+			return
+		}
+		req.Status = "pending"
+		requests = append(requests, req)
+	}
 	return
 }
