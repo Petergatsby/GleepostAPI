@@ -1171,6 +1171,7 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 	return
 }
 
+//GroupsByMembershipCount returns the usergroups in this user's university, sorted by membership count / id.
 func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int) (groups []gp.Group, err error) {
 	q := "SELECT id, name, cover_img, `desc`, creator, privacy, COUNT(user_id) as cnt " +
 		"FROM network " +
@@ -1221,5 +1222,11 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		}
 		groups = append(groups, group)
 	}
+	return
+}
+
+//NetworkRequests enumerates the outstanding requests to join this network.
+func (api *API) NetworkRequests(userID gp.UserID, netID gp.NetworkID) (requests []gp.NetRequest, err error) {
+	requests = make([]gp.NetRequest, 0)
 	return
 }

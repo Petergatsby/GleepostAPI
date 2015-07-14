@@ -50,3 +50,9 @@ type Rule struct {
 	Type      string
 	Value     string
 }
+
+type NetRequest struct {
+	Requester User      `json:"requester"`
+	ReqTime   time.Time `json:"requested-at"`
+	Status    string    `json:"status"`
+}
