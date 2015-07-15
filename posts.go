@@ -514,6 +514,7 @@ func postVotes(w http.ResponseWriter, r *http.Request) {
 		case err != nil:
 			jsonErr(w, err, 500)
 		default:
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.WriteHeader(204)
 		}
 	}
