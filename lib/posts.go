@@ -35,6 +35,10 @@ var (
 	InvalidImage = gp.APIerror{Reason: "That is not a valid image"}
 	//InvalidVideo = You tried to post with an invalid video
 	InvalidVideo = gp.APIerror{Reason: "That is not a valid video"}
+	//EventInPast = you tried to create an event in the past.
+	EventInPast = gp.APIerror{Reason: "Events can not be created in the past"}
+	//EventTooLate = you tried to create an event too far in the future.
+	EventTooLate = gp.APIerror{Reason: "Events must be within 2 years"}
 )
 
 //UserGetPost returns the post identified by postId, if the user is allowed to access it; otherwise, ENOTALLOWED.
@@ -685,6 +689,24 @@ func validatePost(text string, attribs map[string]string, video gp.VideoID, imag
 		err = validatePollInput(expiry, pollOptions)
 		if err != nil {
 			errs = append(errs, err)
+		}
+	}
+	for attrib, value := range attribs {
+		if attrib == "event-time" {
+			t, e := time.Parse(time.RFC3339, value)
+			if e != nil {
+				unixt, e := strconv.ParseInt(value, 10, 64)
+				if e != nil {
+					errs = append(errs, e)
+				}
+				t = time.Unix(unixt, 0)
+				if t.After(time.Now().AddDate(2, 0, 0)) {
+					errs = append(errs, EventTooLate)
+				}
+				if time.Now().After(t) {
+					errs = append(errs, EventInPast)
+				}
+			}
 		}
 	}
 	return
