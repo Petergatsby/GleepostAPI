@@ -372,12 +372,25 @@ If set, tags must be a comma-delimited list of category "tags". Any of those tag
 eg:
 tags=for-sale,event,salsa
 
-###In addition, any other parameters that are sent when creating the post will be available as an "attribs" object within a post.
+###In addition, any other parameters that are sent when creating the post will be available as the `attribs` object on a post.
 
-Event posts are strongly encouraged to set "event-time", which represents the time an event begins. This may be either RFC3339 or a unix timestamp.
-Event posts may also set an "title", to be used as a heading.
+Event posts are strongly encouraged to set `event-time`, which represents the time an event begins. This may be either RFC3339 or a unix timestamp.
+Event posts may also set a `title`, to be used as a heading.
 
-Optionally, you can set “location-name” and/or “location-gps” to specify where an event will be occurring.
+`event-time` must be in the range `Now()` < `event-time` < `Now() + 2 years`.
+
+`event-time`s which are too soon will trigger an error:
+```json
+{"error":"Events can not be created in the past"}
+```
+
+while `event-time` being too far in the future will return:
+
+```json
+{"error":"Events must be within 2 years"}
+```
+
+Optionally, you can set `location-name` and/or `location-gps` to specify where an event will be occurring.
 
 If the post is in the category `poll`, you MUST set `poll-expiry` and `poll-options`.
 
