@@ -18,6 +18,7 @@ var NoSuchUpload = gp.APIerror{Reason: "That upload doesn't exist"}
 
 func init() {
 	base.Handle("/upload", timeHandler(api, http.HandlerFunc(uploadHandler))).Methods("POST")
+	base.Handle("/upload", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/upload", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/upload/{id}", timeHandler(api, http.HandlerFunc(getUpload))).Methods("GET")
 	base.Handle("/upload/{id}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
