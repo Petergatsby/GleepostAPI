@@ -282,6 +282,9 @@ func (v voteEvent) notify(n NotificationObserver) (err error) {
 	}
 	if v.userID != owner {
 		err = n.createNotification("poll_vote", v.userID, owner, v.postID, 0, "")
+		if err != nil {
+			log.Println("Error creating poll_vote notification:", err)
+		}
 	}
 	return
 }
