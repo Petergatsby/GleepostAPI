@@ -277,6 +277,7 @@ type voteEvent struct {
 
 func (v voteEvent) notify(n NotificationObserver) (err error) {
 	owner, err := postOwner(n.sc, v.postID)
+	log.Println(owner, err, v.userID)
 	if err != nil {
 		return
 	}
