@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -117,6 +118,8 @@ func (api *API) UserCastVote(userID gp.UserID, postID gp.PostID, option int) (er
 		poll, err = api.getPoll(postID)
 		if err == nil {
 			go api.broker.PublishEvent("vote", "/posts/"+strconv.Itoa(int(postID)), poll, []string{PostChannel(postID)})
+		} else {
+			log.Println("Problem getting poll:", err)
 		}
 		api.notifObserver.Notify(voteEvent{userID: userID, postID: postID})
 	}
