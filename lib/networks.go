@@ -176,6 +176,11 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 			if e != nil {
 				log.Println("Error adding new group members to conversation:", e)
 			}
+			err = api.setRequestStatus(addee, group, "accepted", adder)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 			api.esIndexGroup(group)
 		}
 		return
@@ -1148,6 +1153,15 @@ func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err err
 		return
 	}
 	api.notifObserver.Notify(requestEvent{userID: userID, groupID: netID})
+	return
+}
+
+func (api *API) setRequestStatus(userID gp.UserID, groupID gp.NetworkID, status string, processor gp.UserID) (err error) {
+	s, err := api.sc.Prepare("UPDATE network_requests SET status = ?, processed_by = ? WHERE user_id = ? AND network_id = ?")
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(status, processor, userID, groupID)
 	return
 }
 
