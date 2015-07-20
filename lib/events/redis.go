@@ -75,6 +75,7 @@ func messageReceiver(psc *redis.PubSubConn, messages chan<- []byte) {
 		case error:
 			log.Println("Saw an error: ", n)
 			close(messages)
+			psc.Conn.Close()
 			return
 		}
 	}
