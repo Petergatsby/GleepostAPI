@@ -67,7 +67,8 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 			otherID = gp.UserID(id)
 			url = fmt.Sprintf("gleepost.users.%d.networks.get", otherID)
 		}
-		networks, err := api.UserGetUserGroups(userID, otherID)
+		index, _ := strconv.ParseInt(r.FormValue("start"), 10, 64)
+		networks, err := api.UserGetUserGroups(userID, otherID, index)
 		if err != nil {
 			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)

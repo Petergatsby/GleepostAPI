@@ -28,7 +28,7 @@ var levels = map[string]int{
 
 //GetUserNetworks returns all networks this user belongs to, or an error if zhe belongs to none.
 func (api *API) getUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err error) {
-	nets, err = api._getUserNetworks(id, false)
+	nets, err = api._getUserNetworks(id, false, 0, 999)
 	if err != nil {
 		return
 	}
@@ -39,11 +39,11 @@ func (api *API) getUserNetworks(id gp.UserID) (nets []gp.GroupMembership, err er
 }
 
 //UserGetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
-func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+func (api *API) UserGetUserGroups(perspective, user gp.UserID, index int64) (groups []gp.GroupMembership, err error) {
 	groups = make([]gp.GroupMembership, 0)
 	switch {
 	case perspective == user:
-		groups, err = api._getUserNetworks(user, true)
+		groups, err = api._getUserNetworks(user, true, index, api.Config.GroupPageSize)
 		return
 	default:
 		shared, err := api.sameUniversity(perspective, user)
@@ -53,7 +53,7 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID) (groups []gp.Grou
 		case !shared:
 			return groups, &ENOTALLOWED
 		default:
-			return api.subjectiveMemberships(perspective, user)
+			return api.subjectiveMemberships(perspective, user, index, api.Config.GroupPageSize)
 		}
 	}
 }
@@ -552,7 +552,7 @@ func (api *API) getRules() (rules []gp.Rule, err error) {
 }
 
 //GetUserNetworks returns all the networks id is a member of, optionally only returning user-created networks.
-func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []gp.GroupMembership, err error) {
+func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool, index int64, count int) (networks []gp.GroupMembership, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.networks.byUser.db")
 	networks = make([]gp.GroupMembership, 0)
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
@@ -569,12 +569,12 @@ func (api *API) _getUserNetworks(id gp.UserID, userGroupsOnly bool) (networks []
 	if userGroupsOnly {
 		networkSelect += "AND network.user_group = 1 "
 	}
-	networkSelect += "ORDER BY last_activity DESC"
+	networkSelect += "ORDER BY last_activity DESC LIMIT ?, ?"
 	s, err := api.sc.Prepare(networkSelect)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(id)
+	rows, err := s.Query(id, index, count)
 	if err != nil {
 		return
 	}
@@ -652,17 +652,18 @@ func (api *API) subjectiveMembershipCount(perspective, user gp.UserID) (count in
 }
 
 //SubjectiveMemberships returns all the groups this user is a member of, as far as perspective is concerned.
-func (api *API) subjectiveMemberships(perspective, user gp.UserID) (groups []gp.GroupMembership, err error) {
+func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, count int) (groups []gp.GroupMembership, err error) {
 	groups = make([]gp.GroupMembership, 0)
 	q := "SELECT user_network.network_id, user_network.role, user_network.role_level, network.name, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id "
 	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
 	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
-	q += "AND user_network.user_id = ?"
+	q += "AND user_network.user_id = ? "
+	q += "LIMIT ?, ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(perspective, perspective, user)
+	rows, err := s.Query(perspective, perspective, user, index, count)
 	if err != nil {
 		return
 	}
