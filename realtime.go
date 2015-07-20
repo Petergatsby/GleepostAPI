@@ -116,8 +116,9 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			for _, i := range postChans {
 				chans = append(chans, lib.PostChannel(i))
 			}
-
-			messages.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
+			if len(chans) > 0 {
+				messages.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
+			}
 		}
 	}
 }
