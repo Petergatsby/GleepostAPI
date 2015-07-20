@@ -1751,7 +1751,7 @@ func (api *API) keepPostsInFuture() (err error) {
 }
 
 func postOwner(sc *psc.StatementCache, post gp.PostID) (by gp.UserID, err error) {
-	s, err := sc.Prepare("SELECT `by` FROM wall_posts WHERE post_id = ?")
+	s, err := sc.Prepare("SELECT `by` FROM wall_posts WHERE id = ?")
 	if err != nil {
 		return
 	}
