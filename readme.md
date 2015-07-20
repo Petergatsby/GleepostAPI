@@ -1646,6 +1646,10 @@ example responses:
 Lists this user's groups - if you're allowed to see them. Or 403 otherwise.
 Secret groups are hidden.
 
+If there are more than 20 results, this resource will return the first 20.
+
+Results can be paginated by supplying `start` = `n` to offset the results by `n` groups.
+
 Example response: (http 200)
 ```json
 [
@@ -1986,13 +1990,15 @@ HTTP 200:
 ```
 
 ##GET /profile/networks
-required parameters:
-id=[user-id]
-token=[token]
 
-This returns a list of all (non-university) groups this user belongs to.
+optional parameters:
+
+`start` - the number of groups this page should be offset by.
+
+This returns a list of up to 20 (non-university) groups this user belongs to.
 
 The list is ordered by last activity: most recent post or message first.
+
 
 Example response: (http 200)
 ```json
