@@ -102,7 +102,7 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			}
 		case c.Action == "typing":
 			api.UserIsTyping(userID, c.Conversation, c.Typing)
-		default:
+		case c.Action == "SUBSCRIBE" || c.Action == "UNSUBSCRIBE":
 			var postChans []gp.PostID
 			for _, i := range c.Channels {
 				postChans = append(postChans, gp.PostID(i))
@@ -119,6 +119,7 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			if len(chans) > 0 {
 				messages.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}
 			}
+		default:
 		}
 	}
 }

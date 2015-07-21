@@ -10,7 +10,6 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	//Init
 	err := initDB()
 	if err != nil {
 		t.Fatalf("Error initializing db: %v\n", err)
