@@ -22,6 +22,7 @@ func init() {
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(getPost))).Methods("GET")
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(putPost))).Methods("PUT")
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(deletePost))).Methods("DELETE")
+	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/posts/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/posts/{id:[0-9]+}/images", timeHandler(api, http.HandlerFunc(postImages))).Methods("POST")
 	base.Handle("/posts/{id:[0-9]+}/images", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
