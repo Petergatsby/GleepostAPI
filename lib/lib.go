@@ -71,7 +71,7 @@ func New(conf conf.Config) (api *API) {
 	auth.AccessKey, auth.SecretKey = conf.AWS.KeyID, conf.AWS.SecretKey
 	api.TW = newTranscodeWorker(db, api.sc, transcode.NewTranscoder(), s3.New(auth, aws.USWest).Bucket("gpcali"), api.broker)
 	api.Viewer = &viewer{broker: api.broker, sc: api.sc}
-	api.users = &Users{sc: api.sc}
+	api.users = &Users{sc: api.sc, pool: pool}
 	api.nm = &NetworkManager{sc: api.sc}
 	api.Presences = Presences{broker: api.broker, sc: api.sc, pool: pool}
 	api.comments = comments{sc: api.sc, users: api.users}

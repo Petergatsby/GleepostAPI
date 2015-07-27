@@ -2,6 +2,7 @@ package lib
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/garyburd/redigo/redis"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -17,11 +19,16 @@ import (
 type Users struct {
 	sc      *psc.StatementCache
 	statter PrefixStatter
+	pool    *redis.Pool
 }
 
 //returns ENOSUCHUSER if this user doesn't exist
 func (u Users) byID(id gp.UserID) (user gp.User, err error) {
 	defer u.statter.Time(time.Now(), "gleepost.users.byID.db")
+	user, err = u.byIDCached(id)
+	if err == nil {
+		return
+	}
 	var av sql.NullString
 	s, err := u.sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
 	if err != nil {
@@ -37,6 +44,31 @@ func (u Users) byID(id gp.UserID) (user gp.User, err error) {
 	if av.Valid {
 		user.Avatar = av.String
 	}
+	return
+}
+
+func (u Users) byIDCached(id gp.UserID) (user gp.User, err error) {
+	conn := u.pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d", id)
+	data, err := redis.Bytes(conn.Do("GET", key))
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(data, &user)
+	return
+}
+
+func (u Users) cache(user gp.User) {
+	conn := u.pool.Get()
+	defer conn.Close()
+	key := fmt.Sprintf("users:%d", user.ID)
+	_user, err := json.Marshal(user)
+	if err != nil {
+		log.Println("Error marshalling user:", err)
+	}
+	conn.Send("SETEX", key, 10, _user)
+	conn.Flush()
 	return
 }
 
