@@ -29,6 +29,7 @@ func postPostViews(w http.ResponseWriter, r *http.Request) {
 			views[i].User = userID
 		}
 		go api.Viewer.RecordViews(views)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(204)
 	}
 }
