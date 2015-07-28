@@ -20,6 +20,15 @@ var NobodyAdded = gp.APIerror{Reason: "Must add either user(s), facebook user(s)
 //NoSuchNetwork occurs when performing an action against a network which doesn't exist (or the user can't see).
 var NoSuchNetwork = gp.APIerror{Reason: "No such network"}
 
+//NoSuchRequest occurs when attempting to reject a non-existent request to join a network.
+var NoSuchRequest = gp.APIerror{Reason: "No such request"}
+
+//AlreadyRejected occurs when attempting to reject a group-join request which is already rejected.
+var AlreadyRejected = gp.APIerror{Reason: "Request is already rejected"}
+
+//AlreadyAccepted occurs when attempting to reject a group-join request which is already accepted.
+var AlreadyAccepted = gp.APIerror{Reason: "Request is already accepted"}
+
 var levels = map[string]int{
 	"creator":       9,
 	"administrator": 8,
@@ -1087,6 +1096,41 @@ func groupName(sc *psc.StatementCache, group gp.NetworkID) (name string, err err
 	return
 }
 
+//Returns err == nil if this network is visible to this user
+func (api *API) userNetIsVisible(userID gp.UserID, netID gp.NetworkID) (err error) {
+	in, err := api.userInNetwork(userID, netID)
+	if err != nil {
+		return
+	}
+	if in {
+		return nil
+	}
+	parent, err := api.networkParent(netID)
+	if err != nil {
+		err = NoSuchNetwork
+		return
+	}
+	in, err = api.userInNetwork(userID, parent)
+	if err != nil {
+		return NoSuchNetwork
+	}
+	if !in {
+		//Can't see a group in another university
+		err = NoSuchNetwork
+		return
+	}
+	net, err := api.getNetwork(netID)
+	if err != nil {
+		return
+	}
+	if net.Privacy == "secret" {
+		//Can't see a secret group
+		err = NoSuchNetwork
+		return
+	}
+	return nil
+}
+
 //UserRequestAccess allows a user to request access to a private group. It's idempotent; requesting multiple times will silently drop the extra requests.
 func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err error) {
 	in, err := api.userInNetwork(userID, netID)
@@ -1281,4 +1325,46 @@ func (api *API) NetworkRequests(userID gp.UserID, netID gp.NetworkID) (requests 
 		requests = append(requests, req)
 	}
 	return
+}
+
+//RejectNetworkRequest marks a request to join a private group as rejected. It can only be used by group administrators, and will not inform the rejectee,
+func (api *API) RejectNetworkRequest(userID gp.UserID, netID gp.NetworkID, reqID gp.UserID) (err error) {
+	err = api.userNetIsVisible(userID, netID)
+	if err != nil {
+		return
+	}
+
+	has, err := api.userHasRole(userID, netID, "administrator")
+	if err != nil {
+		return
+	}
+	if !has {
+		return ENOTALLOWED
+	}
+	status, err := api.pendingRequestExists(reqID, netID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = NoSuchRequest
+		}
+		return
+	}
+	switch {
+	case status == "rejected":
+		return AlreadyRejected
+	case status == "accepted":
+		return AlreadyAccepted
+	default:
+		err = api.setRequestStatus(reqID, netID, "rejected", userID)
+		return
+	}
+}
+
+func (api *API) pendingRequestExists(reqID gp.UserID, netID gp.NetworkID) (status string, err error) {
+	s, err := api.sc.Prepare("SELECT status FROM network_requests WHERE user_id = ? AND network_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(reqID, netID).Scan(&status)
+	return
+
 }

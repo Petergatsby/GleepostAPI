@@ -33,6 +33,8 @@ func init() {
 	base.Handle("/networks/{network:[0-9]+}/requests", timeHandler(api, http.HandlerFunc(postNetworkRequests))).Methods("POST")
 	base.Handle("/networks/{network:[0-9]+}/requests", timeHandler(api, http.HandlerFunc(getNetworkRequests))).Methods("GET")
 	base.Handle("/networks/{network:[0-9]+}/requests", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/networks/{network:[0-9]+}/requests/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteNetworkRequest))).Methods("DELETE")
+	base.Handle("/networks/{network:[0-9]+}/requests/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteNetworkAdmins))).Methods("DELETE")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
@@ -482,6 +484,7 @@ func postNetworkRequests(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(204)
 	}
 }
@@ -523,5 +526,33 @@ func getNetworks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		jsonResponse(w, groups, 200)
+	}
+}
+
+func deleteNetworkRequest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		_netID, _ := strconv.ParseUint(vars["network"], 10, 64)
+		netID := gp.NetworkID(_netID)
+		_requestor, _ := strconv.ParseUint(vars["user"], 10, 64)
+		requestorID := gp.UserID(_requestor)
+		err := api.RejectNetworkRequest(userID, netID, requestorID)
+		if err != nil {
+			switch {
+			case err == lib.ENOTALLOWED || err == lib.AlreadyRejected || err == lib.AlreadyAccepted:
+				jsonResponse(w, err, 403)
+			case err == lib.NoSuchNetwork || err == lib.NoSuchRequest:
+				jsonResponse(w, err, 404)
+			default:
+				jsonResponse(w, err, 500)
+			}
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(204)
 	}
 }
