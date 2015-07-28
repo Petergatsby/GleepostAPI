@@ -404,11 +404,11 @@ func (api *API) getPostVideos(postID gp.PostID) (videos []gp.Video) {
 		return
 	}
 	rows, err := s.Query(postID)
-	defer rows.Close()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer rows.Close()
 	var thumb, mp4, webm sql.NullString
 	for rows.Next() {
 		err = rows.Scan(&thumb, &mp4, &webm)
@@ -461,10 +461,10 @@ func (api *API) getLikes(post gp.PostID) (likes []gp.LikeFull, err error) {
 		return
 	}
 	rows, err := s.Query(post)
-	defer rows.Close()
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var t string
 		var like gp.LikeFull
@@ -1239,8 +1239,7 @@ func (api *API) _getLive(netID gp.NetworkID, after time.Time, until time.Time, c
 	if err != nil {
 		return
 	}
-	defer rows.Close()
-	//The second argument is meaningless and should be removed.
+	defer rows.Close() //The second argument is meaningless and should be removed.
 	return api.scanPostRows(rows, false)
 }
 
@@ -1614,6 +1613,9 @@ func (api *API) CategoryList() (categories []gp.PostCategory, err error) {
 		return
 	}
 	rows, err := s.Query()
+	if err != nil {
+		return
+	}
 	defer rows.Close()
 	for rows.Next() {
 		c := gp.PostCategory{}
@@ -1653,10 +1655,10 @@ func (api *API) _getLikes(post gp.PostID) (likes []gp.Like, err error) {
 		return
 	}
 	rows, err := s.Query(post)
-	defer rows.Close()
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var t string
 		var like gp.Like
