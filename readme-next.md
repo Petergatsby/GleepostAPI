@@ -385,4 +385,13 @@ If a group's `privacy` is `public`, you are allowed to add yourself to the netwo
 
 If a group's `privacy` is `private`, you may request access to the group by sending a [POST to /networks/:id/requests](#post-networksnetwork-idrequests).
 
+If a group's `privacy` is `secret`, there is no way to join the group: you must be added by a member.
+
+####Responding to group join requests
+
+Once you have requested access to a `private` group, the administrators of that group will receive a notification of your request. 
+
+To accept the request, the administrator must add [the requestor to the group](#post-networksnetwork-idusers).
+To deny the request, an administrator must [DELETE the request.](#delete-networksnetwork-idrequestsuser-id). This will not be visible to the requestor (from their perspective, the request is still pending).
+
 ###Approve
