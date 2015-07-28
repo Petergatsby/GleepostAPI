@@ -398,8 +398,8 @@ If the post is in the category `poll`, you MUST set `poll-expiry` and `poll-opti
 
 `poll-expiry` indicates when this poll will end, and is a RFC3339 formatted string, eg `2015-04-15T01:05:03Z` OR a Unix timestamp.
 
-`poll-options` is a comma-delimited list of the options available in this poll. You must specify at least 2 and at most 4 options, and the options must each be 3 <= n <= 50 characters long.
-eg: `hillary clinton,alien kang, alien kodos,abstain`
+`poll-options` is a form encoded list of the options available in this poll. You must specify at least 2 and at most 4 options, and the options must each be 3 <= n <= 50 characters long.
+eg: `poll-options=hillary clinton&poll-options=alien kang&poll-options=alien kodos&poll-options=abstain`
 
 If this post requires review before it is published, the response will contain `pending` = `true`.
 ```json
