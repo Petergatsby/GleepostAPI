@@ -87,6 +87,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /networks/[network-id]/requests [[GET]](#get-networksnetwork-idrequests) [[POST]](#post-networksnetwork-idrequests)
 
+/networks/[network-id]/requests/[user-id] [[DELETE]](#delete-networksnetwork-idrequestsuser-id)
+
 /live [[GET]](#get-live)
 
 /live_summary [[GET]](#get-live_summary)
@@ -1219,6 +1221,36 @@ If the network is visible to you but you cannot request access to it (because it
 ```
 
 On success, the response will be 201.
+
+##DELETE /networks/[network-id]/requests/[user-id]
+
+If you are an administrator of this group, you can reject a request to join the group. The request will no longer be visible in the `/networks/:id/requests` list.
+
+Attempting to reject a user who has not made a request will result in a 404:
+```json
+{"error":"No such request"}
+```
+
+Attempting to reject a request in a group which does not exist will result in a 404:
+```json
+{"error":"No such network"}
+```
+
+Attempting to reject a request in a group in which you are not staff (admin/creator) or not a member of will result in a 403:
+```json
+{"error":"You're not allowed to do that!"}
+```
+
+Attempting to reject a request which is already accepted / rejected will result in a 403:
+
+```json
+{"error":"Request is already accepted"}
+```
+```json
+{"error":"Request is already rejected"}
+```
+
+On success, the response will be a 204.
 
 ##POST /conversations/read_all
 required parameters:
