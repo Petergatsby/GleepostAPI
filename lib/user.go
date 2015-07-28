@@ -44,6 +44,7 @@ func (u Users) byID(id gp.UserID) (user gp.User, err error) {
 	if av.Valid {
 		user.Avatar = av.String
 	}
+	u.cache(user)
 	return
 }
 
