@@ -378,11 +378,11 @@ func (api *API) getPostImages(postID gp.PostID) (images []string) {
 		return
 	}
 	rows, err := s.Query(postID)
-	defer rows.Close()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var image string
 		err = rows.Scan(&image)
