@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -153,7 +152,7 @@ func TestCreatePoll(t *testing.T) {
 		data["id"] = []string{fmt.Sprintf("%d", cpt.Token.UserID)}
 		data["token"] = []string{cpt.Token.Token}
 		data["text"] = []string{cpt.Text}
-		data["poll-options"] = []string{strings.Join(cpt.PollOptions, ",")}
+		data["poll-options"] = cpt.PollOptions
 		if len(cpt.PollExpiry) > 0 {
 			data["poll-expiry"] = []string{cpt.PollExpiry}
 		}
