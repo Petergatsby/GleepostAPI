@@ -102,7 +102,7 @@ func userQuery(query string, netID gp.NetworkID) (esQuery esquery) {
 	return esQuery
 }
 
-//SearchGroups searches for groups which are 'within' parent; it currently just matches %name%.
+//SearchGroups searches for groups which are sub-groups of `parent` - ie, groups in a particular university.
 func (api *API) searchGroups(parent gp.NetworkID, query string) (groups []gp.Group, err error) {
 	groups = make([]gp.Group, 0)
 	c := elastigo.NewConn()
