@@ -112,7 +112,7 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 		url := r.FormValue("url")
 		ts := strings.Split(r.FormValue("tags"), ",")
 		pollExpiry := r.FormValue("poll-expiry")
-		pollOptions := strings.Split(r.FormValue("poll-options"), ",")
+		pollOptions := r.Form["poll-options"]
 		attribs := make(map[string]string)
 		for k, v := range r.Form {
 			if !ignored(k) {
