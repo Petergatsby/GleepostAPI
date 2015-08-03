@@ -261,7 +261,7 @@ func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err == nil {
 		conv.LastActivity = lastActivity
 	}
-	conv.Participants, err = api.getParticipants(convID, true)
+	conv.Participants, err = api.getParticipants(convID, false)
 	if err != nil {
 		return
 	}
@@ -504,7 +504,7 @@ func (api *API) getConversations(userID gp.UserID, start int64, count int) (conv
 			return conversations, err
 		}
 		conv.LastActivity, _ = time.Parse(mysqlTime, t)
-		conv.Participants, err = api.getParticipants(conv.ID, true)
+		conv.Participants, err = api.getParticipants(conv.ID, false)
 		if err != nil {
 			return conversations, err
 		}
@@ -575,7 +575,7 @@ func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, coun
 	if err == nil {
 		conversation.LastActivity = lastActivity
 	}
-	conversation.Participants, err = api.getParticipants(convID, true)
+	conversation.Participants, err = api.getParticipants(convID, false)
 	if err != nil {
 		return conversation, err
 	}
