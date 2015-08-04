@@ -34,11 +34,12 @@ type ParentedGroup struct {
 	Parent NetworkID `json:"parent,omitempty"`
 }
 
-//GroupMembership is a group and a user's membership status in that group.
-type GroupMembership struct {
+//GroupSubjective is a group plus (a) potential context (ie, the role of a user within that group) and (b) your own relation to that group (your role, unread, request status etc)
+type GroupSubjective struct {
 	Group
-	UnreadCount  int `json:"unread,omitempty"`
-	Role         `json:"role"`
+	UnreadCount  int        `json:"unread,omitempty"`
+	YourRole     *Role      `json:"role,omitempty"`
+	TheirRole    *Role      `json:"their_role,omitempty"`
 	LastActivity *time.Time `json:"last_activity,omitempty"`
 	NewPosts     int        `json:"new_posts,omitempty"`
 }

@@ -24,7 +24,7 @@ type FullNameUser struct {
 type Profile struct {
 	User
 	Desc       string          `json:"tagline"`
-	Network    GroupMembership `json:"network"`
+	Network    GroupSubjective `json:"network"`
 	Course     string          `json:"course"`
 	FullName   string          `json:"full_name"`
 	RSVPCount  int             `json:"rsvp_count,omitempty"`

@@ -88,7 +88,6 @@ func createConversation(token gp.Token) (conv gp.ConversationAndMessages, err er
 		err = dec.Decode(&errResp)
 		log.Println(errResp)
 		return
-
 	}
 	err = dec.Decode(&conv)
 	return
