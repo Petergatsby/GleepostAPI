@@ -154,6 +154,7 @@ func (auth *Authenticator) addToken(token gp.Token) (err error) {
 func (api *API) AttemptLogin(email, pass string) (token gp.Token, verification gp.Status, err error) {
 	id, err := api.Auth.validatePass(email, pass)
 	if err != nil {
+		log.Println("Error validating pass:", err)
 		err = BadLogin
 		return
 	}
