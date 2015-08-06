@@ -3,6 +3,8 @@ package lib
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/mattbaird/elastigo/lib"
@@ -35,13 +37,43 @@ func (api *API) UserSearchUsersInPrimaryNetwork(userID gp.UserID, query string) 
 }
 
 //UserSearchGroups searches all the groups in userID's university. It will error out if this user is not in at least one network.
-func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups []gp.Group, err error) {
-	groups = make([]gp.Group, 0)
+func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups []gp.GroupSubjective, err error) {
+	groups = make([]gp.GroupSubjective, 0)
 	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
 	}
-	return api.searchGroups(primary.ID, name)
+	gs, err := api.searchGroups(primary.ID, name)
+	if err != nil {
+		return
+	}
+	for _, g := range gs {
+		var group gp.GroupSubjective
+		group.Group = g
+		group.UnreadCount, err = api.userConversationUnread(userID, group.Conversation)
+		if err != nil {
+			return
+		}
+		var role gp.Role
+		role, err = api.userRole(userID, group.ID)
+		if err == nil {
+			group.YourRole = &role
+			var lastActivity time.Time
+			lastActivity, err = api.networkLastActivity(userID, group.ID)
+			if err != nil {
+				log.Println(err)
+				return
+			} else {
+				group.LastActivity = &lastActivity
+			}
+			group.NewPosts, err = api.groupNewPosts(userID, group.ID)
+			if err != nil {
+				return
+			}
+		}
+		groups = append(groups, group)
+	}
+	return groups, nil
 }
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
