@@ -948,6 +948,8 @@ Returns a list of 20 of the networks which are visible to you, ordered by popula
 
 `role` indicates, when present, your membership status within the group.
 
+`pending_request` will be `true` if you have an outstanding request to join this network.
+
 optional parameters:
 
 `start`: the pagination offset for the list
