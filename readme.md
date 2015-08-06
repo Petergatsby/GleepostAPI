@@ -946,6 +946,8 @@ If you created this group, you can change the group's image. If you didn't creat
 
 Returns a list of 20 of the networks which are visible to you, ordered by popularity (number of members).
 
+`role` indicates, when present, your membership status within the group.
+
 optional parameters:
 
 `start`: the pagination offset for the list
@@ -964,7 +966,11 @@ Response:
       "profile_image": ""
     },
     "privacy": "private",
-    "size": 12345
+    "size": 12345,
+    "role": {
+	"level":1,
+	"name":"member",
+    }
   }
 ]
 ```
@@ -1682,6 +1688,8 @@ If there are more than 20 results, this resource will return the first 20.
 
 Results can be paginated by supplying `start` = `n` to offset the results by `n` groups.
 
+`their_role` indicates this user's membership status within the group; `role`, where available, is yours (the viewing user's.
+
 Example response: (http 200)
 ```json
 [
@@ -1697,6 +1705,10 @@ Example response: (http 200)
 		},
 		"privacy":"private",
 		"role": {
+			"name":"member",
+			"level":1
+		},
+		"their_role": {
 			"name":"member",
 			"level":1
 		}

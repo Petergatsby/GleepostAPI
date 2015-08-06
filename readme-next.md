@@ -360,6 +360,8 @@ A Network is a collection of users and posts; each university is a Network.
 
 Users may also create networks within their university; these are Groups. These have some additional parameters:
 
+`role` will be present when you are a member of the group; `their_role` will be present if the group is in the context of a particular user (ie, user/:id/networks)
+
 ```json
 {
 	"id":5345, 
@@ -374,7 +376,15 @@ Users may also create networks within their university; these are Groups. These 
 	"privacy":"private",
 	"size":1234,
 	"conversation":5678,
-	"last_activity":"2014-11-06T23:36:24Z"
+	"last_activity":"2014-11-06T23:36:24Z",
+	"role": {
+		"name":"member",
+		"level":1
+	},
+	"their_role": {
+		"name":"member",
+		"level":1
+	}
 }
 ```
 
