@@ -37,11 +37,12 @@ type ParentedGroup struct {
 //GroupSubjective is a group plus (a) potential context (ie, the role of a user within that group) and (b) your own relation to that group (your role, unread, request status etc)
 type GroupSubjective struct {
 	Group
-	UnreadCount  int        `json:"unread,omitempty"`
-	YourRole     *Role      `json:"role,omitempty"`
-	TheirRole    *Role      `json:"their_role,omitempty"`
-	LastActivity *time.Time `json:"last_activity,omitempty"`
-	NewPosts     int        `json:"new_posts,omitempty"`
+	UnreadCount    int        `json:"unread,omitempty"`
+	YourRole       *Role      `json:"role,omitempty"`
+	TheirRole      *Role      `json:"their_role,omitempty"`
+	LastActivity   *time.Time `json:"last_activity,omitempty"`
+	NewPosts       int        `json:"new_posts,omitempty"`
+	PendingRequest bool       `json:"pending_request,omitempty"`
 }
 
 //Rule represents a condition that makes a user part of a particular Network. At the moment the only possible Rule.Type is "email";

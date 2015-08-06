@@ -71,6 +71,10 @@ func (api *API) UserSearchGroups(userID gp.UserID, name string) (groups []gp.Gro
 				return
 			}
 		}
+		status, err := api.pendingRequestExists(userID, group.ID)
+		if err == nil && (status == "pending" || status == "rejected") {
+			group.PendingRequest = true
+		}
 		groups = append(groups, group)
 	}
 	return groups, nil

@@ -300,8 +300,16 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 				network.LastActivity = &lastActivity
 			}
 			network.NewPosts, err = api.groupNewPosts(userID, netID)
+			if err != nil {
+				return
+			}
+		} else {
+			status, err := api.pendingRequestExists(userID, netID)
+			if err == nil && (status == "pending" || status == "rejected") {
+				network.PendingRequest = true
+			}
 		}
-		return
+		return network, nil
 	}
 }
 
@@ -624,6 +632,10 @@ func (api *API) groupsByActivity(id gp.UserID, index int64, count int) (networks
 			if err != nil {
 				log.Println(err)
 			}
+			status, err := api.pendingRequestExists(id, network.ID)
+			if err == nil && (status == "pending" || status == "rejected") {
+				network.PendingRequest = true
+			}
 		}
 		if privacy.Valid {
 			network.Privacy = privacy.String
@@ -746,6 +758,10 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, 
 			}
 			network.Conversation, _ = api.groupConversation(network.ID)
 			network.UnreadCount, err = api.userConversationUnread(perspective, network.Conversation)
+		}
+		status, err := api.pendingRequestExists(perspective, network.ID)
+		if err == nil && (status == "pending" || status == "rejected") {
+			network.PendingRequest = true
 		}
 		groups = append(groups, network)
 	}

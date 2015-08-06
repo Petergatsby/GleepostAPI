@@ -1690,6 +1690,8 @@ Results can be paginated by supplying `start` = `n` to offset the results by `n`
 
 `their_role` indicates this user's membership status within the group; `role`, where available, is yours (the viewing user's.
 
+If `pending_request` is present, this indicates you have an outstanding request to join this group.
+
 Example response: (http 200)
 ```json
 [
@@ -1704,14 +1706,11 @@ Example response: (http 200)
 			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 		},
 		"privacy":"private",
-		"role": {
-			"name":"member",
-			"level":1
-		},
 		"their_role": {
 			"name":"member",
 			"level":1
-		}
+		},
+	        "pending_request":true
 	}
 ]
 ```
@@ -2376,6 +2375,10 @@ required parameters: id, token, name
 
 Searches your network for groups matching [name].
 
+Where available, `role` indicates your membership status in this group.
+
+If `pending_request` is present, this indicates you have an outstanding request to join this group.
+
 Example response:
 ```json
 [
@@ -2390,7 +2393,12 @@ Example response:
 			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 		},
 		"privacy":"private",
-		"size":1234
+		"size":1234,
+		"role": {
+			"name":"member",
+			"level":1
+		},
+                "pending_request":true
 	}
 ]
 ```
