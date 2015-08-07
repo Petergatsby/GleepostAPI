@@ -994,6 +994,8 @@ If `url` is not valid, it will respond with a 403.
 
 if privacy is not provided, it will default to "private".
 
+`category` = `sports`, `social`, `academic`, `dorm`, `career`, `official`
+
 `university` = `boolean` 
 
 If set to `true`, this will create a new University, configured to accept users registering with a domain in the list `domains`; you must be an administrator to do this.
