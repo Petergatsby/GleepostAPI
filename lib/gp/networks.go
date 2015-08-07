@@ -26,6 +26,7 @@ type Group struct {
 	Privacy      string         `json:"privacy,omitempty"`
 	MemberCount  int            `json:"size,omitempty"`
 	Conversation ConversationID `json:"conversation,omitempty"`
+	Category     string         `json:"category,omitempty"`
 }
 
 //ParentedGroup is a group which indicates its parent network (ie, its university)
