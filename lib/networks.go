@@ -1289,7 +1289,7 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 }
 
 //GroupsByMembershipCount returns the usergroups in this user's university, sorted by membership count / id.
-func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int) (groups []gp.Group, err error) {
+func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int) (groups []gp.GroupSubjective, err error) {
 	q := "SELECT id, name, cover_img, `desc`, creator, privacy, COUNT(user_id) as cnt " +
 		"FROM network " +
 		"JOIN user_network ON network.id = user_network.network_id " +
@@ -1299,7 +1299,7 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		"GROUP BY network.id " +
 		"ORDER BY cnt DESC, id ASC " +
 		"LIMIT ?, ?"
-	groups = make([]gp.Group, 0)
+	groups = make([]gp.GroupSubjective, 0)
 	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
@@ -1316,7 +1316,7 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 	var img, desc, privacy sql.NullString
 	var creator sql.NullInt64
 	for rows.Next() {
-		group := gp.Group{}
+		group := gp.GroupSubjective{}
 		err = rows.Scan(&group.ID, &group.Name, &img, &desc, &creator, &privacy, &group.MemberCount)
 		if err != nil {
 			log.Println("Scan err:", err)
@@ -1337,9 +1337,22 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		if privacy.Valid {
 			group.Privacy = privacy.String
 		}
+		var role gp.Role
+		role, err = api.userRole(userID, group.ID)
+		if err == nil {
+			group.YourRole = &role
+			group.Conversation, _ = api.groupConversation(group.ID)
+			group.UnreadCount, _ = api.userConversationUnread(userID, group.Conversation)
+			group.NewPosts, _ = api.groupNewPosts(userID, group.ID)
+			status, err := api.pendingRequestExists(userID, group.ID)
+			if err == nil && (status == "pending" || status == "rejected") {
+				group.PendingRequest = true
+			}
+
+		}
 		groups = append(groups, group)
 	}
-	return
+	return groups, nil
 }
 
 //NetworkRequests enumerates the outstanding requests to join this network.
