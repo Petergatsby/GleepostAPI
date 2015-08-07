@@ -126,6 +126,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 		url := r.FormValue("url")
 		desc := r.FormValue("desc")
 		privacy := r.FormValue("privacy")
+		category := r.FormValue("category")
 		university, err := strconv.ParseBool(r.FormValue("university"))
 		var network interface{}
 		switch {
@@ -133,7 +134,7 @@ func postNetworks(w http.ResponseWriter, r *http.Request) {
 			go api.Statsd.Count(1, url+".400")
 			jsonResponse(w, missingParamErr("name"), 400)
 		case err != nil || !university:
-			network, err = api.CreateGroup(userID, name, url, desc, privacy)
+			network, err = api.CreateGroup(userID, name, url, desc, privacy, category)
 		default:
 			domains := strings.Split(r.FormValue("domains"), ",")
 			network, err = api.AdminCreateUniversity(userID, name, domains...)

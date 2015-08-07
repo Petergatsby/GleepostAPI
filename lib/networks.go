@@ -314,7 +314,7 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 }
 
 //CreateGroup creates a group and adds the creator as a member.
-func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (network gp.Group, err error) {
+func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy, category string) (network gp.Group, err error) {
 	exists, eupload := api.userUploadExists(userID, url)
 	switch {
 	case eupload != nil:
@@ -331,7 +331,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy string) (
 		if privacy != "public" && privacy != "private" && privacy != "secret" {
 			privacy = "private"
 		}
-		network, err = api.createNetwork(name, primary.ID, url, desc, userID, true, privacy)
+		network, err = api.createNetwork(name, primary.ID, url, desc, userID, true, privacy, category)
 		if err != nil {
 			return
 		}
@@ -818,13 +818,13 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 }
 
 //CreateNetwork creates a new network. usergroup indicates that the group is user-defined (created by a user rather than system-defined networks such as universities)
-func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string, creator gp.UserID, usergroup bool, privacy string) (group gp.Group, err error) {
-	networkInsert := "INSERT INTO network (name, parent, cover_img, `desc`, creator, user_group, privacy) VALUES (?, ?, ?, ?, ?, ?, ?)"
+func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string, creator gp.UserID, usergroup bool, privacy, category string) (group gp.Group, err error) {
+	networkInsert := "INSERT INTO network (name, parent, cover_img, `desc`, creator, user_group, privacy, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 	s, err := api.sc.Prepare(networkInsert)
 	if err != nil {
 		return
 	}
-	res, err := s.Exec(name, parent, url, desc, creator, usergroup, privacy)
+	res, err := s.Exec(name, parent, url, desc, creator, usergroup, privacy, category)
 	if err != nil {
 		return
 	}
@@ -835,6 +835,7 @@ func (api *API) createNetwork(name string, parent gp.NetworkID, url, desc string
 	group.Desc = desc
 	group.Privacy = privacy
 	group.MemberCount = 1
+	group.Category = category
 	u, err := api.users.byID(creator)
 	if err == nil {
 		group.Creator = &u
