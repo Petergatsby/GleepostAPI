@@ -313,6 +313,18 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 	}
 }
 
+var groupCategories = []string{"sports", "social", "academic", "dorm", "career", "official"}
+
+func validateCategory(cat string) string {
+	cat = strings.ToLower(strings.TrimSpace(cat))
+	for _, s := range groupCategories {
+		if cat == s {
+			return cat
+		}
+	}
+	return ""
+}
+
 //CreateGroup creates a group and adds the creator as a member.
 func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy, category string) (network gp.Group, err error) {
 	exists, eupload := api.userUploadExists(userID, url)
@@ -331,6 +343,8 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy, category
 		if privacy != "public" && privacy != "private" && privacy != "secret" {
 			privacy = "private"
 		}
+
+		category = validateCategory(category)
 		network, err = api.createNetwork(name, primary.ID, url, desc, userID, true, privacy, category)
 		if err != nil {
 			return
