@@ -48,7 +48,8 @@ func searchGroups(w http.ResponseWriter, r *http.Request) {
 	default:
 		vars := mux.Vars(r)
 		query := vars["query"]
-		groups, err := api.UserSearchGroups(userID, query)
+		filter := r.FormValue("filter")
+		groups, err := api.UserSearchGroups(userID, query, filter)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return

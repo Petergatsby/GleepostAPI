@@ -2385,6 +2385,8 @@ Where available, `role` indicates your membership status in this group.
 
 If `pending_request` is present, this indicates you have an outstanding request to join this group.
 
+Optionally, provide `filter` to limit searches to this category of groups.
+
 Example response:
 ```json
 [
@@ -2398,6 +2400,7 @@ Example response:
 			"name":"Patrick",
 			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/45661eff6323f17ee42d90fe2fa0ad8dcf29d28a67619f8a95babf4ace48ff96.jpg"
 		},
+		"category":"academic",
 		"privacy":"private",
 		"size":1234,
 		"role": {
