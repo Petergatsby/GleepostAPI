@@ -519,19 +519,22 @@ func (api *API) AdminCreateUniversity(userID gp.UserID, name string, domains ...
 
 //GetUserUniversity returns this user's primary network (ie, their university)
 func (api *API) getUserUniversity(id gp.UserID) (network gp.GroupSubjective, err error) {
-	s, err := api.sc.Prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
+	s, err := api.sc.Prepare("SELECT user_network.network_id, network.name, user_network.role, user_network.role_level, network.cover_img, network.`desc`, network.creator, network.privacy, network.category FROM user_network JOIN network ON user_network.network_id = network.id WHERE user_network.user_id = ? AND network.is_university = 1 ")
 	if err != nil {
 		return
 	}
-	var img, desc, privacy sql.NullString
+	var img, desc, privacy, category sql.NullString
 	var creator sql.NullInt64
 	var role gp.Role
-	err = s.QueryRow(id).Scan(&network.ID, &network.Group.Network.Name, &role.Name, &role.Level, &img, &desc, &creator, &privacy)
+	err = s.QueryRow(id).Scan(&network.ID, &network.Group.Network.Name, &role.Name, &role.Level, &img, &desc, &creator, &privacy, &category)
 	if img.Valid {
 		network.Image = img.String
 	}
 	if desc.Valid {
 		network.Desc = desc.String
+	}
+	if category.Valid {
+		network.Category = category.String
 	}
 	if creator.Valid {
 		u, err := api.users.byID(gp.UserID(creator.Int64))
@@ -593,7 +596,7 @@ func (api *API) groupsByActivity(id gp.UserID, index int64, count int) (networks
 	networks = make([]gp.GroupSubjective, 0)
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
 		"user_network.role_level, network.name, " +
-		"network.cover_img, network.`desc`, network.creator, network.privacy, " +
+		"network.cover_img, network.`desc`, network.creator, network.privacy, network.category " +
 		"GREATEST( " +
 		"COALESCE((SELECT MAX(`timestamp`) FROM chat_messages WHERE conversation_id = conversations.id), '0000-00-00 00:00:00'), " +
 		"COALESCE((SELECT MAX(`time`) FROM wall_posts WHERE network_id = user_network.network_id), '0000-00-00 00:00:00') " +
@@ -615,12 +618,11 @@ func (api *API) groupsByActivity(id gp.UserID, index int64, count int) (networks
 	defer rows.Close()
 	for rows.Next() {
 		var network gp.GroupSubjective
-		var img, desc sql.NullString
+		var img, desc, privacy, category sql.NullString
 		var creator sql.NullInt64
-		var privacy sql.NullString
 		var lastActivity string
 		var role gp.Role
-		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Group.Name, &img, &desc, &creator, &privacy, &lastActivity)
+		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Group.Name, &img, &desc, &creator, &privacy, &category, &lastActivity)
 		if err != nil {
 			return
 		}
@@ -633,6 +635,9 @@ func (api *API) groupsByActivity(id gp.UserID, index int64, count int) (networks
 		}
 		if desc.Valid {
 			network.Desc = desc.String
+		}
+		if category.Valid {
+			network.Category = category.String
 		}
 		if creator.Valid {
 			u, err := api.users.byID(gp.UserID(creator.Int64))
@@ -716,7 +721,7 @@ func (api *API) subjectiveMembershipCount(perspective, user gp.UserID) (count in
 //SubjectiveMemberships returns all the groups this user is a member of, as far as perspective is concerned.
 func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, count int) (groups []gp.GroupSubjective, err error) {
 	groups = make([]gp.GroupSubjective, 0)
-	q := "SELECT user_network.network_id, user_network.role, user_network.role_level, network.name, network.cover_img, network.`desc`, network.creator, network.privacy FROM user_network JOIN network ON user_network.network_id = network.id "
+	q := "SELECT user_network.network_id, user_network.role, user_network.role_level, network.name, network.cover_img, network.`desc`, network.creator, network.privacy, network.category FROM user_network JOIN network ON user_network.network_id = network.id "
 	q += "WHERE user_group = 1 AND parent = (SELECT network_id FROM user_network WHERE user_id = ? LIMIT 1) "
 	q += "AND (privacy != 'secret' OR network.id IN (SELECT network_id FROM user_network WHERE user_id = ?)) "
 	q += "AND user_network.user_id = ? "
@@ -732,11 +737,10 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, 
 	defer rows.Close()
 	for rows.Next() {
 		var network gp.GroupSubjective
-		var img, desc sql.NullString
+		var img, desc, privacy, category sql.NullString
 		var creator sql.NullInt64
-		var privacy sql.NullString
 		var role gp.Role
-		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Group.Name, &img, &desc, &creator, &privacy)
+		err = rows.Scan(&network.ID, &role.Name, &role.Level, &network.Group.Name, &img, &desc, &creator, &privacy, &category)
 		if err != nil {
 			return
 		}
@@ -746,6 +750,9 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, 
 		}
 		if desc.Valid {
 			network.Desc = desc.String
+		}
+		if category.Valid {
+			network.Category = category.String
 		}
 		if creator.Valid {
 			u, err := api.users.byID(gp.UserID(creator.Int64))
@@ -796,17 +803,17 @@ func (api *API) setNetwork(userID gp.UserID, networkID gp.NetworkID) (err error)
 
 //GetNetwork returns the network netId. If userID is 0, it will omit the group's unread count.
 func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
-	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group, privacy " +
+	networkSelect := "SELECT name, cover_img, `desc`, creator, user_group, privacy, category " +
 		"FROM network " +
 		"WHERE network.id = ?"
 	s, err := api.sc.Prepare(networkSelect)
 	if err != nil {
 		return
 	}
-	var coverImg, desc, privacy sql.NullString
+	var coverImg, desc, privacy, category sql.NullString
 	var creator sql.NullInt64
 	var userGroup bool
-	err = s.QueryRow(netID).Scan(&network.Name, &coverImg, &desc, &creator, &userGroup, &privacy)
+	err = s.QueryRow(netID).Scan(&network.Name, &coverImg, &desc, &creator, &userGroup, &privacy, &category)
 	if err != nil {
 		return
 	}
@@ -827,6 +834,9 @@ func (api *API) getNetwork(netID gp.NetworkID) (network gp.Group, err error) {
 	}
 	if privacy.Valid {
 		network.Privacy = privacy.String
+	}
+	if category.Valid {
+		network.Category = category.String
 	}
 	return
 }
@@ -1304,7 +1314,7 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 
 //GroupsByMembershipCount returns the usergroups in this user's university, sorted by membership count / id.
 func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int) (groups []gp.GroupSubjective, err error) {
-	q := "SELECT id, name, cover_img, `desc`, creator, privacy, COUNT(user_id) as cnt " +
+	q := "SELECT id, name, cover_img, `desc`, creator, privacy, category, COUNT(user_id) as cnt " +
 		"FROM network " +
 		"JOIN user_network ON network.id = user_network.network_id " +
 		"WHERE user_group = 1 " +
@@ -1327,17 +1337,20 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		return
 	}
 	defer rows.Close()
-	var img, desc, privacy sql.NullString
+	var img, desc, privacy, category sql.NullString
 	var creator sql.NullInt64
 	for rows.Next() {
 		group := gp.GroupSubjective{}
-		err = rows.Scan(&group.ID, &group.Name, &img, &desc, &creator, &privacy, &group.MemberCount)
+		err = rows.Scan(&group.ID, &group.Name, &img, &desc, &creator, &privacy, &category, &group.MemberCount)
 		if err != nil {
 			log.Println("Scan err:", err)
 			continue
 		}
 		if img.Valid {
 			group.Image = img.String
+		}
+		if category.Valid {
+			group.Category = category.String
 		}
 		if creator.Valid {
 			u, err := api.users.byID(gp.UserID(creator.Int64))
