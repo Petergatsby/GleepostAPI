@@ -509,7 +509,6 @@ func getNetworkRequests(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 		default:
 			jsonResponse(w, requests, 200)
-
 		}
 	}
 }
@@ -521,7 +520,8 @@ func getNetworks(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, &EBADTOKEN, 400)
 	default:
 		index, _ := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		groups, err := api.GroupsByMembershipCount(userID, index, api.Config.GroupPageSize)
+		filter := r.FormValue("filter")
+		groups, err := api.GroupsByMembershipCount(userID, index, api.Config.GroupPageSize, filter)
 		if err != nil {
 			jsonErr(w, err, 500)
 			return

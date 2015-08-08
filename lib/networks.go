@@ -1313,13 +1313,18 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 }
 
 //GroupsByMembershipCount returns the usergroups in this user's university, sorted by membership count / id.
-func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int) (groups []gp.GroupSubjective, err error) {
+func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int, filter string) (groups []gp.GroupSubjective, err error) {
+	var filterClause string
+	if len(filter) > 0 {
+		filterClause = "AND category = ? "
+	}
 	q := "SELECT id, name, cover_img, `desc`, creator, privacy, category, COUNT(user_id) as cnt " +
 		"FROM network " +
 		"JOIN user_network ON network.id = user_network.network_id " +
 		"WHERE user_group = 1 " +
 		"AND privacy != 'secret' " +
 		"AND parent = ? " +
+		filterClause +
 		"GROUP BY network.id " +
 		"ORDER BY cnt DESC, id ASC " +
 		"LIMIT ?, ?"
@@ -1332,7 +1337,12 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 	if err != nil {
 		return
 	}
-	rows, err := s.Query(primary.ID, index, count)
+	var rows *sql.Rows
+	if len(filter) > 0 {
+		rows, err = s.Query(primary.ID, filter, index, count)
+	} else {
+		rows, err = s.Query(primary.ID, index, count)
+	}
 	if err != nil {
 		return
 	}
@@ -1375,7 +1385,6 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 			if err == nil && (status == "pending" || status == "rejected") {
 				group.PendingRequest = true
 			}
-
 		}
 		groups = append(groups, group)
 	}

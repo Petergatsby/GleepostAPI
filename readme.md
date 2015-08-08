@@ -954,6 +954,8 @@ optional parameters:
 
 `start`: the pagination offset for the list
 
+`filter`: limit the list to groups of this category
+
 Response:
 
 (http 200)
