@@ -596,7 +596,7 @@ func (api *API) groupsByActivity(id gp.UserID, index int64, count int) (networks
 	networks = make([]gp.GroupSubjective, 0)
 	networkSelect := "SELECT user_network.network_id, user_network.role, " +
 		"user_network.role_level, network.name, " +
-		"network.cover_img, network.`desc`, network.creator, network.privacy, network.category " +
+		"network.cover_img, network.`desc`, network.creator, network.privacy, network.category, " +
 		"GREATEST( " +
 		"COALESCE((SELECT MAX(`timestamp`) FROM chat_messages WHERE conversation_id = conversations.id), '0000-00-00 00:00:00'), " +
 		"COALESCE((SELECT MAX(`time`) FROM wall_posts WHERE network_id = user_network.network_id), '0000-00-00 00:00:00') " +
