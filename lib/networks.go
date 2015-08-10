@@ -294,8 +294,7 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 			var lastActivity time.Time
 			lastActivity, err = api.networkLastActivity(userID, netID)
 			if err != nil {
-				log.Println(err)
-				return
+				log.Println("last activity error:", err)
 			} else {
 				network.LastActivity = &lastActivity
 			}
