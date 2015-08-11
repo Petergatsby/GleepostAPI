@@ -249,10 +249,8 @@ func (api *API) userCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, 
 		return
 	}
 	if net.Privacy == "public" && in {
-		log.Println("Network is public, can join")
 		return true, nil
 	}
-	log.Println("Network is private or secret, can't join")
 	return false, nil
 }
 
