@@ -43,7 +43,7 @@ func (p Presences) Broadcast(userID gp.UserID, FormFactor string) error {
 	for _, u := range people {
 		chans = append(chans, fmt.Sprintf("c:%d", u))
 	}
-	event := presenceEvent{UserID: userID, Form: FormFactor, At: time.Now().UTC()}
+	event := presenceEvent{UserID: userID, Form: FormFactor, At: time.Now().UTC().Round(time.Second)}
 	go p.broker.PublishEvent("presence", userURL(userID), event, chans)
 	return nil
 }
