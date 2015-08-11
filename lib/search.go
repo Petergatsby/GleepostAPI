@@ -63,11 +63,11 @@ func (api *API) searchGroups(parent gp.NetworkID, query, category string) (group
 	groupQuery := esgroupquery{}
 	parentTerm := make(map[string]string)
 	parentTerm["parent"] = fmt.Sprintf("%d", parent)
-	groupQuery.Query.Filtered.Filter.Must = []map[string]string{parentTerm}
+	groupQuery.Query.Filtered.Filter.Bool.Must = []map[string]string{parentTerm}
 	if len(category) > 0 {
 		categoryTerm := make(map[string]string)
 		categoryTerm["category"] = category
-		groupQuery.Query.Filtered.Filter.Must = append(groupQuery.Query.Filtered.Filter.Must, categoryTerm)
+		groupQuery.Query.Filtered.Filter.Bool.Must = append(groupQuery.Query.Filtered.Filter.Bool.Must, categoryTerm)
 	}
 	for _, field := range fields {
 		match := make(map[string]string)
@@ -101,10 +101,13 @@ type innergroupquery struct {
 }
 
 type andfiltered struct {
-	Filter boolmustfilter  `json:"filter"`
+	Filter boolfilter      `json:"filter"`
 	Query  innerinnerquery `json:"query"`
 }
 
-type boolmustfilter struct {
+type boolfilter struct {
+	Bool mustfilter `json:"bool"`
+}
+type mustfilter struct {
 	Must []map[string]string `json:"must"`
 }
