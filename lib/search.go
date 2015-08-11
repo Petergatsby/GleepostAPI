@@ -26,6 +26,7 @@ func (api *API) UserSearchGroups(userID gp.UserID, name, category string) (group
 		group.Group = g
 		group.UnreadCount, err = api.userConversationUnread(userID, group.Conversation)
 		if err != nil {
+			log.Println("error getting unread", err)
 			return
 		}
 		var role gp.Role
@@ -34,14 +35,14 @@ func (api *API) UserSearchGroups(userID gp.UserID, name, category string) (group
 			group.YourRole = &role
 			var lastActivity time.Time
 			lastActivity, err = api.networkLastActivity(userID, group.ID)
-			if err != nil {
-				log.Println(err)
-				return
-			} else {
+			if err == nil {
 				group.LastActivity = &lastActivity
+			} else {
+				err = nil
 			}
 			group.NewPosts, err = api.groupNewPosts(userID, group.ID)
 			if err != nil {
+				log.Println("error getting new posts", err)
 				return
 			}
 		}
@@ -63,11 +64,11 @@ func (api *API) searchGroups(parent gp.NetworkID, query, category string) (group
 	groupQuery := esgroupquery{}
 	parentTerm := make(map[string]string)
 	parentTerm["parent"] = fmt.Sprintf("%d", parent)
-	groupQuery.Query.Filtered.Filter.Bool.Must = []map[string]string{parentTerm}
+	groupQuery.Query.Filtered.Filter.Bool.Must = []term{{T: parentTerm}}
 	if len(category) > 0 {
 		categoryTerm := make(map[string]string)
 		categoryTerm["category"] = category
-		groupQuery.Query.Filtered.Filter.Bool.Must = append(groupQuery.Query.Filtered.Filter.Bool.Must, categoryTerm)
+		groupQuery.Query.Filtered.Filter.Bool.Must = append(groupQuery.Query.Filtered.Filter.Bool.Must, term{T: categoryTerm})
 	}
 	for _, field := range fields {
 		match := make(map[string]string)
@@ -109,5 +110,9 @@ type boolfilter struct {
 	Bool mustfilter `json:"bool"`
 }
 type mustfilter struct {
-	Must []map[string]string `json:"must"`
+	Must []term `json:"must"`
+}
+
+type term struct {
+	T map[string]string `json:"term"`
 }
