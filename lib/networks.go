@@ -235,19 +235,24 @@ func (api *API) groupAddConvParticipants(adder, addee gp.UserID, group gp.Networ
 func (api *API) userCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, err error) {
 	net, err := api.getNetwork(netID)
 	if err != nil {
+		log.Println("Error getting network:", err)
 		return
 	}
 	parent, err := api.networkParent(netID)
 	if err != nil {
+		log.Println("Error getting network parent:", err)
 		return
 	}
 	in, err := api.userInNetwork(userID, parent)
 	if err != nil {
+		log.Println("Error getting whether this user is in the network:", err)
 		return
 	}
 	if net.Privacy == "public" && in {
+		log.Println("Network is public, can join")
 		return true, nil
 	}
+	log.Println("Network is private or secret, can't join")
 	return false, nil
 }
 
