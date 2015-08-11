@@ -33,7 +33,8 @@ func (p Presences) Broadcast(userID gp.UserID, FormFactor string) error {
 	if FormFactor != "desktop" && FormFactor != "mobile" {
 		return InvalidFormFactor
 	}
-	p.setPresence(userID, FormFactor)
+	at := time.Now().UTC().Round(time.Second)
+	p.setPresence(userID, FormFactor, at)
 	people, err := p.everyConversationParticipants(userID)
 	if err != nil {
 		log.Println(err)
@@ -43,7 +44,7 @@ func (p Presences) Broadcast(userID gp.UserID, FormFactor string) error {
 	for _, u := range people {
 		chans = append(chans, fmt.Sprintf("c:%d", u))
 	}
-	event := presenceEvent{UserID: userID, Form: FormFactor, At: time.Now().UTC().Round(time.Second)}
+	event := presenceEvent{UserID: userID, Form: FormFactor, At: at}
 	go p.broker.PublishEvent("presence", userURL(userID), event, chans)
 	return nil
 }
@@ -52,11 +53,11 @@ func userURL(userID gp.UserID) (url string) {
 	return fmt.Sprintf("/user/%d", userID)
 }
 
-func (p Presences) setPresence(userID gp.UserID, FormFactor string) {
+func (p Presences) setPresence(userID gp.UserID, FormFactor string, at time.Time) {
 	conn := p.pool.Get()
 	defer conn.Close()
 	key := fmt.Sprintf("users:%d:presence:%s", userID, FormFactor)
-	conn.Send("SET", key, time.Now().UTC().Round(time.Second).Format(time.RFC3339))
+	conn.Send("SET", key, at.Format(time.RFC3339))
 	conn.Flush()
 }
 
