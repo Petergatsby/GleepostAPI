@@ -188,7 +188,11 @@ func postNetworkUsers(w http.ResponseWriter, r *http.Request) {
 				fbusers = append(fbusers, fbuser)
 			}
 		}
-		err = api.UserAddToGroup(userID, netID, users, fbusers, []string{r.FormValue("email")})
+		var emails []string
+		if len(r.FormValue("email")) > 0 {
+			emails = append(emails, r.FormValue("email"))
+		}
+		err = api.UserAddToGroup(userID, netID, users, fbusers, emails)
 		if err != nil {
 			e, ok := err.(*gp.APIerror)
 			if ok && *e == lib.ENOTALLOWED {
