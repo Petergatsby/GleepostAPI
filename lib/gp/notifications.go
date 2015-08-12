@@ -15,4 +15,5 @@ type Notification struct {
 	Post    PostID         `json:"post,omitempty"`
 	Group   NetworkID      `json:"network,omitempty"`
 	Preview string         `json:"preview,omitempty"`
+	Done    bool           `json:"done,omitempty"`
 }

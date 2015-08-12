@@ -28,13 +28,13 @@ func toLocKey(notificationType string) (locKey string) {
 func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includeSeen bool) (notifications []gp.Notification, err error) {
 	notifications = make([]gp.Notification, 0)
 	var notificationSelect string
-	notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen FROM notifications WHERE recipient = ?"
+	notificationSelect = "SELECT id, type, time, `by`, post_id, network_id, preview_text, seen, done FROM notifications WHERE recipient = ?"
 	if !includeSeen {
 		notificationSelect += " AND seen = 0"
 	}
 	switch {
 	case mode == ChronologicallyAfterID:
-		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT ?) AS `wp` ORDER BY `id` DESC"
+		notificationSelect = "SELECT `id`, `type`, `time`, `by`, `post_id`, `network_id`, `preview_text`, `seen`, `done` FROM (" + notificationSelect + " AND notifications.id > ? ORDER BY `id` ASC LIMIT ?) AS `wp` ORDER BY `id` DESC"
 	case mode == ChronologicallyBeforeID:
 		notificationSelect += " AND notifications.id < ? ORDER BY `id` DESC LIMIT ?"
 	default:
@@ -62,7 +62,7 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 		var postID, netID sql.NullInt64
 		var preview sql.NullString
 		var by gp.UserID
-		if err = rows.Scan(&notification.ID, &notification.Type, &t, &by, &postID, &netID, &preview, &notification.Seen); err != nil {
+		if err = rows.Scan(&notification.ID, &notification.Type, &t, &by, &postID, &netID, &preview, &notification.Seen, &notification.Done); err != nil {
 			return
 		}
 		notification.Time, err = time.Parse(mysqlTime, t)
@@ -473,7 +473,7 @@ func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) 
 }
 
 func unreadNotificationCount(sc *psc.StatementCache, userID gp.UserID) (count int, err error) {
-	s, err := sc.Prepare("SELECT COUNT(*) FROM notifications WHERE recipient = ? AND seen = 0")
+	s, err := sc.Prepare("SELECT COUNT(*) FROM notifications WHERE recipient = ? AND seen = 0 AND done = 0")
 	if err != nil {
 		return
 	}
