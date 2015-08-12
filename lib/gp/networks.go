@@ -54,6 +54,7 @@ type Rule struct {
 	Value     string
 }
 
+//NetRequest represents a particular user's request to join a particular group. Possible values for `Status` are: `pending`, `accepted`, `rejected`
 type NetRequest struct {
 	Requester User      `json:"requester"`
 	ReqTime   time.Time `json:"requested-at"`
