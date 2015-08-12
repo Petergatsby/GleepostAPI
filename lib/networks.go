@@ -315,7 +315,7 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 	}
 }
 
-var groupCategories = []string{"sports", "social", "academic", "dorm", "career", "official"}
+var groupCategories = []string{"sports", "social", "academic", "dorm", "career", "official", "activist"}
 
 func validateCategory(cat string) string {
 	cat = strings.ToLower(strings.TrimSpace(cat))

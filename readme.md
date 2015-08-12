@@ -996,7 +996,7 @@ If `url` is not valid, it will respond with a 403.
 
 if privacy is not provided, it will default to "private".
 
-`category` = `sports`, `social`, `academic`, `dorm`, `career`, `official`
+`category` = `sports`, `social`, `academic`, `dorm`, `career`, `official`, `activist`
 
 `university` = `boolean` 
 
