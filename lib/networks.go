@@ -1464,6 +1464,7 @@ func (api *API) RejectNetworkRequest(userID gp.UserID, netID gp.NetworkID, reqID
 		return AlreadyAccepted
 	default:
 		err = api.setRequestStatus(reqID, netID, "rejected", userID)
+		go api.notifObserver.Notify(rejectedGroupEvent{rejectedID: reqID, netID: netID})
 		return
 	}
 }

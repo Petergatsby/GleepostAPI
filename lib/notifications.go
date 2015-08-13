@@ -218,6 +218,19 @@ func (a addedGroupEvent) notify(n NotificationObserver) error {
 	return nil
 }
 
+type rejectedGroupEvent struct {
+	rejectedID gp.UserID
+	netID      gp.NetworkID
+}
+
+func (r rejectetGroupEvent) notify(n NotificationObserver) error {
+	err = n.markRequestNotificationDone(r.netID, r.rejectedID)
+	if err != nil {
+		log.Println("Error marking notifications as done:", err)
+	}
+	return nil
+}
+
 type attendEvent struct {
 	userID      gp.UserID
 	recipientID gp.UserID
