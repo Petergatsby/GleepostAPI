@@ -208,7 +208,14 @@ type addedGroupEvent struct {
 
 func (a addedGroupEvent) notify(n NotificationObserver) error {
 	err := n.createNotification("added_group", a.userID, a.addeeID, 0, a.netID, "")
-	return err
+	if err != nil {
+		return err
+	}
+	err = n.markRequestNotificationDone(a.netID, a.addeeID)
+	if err != nil {
+		log.Println("Error marking notifications as done:", err)
+	}
+	return nil
 }
 
 type attendEvent struct {
@@ -538,5 +545,15 @@ func (n NotificationObserver) networkCreator(netID gp.NetworkID) (creator gp.Use
 		return
 	}
 	err = s.QueryRow(netID).Scan(&creator)
+	return
+}
+
+func (n NotificationObserver) markRequestNotificationDone(netID gp.NetworkID, requestor gp.UserID) (err error) {
+	q := "UPDATE notifications SET done = 1 WHERE network_id = ? AND `by` = ? AND type = 'group_request'"
+	s, err := n.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(netID, requestor)
 	return
 }
