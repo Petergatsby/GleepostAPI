@@ -405,4 +405,193 @@ Once you have requested access to a `private` group, the administrators of that 
 To accept the request, the administrator must add [the requestor to the group](#post-networksnetwork-idusers).
 To deny the request, an administrator must [DELETE the request.](#delete-networksnetwork-idrequestsuser-id). This will not be visible to the requestor (from their perspective, the request is still pending).
 
+###Notifications
+
+Someone commented on your post:
+```json
+{
+	"id":1525345,
+	"type":"commented",
+	"post":5,
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":2395,
+		"name":"testing_user",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	},
+	"preview":"Great idea for an event, Peter!"
+}
+```
+
+Someone commented on a post you commented on:
+```json
+{
+	"id":3010,
+	"type":"commented2",
+	"post":5,
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":2395,
+		"name":"testing_user",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	},
+	"preview":"Great idea for an event, Peter!"
+}
+```
+
+Someone added you to a group:
+```json
+{
+	"id":1525345,
+	"type":"added_group",
+	"network":1913,
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":2395,
+		"name":"testing_user",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+}
+```
+
+An administrator posted in a group you're in:
+```json
+{
+	"id":1525355,
+	"type":"group_post",
+	"network":1913,
+	"post":5,
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":2395,
+		"name":"testing_user",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+}
+```
+
+Someone liked your post:
+```json
+{
+	"id":12,
+	"type":"liked",
+	"post":5,
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":2395,
+		"name":"testing_user",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+}
+```
+
+Someone approved your post:
+```json
+{
+	"id":3006,
+	"type":"approved_post",
+	"post":12345,
+	"time":"2014-11-12T22:51:35Z",
+	"user":{
+		"id":2783,
+		"name":"Amy",
+		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+	},
+	"seen":false
+}
+```
+
+Someone rejected your post:
+```json
+{
+	"id":3007,
+	"type":"rejected_post",
+	"post":12345,
+	"time":"2014-11-12T22:51:35Z",
+	"user":{
+		"id":2783,
+		"name":"Amy",
+		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+	},
+	"seen":false
+}
+```
+
+Someone requested to join your group:
+```json
+{
+	"id":3008,
+	"type":"group_request",
+	"network":12345,
+	"time":"2014-11-12T22:51:35Z",
+	"user":{
+		"id":2783,
+		"name":"Amy",
+		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+	},
+	"seen":false,
+	"done":true
+}
+```
+
+Someone voted in your poll:
+```json
+{
+	"id":3007,
+	"type":"poll_vote",
+	"post":12345,
+	"time":"2014-11-12T22:51:35Z",
+	"user":{
+		"id":2783,
+		"name":"Amy",
+		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+	},
+	"seen":false
+}
+```
+
+Someone is attending your event:
+```json
+{
+	"id":3009,
+	"type":"attended",
+	"post":12345,
+	"time":"2014-11-12T22:51:35Z",
+	"user":{
+		"id":2783,
+		"name":"Amy",
+		"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
+	},
+	"seen":false
+}
+```
+
+(deprecated) Someone requested you as a contact:
+```json
+{
+	"id":99999,
+	"type":"added_you",
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":9,
+		"name":"Patrick",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+}
+```
+
+(deprecated) Someone accepted your contact request:
+```json
+{
+	"id":135235,
+	"type":"accepted_you",
+	"time":"2013-09-16T16:58:30.771905595Z",
+	"user": {
+		"id":21,
+		"name":"Petergatsby",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	}
+}
+```
+
 ###Approve

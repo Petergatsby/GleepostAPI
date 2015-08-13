@@ -2147,6 +2147,8 @@ If include_seen is false, then only the notifications which have not been seen y
 
 If include_seen is true, the notifications that you have already marked as "seen" will also be visible; they will have the attribute `seen` = `true`.
 
+Optionally, a notification may include `done` = `true`. This indicates that any action associated with this notification has already been taken.
+
 example responses:
 HTTP 200
 ```json
@@ -2263,7 +2265,8 @@ HTTP 200
 			"name":"Amy",
 			"profile_image":"https://s3-eu-west-1.amazonaws.com/gpimg/9aabc002cf0b78f2471fa8078335d13471bcb02a672e6da41971fde37135ac70.png"
 		},
-		"seen":false
+		"seen":false,
+		"done":true
 	},
 	{
 		"id":3007,
