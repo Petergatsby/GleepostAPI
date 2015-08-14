@@ -95,6 +95,7 @@ func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 	err := api.ContactFormRequest(r.FormValue("name"), r.FormValue("college"), r.FormValue("email"), r.FormValue("phoneNo"), ip)
 	if err != nil {
 		jsonErr(w, err, 500)
+		return
 	}
 	jsonResponse(w, struct {
 		Success bool `json:"success"`
