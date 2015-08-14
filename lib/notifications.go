@@ -223,10 +223,11 @@ type rejectedGroupEvent struct {
 	netID      gp.NetworkID
 }
 
-func (r rejectetGroupEvent) notify(n NotificationObserver) error {
-	err = n.markRequestNotificationDone(r.netID, r.rejectedID)
+func (r rejectedGroupEvent) notify(n NotificationObserver) error {
+	err := n.markRequestNotificationDone(r.netID, r.rejectedID)
 	if err != nil {
 		log.Println("Error marking notifications as done:", err)
+		return err
 	}
 	return nil
 }
