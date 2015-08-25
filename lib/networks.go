@@ -1383,10 +1383,10 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 			group.Conversation, _ = api.groupConversation(group.ID)
 			group.UnreadCount, _ = api.userConversationUnread(userID, group.Conversation)
 			group.NewPosts, _ = api.groupNewPosts(userID, group.ID)
-			status, err := api.pendingRequestExists(userID, group.ID)
-			if err == nil && (status == "pending" || status == "rejected") {
-				group.PendingRequest = true
-			}
+		}
+		status, err := api.pendingRequestExists(userID, group.ID)
+		if err == nil && (status == "pending" || status == "rejected") {
+			group.PendingRequest = true
 		}
 		groups = append(groups, group)
 	}
