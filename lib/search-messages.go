@@ -29,12 +29,19 @@ func (api *API) SearchMessagesInConversation(userID gp.UserID, convID gp.Convers
 		return
 	}
 	for _, message := range messages {
-		var before []gp.Message
+		var before, since []gp.Message
 		before, err = api.getMessages(userID, convID, ChronologicallyBeforeID, int64(message.Message.ID), 2)
 		if err != nil {
 			return
 		}
+		since, err = api.getMessages(userID, convID, ChronologicallyAfterID, int64(message.Message.ID), 2)
+		if err != nil {
+			return
+		}
 		context := []MatchedMessage{}
+		for _, msg := range since {
+			context = append(context, MatchedMessage{Message: msg})
+		}
 		context = append(context, MatchedMessage{Message: message.Message, Matched: true})
 		for _, msg := range before {
 			context = append(context, MatchedMessage{Message: msg})
