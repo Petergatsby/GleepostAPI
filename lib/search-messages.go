@@ -1,9 +1,11 @@
 package lib
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/mattbaird/elastigo/lib"
 )
 
 //MessageResult contains one or more messages which matched a search query, plus their context (a few messages before and after the hit)
@@ -28,4 +30,17 @@ func (api *API) SearchMessagesInConversation(userID gp.UserID, convID gp.Convers
 		},
 	}
 	return hits, nil
+}
+
+type esMessage struct {
+	gp.Message
+	convID gp.ConversationID
+}
+
+func (api *API) esIndexMessage(message gp.Message, conversation gp.ConversationID) {
+	msg := esMessage{Message: message, convID: conversation}
+	c := elastigo.NewConn()
+	c.Domain = api.Config.ElasticSearch
+	c.Index("gleepost", "messages", fmt.Sprintf("%d", msg.ID), nil, msg)
+	return
 }

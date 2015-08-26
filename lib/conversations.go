@@ -214,6 +214,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	}
 	go api.spotFiles(msg)
 	go api.messagePush(msg, convID)
+	go api.esIndexMessage(msg, convID)
 	return
 }
 
