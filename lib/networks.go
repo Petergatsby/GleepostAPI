@@ -1316,6 +1316,7 @@ func (nm *NetworkManager) networkStaff(netID gp.NetworkID) (staff []gp.UserID, e
 
 //GroupsByMembershipCount returns the usergroups in this user's university, sorted by membership count / id.
 func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int, filter string) (groups []gp.GroupSubjective, err error) {
+	t := time.Now()
 	var filterClause string
 	if len(filter) > 0 {
 		filterClause = "AND category = ? "
@@ -1349,6 +1350,7 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		return
 	}
 	defer rows.Close()
+	log.Println("Networks: initial query time:", time.Now().Sub(t))
 	var img, desc, privacy, category sql.NullString
 	var creator sql.NullInt64
 	for rows.Next() {
@@ -1378,16 +1380,21 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 		}
 		var role gp.Role
 		role, err = api.userRole(userID, group.ID)
+		log.Println("Networks: got user role:", time.Now().Sub(t))
 		if err == nil {
 			group.YourRole = &role
 			group.Conversation, _ = api.groupConversation(group.ID)
+			log.Println("Networks: got conversation:", time.Now().Sub(t))
 			group.UnreadCount, _ = api.userConversationUnread(userID, group.Conversation)
+			log.Println("Networks: got unread:", time.Now().Sub(t))
 			group.NewPosts, _ = api.groupNewPosts(userID, group.ID)
+			log.Println("Networks: got new posts:", time.Now().Sub(t))
 		}
 		status, err := api.pendingRequestExists(userID, group.ID)
 		if err == nil && (status == "pending" || status == "rejected") {
 			group.PendingRequest = true
 		}
+		log.Println("Networks: got request status:", time.Now().Sub(t))
 		groups = append(groups, group)
 	}
 	return groups, nil
