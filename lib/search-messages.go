@@ -29,7 +29,18 @@ func (api *API) SearchMessagesInConversation(userID gp.UserID, convID gp.Convers
 		return
 	}
 	for _, message := range messages {
-		hits = append(hits, MessageResult{Messages: []MatchedMessage{{Message: message.Message, Matched: true}}})
+		var before []gp.Message
+		before, err = api.getMessages(userID, convID, ChronologicallyBeforeID, int64(message.Message.ID), 2)
+		if err != nil {
+			return
+		}
+		context := []MatchedMessage{}
+		context = append(context, MatchedMessage{Message: message.Message, Matched: true})
+		for _, msg := range before {
+			context = append(context, MatchedMessage{Message: msg})
+		}
+		result := MessageResult{Messages: context}
+		hits = append(hits, result)
 	}
 	return hits, nil
 }
