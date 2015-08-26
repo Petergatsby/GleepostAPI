@@ -23,6 +23,9 @@ type MatchedMessage struct {
 //SearchMessagesInConversation does exactly what it says on the tin.
 func (api *API) SearchMessagesInConversation(userID gp.UserID, convID gp.ConversationID, query string, mode int, index int64) (hits []MessageResult, err error) {
 	hits = make([]MessageResult, 0)
+	if !api.userCanViewConversation(userID, convID) {
+		return hits, ENOTALLOWED
+	}
 	messages, err := api.esSearchConversation(convID, query)
 	if err != nil {
 		log.Println(err)
