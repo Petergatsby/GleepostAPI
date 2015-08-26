@@ -235,6 +235,69 @@ If the client deletes all their input, then they can manually cancel the typing 
 
 Otherwise, clients should timeout the typing status after a few seconds, or upon receiving a message from that user.
 
+###Search
+
+You may search a particular conversation message history with 
+`GET` `/conversations/[conversation-id]/messages/search/[query]`
+
+
+Each result in the list is a variable-sized list of messages, which corresponds to the matched message(s) and a few messages of context on either side. The matching messages will have `matched` = `true`.
+
+```json
+[
+	{
+		"messages": [
+			{
+				"id": 52,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:23Z"
+			},
+			{
+				"id": 51,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:30Z",
+				"matched":true
+			}
+		]
+	},
+	{
+		"messages": [
+			{
+				"id": 52,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:23Z",
+				"matched":true
+			},
+			{
+				"id": 51,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:30Z"
+			}
+		]
+	}
+]
+```
+
 ###Messages
 
 ####Formatting

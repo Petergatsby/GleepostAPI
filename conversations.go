@@ -26,6 +26,7 @@ func init() {
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(putConversation))).Methods("PUT")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/conversations/{id:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	base.Handle("/conversations/{id:[0-9]+}/messages/search/{query}", timeHandler(api, http.HandlerFunc(searchMessages))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(getMessages))).Methods("GET")
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(postMessages))).Methods("POST")
 	base.Handle("/conversations/{id:[0-9]+}/messages", timeHandler(api, http.HandlerFunc(putMessages))).Methods("PUT")
@@ -389,6 +390,29 @@ func getFiles(w http.ResponseWriter, r *http.Request) {
 			jsonErr(w, err, 500)
 		default:
 			jsonResponse(w, files, 200)
+		}
+	}
+}
+
+func searchMessages(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	vars := mux.Vars(r)
+	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+		return
+	default:
+		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		convID := gp.ConversationID(_convID)
+		results, err := api.SearchMessagesInConversation(userID, convID, vars["query"], mode, index)
+		switch {
+		case err == lib.ENOTALLOWED:
+			jsonErr(w, err, 403)
+		case err != nil:
+			jsonErr(w, err, 500)
+		default:
+			jsonResponse(w, results, 200)
 		}
 	}
 }

@@ -103,6 +103,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /conversations/[coversation-id]/messages [[GET]](#get-conversationsconversation-idmessages) [[POST]](#post-conversationsconversation-idmessages) [[PUT]] (#put-conversationsconversation-idmessages)
 
+/conversations/[conversation-id]/messages/search/[query] [[GET]](#get-conversationsconversation-idmessagessearchquery)
+
 /conversations/[conversation-id]/participants [[POST]](#post-conversationsconversation-idparticipants)
 
 /conversation/[conversation-id]/files [[GET]](#get-conversationsconversation-idfiles)
@@ -1491,8 +1493,67 @@ seen=51
 		}
 	]
 }
+```
 
+##GET /conversations/[conversation-id]/messages/search/[query]
 
+Returns a list of search results within this conversation for this query.
+
+Each result in the list is a variable-sized list of messages, which corresponds to the matched message(s) and a few messages of context on either side. The matching messages will have `matched` = `true`.
+
+```json
+[
+	{
+		"messages": [
+			{
+				"id": 52,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:23Z"
+			},
+			{
+				"id": 51,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:30Z",
+				"matched":true
+			}
+		]
+	},
+	{
+		"messages": [
+			{
+				"id": 52,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:23Z",
+				"matched":true
+			},
+			{
+				"id": 51,
+				"by": {
+					"id": 9,
+					"name": "Patrick",
+					"profile_image": "https://gleepost.com/uploads/bad2cbd1431260c2c4b9766ae5de25d6.gif",
+				},
+				"text": "sup",
+				"timestamp": "2013-09-16T16:58:30Z"
+			}
+		]
+	}
+]
 ```
 
 ##POST /conversations/[conversation-id]/participants
