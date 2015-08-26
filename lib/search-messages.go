@@ -1,8 +1,9 @@
 package lib
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
+	"log"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/mattbaird/elastigo/lib"
@@ -21,26 +22,58 @@ type MatchedMessage struct {
 
 //SearchMessagesInConversation does exactly what it says on the tin.
 func (api *API) SearchMessagesInConversation(userID gp.UserID, convID gp.ConversationID, query string, mode int, index int64) (hits []MessageResult, err error) {
-	hits = []MessageResult{
-		{
-			Messages: []MatchedMessage{
-				{Message: gp.Message{ID: 1, Text: "sup", By: gp.User{ID: 1, Name: "patrick"}, Time: time.Now().UTC().Add(-1 * time.Minute)}, Matched: true},
-				{Message: gp.Message{ID: 2, Text: "nm u?", By: gp.User{ID: 2, Name: "tade"}, Time: time.Now().UTC()}},
-			},
-		},
+	hits = make([]MessageResult, 0)
+	messages, err := api.esSearchConversation(convID, query)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for _, message := range messages {
+		hits = append(hits, MessageResult{Messages: []MatchedMessage{{Message: message.Message, Matched: true}}})
 	}
 	return hits, nil
 }
 
 type esMessage struct {
 	gp.Message
-	convID gp.ConversationID
+	ConvID gp.ConversationID `json:"conversation"`
 }
 
 func (api *API) esIndexMessage(message gp.Message, conversation gp.ConversationID) {
-	msg := esMessage{Message: message, convID: conversation}
+	msg := esMessage{Message: message, ConvID: conversation}
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
 	c.Index("gleepost", "messages", fmt.Sprintf("%d", msg.ID), nil, msg)
+	return
+}
+
+func (api *API) esSearchConversation(convID gp.ConversationID, query string) (messages []esMessage, err error) {
+	c := elastigo.NewConn()
+	c.Domain = api.Config.ElasticSearch
+	esQuery := esgroupquery{}
+	conversationTerm := make(map[string]string)
+	conversationTerm["conversation"] = fmt.Sprintf("%d", convID)
+	esQuery.Query.Filtered.Filter.Bool.Must = []term{{T: conversationTerm}}
+	fields := []string{"text"}
+	for _, field := range fields {
+		match := make(map[string]string)
+		matcher := matcher{Match: match}
+		matcher.Match[field] = query
+		esQuery.Query.Filtered.Query.Bool.Should = append(esQuery.Query.Filtered.Query.Bool.Should, matcher)
+	}
+	q, _ := json.Marshal(esQuery)
+	log.Printf("%s", q)
+	results, err := c.Search("gleepost", "messages", nil, esQuery)
+	if err != nil {
+		return
+	}
+	for _, hit := range results.Hits.Hits {
+		var message esMessage
+		err = json.Unmarshal(*hit.Source, &message)
+		if err != nil {
+			return
+		}
+		messages = append(messages, message)
+	}
 	return
 }
