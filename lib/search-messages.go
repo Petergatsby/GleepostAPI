@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/mattbaird/elastigo/lib"
@@ -64,6 +65,7 @@ func (api *API) esIndexMessage(message gp.Message, conversation gp.ConversationI
 	msg := esMessage{Message: message, ConvID: conversation}
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
+	msg.Time = msg.Time.Round(time.Second)
 	c.Index("gleepost", "messages", fmt.Sprintf("%d", msg.ID), nil, msg)
 	return
 }
