@@ -256,6 +256,7 @@ func postNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
+			return
 		}
 		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, users, 200)
@@ -289,6 +290,7 @@ func getNetworkAdmins(w http.ResponseWriter, r *http.Request) {
 				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
+			return
 		}
 		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, users, 200)
@@ -357,6 +359,7 @@ func getNetworkUsers(w http.ResponseWriter, r *http.Request) {
 				go api.Statsd.Count(1, url+".500")
 				jsonErr(w, err, 500)
 			}
+			return
 		}
 		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, users, 200)
