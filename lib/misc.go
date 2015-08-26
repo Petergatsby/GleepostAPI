@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+//InvalidInput is returned when a contact request is submitted which fails validation.
 var InvalidInput = errors.New("Invalid input")
 
 //ContactFormRequest records a request for contact and emails it out to someone.
