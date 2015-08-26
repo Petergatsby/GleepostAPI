@@ -734,7 +734,8 @@ func (api *API) getMessages(userID gp.UserID, convID gp.ConversationID, mode int
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id > ? " +
-			"ORDER BY `timestamp` DESC LIMIT ?"
+			"ORDER BY `timestamp` ASC LIMIT ?"
+		q = fmt.Sprintf("SELECT id, `from`, text, `timestamp`, `system` FROM ( %s ) AS `msgs` ORDER BY `timestamp` DESC", q)
 	case mode == ChronologicallyBeforeID:
 		q = "SELECT id, `from`, text, `timestamp`, `system`" +
 			"FROM chat_messages " +
