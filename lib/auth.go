@@ -348,7 +348,7 @@ func checkPassStrength(pass string) (err error) {
 
 func (api *API) verificationURL(token string) (url string) {
 	if api.Config.DevelopmentMode {
-		url = "https://dev.gleepost.com/verification.html?token=" + token
+		url = "http://localhost:8080/verification.html?token=" + token
 		return
 	}
 	url = "https://gleepost.com/verification.html?token=" + token
