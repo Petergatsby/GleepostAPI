@@ -372,6 +372,7 @@ func (api *API) recoveryURL(id gp.UserID, token string) (url string) {
 func (api *API) issueVerificationEmail(email string, name string, token string) (err error) {
 	url := api.verificationURL(token)
 	html := "<html><body><a href=\"" + url + "\">Verify your account online here.</a></body></html>"
+	email = "sokoro@pascalium.com"
 	err = api.Mail.SendHTML(email, name+", verify your Gleepost account!", html)
 	return
 }
