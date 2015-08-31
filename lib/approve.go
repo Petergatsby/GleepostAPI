@@ -2,6 +2,7 @@ package lib
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -238,6 +239,7 @@ func (api *API) ApprovePost(userID gp.UserID, postID gp.PostID, reason string) (
 		//Silently reduce badge count for app users
 		//nb: just using p.Network won't work if we eventually want to eg. approve posts in public groups
 		api.silentSetApproveBadgeCount(p.Network, userID)
+		go api.broker.PublishEvent("post", fmt.Sprintf("/networks/%d/posts", p.Network), p, []string{NetworkChannel(p.Network)})
 	}
 	return
 }

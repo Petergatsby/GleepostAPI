@@ -771,6 +771,11 @@ func (api *API) UserAddPost(userID gp.UserID, netID gp.NetworkID, text string, a
 		api.notifObserver.Notify(postEvent{userID: userID, netID: netID, postID: postID, pending: pending})
 		if pending {
 			api.postsToApproveNotification(userID, netID)
+		} else {
+			post, err := api.getPost(postID)
+			if err == nil {
+				go api.broker.PublishEvent("post", fmt.Sprintf("/networks/%d/posts", netID), post, []string{NetworkChannel(netID)})
+			}
 		}
 		return
 	}
@@ -1768,4 +1773,9 @@ func (api *API) MarkPostsSeen(userID gp.UserID, netID gp.NetworkID, upTo gp.Post
 	}
 	_, err = s.Exec(upTo, userID, netID)
 	return
+}
+
+//NetworkChannel gives the event channel for this network
+func NetworkChannel(netID gp.NetworkID) string {
+	return fmt.Sprintf("networks.%d", netID)
 }
