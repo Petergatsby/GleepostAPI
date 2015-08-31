@@ -12,7 +12,7 @@ import (
 //last may be omitted but first must be at least 2 characters.
 func (api *API) userSearchUsersInNetwork(user gp.UserID, query string, netID gp.NetworkID) (users []gp.FullNameUser, err error) {
 	users = make([]gp.FullNameUser, 0)
-	in, err := api.userInNetwork(user, netID)
+	in, err := api.UserInNetwork(user, netID)
 	switch {
 	case err != nil:
 		return

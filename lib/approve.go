@@ -205,7 +205,7 @@ func (api *API) isPendingVisible(userID gp.UserID, postID gp.PostID) (visible bo
 		//Not sure what kinds of errors GetPost will give me, so we'll just say you can't see the post.
 		return false, nil
 	}
-	in, err := api.userInNetwork(userID, p.Network)
+	in, err := api.UserInNetwork(userID, p.Network)
 	switch {
 	case err != nil:
 		return

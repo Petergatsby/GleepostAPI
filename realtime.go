@@ -16,11 +16,12 @@ func init() {
 }
 
 type action struct {
-	Action       string            `json:"action"`
-	Channels     []int             `json:"posts"`
-	Form         string            `json:"form"`
-	Conversation gp.ConversationID `json:"conversation"`
-	Typing       bool              `json:"typing"`
+	Action          string            `json:"action"`
+	PostChannels    []int             `json:"posts"`
+	NetworkChannels []int             `json:"networks"`
+	Form            string            `json:"form"`
+	Conversation    gp.ConversationID `json:"conversation"`
+	Typing          bool              `json:"typing"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -104,7 +105,7 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			api.UserIsTyping(userID, c.Conversation, c.Typing)
 		case c.Action == "SUBSCRIBE" || c.Action == "UNSUBSCRIBE":
 			var postChans []gp.PostID
-			for _, i := range c.Channels {
+			for _, i := range c.PostChannels {
 				postChans = append(postChans, gp.PostID(i))
 			}
 			postChans, err = api.CanSubscribePosts(userID, postChans)
@@ -115,6 +116,13 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			var chans []string
 			for _, i := range postChans {
 				chans = append(chans, lib.PostChannel(i))
+			}
+			for _, i := range c.NetworkChannels {
+				netID := gp.NetworkID(i)
+				in, err := api.UserInNetwork(userID, netID)
+				if in && err == nil {
+					chans = append(chans, lib.NetworkChannel(netID))
+				}
 			}
 			if len(chans) > 0 {
 				messages.Commands <- gp.QueueCommand{Command: c.Action, Value: chans}

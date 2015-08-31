@@ -156,7 +156,7 @@ func (api *API) userHasRole(user gp.UserID, network gp.NetworkID, roleName strin
 //TODO: Check addee exists
 //TODO: Suppress re-add push notification.
 func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (err error) {
-	in, neterr := api.userInNetwork(adder, group)
+	in, neterr := api.UserInNetwork(adder, group)
 	isgroup, grouperr := api.isGroup(group)
 	switch {
 	case neterr != nil:
@@ -243,7 +243,7 @@ func (api *API) userCanJoin(userID gp.UserID, netID gp.NetworkID) (public bool, 
 		log.Println("Error getting network parent:", err)
 		return
 	}
-	in, err := api.userInNetwork(userID, parent)
+	in, err := api.UserInNetwork(userID, parent)
 	if err != nil {
 		log.Println("Error getting whether this user is in the network:", err)
 		return
@@ -273,7 +273,7 @@ func (api *API) assignNetworks(user gp.UserID, email string) (networks int, err 
 
 //UserGetNetwork returns the information about a network, if userID is a member of it; ENOTALLOWED otherwise.
 func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp.GroupSubjective, err error) {
-	in, err := api.userInNetwork(userID, netID)
+	in, err := api.UserInNetwork(userID, netID)
 	switch {
 	case err != nil:
 		return
@@ -392,7 +392,7 @@ func (api *API) sameUniversity(a, b gp.UserID) (shared bool, err error) {
 //UserGetGroupAdmins returns all the admins of the group, or ENOTALLOWED if the requesting user isn't in that group.
 func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
-	in, errin := api.userInNetwork(userID, netID)
+	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	switch {
 	case errin != nil:
@@ -409,7 +409,7 @@ func (api *API) UserGetGroupAdmins(userID gp.UserID, netID gp.NetworkID) (users 
 //UserGetGroupMembers returns all the users in the group, or ENOTALLOWED if the user isn't in that group.
 func (api *API) UserGetGroupMembers(userID gp.UserID, netID gp.NetworkID) (users []gp.UserRole, err error) {
 	users = make([]gp.UserRole, 0)
-	in, errin := api.userInNetwork(userID, netID)
+	in, errin := api.UserInNetwork(userID, netID)
 	group, errgroup := api.isGroup(netID)
 	CanJoin, errJoin := api.userCanJoin(userID, netID)
 	switch {
@@ -451,7 +451,7 @@ func (api *API) UserLeaveGroup(userID gp.UserID, netID gp.NetworkID) (err error)
 //UserInviteEmail sends a group invite from userID to email, or err if something went wrong.
 //If someone has already signed up with email, it just adds them to the group directly.
 func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email string) (err error) {
-	in, neterr := api.userInNetwork(userID, netID)
+	in, neterr := api.UserInNetwork(userID, netID)
 	isgroup, grouperr := api.isGroup(netID)
 	switch {
 	case neterr != nil:
@@ -1120,7 +1120,7 @@ func (api *API) groupConversation(group gp.NetworkID) (conversation gp.Conversat
 }
 
 //UserInNetwork returns true iff this user is in this network.
-func (api *API) userInNetwork(userID gp.UserID, network gp.NetworkID) (in bool, err error) {
+func (api *API) UserInNetwork(userID gp.UserID, network gp.NetworkID) (in bool, err error) {
 	s, err := api.sc.Prepare("SELECT COUNT(*) FROM user_network WHERE user_id = ? AND network_id = ?")
 	if err != nil {
 		return
@@ -1185,7 +1185,7 @@ func groupName(sc *psc.StatementCache, group gp.NetworkID) (name string, err err
 
 //Returns err == nil if this network is visible to this user
 func (api *API) userNetIsVisible(userID gp.UserID, netID gp.NetworkID) (err error) {
-	in, err := api.userInNetwork(userID, netID)
+	in, err := api.UserInNetwork(userID, netID)
 	if err != nil {
 		return
 	}
@@ -1197,7 +1197,7 @@ func (api *API) userNetIsVisible(userID gp.UserID, netID gp.NetworkID) (err erro
 		err = NoSuchNetwork
 		return
 	}
-	in, err = api.userInNetwork(userID, parent)
+	in, err = api.UserInNetwork(userID, parent)
 	if err != nil {
 		return NoSuchNetwork
 	}
@@ -1220,7 +1220,7 @@ func (api *API) userNetIsVisible(userID gp.UserID, netID gp.NetworkID) (err erro
 
 //UserRequestAccess allows a user to request access to a private group. It's idempotent; requesting multiple times will silently drop the extra requests.
 func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err error) {
-	in, err := api.userInNetwork(userID, netID)
+	in, err := api.UserInNetwork(userID, netID)
 	if err != nil {
 		return
 	}
@@ -1246,7 +1246,7 @@ func (api *API) UserRequestAccess(userID gp.UserID, netID gp.NetworkID) (err err
 	if err != nil {
 		return
 	}
-	in, err = api.userInNetwork(userID, parent)
+	in, err = api.UserInNetwork(userID, parent)
 	if err != nil {
 		return
 	}
@@ -1406,7 +1406,7 @@ func (api *API) GroupsByMembershipCount(userID gp.UserID, index int64, count int
 //NetworkRequests enumerates the outstanding requests to join this network.
 func (api *API) NetworkRequests(userID gp.UserID, netID gp.NetworkID) (requests []gp.NetRequest, err error) {
 	requests = make([]gp.NetRequest, 0)
-	in, err := api.userInNetwork(userID, netID)
+	in, err := api.UserInNetwork(userID, netID)
 	if err != nil {
 		return
 	}
