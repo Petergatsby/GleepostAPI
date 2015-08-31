@@ -693,9 +693,7 @@ func (api *API) groupNewPosts(userID gp.UserID, groupID gp.NetworkID) (count int
 	q := "SELECT COUNT(DISTINCT id) FROM wall_posts " +
 		"WHERE wall_posts.network_id = ? " +
 		"AND wall_posts.id > " +
-		"(SELECT COALESCE(MAX(post_views.post_id), 0) FROM post_views " +
-		"JOIN wall_posts ON post_views.post_id = wall_posts.id " +
-		"WHERE post_views.user_id = ? AND wall_posts.network_id = ?) "
+		"(SELECT seen_upto FROM user_network WHERE user_id = ? AND network_id = ?)"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
