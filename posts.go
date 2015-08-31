@@ -145,6 +145,27 @@ func postPosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func putPosts(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		vars := mux.Vars(r)
+		n := vars["network"]
+		_network, _ := strconv.ParseUint(n, 10, 64)
+		network := gp.NetworkID(_network)
+		_postID, _ := strconv.ParseUint(r.FormValue("seen"), 10, 64)
+		upTo := gp.PostID(_postID)
+		err = api.MarkPostsSeen(userID, network, upTo)
+		if err != nil {
+			jsonErr(w, err, 500)
+		} else {
+			w.WriteHeader(204)
+		}
+	}
+}
+
 func getComments(w http.ResponseWriter, r *http.Request) {
 	userID, err := authenticate(r)
 	switch {
