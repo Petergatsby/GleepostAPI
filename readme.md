@@ -77,7 +77,7 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /networks/[network-id] [[GET]](#get-networksnetwork-id) [[PUT]](#put-networksnetwork-id)
 
-/networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts)
+/networks/[network-id]/posts [[GET]](#get-networksnetwork-idposts) [[POST]](#post-networksnetwork-idposts) [[PUT]](#put-networksnetwork-idposts)
 
 /networks/[network-id]/users [[GET]](#get-networksnetwork-idusers) [[POST]](#post-networksnetwork-idusers)
 
@@ -1135,6 +1135,14 @@ If successful, will respond with HTTP 201
 ```json
 {"id":345}
 ```
+
+##PUT /networks/[network-id]/posts
+
+Marks posts in this network as "seen" for this user, clearing the new-posts count up to `seen`.
+
+required parameters: `seen`, the most recent post ID this user has seen.
+
+On success responds with a 204.
 
 ##GET /networks/[network-id]/users
 required parameters:
