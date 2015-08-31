@@ -691,14 +691,19 @@ func (api *API) networkLastActivity(perspective gp.UserID, netID gp.NetworkID) (
 
 func (api *API) groupNewPosts(userID gp.UserID, groupID gp.NetworkID) (count int, err error) {
 	q := "SELECT COUNT(DISTINCT id) FROM wall_posts " +
+		"JOIN user_network ON wall_posts.network_id = user_network.network_id " +
 		"WHERE wall_posts.network_id = ? " +
-		"AND wall_posts.id > " +
-		"(SELECT seen_upto FROM user_network WHERE user_id = ? AND network_id = ?)"
+		"AND user_network.user_id = ? " +
+		"AND wall_posts.id > user_network.seen_upto " +
+		"AND wall_posts.`time` > user_network.join_time " +
+		"AND wall_posts.deleted = 0 " +
+		"AND wall_posts.pending = 0 " +
+		"AND wall_posts.by != user_network.user_id "
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(groupID, userID, groupID).Scan(&count)
+	err = s.QueryRow(groupID, userID).Scan(&count)
 	return
 }
 
