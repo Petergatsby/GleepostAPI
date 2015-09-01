@@ -1426,12 +1426,14 @@ If it is successful, it will respond with HTTP 204.
 
 ##GET /conversations/[conversation-id]/messages
 required parameters: id=[user-id], token=[token]
-optional parameters: start=[start], after=[after], before=[before]
+
+optional parameters: `start`=[offset], `after`=[post-id], `before`=[post-id], `count`=[num]
 
 Returns a list of 20 messages ordered by time from most recent to least recent.
-Given [start], it returns messages from the [start]th most recent to [start + 20]th most recent.
-Given [after], it returns at most 20 of the messages received since [after]
-Given [before], it returns at most 20 of the messages received immediately before [before]
+Given `start`, it returns messages from the [start]th most recent to [start + 20]th most recent.
+Given `after`, it returns at most 20 of the messages received since [after]
+Given `before`, it returns at most 20 of the messages received immediately before [before]
+Given `count`, it returns `count` messages per page rather than the default 20.
 
 example responses:
 ```json

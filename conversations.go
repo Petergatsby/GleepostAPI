@@ -186,7 +186,9 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
 	var messages []gp.Message
-	messages, err = api.UserGetMessages(userID, convID, mode, index, api.Config.MessagePageSize)
+	_count, _ := strconv.ParseInt(r.FormValue("count"), 10, 64)
+	count := int(_count)
+	messages, err = api.UserGetMessages(userID, convID, mode, index, count)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {

@@ -293,9 +293,12 @@ func (api *API) conversationLastActivity(userID gp.UserID, convID gp.Conversatio
 	return api.conversationActivity(userID, convID)
 }
 
-//UserGetMessages returns count messages from the conversation convId, or ENOTALLOWED if the user is not allowed to view this conversation.
+//UserGetMessages returns count messages from the conversation convId, or ENOTALLOWED if the user is not allowed to view this conversation. If count is 0, defaults to api.config.MessagePageSize.
 func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, mode int, index int64, count int) (messages []gp.Message, err error) {
 	messages = make([]gp.Message, 0)
+	if count <= 0 {
+		count = api.Config.MessagePageSize
+	}
 	if api.userCanViewConversation(userID, convID) {
 		return api.getMessages(userID, convID, mode, index, count)
 	}
