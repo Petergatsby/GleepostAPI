@@ -810,7 +810,7 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.UserID, useThreshold bool) (count int, err error) {
 	defer stats.Time(time.Now(), "gleepost.conversations.unread.db")
 
-	qUnreadCount := "SELECT count(*) FROM chat_messages JOIN conversation_participants ON chat_messages.conversation_id = conversation_participants.conversation_id WHERE conversation_participants.participant_id = ? AND chat_messages.id > conversation_participants.last_read AND chat_messages.id > conversation_participants.deletion_threshold AND chat_messages.`system` = 0 AND chat_messages.by != conversation_participants.participant_id"
+	qUnreadCount := "SELECT count(*) FROM chat_messages JOIN conversation_participants ON chat_messages.conversation_id = conversation_participants.conversation_id WHERE conversation_participants.participant_id = ? AND chat_messages.id > conversation_participants.last_read AND chat_messages.id > conversation_participants.deletion_threshold AND chat_messages.`system` = 0 AND chat_messages.`from` != conversation_participants.participant_id"
 	if useThreshold {
 		qUnreadCount += " AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?)"
 	}
