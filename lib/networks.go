@@ -1528,5 +1528,6 @@ func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniver
 	} else {
 		university.AndroidURL = "https://play.google.com/store/apps/details?id=com.gleepost.android"
 	}
+	university.MemberCount, _ = api.groupMemberCount(university.ID)
 	return
 }
