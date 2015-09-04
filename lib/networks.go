@@ -1531,6 +1531,19 @@ func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniver
 	university.MemberCount, _ = api.groupMemberCount(university.ID)
 	liveSummary, _ := api.getLiveSummary(university.ID, time.Now(), time.Now().AddDate(1, 0, 0))
 	university.EventCount = liveSummary.Posts
+	university.GroupCount, err = api.networkChildGroups(university.ID)
+	if err != nil {
+		log.Println(err)
+	}
 
+	return
+}
+
+func (api *API) networkChildGroups(netID gp.NetworkID) (groups int, err error) {
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM network WHERE parent = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(netID).Scan(&groups)
 	return
 }
