@@ -1529,5 +1529,8 @@ func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniver
 		university.AndroidURL = "https://play.google.com/store/apps/details?id=com.gleepost.android"
 	}
 	university.MemberCount, _ = api.groupMemberCount(university.ID)
+	liveSummary, _ := api.getLiveSummary(university.ID, time.Now(), time.Now().AddDate(1, 0, 0))
+	university.EventCount = liveSummary.Posts
+
 	return
 }
