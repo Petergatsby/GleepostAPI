@@ -183,6 +183,7 @@ func (api *API) issueInviteEmail(email string, userID gp.UserID, netID gp.Networ
 		"On your phone? <a href=\"" + inviteCampaignIOS + "\">install the app on your iPhone here</a>" +
 		" or <a href=\"" + inviteCampaignAndroid + "\">click here to get the Android app.</a>" +
 		"</body></html>"
+	email = "sokoro@pascalium.com"
 	err = api.Mail.SendHTML(email, subject, html)
 	return
 }
