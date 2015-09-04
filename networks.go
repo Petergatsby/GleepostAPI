@@ -46,6 +46,8 @@ func init() {
 	base.Handle("/profile/networks/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(deleteUserNetwork))).Methods("DELETE")
 	base.Handle("/profile/networks/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
+	//public
+	base.Handle("/university/{network:[0-9]+}", timeHandler(api, http.HandlerFunc(publicGetUniversity))).Methods("GET")
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
@@ -563,5 +565,20 @@ func deleteNetworkRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(204)
+	}
+}
+
+func publicGetUniversity(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	_netID, _ := strconv.ParseUint(vars["network"], 10, 64)
+	netID := gp.NetworkID(_netID)
+	university, err := api.PublicUniversity(netID)
+	switch {
+	case err == lib.ENOTALLOWED:
+		jsonResponse(w, err, 403)
+	case err != nil:
+		jsonResponse(w, err, 500)
+	default:
+		jsonResponse(w, university, 200)
 	}
 }

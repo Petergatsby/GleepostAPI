@@ -1488,3 +1488,45 @@ func (api *API) pendingRequestExists(reqID gp.UserID, netID gp.NetworkID) (statu
 	return
 
 }
+
+func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniversity, err error) {
+	s, err := api.sc.Prepare("SELECT name, cover_img, `desc`, shortname, appname, tagline, ios_url, android_url FROM network WHERE id = ? AND user_group = 0 AND is_university = 1")
+	if err != nil {
+		return
+	}
+	var coverImg, desc, shortname, appname, tagline, iosURL, androidURL sql.NullString
+	err = s.QueryRow(netID).Scan(&university.Name, &coverImg, &desc, &shortname, &appname, &tagline, &iosURL, &androidURL)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = ENOTALLOWED
+		}
+		return
+	}
+	university.ID = netID
+	if coverImg.Valid {
+		university.Image = coverImg.String
+	}
+	if desc.Valid {
+		university.Desc = desc.String
+	}
+	if shortname.Valid {
+		university.ShortName = shortname.String
+	}
+	if appname.Valid {
+		university.AppName = appname.String
+	}
+	if tagline.Valid {
+		university.TagLine = tagline.String
+	}
+	if iosURL.Valid {
+		university.IosURL = iosURL.String
+	} else {
+		university.IosURL = "https://itunes.apple.com/us/app/gleepost/id820569024?mt=8"
+	}
+	if androidURL.Valid {
+		university.AndroidURL = androidURL.String
+	} else {
+		university.AndroidURL = "https://play.google.com/store/apps/details?id=com.gleepost.android"
+	}
+	return
+}
