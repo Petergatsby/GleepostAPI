@@ -49,6 +49,8 @@ These endpoints are accessible to the world.
 
 /contact_form [[POST]](#post-contact_form)
 
+/university/[id] [[GET]] (#GET-universityid)
+
 ###Authenticated endpoints:
 These endpoints require authentication to access.
 You must send an <id, token> pair with a request, which you can generate with /login or /fblogin
@@ -1273,6 +1275,38 @@ Attempting to reject a request which is already accepted / rejected will result 
 ```
 
 On success, the response will be a 204.
+
+##GET /university/[id]
+Public.
+
+Returns a description of this university; used for rendering app descriptions, homepages etc 
+
+`shortname` is the name of the university as normally used in a sentence, eg "What's happening at stanford".
+
+`appname` is the name of the gleepost app.
+
+`ios_url` is the link to the ios app
+
+`android_url` is the link to the android app
+
+`events` is the number of upcoming events
+
+`groups` is the number of public/private groups within this university
+
+```json
+{
+	"id":2099,
+	"name":"Stanford University",
+	"description":"This is not the real Stanford University.",
+	"size":47,
+	"shortname":"Stanford",
+	"appname":"NerdNation",
+	"ios_url":"https://itunes.apple.com/us/app/gleepost/id820569024?mt=8",
+	"android_url":"https://play.google.com/store/apps/details?id=com.gleepost.android",
+	"events":0,
+	"groups":0
+}
+```
 
 ##POST /conversations/read_all
 required parameters:
