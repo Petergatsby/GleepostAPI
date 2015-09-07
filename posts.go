@@ -161,6 +161,7 @@ func putPosts(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			jsonErr(w, err, 500)
 		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.WriteHeader(204)
 		}
 	}
