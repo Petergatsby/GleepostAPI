@@ -169,9 +169,9 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 		err = api.setNetwork(addee, group)
 		if err == nil {
 			api.notifObserver.Notify(addedGroupEvent{userID: adder, addeeID: addee, netID: group})
-			e := api.groupAddConvParticipants(adder, addee, group)
+			e := api.joinGroupConversation(addee, group)
 			if e != nil {
-				log.Println("Error adding new group members to conversation:", e)
+				log.Println("Error adding new group member to conversation:", e)
 			}
 			err = api.setRequestStatus(addee, group, "accepted", adder)
 			if err != nil {
@@ -218,7 +218,7 @@ func (api *API) joinGroupConversation(userID gp.UserID, group gp.NetworkID) (err
 		return
 	}
 	go api.conversationChangedEvent(conv.Conversation)
-	api.addSystemMessage(convID, userID, "JOINED")
+	api.addSystemMessage(convID, userID, group, "JOINED")
 	return
 }
 

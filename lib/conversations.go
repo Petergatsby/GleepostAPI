@@ -39,7 +39,7 @@ func (api *API) UserDeleteConversation(userID gp.UserID, convID gp.ConversationI
 		if err != nil {
 			return
 		}
-		go api.addSystemMessage(convID, userID, "PARTED")
+		go api.addSystemMessage(convID, userID, 0, "PARTED")
 		return
 	}
 	return &ENOTALLOWED
@@ -362,7 +362,7 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 	}
 	go api.conversationChangedEvent(conv.Conversation)
 	for _, p := range addable {
-		api.addSystemMessage(convID, p, "JOINED")
+		api.addSystemMessage(convID, p, 0, "JOINED")
 	}
 	updatedParticipants, err = api.getParticipants(convID, false)
 	return
@@ -384,7 +384,7 @@ func (api *API) addableParticipants(userID gp.UserID, convID gp.ConversationID, 
 	return
 }
 
-func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
+func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, netID gp.NetworkID, text string) (messageID gp.MessageID, err error) {
 	messageID, err = api.addMessage(convID, userID, text, true)
 	if err != nil {
 		return
@@ -398,7 +398,9 @@ func (api *API) addSystemMessage(convID gp.ConversationID, userID gp.UserID, tex
 		By:     user,
 		Text:   text,
 		Time:   time.Now().UTC(),
-		System: true}
+		System: true,
+		Group:  netID,
+	}
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
 		chans := ConversationChannelKeys(participants)
