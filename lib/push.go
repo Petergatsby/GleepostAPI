@@ -206,12 +206,19 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 		log.Println(err)
 		return
 	}
-	unread, e := api.UnreadMessageCount(user)
-	if e == nil {
+	unread, err := api.UnreadMessageCount(user)
+	if err == nil {
 		count += unread
 	} else {
-		log.Println(e)
+		log.Println(err)
 	}
+	newPosts, err := api.totalGroupsNewPosts(user)
+	if err == nil {
+		count += newPosts
+	} else {
+		log.Println(err)
+	}
+	err = nil
 	return
 }
 

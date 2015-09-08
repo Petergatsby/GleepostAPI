@@ -1549,3 +1549,24 @@ func (api *API) networkChildGroups(netID gp.NetworkID) (groups int, err error) {
 	err = s.QueryRow(netID).Scan(&groups)
 	return
 }
+
+func (api *API) totalGroupsNewPosts(userID gp.UserID) (count int, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.totalPosts.db")
+	q := "SELECT COUNT(DISTINCT id) FROM wall_posts " +
+		"JOIN user_network ON wall_posts.network_id = user_network.network_id " +
+		"JOIN network ON wall_posts.network_id = network.id " +
+		"WHERE user_network.user_id = ? " +
+		"AND wall_posts.id > user_network.seen_upto " +
+		"AND wall_posts.`time` > user_network.join_time " +
+		"AND wall_posts.deleted = 0 " +
+		"AND wall_posts.pending = 0 " +
+		"AND wall_posts.by != user_network.user_id " +
+		"AND network.is_university = 0 " +
+		"AND network.user_group = 1 "
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID).Scan(&count)
+	return
+}
