@@ -1571,3 +1571,14 @@ func (api *API) totalGroupsNewPosts(userID gp.UserID) (count int, err error) {
 	err = s.QueryRow(userID, userID).Scan(&count)
 	return
 }
+
+func (api *API) UserMuteGroupBadge(userID gp.UserID, t time.Time) (err error) {
+	q := "UPDATE users SET group_badge_threshold = ? WHERE id = ?"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(t, userID)
+	return
+
+}

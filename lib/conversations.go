@@ -341,7 +341,13 @@ func (api *API) UnreadMessageCount(user gp.UserID) (count int, err error) {
 
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
 func (api *API) UserMuteBadges(userID gp.UserID, t time.Time) (err error) {
-	return api.userMuteBadges(userID, t)
+	q := "UPDATE users SET new_message_threshold = ? WHERE id = ?"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	_, err = s.Exec(t, userID)
+	return
 }
 
 //UserAddParticipants adds new user(s) to this conversation, iff userID is in conversation && userID and participants share at least one network (ie, university)
@@ -876,17 +882,6 @@ func (api *API) unreadGroupMessageCount(userID gp.UserID) (count int, err error)
 		return
 	}
 	err = s.QueryRow(userID, userID).Scan(&count)
-	return
-}
-
-//UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
-func (api *API) userMuteBadges(userID gp.UserID, t time.Time) (err error) {
-	q := "UPDATE users SET new_message_threshold = ? WHERE id = ?"
-	s, err := api.sc.Prepare(q)
-	if err != nil {
-		return
-	}
-	_, err = s.Exec(t, userID)
 	return
 }
 
