@@ -858,7 +858,7 @@ func (api *API) userConversationUnread(userID gp.UserID, convID gp.ConversationI
 		"AND chat_messages.id > " +
 		"(SELECT deletion_threshold FROM conversation_participants " +
 		"WHERE conversation_id = ? AND participant_id = ?) " +
-		"AND `system` = 0 AND conversations.group_id IS NULL"
+		"AND `system` = 0"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
