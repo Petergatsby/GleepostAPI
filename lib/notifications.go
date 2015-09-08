@@ -483,7 +483,7 @@ func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) 
 		log.Println(err)
 		return
 	}
-	unread, e := unreadMessageCount(n.sc, n.stats, user, true)
+	unread, e := unreadMessageCount(n.sc, n.stats, user)
 	if e == nil {
 		count += unread
 	} else {

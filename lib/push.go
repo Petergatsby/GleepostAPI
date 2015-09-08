@@ -206,7 +206,7 @@ func (api *API) badgeCount(user gp.UserID) (count int, err error) {
 		log.Println(err)
 		return
 	}
-	unread, e := api.UnreadMessageCount(user, true)
+	unread, e := api.UnreadMessageCount(user)
 	if e == nil {
 		count += unread
 	} else {

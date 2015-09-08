@@ -335,8 +335,8 @@ func (api *API) MarkAllConversationsSeen(user gp.UserID) (err error) {
 }
 
 //UnreadMessageCount returns the number of messages this user hasn't seen yet across all his active conversations, optionally ignoring ones before the user's configured threshold time.
-func (api *API) UnreadMessageCount(user gp.UserID, useThreshold bool) (count int, err error) {
-	return unreadMessageCount(api.sc, api.Statsd, user, useThreshold)
+func (api *API) UnreadMessageCount(user gp.UserID) (count int, err error) {
+	return unreadMessageCount(api.sc, api.Statsd, user)
 }
 
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
@@ -812,7 +812,7 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 }
 
 //UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
-func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.UserID, useThreshold bool) (count int, err error) {
+func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.UserID) (count int, err error) {
 	defer stats.Time(time.Now(), "gleepost.conversations.unread.db")
 
 	qUnreadCount := "SELECT count(*) FROM chat_messages " +
@@ -822,19 +822,13 @@ func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.Use
 		"AND chat_messages.id > conversation_participants.last_read " +
 		"AND chat_messages.id > conversation_participants.deletion_threshold " +
 		"AND chat_messages.`system` = 0 " +
-		"AND chat_messages.`from` != conversation_participants.participant_id"
-	if useThreshold {
-		qUnreadCount += " AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?)"
-	}
+		"AND chat_messages.`from` != conversation_participants.participant_id " +
+		"AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?)"
 	s, err := sc.Prepare(qUnreadCount)
 	if err != nil {
 		return
 	}
-	if !useThreshold {
-		err = s.QueryRow(user).Scan(&count)
-	} else {
-		err = s.QueryRow(user, user).Scan(&count)
-	}
+	err = s.QueryRow(user, user).Scan(&count)
 	if err != nil {
 		log.Println("Error calculating unread count:", err)
 	}
@@ -853,13 +847,13 @@ func (api *API) unreadNonGroupMessageCount(userID gp.UserID) (count int, err err
 		"AND chat_messages.id > conversation_participants.deletion_threshold " +
 		"AND chat_messages.`system` = 0 " +
 		"AND chat_messages.`from` != conversation_participants.participant_id " +
-		"AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = conversation_participants.participant_id) " +
+		"AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) " +
 		"AND conversations.group_id IS NULL"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(userID).Scan(&count)
+	err = s.QueryRow(userID, userID).Scan(&count)
 	return
 }
 
