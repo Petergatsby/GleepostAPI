@@ -119,6 +119,9 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 	if perspective == otherID {
 		user.Notifications, _ = unreadNotificationCount(api.sc, otherID)
 		user.Unread, _ = api.unreadNonGroupMessageCount(otherID)
+		newPosts, _ := api.totalGroupsNewPosts(otherID)
+		newGroupMessages, _ := api.unreadGroupMessageCount(otherID)
+		user.GroupsBadge = newPosts + newGroupMessages
 	}
 	go api.esIndexUser(otherID)
 	return

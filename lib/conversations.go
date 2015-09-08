@@ -857,6 +857,28 @@ func (api *API) unreadNonGroupMessageCount(userID gp.UserID) (count int, err err
 	return
 }
 
+func (api *API) unreadGroupMessageCount(userID gp.UserID) (count int, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.conversations.unread_onlygroup.db")
+	q := "SELECT count(*) FROM chat_messages " +
+		"JOIN conversation_participants " +
+		"ON chat_messages.conversation_id = conversation_participants.conversation_id " +
+		"JOIN conversations " +
+		"ON conversations.id = chat_messages.conversation_id " +
+		"WHERE conversation_participants.participant_id = ? " +
+		"AND chat_messages.id > conversation_participants.last_read " +
+		"AND chat_messages.id > conversation_participants.deletion_threshold " +
+		"AND chat_messages.`system` = 0 " +
+		"AND chat_messages.`from` != conversation_participants.participant_id " +
+		"AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) " + //TODO: use the groups badge clear time not the conversations
+		"AND conversations.group_id IS NOT NULL"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, userID).Scan(&count)
+	return
+}
+
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
 func (api *API) userMuteBadges(userID gp.UserID, t time.Time) (err error) {
 	q := "UPDATE users SET new_message_threshold = ? WHERE id = ?"
