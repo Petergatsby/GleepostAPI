@@ -116,6 +116,9 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		return
 	}
 	user.PostCount = postCount
+	if perspective == otherID {
+		user.Notifications, _ = unreadNotificationCount(api.sc, otherID)
+	}
 	go api.esIndexUser(otherID)
 	return
 }
