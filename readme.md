@@ -1689,6 +1689,14 @@ If a user is not official, the parameter will be omitted.
 
 The `official` parameter is visible anywhere you might see a User object.
 
+If you are looking at your own user resource, some more fields will be available.
+
+`unread` corresponds to the total number of unread and unmuted messages (ie, messages that have not been marked read and which arrived since the last time you [muted the conversation badge](#post-conversationsmute_badges)) 
+
+`notification_count` is your total un-seen notifications
+
+`group_badge` is the number of new group posts and messages since you last [muted the groups badge](#not-implemented).
+
 example responses:
 ```json
 {
@@ -1703,7 +1711,10 @@ example responses:
 	"rsvp_count":234,
 	"group_count":567,
 	"type":"student",
-	"post_count":8910
+	"post_count":8910,
+	"unread":1234,
+	"notification_count":4567,
+	"group_badge":5678
 }
 ```
 
