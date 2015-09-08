@@ -89,7 +89,7 @@ func (api *API) GetUserNotifications(id gp.UserID, mode int, index int64, includ
 }
 
 func (api *API) userUnreadNotifications(id gp.UserID) (count int, err error) {
-	notificationSelect := "SELECT count(id) FROM notifications WHERE recipient = ? AND seen = 0"
+	notificationSelect := "SELECT count(id) FROM notifications WHERE recipient = ? AND seen = 0 AND done = 0"
 	s, err := api.sc.Prepare(notificationSelect)
 	if err != nil {
 		return
