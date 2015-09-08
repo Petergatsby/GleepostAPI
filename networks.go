@@ -23,6 +23,7 @@ func init() {
 	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(getPosts))).Methods("GET")
 	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(postPosts))).Methods("POST")
 	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(putPosts))).Methods("PUT")
+	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks/{network:[0-9]+}/posts", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(postNetworkUsers))).Methods("POST")
 	base.Handle("/networks/{network:[0-9]+}/users", timeHandler(api, http.HandlerFunc(getNetworkUsers))).Methods("GET")
