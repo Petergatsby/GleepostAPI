@@ -249,14 +249,14 @@ func (api *API) userCanViewConversation(userID gp.UserID, convID gp.Conversation
 //UserGetConversation returns the conversation convId if userId is allowed to view it; otherwise returns ENOTALLOWED.
 func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	if api.userCanViewConversation(userID, convID) {
-		return api.GetFullConversation(userID, convID, start, count)
+		return api.getFullConversation(userID, convID, start, count)
 	}
 	return conv, &ENOTALLOWED
 }
 
 //GetFullConversation returns a full conversation containing up to count messages.
 //TODO(patrick) - clarify this vs getConversation etc
-func (api *API) GetFullConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
+func (api *API) getFullConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.ID = convID
 	lastActivity, err := api.conversationLastActivity(userID, convID)
 	if err == nil {
