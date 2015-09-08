@@ -1562,11 +1562,12 @@ func (api *API) totalGroupsNewPosts(userID gp.UserID) (count int, err error) {
 		"AND wall_posts.pending = 0 " +
 		"AND wall_posts.by != user_network.user_id " +
 		"AND network.is_university = 0 " +
-		"AND network.user_group = 1 "
+		"AND network.user_group = 1 " +
+		"AND wall_posts.`time` > (SELECT group_badge_threshold FROM users WHERE id = ?)"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(userID).Scan(&count)
+	err = s.QueryRow(userID, userID).Scan(&count)
 	return
 }

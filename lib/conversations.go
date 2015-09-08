@@ -869,7 +869,7 @@ func (api *API) unreadGroupMessageCount(userID gp.UserID) (count int, err error)
 		"AND chat_messages.id > conversation_participants.deletion_threshold " +
 		"AND chat_messages.`system` = 0 " +
 		"AND chat_messages.`from` != conversation_participants.participant_id " +
-		"AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?) " + //TODO: use the groups badge clear time not the conversations
+		"AND chat_messages.timestamp > (SELECT group_badge_threshold FROM users WHERE id = ?) " +
 		"AND conversations.group_id IS NOT NULL"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
