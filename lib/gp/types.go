@@ -23,14 +23,17 @@ type FullNameUser struct {
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)
 type Profile struct {
 	User
-	Desc       string          `json:"tagline"`
-	Network    GroupSubjective `json:"network"`
-	Course     string          `json:"course"`
-	FullName   string          `json:"full_name"`
-	RSVPCount  int             `json:"rsvp_count,omitempty"`
-	GroupCount int             `json:"group_count,omitempty"`
-	PostCount  int             `json:"post_count,omitempty"`
-	Type       string          `json:"type,omitempty"`
+	Desc          string          `json:"tagline"`
+	Network       GroupSubjective `json:"network"`
+	Course        string          `json:"course"`
+	FullName      string          `json:"full_name"`
+	RSVPCount     int             `json:"rsvp_count,omitempty"`
+	GroupCount    int             `json:"group_count,omitempty"`
+	PostCount     int             `json:"post_count,omitempty"`
+	Type          string          `json:"type,omitempty"`
+	Notifications int             `json:"notification_count,omitempty"`
+	Unread        int             `json:"unread,omitempty"`
+	GroupsBadge   int             `json:"group_badge,omitempty"`
 }
 
 //UserRole represents a user and their role within a particular network
