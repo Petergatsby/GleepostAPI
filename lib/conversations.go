@@ -812,11 +812,17 @@ func (api *API) markRead(id gp.UserID, convID gp.ConversationID, upTo gp.Message
 }
 
 //UnreadMessageCount returns the number of unread messages this user has, optionally omitting those before their threshold time.
-//TODO(Patrick) - convert this into a single query
 func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.UserID, useThreshold bool) (count int, err error) {
 	defer stats.Time(time.Now(), "gleepost.conversations.unread.db")
 
-	qUnreadCount := "SELECT count(*) FROM chat_messages JOIN conversation_participants ON chat_messages.conversation_id = conversation_participants.conversation_id WHERE conversation_participants.participant_id = ? AND chat_messages.id > conversation_participants.last_read AND chat_messages.id > conversation_participants.deletion_threshold AND chat_messages.`system` = 0 AND chat_messages.`from` != conversation_participants.participant_id"
+	qUnreadCount := "SELECT count(*) FROM chat_messages " +
+		"JOIN conversation_participants " +
+		"ON chat_messages.conversation_id = conversation_participants.conversation_id " +
+		"WHERE conversation_participants.participant_id = ? " +
+		"AND chat_messages.id > conversation_participants.last_read " +
+		"AND chat_messages.id > conversation_participants.deletion_threshold " +
+		"AND chat_messages.`system` = 0 " +
+		"AND chat_messages.`from` != conversation_participants.participant_id"
 	if useThreshold {
 		qUnreadCount += " AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = ?)"
 	}
@@ -833,6 +839,28 @@ func unreadMessageCount(sc *psc.StatementCache, stats PrefixStatter, user gp.Use
 		log.Println("Error calculating unread count:", err)
 	}
 	return count, nil
+}
+
+func (api *API) unreadNonGroupMessageCount(userID gp.UserID) (count int, err error) {
+	defer api.Statsd.Time(time.Now(), "gleepost.conversations.unread_nogroup.db")
+	q := "SELECT count(*) FROM chat_messages " +
+		"JOIN conversation_participants " +
+		"ON chat_messages.conversation_id = conversation_participants.conversation_id " +
+		"JOIN conversations " +
+		"ON conversations.id = chat_messages.conversation_id " +
+		"WHERE conversation_participants.participant_id = ? " +
+		"AND chat_messages.id > conversation_participants.last_read " +
+		"AND chat_messages.id > conversation_participants.deletion_threshold " +
+		"AND chat_messages.`system` = 0 " +
+		"AND chat_messages.`from` != conversation_participants.participant_id " +
+		"AND chat_messages.timestamp > (SELECT new_message_threshold FROM users WHERE id = conversation_participants.participant_id) " +
+		"AND conversations.group_id IS NULL"
+	s, err := api.sc.Prepare(q)
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID).Scan(&count)
+	return
 }
 
 //UserMuteBadges marks the user as having seen the badge for conversations before t; this means any unread messages before t will no longer be included in any badge values.
