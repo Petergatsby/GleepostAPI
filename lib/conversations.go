@@ -278,6 +278,10 @@ func (api *API) getFullConversation(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		log.Println(err)
 	}
+	conv.Unread, err = api.userConversationUnread(userID, convID)
+	if err != nil {
+		log.Println(err)
+	}
 	conv.Messages, err = api.getMessages(userID, convID, ByOffsetDescending, start, count)
 	return
 }
