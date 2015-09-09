@@ -219,7 +219,7 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	text := r.FormValue("text")
-	messageID, err := api.AddMessage(convID, userID, text)
+	message, err := api.AddMessage(convID, userID, text)
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
 		if ok && *e == lib.ENOTALLOWED {
@@ -235,7 +235,7 @@ func postMessages(w http.ResponseWriter, r *http.Request) {
 		jsonErr(w, err, 500)
 	} else {
 		go api.Statsd.Count(1, url+".201")
-		jsonResponse(w, &gp.Created{ID: uint64(messageID)}, 201)
+		jsonResponse(w, message, 201)
 	}
 }
 

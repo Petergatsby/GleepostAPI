@@ -1483,7 +1483,16 @@ required parameters: id, token, text
 
 example responses:
 ```json
-{"id":1356}
+{
+	"id":1234214,
+	"by":{
+		"id":99999,
+		"name":"Lukas",
+		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png"
+	},
+	"text":"asl? ;)",
+	"timestamp":"2013-09-05T13:09:38Z"
+}
 ```
 
 ##PUT /conversations/[conversation-id]/messages

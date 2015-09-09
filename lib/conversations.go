@@ -183,11 +183,11 @@ func (api *API) GetConversation(userID gp.UserID, convID gp.ConversationID) (con
 }
 
 //AddMessage creates a new message from userId in conversation convId, or returns ENOTALLOWED if the user is not a participant.
-func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text string) (messageID gp.MessageID, err error) {
+func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text string) (message gp.Message, err error) {
 	if !api.userCanViewConversation(userID, convID) {
-		return messageID, &ENOTALLOWED
+		return message, &ENOTALLOWED
 	}
-	messageID, err = api.addMessage(convID, userID, text, false)
+	messageID, err := api.addMessage(convID, userID, text, false)
 	if err != nil {
 		return
 	}
@@ -215,7 +215,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	go api.spotFiles(msg)
 	go api.messagePush(msg, convID)
 	go api.esIndexMessage(msg, convID)
-	return
+	return msg, nil
 }
 
 //conversationURI returns the URI of this conversation relative to the API root.
