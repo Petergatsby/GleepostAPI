@@ -20,6 +20,7 @@ func TestSendPresence(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error getting session:", err)
 	}
+	createConversation(token)
 	header := make(http.Header)
 	header.Set("X-GP-Auth", fmt.Sprintf("%d-%s", token.UserID, token.Token))
 	ws, resp, err := websocket.DefaultDialer.Dial("ws"+baseURL[4:]+"ws", header)
