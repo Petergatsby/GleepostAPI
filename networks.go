@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -41,6 +42,9 @@ func init() {
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 
+	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(getGroups))).Methods("POST")
+	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
+	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(getGroups))).Methods("GET")
 	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/networks/posts", timeHandler(api, http.HandlerFunc(getGroupPosts))).Methods("GET")
@@ -581,5 +585,22 @@ func publicGetUniversity(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, err, 500)
 	default:
 		jsonResponse(w, university, 200)
+	}
+}
+
+func muteGroupBadge(w http.ResponseWriter, r *http.Request) {
+	userID, err := authenticate(r)
+	switch {
+	case err != nil:
+		jsonResponse(w, &EBADTOKEN, 400)
+	default:
+		t := time.Now().UTC()
+		err = api.UserMuteGroupBadge(userID, t)
+		if err != nil {
+			jsonResponse(w, err, 500)
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(204)
 	}
 }

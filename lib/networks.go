@@ -1572,6 +1572,7 @@ func (api *API) totalGroupsNewPosts(userID gp.UserID) (count int, err error) {
 	return
 }
 
+//UserMuteGroupBadge omits all (posts, messages) before t from the group tab badge count.
 func (api *API) UserMuteGroupBadge(userID gp.UserID, t time.Time) (err error) {
 	q := "UPDATE users SET group_badge_threshold = ? WHERE id = ?"
 	s, err := api.sc.Prepare(q)
@@ -1580,5 +1581,4 @@ func (api *API) UserMuteGroupBadge(userID gp.UserID, t time.Time) (err error) {
 	}
 	_, err = s.Exec(t, userID)
 	return
-
 }

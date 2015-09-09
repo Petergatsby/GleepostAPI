@@ -157,6 +157,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /profile/networks [[GET]](#get-profilenetworks)
 
+/profile/networks/mute_badges [[POST]](#post-profilenetworksmute_badges)
+
 /profile/networks/posts [[GET]](#get-profilenetworksposts)
 
 /profile/networks/[network-id] [[DELETE]](#delete-profilenetworksnetwork-id)
@@ -2200,6 +2202,11 @@ Example response: (http 200)
 	}
 ]
 ```
+
+##POST /profile/networks/mute_badges
+mute_badges clears the groups tab badge, marking all posts and messages from before now as removed from the badge calculation.
+
+Successful response is a 204.
 
 ##GET /profile/networks/posts
 required parameters:
