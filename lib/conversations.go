@@ -901,12 +901,13 @@ func (api *API) userConversationUnread(userID gp.UserID, convID gp.ConversationI
 		"AND chat_messages.id > " +
 		"(SELECT deletion_threshold FROM conversation_participants " +
 		"WHERE conversation_id = ? AND participant_id = ?) " +
-		"AND `system` = 0"
+		"AND `system` = 0 " +
+		"AND chat_messages.`from` != ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(convID, convID, userID, convID, userID, convID, userID).Scan(&unread)
+	err = s.QueryRow(convID, convID, userID, convID, userID, convID, userID, userID).Scan(&unread)
 	return
 }
 
