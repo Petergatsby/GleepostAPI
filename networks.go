@@ -42,7 +42,7 @@ func init() {
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/networks/{network:[0-9]+}/admins/{user:[0-9]+}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 
-	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(getGroups))).Methods("POST")
+	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(muteGroupBadge))).Methods("POST")
 	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/profile/networks/mute_badges", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/networks", timeHandler(api, http.HandlerFunc(getGroups))).Methods("GET")
