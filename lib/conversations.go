@@ -208,7 +208,7 @@ func (api *API) AddMessage(convID gp.ConversationID, userID gp.UserID, text stri
 	participants, err := api.getParticipants(convID, false)
 	if err == nil {
 		chans := ConversationChannelKeys(participants)
-		go api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
+		api.broker.PublishEvent("message", conversationURI(convID), msg, chans)
 	} else {
 		log.Println("Error getting participants; didn't bradcast event to websockets")
 	}
