@@ -27,7 +27,11 @@ func (api *API) SearchMessagesInConversation(userID gp.UserID, convID gp.Convers
 	if !api.userCanViewConversation(userID, convID) {
 		return hits, ENOTALLOWED
 	}
-	messages, err := api.esSearchConversation(convID, query)
+	threshold, err := api.getDeletionThreshold(userID, convID)
+	if err != nil {
+		return hits, err
+	}
+	messages, err := api.esSearchConversation(convID, query, threshold)
 	if err != nil {
 		log.Println(err)
 		return
@@ -70,13 +74,20 @@ func (api *API) esIndexMessage(message gp.Message, conversation gp.ConversationI
 	return
 }
 
-func (api *API) esSearchConversation(convID gp.ConversationID, query string) (messages []esMessage, err error) {
+func (api *API) esSearchConversation(convID gp.ConversationID, query string, threshold gp.MessageID) (messages []esMessage, err error) {
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
 	esQuery := esgroupquery{}
+	//Restrict to this conversation
 	conversationTerm := make(map[string]string)
 	conversationTerm["conversation"] = fmt.Sprintf("%d", convID)
-	esQuery.Query.Filtered.Filter.Bool.Must = []term{{T: conversationTerm}}
+	//Restrict to non-deleted messages
+	deletionThreshold := make(map[string]interface{})
+	deletionThreshold["id"] = struct {
+		Threshold gp.MessageID `json:"gt"`
+	}{Threshold: threshold}
+
+	esQuery.Query.Filtered.Filter.Bool.Must = []interface{}{term{T: conversationTerm}, rangeFilter{R: deletionThreshold}}
 	fields := []string{"text"}
 	for _, field := range fields {
 		match := make(map[string]string)

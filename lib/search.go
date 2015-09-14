@@ -64,7 +64,7 @@ func (api *API) searchGroups(parent gp.NetworkID, query, category string) (group
 	groupQuery := esgroupquery{}
 	parentTerm := make(map[string]string)
 	parentTerm["parent"] = fmt.Sprintf("%d", parent)
-	groupQuery.Query.Filtered.Filter.Bool.Must = []term{{T: parentTerm}}
+	groupQuery.Query.Filtered.Filter.Bool.Must = []interface{}{term{T: parentTerm}}
 	if len(category) > 0 {
 		categoryTerm := make(map[string]string)
 		categoryTerm["category"] = category
@@ -110,9 +110,13 @@ type boolfilter struct {
 	Bool mustfilter `json:"bool"`
 }
 type mustfilter struct {
-	Must []term `json:"must"`
+	Must []interface{} `json:"must"`
 }
 
 type term struct {
 	T map[string]string `json:"term"`
+}
+
+type rangeFilter struct {
+	R map[string]interface{} `json:"range"`
 }

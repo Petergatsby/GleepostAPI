@@ -584,6 +584,15 @@ func (api *API) setDeletionThreshold(userID gp.UserID, convID gp.ConversationID,
 	return
 }
 
+func (api *API) getDeletionThreshold(userID gp.UserID, convID gp.ConversationID) (threshold gp.MessageID, err error) {
+	s, err := api.sc.Prepare("SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID, convID).Scan(&threshold)
+	return
+}
+
 //GetConversation returns the conversation convId, including up to count messages.
 func (api *API) getConversation(userID gp.UserID, convID gp.ConversationID, count int) (conversation gp.ConversationAndMessages, err error) {
 	conversation.ID = convID
