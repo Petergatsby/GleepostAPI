@@ -118,13 +118,19 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 	user.PostCount = postCount
 	if perspective == otherID {
 		user.Notifications, _ = unreadNotificationCount(api.sc, otherID)
-		user.Unread, _ = api.unreadNonGroupMessageCount(otherID)
-		newPosts, _ := api.totalGroupsNewPosts(otherID)
+		user.Unread, err = api.unreadNonGroupMessageCount(otherID)
+		if err != nil {
+			log.Println(err)
+		}
+		newPosts, err := api.totalGroupsNewPosts(otherID)
+		if err != nil {
+			log.Println(err)
+		}
 		newGroupMessages, _ := api.unreadGroupMessageCount(otherID)
 		user.GroupsBadge = newPosts + newGroupMessages
 	}
 	go api.esIndexUser(otherID)
-	return
+	return user, nil
 }
 
 //IsAdmin returns true if this user member has their Admin flag set.
