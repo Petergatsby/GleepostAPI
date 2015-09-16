@@ -212,7 +212,7 @@ func parseMultipleResults(doc *goquery.Document) (results []Member, err error) {
 					return
 				}
 				vals := URL.Query()
-				member.ID = vals["key"][0]
+				member.ID = strings.TrimSpace(vals["key"][0])
 			}
 
 		} else if s.Is("dd") {
