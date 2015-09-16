@@ -51,8 +51,8 @@ func (d Dir) LookUpEmail(email string) (userType string, err error) {
 }
 
 type Member struct {
-	Name string
-	//Title
+	Name         string
+	Title        string
 	Email        string
 	Affiliations []Affiliation
 	ID           string
@@ -131,6 +131,7 @@ func parseBody(resp *http.Response) (results []Member, err error) {
 
 func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 	result.Name = strings.TrimSpace(doc.Find("#PublicProfile h2").First().Text())
+	result.Title = strings.TrimSpace(doc.Find("#PublicProfile p.facappt").First().Text())
 	result.Email = strings.TrimSpace(doc.Find("#Contact dl dd a").First().Text())
 	result.MailCode = strings.TrimSpace(doc.Find("#Ids dl dd").First().Text())
 	//Todo: student ID
