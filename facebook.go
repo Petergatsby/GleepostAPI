@@ -8,8 +8,10 @@ import (
 
 func init() {
 	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(facebookAssociate))).Methods("POST")
+	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/profile/facebook", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(facebookHandler))).Methods("POST")
+	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/fblogin", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
@@ -38,6 +40,7 @@ func facebookAssociate(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, err, 500)
 	default:
 		go api.Statsd.Count(1, "gleepost.profile.facebook.post.204")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(204)
 	}
 }
