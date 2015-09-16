@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -57,8 +58,8 @@ type Member struct {
 	Affiliations []Affiliation
 	ID           string
 	MailCode     string
+	HomeInfo     *HomeInfo `json:"at_home,omitempty"`
 	//Other info:
-	//Home address
 	//Other names
 }
 
@@ -67,8 +68,13 @@ type Affiliation struct {
 	Department  string
 	Position    string
 	WorkPhones  []string
-	//WorkFax string
+	WorkFax     string
 	WorkAddress string
+}
+
+type HomeInfo struct {
+	Phone   string
+	Address string
 }
 
 func (d Dir) Query(query string) (people []Member, err error) {
@@ -167,6 +173,28 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 			}
 		})
 		result.Affiliations = append(result.Affiliations, aff)
+	})
+	var lastLabel string
+	home := HomeInfo{}
+	doc.Find("#HomeInfo dl").Children().Each(func(i int, s *goquery.Selection) {
+		if s.Is("dt") {
+			lastLabel = strings.TrimSpace(s.Text())
+			lastLabel = lastLabel[:len(lastLabel)-1] //strip trailing colon
+			log.Println(lastLabel)
+		} else if s.Is("dd") {
+			val := strings.TrimSpace(s.Text())
+			switch {
+			case lastLabel == "Permanent phone":
+				home.Phone = val
+			case lastLabel == "Permanent address":
+				vals := strings.Split(val, "\n")
+				for i, v := range vals {
+					vals[i] = strings.TrimSpace(v)
+				}
+				home.Address = strings.Join(vals, "\n")
+			}
+		}
+		result.HomeInfo = &home
 	})
 	return result, nil
 }
