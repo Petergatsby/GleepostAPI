@@ -158,7 +158,11 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 				case lastLabel == "Work phone(s)":
 					aff.WorkPhones = append(aff.WorkPhones, val)
 				case lastLabel == "Work address":
-					aff.WorkAddress = val
+					vals := strings.Split(val, "\n")
+					for i, v := range vals {
+						vals[i] = strings.TrimSpace(v)
+					}
+					aff.WorkAddress = strings.Join(vals, "\n")
 				}
 			}
 		})
