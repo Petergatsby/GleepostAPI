@@ -169,6 +169,8 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 						vals[i] = strings.TrimSpace(v)
 					}
 					aff.WorkAddress = strings.Join(vals, "\n")
+				case lastLabel == "Work Fax":
+					aff.WorkFax = val
 				}
 			}
 		})
