@@ -47,29 +47,29 @@ func (d Dir) LookUpEmail(email string) (userType string, err error) {
 }
 
 type Member struct {
-	Name         string
-	ID           string
-	Title        string
-	Email        string
-	Affiliations []Affiliation
-	MailCode     string
-	HomeInfo     *HomeInfo `json:"at_home,omitempty"`
+	Name         string        `json:"name"`
+	ID           string        `json:"id"`
+	Title        string        `json:"title,omitempty"`
+	Email        string        `json:"email,omitempty"`
+	Affiliations []Affiliation `json:"affiliations"`
+	MailCode     string        `json:"mail_code,omitempty"`
+	HomeInfo     *HomeInfo     `json:"at_home,omitempty"`
 	//Other info:
 	//Other names
 }
 
 type Affiliation struct {
-	Affiliation string
-	Department  string
-	Position    string
-	WorkPhones  []string
-	WorkFax     string
-	WorkAddress string
+	Affiliation string   `json:"name"`
+	Department  string   `json:"department"`
+	Position    string   `json:"position"`
+	WorkPhones  []string `json:"phones,omitempty"`
+	WorkFax     string   `json:"fax,omitempty"`
+	WorkAddress string   `json:"address,omitempty"`
 }
 
 type HomeInfo struct {
-	Phone   string
-	Address string
+	Phone   string `json:"phone,omitempty"`
+	Address string `json:"address,omitempty"`
 }
 
 func (d Dir) Query(query string) (people []Member, err error) {
