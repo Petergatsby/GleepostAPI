@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"code.google.com/p/go.net/html"
 	"github.com/puerkitobio/goquery"
+	"golang.org/x/net/html"
 )
 
 //Dir is stanford's directory
@@ -59,6 +59,7 @@ type Member struct {
 	MailCode     string
 	//Other info:
 	//Home address
+	//Other names
 }
 
 type Affiliation struct {
