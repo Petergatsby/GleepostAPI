@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
@@ -69,13 +68,11 @@ func (api *API) fBValidateToken(fbToken string, retries int) (token FacebookToke
 		return
 	}
 	data := res["data"].(map[string]interface{})
-	fmt.Printf("%v\n", data)
-	tokenappid := uint64(data["app_id"].(float64))
-	appid, err := strconv.ParseUint(api.fb.config.AppID, 10, 64)
-	if err != nil {
-		return
+	tokenappid, ok := data["app_id"].(string)
+	if !ok {
+		log.Println("Couldn't cast data[\"app_id\"] as string")
 	}
-	if appid != tokenappid {
+	if api.fb.config.AppID != tokenappid {
 		fmt.Println("App id doesn't match")
 		return token, gp.APIerror{Reason: "Bad facebook token"}
 	}
