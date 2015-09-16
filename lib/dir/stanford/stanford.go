@@ -135,7 +135,7 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 	result.Email = strings.TrimSpace(doc.Find("#Contact dl dd a").First().Text())
 	result.MailCode = strings.TrimSpace(doc.Find("#Ids dl dd").First().Text())
 	//Todo: student ID
-	doc.Find("#Affiliation").Each(func(i int, s *goquery.Selection) {
+	doc.Find(".Affiliation").Each(func(i int, s *goquery.Selection) {
 		aff := Affiliation{}
 		var lastLabel string
 		s.Find("dl").Children().Each(func(i int, s *goquery.Selection) {
