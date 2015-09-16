@@ -18,35 +18,30 @@ type Dir struct{}
 
 //LookUpEmail finds this user in the Stanford directory, and returns their type (staff, faculty, student)
 func (d Dir) LookUpEmail(email string) (userType string, err error) {
-	c := &http.Client{}
-	searchURL := "https://stanfordwho.stanford.edu/SWApp/Search.do"
-	params := url.Values{}
-	params.Set("search", email)
-	body := params.Encode()
-	r, err := http.NewRequest("POST", searchURL, bytes.NewBufferString(body))
+	results, err := d.Query(email)
 	if err != nil {
 		return
 	}
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := c.Do(r)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return
-	}
-	doc.Find(".affilHead").Each(func(i int, s *goquery.Selection) {
-		if strings.Contains(s.Text(), "Staff") {
-			userType = "staff"
-		}
-		if strings.Contains(s.Text(), "Faculty") {
-			userType = "faculty"
-		}
-	})
-	if userType == "" {
+	switch {
+	case len(results) == 0:
 		userType = "student"
+	case len(results) > 1:
+		userType = "student"
+	case len(results[0].Affiliations) == 0:
+		userType = "student"
+	default:
+		for _, aff := range results[0].Affiliations {
+			if strings.Contains(aff.Affiliation, "Student") {
+				userType = "student"
+				break
+			}
+			if strings.Contains(aff.Affiliation, "Staff") {
+				userType = "staff"
+			}
+			if strings.Contains(aff.Affiliation, "Faculty") {
+				userType = "faculty"
+			}
+		}
 	}
 	return
 }
