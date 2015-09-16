@@ -144,7 +144,7 @@ func (api *API) FacebookLogin(fbToken, email, invite string) (token gp.Token, FB
 			if err != nil {
 				log.Println("Should be unverified response")
 				status = gp.NewStatus("unverified", storedEmail)
-				return
+				return token, FBUser, status, nil
 			}
 			status = gp.NewStatus("registered", storedEmail)
 			return
