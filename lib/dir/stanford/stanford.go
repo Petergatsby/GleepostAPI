@@ -146,7 +146,11 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 				val := strings.TrimSpace(s.Text())
 				switch {
 				case lastLabel == "Affiliation":
-					aff.Affiliation = val
+					vals := strings.Split(val, "-")
+					for i, v := range vals {
+						vals[i] = strings.TrimSpace(v)
+					}
+					aff.Affiliation = fmt.Sprintf("%s - %s", vals[0], vals[1])
 				case lastLabel == "Department":
 					aff.Department = val
 				case lastLabel == "Position":
