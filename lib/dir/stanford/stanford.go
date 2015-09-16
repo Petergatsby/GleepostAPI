@@ -53,10 +53,10 @@ func (d Dir) LookUpEmail(email string) (userType string, err error) {
 
 type Member struct {
 	Name         string
+	ID           string
 	Title        string
 	Email        string
 	Affiliations []Affiliation
-	ID           string
 	MailCode     string
 	HomeInfo     *HomeInfo `json:"at_home,omitempty"`
 	//Other info:
@@ -140,7 +140,16 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 	result.Title = strings.TrimSpace(doc.Find("#PublicProfile p.facappt").First().Text())
 	result.Email = strings.TrimSpace(doc.Find("#Contact dl dd a").First().Text())
 	result.MailCode = strings.TrimSpace(doc.Find("#Ids dl dd").First().Text())
-	//Todo: student ID
+	rawURL, exists := doc.Find("#ProfileNav ul li a").First().Attr("href")
+	if exists {
+		var URL *url.URL
+		URL, err = url.Parse(rawURL)
+		if err != nil {
+			return
+		}
+		vals := URL.Query()
+		result.ID = strings.TrimSpace(vals["key"][0])
+	}
 	doc.Find(".Affiliation").Each(func(i int, s *goquery.Selection) {
 		aff := Affiliation{}
 		var lastLabel string
