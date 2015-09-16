@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
@@ -88,7 +89,10 @@ func (api *API) fBValidateToken(fbToken string, retries int) (token FacebookToke
 		return token, gp.APIerror{Reason: "Bad facebook token"}
 	}
 	token.Expiry = expiry
-	token.FBUser = uint64(data["user_id"].(float64))
+	token.FBUser, err = strconv.ParseUint(data["user_id"].(string), 10, 64)
+	if err != nil {
+		return token, err
+	}
 	scopes := data["scopes"].([]interface{})
 	for _, scope := range scopes {
 		token.Scopes = append(token.Scopes, scope.(string))
