@@ -36,11 +36,14 @@ var levels = map[string]int{
 }
 
 //UserGetUserGroups is the same as GetUserNetworks, except it omits "official" networks (ie, universities)
-func (api *API) UserGetUserGroups(perspective, user gp.UserID, index int64) (groups []gp.GroupSubjective, err error) {
+func (api *API) UserGetUserGroups(perspective, user gp.UserID, index int64, count int, ordering int) (groups []gp.GroupSubjective, err error) {
+	if count <= 0 || count > 100 {
+		count = api.Config.GroupPageSize
+	}
 	groups = make([]gp.GroupSubjective, 0)
 	switch {
 	case perspective == user:
-		groups, err = api.groupsByActivity(user, index, api.Config.GroupPageSize)
+		groups, err = api.groupsByActivity(user, index, count, ordering)
 		return
 	default:
 		shared, err := api.sameUniversity(perspective, user)
@@ -50,7 +53,7 @@ func (api *API) UserGetUserGroups(perspective, user gp.UserID, index int64) (gro
 		case !shared:
 			return groups, &ENOTALLOWED
 		default:
-			return api.subjectiveMemberships(perspective, user, index, api.Config.GroupPageSize)
+			return api.subjectiveMemberships(perspective, user, index, count)
 		}
 	}
 }
@@ -592,23 +595,62 @@ func (api *API) getRules() (rules []gp.Rule, err error) {
 	return
 }
 
+const (
+	ByPosts = iota
+	ByMessages
+	ByActivity
+)
+
+var byActivity = "SELECT user_network.network_id, user_network.role, " +
+	"user_network.role_level, network.name, " +
+	"network.cover_img, network.`desc`, network.creator, network.privacy, network.category, " +
+	"GREATEST( " +
+	"COALESCE((SELECT MAX(`timestamp`) FROM chat_messages WHERE conversation_id = conversations.id), '0000-00-00 00:00:00'), " +
+	"COALESCE((SELECT MAX(`time`) FROM wall_posts WHERE network_id = user_network.network_id), '0000-00-00 00:00:00') " +
+	") AS last_activity " +
+	"FROM user_network " +
+	"INNER JOIN network ON user_network.network_id = network.id " +
+	"JOIN conversations ON conversations.group_id = network.id " +
+	"WHERE user_id = ? " +
+	"AND network.user_group = 1 " +
+	"ORDER BY last_activity DESC LIMIT ?, ?"
+
+var byMessages = "SELECT user_network.network_id, user_network.role, " +
+	"user_network.role_level, network.name, " +
+	"network.cover_img, network.`desc`, network.creator, network.privacy, network.category, " +
+	"COALESCE((SELECT MAX(`timestamp`) FROM chat_messages WHERE conversation_id = conversations.id), '0000-00-00 00:00:00') AS last_activity " +
+	"FROM user_network " +
+	"INNER JOIN network ON user_network.network_id = network.id " +
+	"JOIN conversations ON conversations.group_id = network.id " +
+	"WHERE user_id = ? " +
+	"AND network.user_group = 1 " +
+	"ORDER BY last_activity DESC LIMIT ?, ?"
+
+var byPosts = "SELECT user_network.network_id, user_network.role, " +
+	"user_network.role_level, network.name, " +
+	"network.cover_img, network.`desc`, network.creator, network.privacy, network.category, " +
+	"COALESCE((SELECT MAX(`time`) FROM wall_posts WHERE network_id = user_network.network_id), '0000-00-00 00:00:00') " +
+	" AS last_activity " +
+	"FROM user_network " +
+	"INNER JOIN network ON user_network.network_id = network.id " +
+	"JOIN conversations ON conversations.group_id = network.id " +
+	"WHERE user_id = ? " +
+	"AND network.user_group = 1 " +
+	"ORDER BY last_activity DESC LIMIT ?, ?"
+
 //groupsByActivity returns all the networks id is a member of, optionally only returning user-created networks.
-func (api *API) groupsByActivity(id gp.UserID, index int64, count int) (networks []gp.GroupSubjective, err error) {
+func (api *API) groupsByActivity(id gp.UserID, index int64, count int, orderscheme int) (networks []gp.GroupSubjective, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.networks.byUser.db")
 	networks = make([]gp.GroupSubjective, 0)
-	networkSelect := "SELECT user_network.network_id, user_network.role, " +
-		"user_network.role_level, network.name, " +
-		"network.cover_img, network.`desc`, network.creator, network.privacy, network.category, " +
-		"GREATEST( " +
-		"COALESCE((SELECT MAX(`timestamp`) FROM chat_messages WHERE conversation_id = conversations.id), '0000-00-00 00:00:00'), " +
-		"COALESCE((SELECT MAX(`time`) FROM wall_posts WHERE network_id = user_network.network_id), '0000-00-00 00:00:00') " +
-		") AS last_activity " +
-		"FROM user_network " +
-		"INNER JOIN network ON user_network.network_id = network.id " +
-		"JOIN conversations ON conversations.group_id = network.id " +
-		"WHERE user_id = ? " +
-		"AND network.user_group = 1 " +
-		"ORDER BY last_activity DESC LIMIT ?, ?"
+	var networkSelect string
+	switch {
+	case orderscheme == ByActivity:
+		networkSelect = byActivity
+	case orderscheme == ByMessages:
+		networkSelect = byMessages
+	case orderscheme == ByPosts:
+		networkSelect = byPosts
+	}
 	s, err := api.sc.Prepare(networkSelect)
 	if err != nil {
 		return

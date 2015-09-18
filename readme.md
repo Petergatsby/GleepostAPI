@@ -2171,9 +2171,15 @@ optional parameters:
 
 `start` - the number of groups this page should be offset by.
 
+`order` = `by_last_activity` (default), `by_last_message`
+
+`count` = Maximum number of groups to return.
+
 This returns a list of up to 20 (non-university) groups this user belongs to.
 
-The list is ordered by last activity: most recent post or message first.
+if order is `by_last_activity`: most recent post or message first.
+
+If order is `by_last_message`: most recent message first.
 
 
 Example response: (http 200)

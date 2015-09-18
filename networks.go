@@ -64,10 +64,8 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 		var otherID gp.UserID
 		vars := mux.Vars(r)
 		_id, ok := vars["id"]
-		var url string
 		if !ok {
 			otherID = userID
-			url = "gleepost.profile.networks.get"
 		} else {
 			id, err := strconv.ParseUint(_id, 10, 64)
 			if err != nil {
@@ -75,16 +73,24 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			otherID = gp.UserID(id)
-			url = fmt.Sprintf("gleepost.users.%d.networks.get", otherID)
 		}
 		index, _ := strconv.ParseInt(r.FormValue("start"), 10, 64)
-		networks, err := api.UserGetUserGroups(userID, otherID, index)
+		_count, _ := strconv.ParseInt(r.FormValue("count"), 10, 64)
+		var order int
+		switch {
+		case r.FormValue("order") == "by_last_activity":
+			order = lib.ByActivity
+		case r.FormValue("order") == "by_last_message":
+			order = lib.ByMessages
+		default:
+			order = lib.ByActivity
+		}
+		count := int(_count)
+		networks, err := api.UserGetUserGroups(userID, otherID, index, count, order)
 		if err != nil {
-			go api.Statsd.Count(1, url+".500")
 			jsonErr(w, err, 500)
 			return
 		}
-		go api.Statsd.Count(1, url+".200")
 		jsonResponse(w, networks, 200)
 	}
 }
