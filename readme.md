@@ -1307,7 +1307,11 @@ Returns a description of this university; used for rendering app descriptions, h
 	"android_url":"https://play.google.com/store/apps/details?id=com.gleepost.android",
 	"events":0,
 	"groups":0,
-	"messages":123456
+	"messages":123456,
+	"video": {
+		"mp4":"https://example.com/video.mp4",
+		"webm":"https://example.com/video.webm"
+	}
 }
 ```
 

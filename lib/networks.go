@@ -1534,12 +1534,12 @@ func (api *API) pendingRequestExists(reqID gp.UserID, netID gp.NetworkID) (statu
 }
 
 func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniversity, err error) {
-	s, err := api.sc.Prepare("SELECT name, cover_img, `desc`, shortname, appname, tagline, ios_url, android_url FROM network WHERE id = ? AND user_group = 0 AND is_university = 1")
+	s, err := api.sc.Prepare("SELECT name, cover_img, `desc`, shortname, appname, tagline, ios_url, android_url, covervid_mp4, covervid_webm FROM network WHERE id = ? AND user_group = 0 AND is_university = 1")
 	if err != nil {
 		return
 	}
-	var coverImg, desc, shortname, appname, tagline, iosURL, androidURL sql.NullString
-	err = s.QueryRow(netID).Scan(&university.Name, &coverImg, &desc, &shortname, &appname, &tagline, &iosURL, &androidURL)
+	var coverImg, desc, shortname, appname, tagline, iosURL, androidURL, mp4, webm sql.NullString
+	err = s.QueryRow(netID).Scan(&university.Name, &coverImg, &desc, &shortname, &appname, &tagline, &iosURL, &androidURL, mp4, webm)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = ENOTALLOWED
@@ -1571,6 +1571,12 @@ func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniver
 		university.AndroidURL = androidURL.String
 	} else {
 		university.AndroidURL = "https://play.google.com/store/apps/details?id=com.gleepost.android"
+	}
+	if webm.Valid {
+		university.Video.WebM = webm.String
+	}
+	if mp4.Valid {
+		university.Video.MP4 = mp4.String
 	}
 	university.MemberCount, _ = api.groupMemberCount(university.ID)
 	liveSummary, _ := api.getLiveSummary(university.ID, time.Now(), time.Now().AddDate(1, 0, 0))

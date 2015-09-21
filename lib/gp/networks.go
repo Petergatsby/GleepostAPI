@@ -63,15 +63,21 @@ type NetRequest struct {
 
 type PublicUniversity struct {
 	Network
-	Image        string `json:"image,omitempty"`
-	Desc         string `json:"description,omitempty"`
-	MemberCount  int    `json:"size,omitempty"`
-	ShortName    string `json:"shortname,omitempty"`
-	AppName      string `json:"appname,omitempty"`
-	TagLine      string `json:"tagline,omitempty"`
-	IosURL       string `json:"ios_url,omitempty"`
-	AndroidURL   string `json:"android_url,omitempty"`
-	EventCount   int    `json:"events"`
-	GroupCount   int    `json:"groups"`
-	MessageCount int    `json:"messages'`
+	Image        string     `json:"image,omitempty"`
+	Desc         string     `json:"description,omitempty"`
+	MemberCount  int        `json:"size,omitempty"`
+	ShortName    string     `json:"shortname,omitempty"`
+	AppName      string     `json:"appname,omitempty"`
+	TagLine      string     `json:"tagline,omitempty"`
+	IosURL       string     `json:"ios_url,omitempty"`
+	AndroidURL   string     `json:"android_url,omitempty"`
+	EventCount   int        `json:"events"`
+	GroupCount   int        `json:"groups"`
+	MessageCount int        `json:"messages'`
+	Video        CoverVideo `json:"video"`
+}
+
+type CoverVideo struct {
+	MP4  string `json:"mp4,omitempty"`
+	WebM string `json:"webm,omitempty"`
 }
