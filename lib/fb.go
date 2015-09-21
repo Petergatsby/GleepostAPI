@@ -2,6 +2,7 @@ package lib
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -181,7 +182,7 @@ func (api *API) FacebookRegister(fbToken string, email string, invite string) (t
 	if err != nil {
 		return
 	}
-	err = api.createFBUser(t.FBUser, email)
+	err = api.createFBUser(t.FBUser, email, fbToken)
 	exists, _ := api.inviteExists(email, invite)
 	if exists {
 		id, e := api.fBSetVerified(email, t.FBUser)
@@ -233,7 +234,11 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	if err != nil {
 		return
 	}
-	firstName, _, _, err := fBName(fbid)
+	fbtoken, err := api.fbToken(fbid)
+	if err != nil {
+		return
+	}
+	firstName, _, _, err := fBName(fbid, fbtoken)
 	if err != nil {
 		return
 	}
@@ -241,10 +246,25 @@ func (api *API) FBissueVerification(fbid uint64) (err error) {
 	return
 }
 
+func (api *API) fbToken(fbid uint64) (fbtoken string, err error) {
+	s, err := api.sc.Prepare("SELECT fb_token FROM facebook WHERE fb_id = ?")
+	if err != nil {
+		return
+	}
+	var token sql.NullString
+	err = s.QueryRow(fbid).Scan(&token)
+	if token.Valid {
+		fbtoken = token.String
+	} else {
+		err = errors.New("No stored fb token")
+	}
+	return
+
+}
+
 //FBName retrieves the first-, last-, and username of facebook id fbid.
-func fBName(fbid uint64) (firstName, lastName, username string, err error) {
-	res, err := facebook.Get(fmt.Sprintf("/%d", fbid), nil)
-	log.Println(res)
+func fBName(fbid uint64, token string) (firstName, lastName, username string, err error) {
+	res, err := facebook.Get(fmt.Sprintf("/%d", fbid), facebook.Params{"access_token": token})
 	var ok bool
 	firstName, ok = res["first_name"].(string)
 	if !ok {
@@ -308,7 +328,12 @@ func (api *API) UserAddFBUsersToGroup(userID gp.UserID, fbusers []uint64, netID 
 
 //CreateUserFromFB takes a facebook id and an email address and creates a gleepost user, returning their newly created id.
 func (api *API) createUserFromFB(fbid uint64, email string) (userID gp.UserID, err error) {
-	firstName, lastName, username, err := fBName(fbid)
+	fbtoken, err := api.fbToken(fbid)
+	if err != nil {
+		log.Println("Couldn't get stored facebook token", err)
+		return
+	}
+	firstName, lastName, username, err := fBName(fbid, fbtoken)
 	if err != nil {
 		log.Println("Couldn't get name info from facebook:", err)
 		return
@@ -436,12 +461,12 @@ func (api *API) fBFirstTimeWithEmail(email, fbToken, invite string, fbUser uint6
 }
 
 //CreateFBUser records the existence of this (fbid:email) pair; when the user is verified it will be converted to a full gleepost user.
-func (api *API) createFBUser(fbID uint64, email string) (err error) {
-	s, err := api.sc.Prepare("INSERT INTO facebook (fb_id, email) VALUES (?, ?)")
+func (api *API) createFBUser(fbID uint64, email string, fbtoken string) (err error) {
+	s, err := api.sc.Prepare("INSERT INTO facebook (fb_id, email, fb_token) VALUES (?, ?, ?)")
 	if err != nil {
 		return
 	}
-	_, err = s.Exec(fbID, email)
+	_, err = s.Exec(fbID, email, fbtoken)
 	return
 }
 
