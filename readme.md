@@ -49,7 +49,7 @@ These endpoints are accessible to the world.
 
 /contact_form [[POST]](#post-contact_form)
 
-/university/[id] [[GET]] (#GET-universityid)
+/university/[id] [[GET]] (#get-universityid)
 
 ###Authenticated endpoints:
 These endpoints require authentication to access.
