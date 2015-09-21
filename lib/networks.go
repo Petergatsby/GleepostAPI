@@ -1539,7 +1539,7 @@ func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniver
 		return
 	}
 	var coverImg, desc, shortname, appname, tagline, iosURL, androidURL, mp4, webm sql.NullString
-	err = s.QueryRow(netID).Scan(&university.Name, &coverImg, &desc, &shortname, &appname, &tagline, &iosURL, &androidURL, mp4, webm)
+	err = s.QueryRow(netID).Scan(&university.Name, &coverImg, &desc, &shortname, &appname, &tagline, &iosURL, &androidURL, &mp4, &webm)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = ENOTALLOWED
