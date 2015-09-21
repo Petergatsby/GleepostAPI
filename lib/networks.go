@@ -1579,6 +1579,10 @@ func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniver
 	if err != nil {
 		log.Println(err)
 	}
+	university.MessageCount, err = api.totalMessagesSent(university.ID, time.Time{}, time.Now().UTC())
+	if err != nil {
+		log.Println(err)
+	}
 
 	return
 }

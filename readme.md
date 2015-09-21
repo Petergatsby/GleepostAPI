@@ -1306,7 +1306,8 @@ Returns a description of this university; used for rendering app descriptions, h
 	"ios_url":"https://itunes.apple.com/us/app/gleepost/id820569024?mt=8",
 	"android_url":"https://play.google.com/store/apps/details?id=com.gleepost.android",
 	"events":0,
-	"groups":0
+	"groups":0,
+	"messages":123456
 }
 ```
 
