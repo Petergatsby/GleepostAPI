@@ -553,7 +553,7 @@ func (api *API) uniqueMessageSenders(network gp.NetworkID, start, finish time.Ti
 func (api *API) totalMessagesSent(network gp.NetworkID, start, finish time.Time) (count int, err error) {
 	q := "SELECT COUNT(*) FROM chat_messages JOIN user_network ON chat_messages.from = user_network.user_id " +
 		"WHERE user_network.network_id = ? " +
-		"AND chat_messages.`timestamp` > ? AND post_views.`timestamp` < ?"
+		"AND chat_messages.`timestamp` > ? AND chat_messages.`timestamp` < ?"
 	s, err := api.sc.Prepare(q)
 	if err != nil {
 		return
