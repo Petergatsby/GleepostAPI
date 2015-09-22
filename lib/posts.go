@@ -1766,6 +1766,7 @@ func postOwner(sc *psc.StatementCache, post gp.PostID) (by gp.UserID, err error)
 	return
 }
 
+//MarkPostsSeen eliminates posts up to and including upTo from any badge value calculations.
 func (api *API) MarkPostsSeen(userID gp.UserID, netID gp.NetworkID, upTo gp.PostID) (err error) {
 	s, err := api.sc.Prepare("UPDATE user_network SET seen_upto = (SELECT MAX(id) FROM wall_posts WHERE id <= ?) WHERE user_id = ? AND network_id = ?")
 	if err != nil {

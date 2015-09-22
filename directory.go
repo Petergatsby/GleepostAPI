@@ -13,6 +13,7 @@ func init() {
 	base.Handle("/directory/{university}/{query}", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
+//NotYetImplemented means this university's directory search doesn't exist yet.
 var NotYetImplemented = gp.APIerror{Reason: "This directory is not yet searchable"}
 
 func searchDirectory(w http.ResponseWriter, r *http.Request) {

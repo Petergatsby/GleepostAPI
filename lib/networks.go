@@ -595,6 +595,7 @@ func (api *API) getRules() (rules []gp.Rule, err error) {
 	return
 }
 
+//The available ways to order your own groups
 const (
 	ByPosts = iota
 	ByMessages
@@ -1533,6 +1534,7 @@ func (api *API) pendingRequestExists(reqID gp.UserID, netID gp.NetworkID) (statu
 
 }
 
+//PublicUniversity yields the public world-readable description of this university.
 func (api *API) PublicUniversity(netID gp.NetworkID) (university gp.PublicUniversity, err error) {
 	s, err := api.sc.Prepare("SELECT name, cover_img, `desc`, shortname, appname, tagline, ios_url, android_url, covervid_mp4, covervid_webm FROM network WHERE id = ? AND user_group = 0 AND is_university = 1")
 	if err != nil {

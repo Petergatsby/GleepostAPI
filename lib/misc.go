@@ -6,14 +6,14 @@ import (
 	"log"
 )
 
-//InvalidInput is returned when a contact request is submitted which fails validation.
-var InvalidInput = errors.New("Invalid input")
+//ErrInvalidInput is returned when a contact request is submitted which fails validation.
+var ErrInvalidInput = errors.New("Invalid input")
 
 //ContactFormRequest records a request for contact and emails it out to someone.
 func (api *API) ContactFormRequest(fullName, college, email, phoneNo, ip string) (err error) {
 	log.Println("Contact form request from:", ip, "email:", email)
 	if len(fullName) < 3 || len(college) < 3 || len(phoneNo) < 6 {
-		return InvalidInput
+		return ErrInvalidInput
 	}
 	if !looksLikeEmail(email) {
 		return InvalidEmail

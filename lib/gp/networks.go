@@ -61,6 +61,7 @@ type NetRequest struct {
 	Status    string    `json:"status"`
 }
 
+//PublicUniversity is the world-readable resource for a particular university network, including homepage stats about this university as well as various website configuration options (campus live video, short name...)
 type PublicUniversity struct {
 	Network
 	Image        string     `json:"image,omitempty"`
@@ -77,6 +78,7 @@ type PublicUniversity struct {
 	Video        CoverVideo `json:"video"`
 }
 
+//CoverVideo is a campus live video for a particular university.
 type CoverVideo struct {
 	MP4  string `json:"mp4,omitempty"`
 	WebM string `json:"webm,omitempty"`

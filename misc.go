@@ -95,7 +95,7 @@ func contactFormHandler(w http.ResponseWriter, r *http.Request) {
 	ip := r.Header.Get("X-Real-IP")
 	err := api.ContactFormRequest(r.FormValue("name"), r.FormValue("college"), r.FormValue("email"), r.FormValue("phoneNo"), ip)
 	if err != nil {
-		if err == lib.InvalidInput || err == lib.InvalidEmail {
+		if err == lib.ErrInvalidInput || err == lib.InvalidEmail {
 			jsonErr(w, err, 400)
 		} else {
 			jsonErr(w, err, 500)

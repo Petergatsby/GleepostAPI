@@ -46,6 +46,7 @@ func (d Dir) LookUpEmail(email string) (userType string, err error) {
 	return
 }
 
+//Member is a person in the Stanford directory.
 type Member struct {
 	Name         string        `json:"name"`
 	ID           string        `json:"id"`
@@ -58,6 +59,7 @@ type Member struct {
 	//Other names
 }
 
+//Affiliation is (one of) a person's role(s) at Stanford.
 type Affiliation struct {
 	Affiliation string   `json:"name"`
 	Department  string   `json:"department"`
@@ -67,11 +69,19 @@ type Affiliation struct {
 	WorkAddress string   `json:"address,omitempty"`
 }
 
+//HomeInfo is the information about a person's home life they've chosen to share in the stanford directory.
 type HomeInfo struct {
 	Phone   string `json:"phone,omitempty"`
 	Address string `json:"address,omitempty"`
 }
 
+//Filters
+//Everyone is the default filter, returning all results.
+//University limits just to Stanford (ie, not Hospital / alums, but including med school)
+//Faculty is just teaching staff
+//Staff - regular staff, inc. eg cafeteria workers
+//Student - undergrads, postgrads, etc
+//Hospital - People associated with Stanford's hospital.
 const (
 	Everyone   = "everyone"
 	University = "stanford:*"
@@ -81,6 +91,7 @@ const (
 	Hospital   = "sumc:staff*"
 )
 
+//Query searches the Stanford directory, performing a search against their website and scraping the results.
 func (d Dir) Query(query string, filter string) (people []Member, err error) {
 	c := &http.Client{}
 	req, err := buildRequest(query, filter)
@@ -113,7 +124,8 @@ func buildRequest(query, filter string) (req *http.Request, err error) {
 	return r, nil
 }
 
-var ParseFailure = errors.New("Parsing results page failed")
+//ErrParseFailure occurs when something unexpected happens trying to extract the results from the search markup.
+var ErrParseFailure = errors.New("Parsing results page failed")
 
 func parseBody(resp *http.Response) (results []Member, err error) {
 	defer resp.Body.Close()
@@ -132,7 +144,7 @@ func parseBody(resp *http.Response) (results []Member, err error) {
 	case strings.Contains(heading, "matches in public directory"):
 		individual = false
 	default:
-		return results, ParseFailure
+		return results, ErrParseFailure
 	}
 	if individual {
 		var member Member
