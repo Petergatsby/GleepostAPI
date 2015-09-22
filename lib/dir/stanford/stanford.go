@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -48,15 +47,14 @@ func (d Dir) LookUpEmail(email string) (userType string, err error) {
 
 //Member is a person in the Stanford directory.
 type Member struct {
-	Name         string        `json:"name"`
-	ID           string        `json:"id"`
-	Title        string        `json:"title,omitempty"`
-	Email        string        `json:"email,omitempty"`
-	Affiliations []Affiliation `json:"affiliations"`
-	MailCode     string        `json:"mail_code,omitempty"`
-	HomeInfo     *HomeInfo     `json:"at_home,omitempty"`
-	//Other info:
-	//Other names
+	Name          string        `json:"name"`
+	ID            string        `json:"id"`
+	Title         string        `json:"title,omitempty"`
+	Email         string        `json:"email,omitempty"`
+	Affiliations  []Affiliation `json:"affiliations"`
+	MailCode      string        `json:"mail_code,omitempty"`
+	HomeInfo      *HomeInfo     `json:"at_home,omitempty"`
+	AlternateName string        `json:"other_name"`
 }
 
 //Affiliation is (one of) a person's role(s) at Stanford.
@@ -160,7 +158,6 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 	result.Name = strings.TrimSpace(doc.Find("#PublicProfile h2").First().Text())
 	result.Title = strings.TrimSpace(doc.Find("#PublicProfile p.facappt").First().Text())
 	result.Email = strings.TrimSpace(doc.Find("#Contact dl dd a").First().Text())
-	result.MailCode = strings.TrimSpace(doc.Find("#Ids dl dd").First().Text())
 	rawURL, exists := doc.Find("#ProfileNav ul li a").First().Attr("href")
 	if exists {
 		var URL *url.URL
@@ -212,7 +209,6 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 		if s.Is("dt") {
 			lastLabel = strings.TrimSpace(s.Text())
 			lastLabel = lastLabel[:len(lastLabel)-1] //strip trailing colon
-			log.Println(lastLabel)
 		} else if s.Is("dd") {
 			val := strings.TrimSpace(s.Text())
 			switch {
@@ -227,6 +223,20 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 			}
 		}
 		result.HomeInfo = &home
+	})
+	doc.Find("#Ids dl").Children().Each(func(i int, s *goquery.Selection) {
+		if s.Is("dt") {
+			lastLabel = strings.TrimSpace(s.Text())
+			lastLabel = lastLabel[:len(lastLabel)-1] //strip trailing colon
+		} else if s.Is("dd") {
+			val := strings.TrimSpace(s.Text())
+			switch {
+			case lastLabel == "Other names":
+				result.AlternateName = val
+			case lastLabel == "Inter-dept mail code":
+				result.MailCode = val
+			}
+		}
 	})
 	return result, nil
 }
