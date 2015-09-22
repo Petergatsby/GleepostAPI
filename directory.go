@@ -27,7 +27,7 @@ func searchDirectory(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		dir := stanford.Dir{}
-		results, err := dir.Query(vars["query"])
+		results, err := dir.Query(vars["query"], stanford.Everyone)
 		if err != nil {
 			jsonResponse(w, err, 502)
 			return

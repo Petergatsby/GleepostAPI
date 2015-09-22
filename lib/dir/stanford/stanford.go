@@ -18,7 +18,7 @@ type Dir struct{}
 
 //LookUpEmail finds this user in the Stanford directory, and returns their type (staff, faculty, student)
 func (d Dir) LookUpEmail(email string) (userType string, err error) {
-	results, err := d.Query(email)
+	results, err := d.Query(email, Everyone)
 	if err != nil {
 		return
 	}
@@ -72,9 +72,18 @@ type HomeInfo struct {
 	Address string `json:"address,omitempty"`
 }
 
-func (d Dir) Query(query string) (people []Member, err error) {
+const (
+	Everyone   = "everyone"
+	University = "stanford:*"
+	Faculty    = "stanford:faculty*"
+	Staff      = "stanford:staff*"
+	Student    = "stanford:student*"
+	Hospital   = "sumc:staff*"
+)
+
+func (d Dir) Query(query string, filter string) (people []Member, err error) {
 	c := &http.Client{}
-	req, err := buildRequest(query)
+	req, err := buildRequest(query, filter)
 	if err != nil {
 		return
 	}
@@ -86,10 +95,15 @@ func (d Dir) Query(query string) (people []Member, err error) {
 	return
 }
 
-func buildRequest(query string) (req *http.Request, err error) {
+func buildRequest(query, filter string) (req *http.Request, err error) {
 	searchURL := "https://stanfordwho.stanford.edu/SWApp/Search.do"
+	if filter == "" {
+		filter = Everyone
+	}
 	params := url.Values{}
 	params.Set("search", query)
+	params.Set("affilfilter", filter)
+
 	body := params.Encode()
 	r, err := http.NewRequest("POST", searchURL, bytes.NewBufferString(body))
 	if err != nil {
