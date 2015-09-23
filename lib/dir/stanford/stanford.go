@@ -333,7 +333,6 @@ func (d Dir) CacheQuery(query, filter string) (people []Member, err error) {
 
 	esQuery := composeQuery(query, filter)
 
-	q, _ := json.Marshal(esQuery)
 	results, err := c.Search("directory", "stanford", nil, esQuery)
 	if err != nil {
 		return
@@ -350,7 +349,7 @@ func (d Dir) CacheQuery(query, filter string) (people []Member, err error) {
 }
 
 func composeQuery(query, filter string) (esQuery interface{}) {
-	fields := []string{"name", "other_name"}
+	fields := []string{"name", "name.partial", "name.metaphone", "other_name", "other_name.partial", "other_name.metaphone"}
 	if filter == Everyone {
 		q := esqueryNoFilter{}
 		for _, field := range fields {
