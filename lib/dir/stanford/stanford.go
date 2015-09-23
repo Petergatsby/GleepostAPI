@@ -334,7 +334,6 @@ func (d Dir) CacheQuery(query, filter string) (people []Member, err error) {
 	esQuery := composeQuery(query, filter)
 
 	q, _ := json.Marshal(esQuery)
-	fmt.Printf("%s\n", q)
 	results, err := c.Search("directory", "stanford", nil, esQuery)
 	if err != nil {
 		return
