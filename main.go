@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
 	"github.com/gorilla/mux"
 
 	_ "net/http/pprof"
@@ -38,6 +39,8 @@ func main() {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
+
+	go stanford.StanfordInit(api.Config.ElasticSearch, "lib/dir/stanford/elasticsearch-index.json")
 
 	log.Println("Starting HTTP server")
 	server := &http.Server{

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/mattbaird/elastigo/lib"
@@ -416,4 +418,21 @@ func (d Dir) bulkIndexMembers(members []Member) {
 	for _, member := range members {
 		indexer.Index("directory", "stanford", member.ID, "", nil, member, true)
 	}
+}
+
+//StanfordInit is quick and nasty.
+//Doing this to ensure that the elasticsearch index gets set up correctly before any members are added to it
+//It assumes we can just keep on trying to create this index and if it already exists (which is most of the time) it will return an error and not do naughty things to our data or whatever.
+func StanfordInit(esURL, indexpath string) {
+	index, err := os.Open(indexpath)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	c := http.Client{}
+	_, err = c.Post("http://"+esURL+"/directory", "application/json", index)
+	if err != nil {
+		log.Println(err)
+	}
+	return
 }
