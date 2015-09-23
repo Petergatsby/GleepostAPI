@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -27,8 +28,14 @@ func searchDirectory(w http.ResponseWriter, r *http.Request) {
 			jsonResponse(w, NotYetImplemented, 404)
 			return
 		}
-		dir := stanford.Dir{}
-		results, err := dir.Query(vars["query"], stanford.Everyone)
+		cached, _ := strconv.ParseBool(r.FormValue("cache"))
+		dir := stanford.Dir{ElasticSearch: api.Config.ElasticSearch}
+		var results []stanford.Member
+		if cached {
+			results, err = dir.CacheQuery(vars["query"], stanford.Everyone)
+		} else {
+			results, err = dir.Query(vars["query"], stanford.Everyone)
+		}
 		if err != nil {
 			jsonResponse(w, err, 502)
 			return

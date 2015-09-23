@@ -2,18 +2,22 @@ package stanford
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/mattbaird/elastigo/lib"
 	"github.com/puerkitobio/goquery"
 	"golang.org/x/net/html"
 )
 
 //Dir is stanford's directory
-type Dir struct{}
+type Dir struct {
+	ElasticSearch string
+}
 
 //LookUpEmail finds this user in the Stanford directory, and returns their type (staff, faculty, student)
 func (d Dir) LookUpEmail(email string) (userType string, err error) {
@@ -54,7 +58,7 @@ type Member struct {
 	Affiliations  []Affiliation `json:"affiliations"`
 	MailCode      string        `json:"mail_code,omitempty"`
 	HomeInfo      *HomeInfo     `json:"at_home,omitempty"`
-	AlternateName string        `json:"other_name"`
+	AlternateName string        `json:"other_name,omitempty"`
 }
 
 //Affiliation is (one of) a person's role(s) at Stanford.
@@ -101,6 +105,9 @@ func (d Dir) Query(query string, filter string) (people []Member, err error) {
 		return
 	}
 	people, err = parseBody(resp)
+	if err == nil {
+		go d.bulkIndexMembers(people)
+	}
 	return
 }
 
@@ -313,4 +320,102 @@ func parseAffils(combinedAffils string) (affils []string) {
 		affils = append(affils, fmt.Sprintf("%s - %s", institution, pos))
 	}
 	return
+}
+
+//CacheQuery searches the local elasticsearch cache of the Stanford directory.
+func (d Dir) CacheQuery(query, filter string) (people []Member, err error) {
+	people = make([]Member, 0)
+	c := elastigo.NewConn()
+	c.Domain = d.ElasticSearch
+	if filter == "" {
+		filter = Everyone
+	}
+
+	esQuery := composeQuery(query, filter)
+
+	q, _ := json.Marshal(esQuery)
+	fmt.Printf("%s\n", q)
+	results, err := c.Search("directory", "stanford", nil, esQuery)
+	if err != nil {
+		return
+	}
+	for _, hit := range results.Hits.Hits {
+		var member Member
+		err = json.Unmarshal(*hit.Source, &member)
+		if err != nil {
+			return
+		}
+		people = append(people, member)
+	}
+	return
+}
+
+func composeQuery(query, filter string) (esQuery interface{}) {
+	fields := []string{"name", "other_name"}
+	if filter == Everyone {
+		q := esqueryNoFilter{}
+		for _, field := range fields {
+			match := make(map[string]string)
+			matcher := matcher{Match: match}
+			matcher.Match[field] = query
+			q.Query.Bool.Should = append(q.Query.Bool.Should, matcher)
+		}
+		return q
+	} else {
+		q := esquery{}
+		term := make(map[string]string)
+		term["affiliations.name"] = filter
+		q.Query.Filtered.Filter.Term = term
+		for _, field := range fields {
+			match := make(map[string]string)
+			matcher := matcher{Match: match}
+			matcher.Match[field] = query
+			q.Query.Filtered.Query.Bool.Should = append(q.Query.Filtered.Query.Bool.Should, matcher)
+		}
+		return q
+	}
+}
+
+type esquery struct {
+	Query innerquery `json:"query"`
+}
+
+type innerquery struct {
+	Filtered filteredquery `json:"filtered"`
+}
+
+type filteredquery struct {
+	Filter filter          `json:"filter"`
+	Query  innerinnerquery `json:"query"`
+}
+
+type innerinnerquery struct {
+	Bool boolquery `json:"bool"`
+}
+
+type filter struct {
+	Term map[string]string `json:"term"`
+}
+
+type boolquery struct {
+	Should []matcher `json:"should"`
+}
+
+type matcher struct {
+	Match map[string]string `json:"match"`
+}
+
+type esqueryNoFilter struct {
+	Query innerinnerquery `json:"query"`
+}
+
+func (d Dir) bulkIndexMembers(members []Member) {
+	c := elastigo.NewConn()
+	c.Domain = d.ElasticSearch
+	indexer := c.NewBulkIndexerErrors(10, 60)
+	indexer.Start()
+	defer indexer.Stop()
+	for _, member := range members {
+		indexer.Index("directory", "stanford", member.ID, "", nil, member, true)
+	}
 }
