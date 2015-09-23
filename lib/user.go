@@ -128,6 +128,10 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		}
 		newGroupMessages, _ := api.unreadGroupMessageCount(otherID)
 		user.GroupsBadge = newPosts + newGroupMessages
+		user.FBID, err = api.fbUser(otherID)
+		if err != nil && err != NoSuchUser {
+			log.Println(err)
+		}
 	}
 	go api.esIndexUser(otherID)
 	return user, nil

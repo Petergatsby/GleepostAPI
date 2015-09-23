@@ -34,6 +34,7 @@ type Profile struct {
 	Notifications int             `json:"notification_count,omitempty"`
 	Unread        int             `json:"unread,omitempty"`
 	GroupsBadge   int             `json:"group_badge,omitempty"`
+	FBID          uint64          `json:"fb_id,omitempty"`
 }
 
 //UserRole represents a user and their role within a particular network

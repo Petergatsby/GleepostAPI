@@ -1713,6 +1713,8 @@ If you are looking at your own user resource, some more fields will be available
 
 `group_badge` is the number of new group posts and messages since you last [muted the groups badge](#not-implemented).
 
+`fb_id` is your associated facebook account, where available.
+
 example responses:
 ```json
 {
@@ -1730,7 +1732,8 @@ example responses:
 	"post_count":8910,
 	"unread":1234,
 	"notification_count":4567,
-	"group_badge":5678
+	"group_badge":5678,
+	"fb_id":251251352345234553
 }
 ```
 

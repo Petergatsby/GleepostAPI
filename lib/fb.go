@@ -508,3 +508,15 @@ func (api *API) fBVerificationExists(token string) (fbid uint64, err error) {
 	}
 	return
 }
+
+func (api *API) fbUser(userID gp.UserID) (fbid uint64, err error) {
+	s, err := api.sc.Prepare("SELECT fb_id FROM facebook WHERE user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(userID).Scan(&fbid)
+	if err == sql.ErrNoRows {
+		err = NoSuchUser
+	}
+	return
+}
