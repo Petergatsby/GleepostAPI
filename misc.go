@@ -117,10 +117,6 @@ func chasenHandler(w http.ResponseWriter, r *http.Request) {
 	}{Success: true}, 200)
 }
 
-func goneHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResponse(w, gp.APIerror{Reason: "All endpoints to do with Live conversations have been deprecated. Stop using them."}, 410)
-}
-
 func timeHandler(api *lib.API, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

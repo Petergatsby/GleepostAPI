@@ -21,7 +21,6 @@ func init() {
 	base.Handle("/user/{id:[0-9]+}/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/user/{id:[0-9]+}/networks", timeHandler(api, http.HandlerFunc(getGroups))).Methods("GET")
 	base.Handle("/user/{id:[0-9]+}/networks", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
-	base.Handle("/user/{id:[0-9]+}/total_live", timeHandler(api, http.HandlerFunc(goneHandler)))
 	base.Handle("/user", timeHandler(api, http.HandlerFunc(postUsers))).Methods("POST")
 	base.Handle("/user", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	//profile stuff
