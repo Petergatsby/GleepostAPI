@@ -40,7 +40,7 @@ func main() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
-	go stanford.StanfordInit(api.Config.ElasticSearch, "lib/dir/stanford/elasticsearch-index.json")
+	go stanford.Init(api.Config.ElasticSearch, "lib/dir/stanford/elasticsearch-index.json")
 
 	log.Println("Starting HTTP server")
 	server := &http.Server{

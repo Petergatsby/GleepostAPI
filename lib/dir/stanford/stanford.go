@@ -361,19 +361,18 @@ func composeQuery(query, filter string) (esQuery interface{}) {
 			q.Query.Bool.Should = append(q.Query.Bool.Should, matcher)
 		}
 		return q
-	} else {
-		q := esquery{}
-		term := make(map[string]string)
-		term["affiliations.name"] = filter
-		q.Query.Filtered.Filter.Term = term
-		for _, field := range fields {
-			match := make(map[string]string)
-			matcher := matcher{Match: match}
-			matcher.Match[field] = query
-			q.Query.Filtered.Query.Bool.Should = append(q.Query.Filtered.Query.Bool.Should, matcher)
-		}
-		return q
 	}
+	q := esquery{}
+	term := make(map[string]string)
+	term["affiliations.name"] = filter
+	q.Query.Filtered.Filter.Term = term
+	for _, field := range fields {
+		match := make(map[string]string)
+		matcher := matcher{Match: match}
+		matcher.Match[field] = query
+		q.Query.Filtered.Query.Bool.Should = append(q.Query.Filtered.Query.Bool.Should, matcher)
+	}
+	return q
 }
 
 type esquery struct {
@@ -420,10 +419,10 @@ func (d Dir) bulkIndexMembers(members []Member) {
 	}
 }
 
-//StanfordInit is quick and nasty.
+//Init is quick and nasty.
 //Doing this to ensure that the elasticsearch index gets set up correctly before any members are added to it
 //It assumes we can just keep on trying to create this index and if it already exists (which is most of the time) it will return an error and not do naughty things to our data or whatever.
-func StanfordInit(esURL, indexpath string) {
+func Init(esURL, indexpath string) {
 	index, err := os.Open(indexpath)
 	if err != nil {
 		log.Println(err)
