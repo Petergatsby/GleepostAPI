@@ -15,7 +15,7 @@ You can search by name, email and stanford student ID (Maybe more, but I have no
 
 Results in this mode are limited to ~100 matches: 100 per "kind" of match, with the three kinds being "email matches", "firstname matches" and "lastname matches".
 
-There is no way of retreiving additional pages.
+There is no way to retrieve additional pages.
 
 A query for the name "john" might look like this:
 
