@@ -1468,7 +1468,7 @@ If it is successful, it will respond with HTTP 204.
 ##GET /conversations/[conversation-id]/messages
 required parameters: id=[user-id], token=[token]
 
-optional parameters: `start`=[offset], `after`=[post-id], `before`=[post-id], `count`=[num]
+optional parameters: `start`=[offset], `after`=[message-id], `before`=[message-id], `centre`=[message-id], `count`=[num]
 
 Returns a list of 20 messages ordered by time from most recent to least recent.
 Given `start`, it returns messages from the [start]th most recent to [start + 20]th most recent.
