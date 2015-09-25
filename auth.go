@@ -108,25 +108,18 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func changePassHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := authenticate(r)
-	switch {
-	case err != nil:
+func changePassHandler(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
+	oldPass := r.FormValue("old")
+	newPass := r.FormValue("new")
+	err := api.ChangePass(userID, oldPass, newPass)
+	if err != nil {
 		go api.Statsd.Count(1, "gleepost.profile.change_pass.post.400")
-		jsonResponse(w, &EBADTOKEN, 400)
-	default:
-		oldPass := r.FormValue("old")
-		newPass := r.FormValue("new")
-		err := api.ChangePass(userID, oldPass, newPass)
-		if err != nil {
-			go api.Statsd.Count(1, "gleepost.profile.change_pass.post.400")
-			//Assuming that most errors will be bad input for now
-			jsonErr(w, err, 400)
-			return
-		}
-		go api.Statsd.Count(1, "gleepost.profile.change_pass.post.204")
-		w.WriteHeader(204)
+		//Assuming that most errors will be bad input for now
+		jsonErr(w, err, 400)
+		return
 	}
+	go api.Statsd.Count(1, "gleepost.profile.change_pass.post.204")
+	w.WriteHeader(204)
 }
 
 func verificationHandler(w http.ResponseWriter, r *http.Request) {

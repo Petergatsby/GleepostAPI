@@ -126,16 +126,18 @@ func timeHandler(api *lib.API, next http.Handler) http.Handler {
 	})
 }
 
-func authenticatedHandler(api *lib.API, next http.Handler) http.Handler {
+func authenticated(next authedHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := authenticate(r)
+		userID, err := authenticate(r)
 		if err != nil {
 			jsonResponse(w, &EBADTOKEN, 400)
 			return
 		}
-		next.ServeHTTP(w, r)
+		next(userID, w, r)
 	})
 }
+
+type authedHandler func(gp.UserID, http.ResponseWriter, *http.Request)
 
 var ids = regexp.MustCompile(`\.\d\.`)
 

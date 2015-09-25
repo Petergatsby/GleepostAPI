@@ -8,16 +8,13 @@ import (
 )
 
 func init() {
-	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(notificationHandler))).Methods("PUT", "GET")
+	base.Handle("/notifications", timeHandler(api, authenticated(notificationHandler))).Methods("PUT", "GET")
 	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/notifications", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 }
 
-func notificationHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := authenticate(r)
+func notificationHandler(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	switch {
-	case err != nil:
-		jsonResponse(w, &EBADTOKEN, 400)
 	case r.Method == "PUT":
 		_upTo, err := strconv.ParseUint(r.FormValue("seen"), 10, 64)
 		if err != nil {
