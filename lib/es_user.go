@@ -58,7 +58,7 @@ func (api *API) esBulkIndexUsers() {
 			log.Println("Error getting user university for elasticsearch index:", userID, err)
 			continue
 		}
-		indexer.Index("gleepost", "users", fmt.Sprintf("%d", userID), "", nil, user, true)
+		indexer.Index("gleepost", "users", fmt.Sprintf("%d", userID), "", "", nil, user)
 	}
 	log.Println("All users indexed in ElasticSearch")
 	return
