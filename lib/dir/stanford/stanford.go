@@ -415,7 +415,7 @@ func (d Dir) bulkIndexMembers(members []Member) {
 	indexer.Start()
 	defer indexer.Stop()
 	for _, member := range members {
-		indexer.Index("directory", "stanford", member.ID, "", "", nil, member)
+		indexer.UpdateWithPartialDoc("directory", "stanford", member.ID, "", "", nil, member, true)
 	}
 }
 
