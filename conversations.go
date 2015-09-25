@@ -154,7 +154,7 @@ func getMessages(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	_convID, _ := strconv.ParseUint(vars["id"], 10, 64)
 	convID := gp.ConversationID(_convID)
 	url := fmt.Sprintf("gleepost.conversations.%d.messages.get", convID)
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	_count, _ := strconv.ParseInt(r.FormValue("count"), 10, 64)
 	count := int(_count)
 	messages, err := api.UserGetMessages(userID, convID, mode, index, count)
@@ -307,7 +307,7 @@ func putConversation(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 func getFiles(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	convID := gp.ConversationID(_convID)
 	files, err := api.ConversationFiles(userID, convID, mode, index, api.Config.MessagePageSize)
 	switch {
@@ -323,7 +323,7 @@ func getFiles(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 func searchMessages(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	convID := gp.ConversationID(_convID)
 	results, err := api.SearchMessagesInConversation(userID, convID, vars["query"], mode, index)
 	switch {

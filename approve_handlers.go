@@ -89,7 +89,7 @@ func postApproveApproved(userID gp.UserID, w http.ResponseWriter, r *http.Reques
 }
 
 func getApproveApproved(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	approved, err := api.UserGetApproved(userID, mode, index, api.Config.PostPageSize)
 	switch {
 	case err == nil:
@@ -101,18 +101,22 @@ func getApproveApproved(userID gp.UserID, w http.ResponseWriter, r *http.Request
 	}
 }
 
-func interpretPagination(startString, beforeString, afterString string) (mode int, index int64) {
-	start, err := strconv.ParseInt(startString, 10, 64)
+func interpretPagination(r *http.Request) (mode int, index int64) {
+	start, err := strconv.ParseInt(r.FormValue("start"), 10, 64)
 	if err != nil {
 		start = 0
 	}
-	before, err := strconv.ParseInt(beforeString, 10, 64)
+	before, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
 	if err != nil {
 		before = 0
 	}
-	after, err := strconv.ParseInt(afterString, 10, 64)
+	after, err := strconv.ParseInt(r.FormValue("after"), 10, 64)
 	if err != nil {
 		after = 0
+	}
+	centre, err := strconv.ParseInt(r.FormValue("centre"), 10, 64)
+	if err != nil {
+		centre = 0
 	}
 	switch {
 	case after > 0:
@@ -121,6 +125,9 @@ func interpretPagination(startString, beforeString, afterString string) (mode in
 	case before > 0:
 		mode = lib.ChronologicallyBeforeID
 		index = before
+	case centre > 0:
+		mode = lib.CentredOnID
+		index = centre
 	default:
 		mode = lib.ByOffsetDescending
 		index = start
@@ -144,7 +151,7 @@ func postApproveRejected(userID gp.UserID, w http.ResponseWriter, r *http.Reques
 }
 
 func getApproveRejected(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	rejected, err := api.UserGetRejected(userID, mode, index, api.Config.PostPageSize)
 	switch {
 	case err == nil:

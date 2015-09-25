@@ -57,7 +57,7 @@ func ignored(key string) bool {
 
 func getPosts(userID gp.UserID, w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	mode, index := interpretPagination(req.FormValue("start"), req.FormValue("before"), req.FormValue("after"))
+	mode, index := interpretPagination(req)
 	filter := req.FormValue("filter")
 	id, ok := vars["network"]
 	var network gp.NetworkID

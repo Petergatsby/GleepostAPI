@@ -18,6 +18,8 @@ const (
 	ChronologicallyBeforeID
 	//ChronologicallyAfterID - This resource will be paginated by giving the posts immediately chronoligically more recent than this ID. The order within the collection will remain the same, however.
 	ChronologicallyAfterID
+	//CentredOnID - this resource will be paginated with this ID in the middle of the list, with an even number of elements on each side.
+	CentredOnID
 )
 
 var (

@@ -21,7 +21,7 @@ func notificationHandler(userID gp.UserID, w http.ResponseWriter, r *http.Reques
 			_upTo = 0
 		}
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
-		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		mode, index := interpretPagination(r)
 		notificationID := gp.NotificationID(_upTo)
 		err = api.MarkNotificationsSeen(userID, notificationID)
 		if err != nil {
@@ -36,7 +36,7 @@ func notificationHandler(userID gp.UserID, w http.ResponseWriter, r *http.Reques
 		}
 	case r.Method == "GET":
 		includeSeen, _ := strconv.ParseBool(r.FormValue("include_seen"))
-		mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+		mode, index := interpretPagination(r)
 		notifications, err := api.GetUserNotifications(userID, mode, index, includeSeen)
 		if err != nil {
 			jsonErr(w, err, 500)

@@ -64,7 +64,7 @@ func getUserPosts(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	otherID := gp.UserID(_id)
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	posts, err := api.GetUserPosts(otherID, userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 	if err != nil {
 		jsonErr(w, err, 500)
@@ -135,7 +135,7 @@ func getUserAttending(userID gp.UserID, w http.ResponseWriter, r *http.Request) 
 	_id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	otherID := gp.UserID(_id)
 	category := r.FormValue("filter")
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	events, err := api.UserEvents(userID, otherID, category, mode, index, 20)
 	if err != nil {
 		jsonResponse(w, err, 500)

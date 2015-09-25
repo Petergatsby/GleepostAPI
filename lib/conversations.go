@@ -298,10 +298,26 @@ func (api *API) UserGetMessages(userID gp.UserID, convID gp.ConversationID, mode
 	if count <= 0 {
 		count = api.Config.MessagePageSize
 	}
-	if api.userCanViewConversation(userID, convID) {
+	switch {
+	case !api.userCanViewConversation(userID, convID):
+		return messages, &ENOTALLOWED
+	case mode == CentredOnID:
+		var after, before []gp.Message
+		afterCount := count / 2
+		after, err = api.getMessages(userID, convID, ChronologicallyAfterID, index, afterCount)
+		if err != nil {
+			return
+		}
+		//index+1 so that this group includes the centred message
+		before, err = api.getMessages(userID, convID, ChronologicallyBeforeID, index+1, count-afterCount)
+		if err != nil {
+			return
+		}
+		messages = append(after, before...)
+		return
+	default:
 		return api.getMessages(userID, convID, mode, index, count)
 	}
-	return messages, &ENOTALLOWED
 }
 
 //GetConversations returns count non-ended conversations which userId participates in, starting from start and ordered by their last activity.

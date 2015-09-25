@@ -324,7 +324,7 @@ func getNetworkUsers(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 //getGroupPosts is basically the same goddamn thing as getPosts. stop copy-pasting you cretin.
 func getGroupPosts(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	url := "gleepost.profile.networks.get"
-	mode, index := interpretPagination(r.FormValue("start"), r.FormValue("before"), r.FormValue("after"))
+	mode, index := interpretPagination(r)
 	posts, err := api.UserGetGroupsPosts(userID, mode, index, api.Config.PostPageSize, r.FormValue("filter"))
 	if err != nil {
 		e, ok := err.(*gp.APIerror)
