@@ -258,7 +258,7 @@ func (api *API) UserGetConversation(userID gp.UserID, convID gp.ConversationID, 
 //TODO(patrick) - clarify this vs getConversation etc
 func (api *API) getFullConversation(userID gp.UserID, convID gp.ConversationID, start int64, count int) (conv gp.ConversationAndMessages, err error) {
 	conv.ID = convID
-	lastActivity, err := api.conversationLastActivity(userID, convID)
+	lastActivity, err := api.conversationActivity(userID, convID)
 	if err == nil {
 		conv.LastActivity = lastActivity
 	}
@@ -290,11 +290,6 @@ func (api *API) getFullConversation(userID gp.UserID, convID gp.ConversationID, 
 //TODO: Use cache
 func (api *API) readStatus(convID gp.ConversationID) (read []gp.Read, err error) {
 	return api.getReadStatus(convID, true)
-}
-
-//ConversationLastActivity returns the modification time (ie, creation  or last-message) for this conversation.
-func (api *API) conversationLastActivity(userID gp.UserID, convID gp.ConversationID) (t time.Time, err error) {
-	return api.conversationActivity(userID, convID)
 }
 
 //UserGetMessages returns count messages from the conversation convId, or ENOTALLOWED if the user is not allowed to view this conversation. If count is 0, defaults to api.config.MessagePageSize.
