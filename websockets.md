@@ -1,8 +1,77 @@
 #Gleepost Websockets
 
-The websocket system is currently in beta, expect many new events in the coming weeks.
+##Maintaining synchronisation
 
-At the moment, this is a receive-only stream of "events". 
+When displaying data to the user which require immediate, reliable delivery - the most obvious example being person-to-person messaging - one rule must be strictly adhered to:
+
+*every time the websocket connection is opened, the current state of the resource MUST be updated to reflect the canonical (server) state.*
+
+Note: This may sometimes result in the client receiving a piece of information almost-simultaneously from two different sources.
+
+For example, if a message is sent concurrently with the client re-establishing its connection they may both see it (a) when they reload the /conversations/:id/messages resource AND (b) as an event over the websocket connection.
+
+These conflicts might come in two categories:
+	- A distinct sub-entity, such as a message, has a unique identity and cannot change between copies. Therefore state updates can be idempotent - effectively, you can ignore a second copy
+	- An update to a particular parameter, which should only increase (such as a timestamp, or a `read` marker) in which case you can take the latest (largest) value.
+
+###YES: (everything will work OK)
+```
+No websocket connection <-------------
+         |                           ^
+         |                           |
+         V                           |
+Establish connection                 |
+         |                           |
+         |                           |
+         V                           |
+Retrieve conversation resource       |
+         |                           |
+         |                           |
+         |                           |
+         V                           |
+Websocket connection lost ----------->
+```
+
+###NO: (messages will be missed)
+```
+No websocket connection
+         |
+         |
+         V
+Retrieve conversation resource
+         |
+         |
+         V
+Establish connection
+```
+
+###NO: (messages will be missed even this way)
+```
+No websocket connection
+         |
+         |
+Establish connection
+         |
+         |
+         V
+Retrieve conversation resource
+         |
+         |
+         V
+Websocket connection lost
+         |
+         |
+         V
+Immediately attempt to establish connetcion
+         |
+         |
+         V
+Continue as normal
+```
+
+##Function of the websocket service
+
+At the moment, this is primarily a receive-only stream of "events". 
 
 An event looks like this:
 
