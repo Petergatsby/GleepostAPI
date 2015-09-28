@@ -15,3 +15,18 @@ func (n NullDirectory) LookUpEmail(email string) (userType string, err error) {
 }
 
 //TODO: add registry & function to return the appropriate directory by university name
+
+//map[string]directory
+//map[string]cachedDirectory
+
+//directory interface:
+//query(query, filter) -> []interface, err
+
+//cachedDirectory interface:
+//init(esUrl)
+//index([]interface) -> err
+//query(query, filter) -> []interface, err
+
+//member interface
+//->ID() -> string
+//IsStudent() -> bool
