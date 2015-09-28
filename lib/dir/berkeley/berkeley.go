@@ -118,7 +118,11 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 		case node.Type == html.TextNode && (lastLabel == "Department"):
 			result.Department = node.Data
 		case node.Type == html.TextNode && (lastLabel == "Address"):
-			addressLines = append(addressLines, strings.TrimSpace(node.Data))
+			newLines := strings.Split(strings.TrimSpace(node.Data), "\n")
+			for _, line := range newLines {
+				addressLines = append(addressLines, strings.TrimSpace(line))
+			}
+			log.Printf("%q\n", strings.TrimSpace(node.Data))
 		case node.Type == html.ElementNode && node.Data == "a" && node.FirstChild != nil && lastLabel == "Email":
 			result.Email = node.FirstChild.Data
 		case node.Type == html.ElementNode && node.Data == "a" && node.FirstChild != nil && lastLabel == "Website":
