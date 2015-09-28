@@ -144,19 +144,19 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 }
 
 type Member struct {
-	ID                  string
-	Name                string
-	Email               string
-	HomeDepartment      string
-	Title               string
-	Department          string
-	Website             string
-	Address             string
-	Telephone           string
-	Fax                 string
-	AddressAdditional   string
-	TelephoneAdditional string
-	Mobile              string
+	ID                  string `json:"id"`
+	Name                string `json:"name"`
+	Email               string `json:"email,omitempty"`
+	HomeDepartment      string `json:"home_department,omitempty"`
+	Title               string `json:"title,omitempty"`
+	Department          string `json:"department,omitempty"`
+	Website             string `json:"website,omitempty"`
+	Address             string `json:"address,omitempty"`
+	Telephone           string `json:"phone,omitempty"`
+	Fax                 string `json:"fax,omitempty"`
+	AddressAdditional   string `json:"address_additional,omitempty"`
+	TelephoneAdditional string `json:"phone_additional,omitempty"`
+	Mobile              string `json:"mobile,omitempty"`
 }
 
 func parseMultipleResults(doc *goquery.Document) (results []Member, err error) {
