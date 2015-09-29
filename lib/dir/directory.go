@@ -30,3 +30,18 @@ func (n NullDirectory) LookUpEmail(email string) (userType string, err error) {
 //member interface
 //->ID() -> string
 //IsStudent() -> bool
+
+type Directory2 interface {
+	Query(query string) (results []interface{}, err error)
+}
+
+type CachedDirectory interface {
+	Init(esURL string)
+	Index([]interface{}) (err error)
+	Query(query string)
+}
+
+type Member interface {
+	ID() string
+	Type() string
+}
