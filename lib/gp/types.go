@@ -35,7 +35,7 @@ type Profile struct {
 	Unread        int             `json:"unread,omitempty"`
 	GroupsBadge   int             `json:"group_badge,omitempty"`
 	FBID          uint64          `json:"fb_id,omitempty"`
-	UniversityID  string          `json:"university_id,omitempty"` //nb. universityID is their university-given ID, not the ID of their university.
+	InstitutionID string          `json:"institution_id,omitempty"` //nb. institutionID is their university-given ID, not the ID of their university.
 }
 
 //UserRole represents a user and their role within a particular network

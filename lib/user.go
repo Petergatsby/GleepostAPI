@@ -308,12 +308,12 @@ func (api *API) UserChangeTagline(userID gp.UserID, tagline string) (err error) 
 //GetProfile fetches a user but DOES NOT GET THEIR NETWORK.
 func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 	defer api.Statsd.Time(time.Now(), "gleepost.profile.byID.db")
-	var av, desc, lastName sql.NullString
-	s, err := api.sc.Prepare("SELECT `desc`, avatar, firstname, lastname, official, type FROM users WHERE id = ?")
+	var av, desc, lastName, externalID sql.NullString
+	s, err := api.sc.Prepare("SELECT `desc`, avatar, firstname, lastname, official, type, external_id FROM users WHERE id = ?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official, &user.Type)
+	err = s.QueryRow(id).Scan(&desc, &av, &user.Name, &lastName, &user.Official, &user.Type, &externalID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return user, &gp.ENOSUCHUSER
@@ -328,6 +328,9 @@ func (api *API) _getProfile(id gp.UserID) (user gp.Profile, err error) {
 	}
 	if lastName.Valid {
 		user.FullName = user.Name + " " + lastName.String
+	}
+	if externalID.Valid {
+		user.InstitutionID = externalID.String
 	}
 	user.ID = id
 	return
