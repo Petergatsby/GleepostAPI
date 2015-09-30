@@ -245,7 +245,7 @@ func (api *API) registerUser(pass, email, first, last, invite string) (newUser g
 	} else {
 		err = api.generateAndSendVerification(userID, first, email)
 	}
-	go api.setUserType(userID)
+	go api.lookUpDirectory(userID)
 	return
 }
 

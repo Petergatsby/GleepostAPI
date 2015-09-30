@@ -22,7 +22,7 @@ type Dir struct {
 }
 
 //LookUpEmail finds this user in the Stanford directory, and returns their type (staff, faculty, student)
-func (d Dir) LookUpEmail(email string) (userType string, err error) {
+func (d Dir) LookUpEmail(email string) (userType, userID string, err error) {
 	results, err := d.Query(email, Everyone)
 	if err != nil {
 		return
@@ -48,7 +48,7 @@ func (d Dir) LookUpEmail(email string) (userType string, err error) {
 			}
 		}
 	}
-	return
+	return userType, results[0].ID, nil
 }
 
 //Member is a person in the Stanford directory.

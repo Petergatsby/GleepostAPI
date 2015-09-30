@@ -3,15 +3,15 @@ package dir
 
 //Directory represents a university student directory, in which you can look up people.
 type Directory interface {
-	LookUpEmail(email string) (userType string, err error)
+	LookUpEmail(email string) (userType, userID string, err error)
 }
 
 //NullDirectory is an empty directory. It can't look up anything.
 type NullDirectory struct{}
 
 //LookUpEmail will always return "student", nil
-func (n NullDirectory) LookUpEmail(email string) (userType string, err error) {
-	return "student", nil
+func (n NullDirectory) LookUpEmail(email string) (userType, userID string, err error) {
+	return "student", "", nil
 }
 
 //TODO: add registry & function to return the appropriate directory by university name
@@ -32,7 +32,7 @@ func (n NullDirectory) LookUpEmail(email string) (userType string, err error) {
 //IsStudent() -> bool
 
 type Directory2 interface {
-	Query(query string) (results []interface{}, err error)
+	Query(query string, filter string) (results []interface{}, err error)
 }
 
 type CachedDirectory interface {

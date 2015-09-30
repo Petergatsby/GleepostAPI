@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/dir"
+	"github.com/draaglom/GleepostAPI/lib/dir/berkeley"
 	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
@@ -171,7 +172,7 @@ func (api *API) createUserSpecial(first, last, email, pass string, verified bool
 		}
 	}
 	err = api.setNetwork(userID, primaryNetwork)
-	go api.setUserType(userID)
+	go api.lookUpDirectory(userID)
 	return
 }
 
@@ -402,7 +403,7 @@ func (api *API) getGlobalAdmins() (users []gp.User, err error) {
 	return users, nil
 }
 
-func (api *API) setUserType(user gp.UserID) {
+func (api *API) lookUpDirectory(user gp.UserID) {
 	network, err := api.getUserUniversity(user)
 	if err != nil {
 		log.Println(err)
@@ -413,7 +414,7 @@ func (api *API) setUserType(user gp.UserID) {
 	case network.Name == "Stanford University":
 		d = stanford.Dir{}
 	case network.Name == "Berkeley University":
-		d = stanford.Dir{}
+		d = berkeley.Dir{}
 	default:
 		d = dir.NullDirectory{}
 	}
@@ -422,17 +423,17 @@ func (api *API) setUserType(user gp.UserID) {
 		log.Println(err)
 		return
 	}
-	userType, err := d.LookUpEmail(email)
+	userType, userID, err := d.LookUpEmail(email)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	s, err := api.sc.Prepare("UPDATE users SET type = ? WHERE id = ?")
+	s, err := api.sc.Prepare("UPDATE users SET type = ?, external_id = ? WHERE id = ?")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	_, err = s.Exec(userType, user)
+	_, err = s.Exec(userType, userID, user)
 	if err != nil {
 		log.Println(err)
 	}
