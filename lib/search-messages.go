@@ -77,7 +77,7 @@ func (api *API) esIndexMessage(message gp.Message, conversation gp.ConversationI
 func (api *API) esSearchConversation(convID gp.ConversationID, query string, threshold gp.MessageID) (messages []esMessage, err error) {
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
-	esQuery := esgroupquery{}
+	esQuery := esMsgQuery{}
 	//Restrict to this conversation
 	conversationTerm := make(map[string]string)
 	conversationTerm["conversation"] = fmt.Sprintf("%d", convID)
@@ -95,8 +95,9 @@ func (api *API) esSearchConversation(convID gp.ConversationID, query string, thr
 		matcher.Match[field] = query
 		esQuery.Query.Filtered.Query.Bool.Should = append(esQuery.Query.Filtered.Query.Bool.Should, matcher)
 	}
-	q, _ := json.Marshal(esQuery)
-	log.Printf("%s", q)
+	sort := make(map[string]string)
+	sort["timestamp"] = "desc"
+	esQuery.Sort = append(esQuery.Sort, sort)
 	results, err := c.Search("gleepost", "messages", nil, esQuery)
 	if err != nil {
 		return
@@ -110,4 +111,9 @@ func (api *API) esSearchConversation(convID gp.ConversationID, query string, thr
 		messages = append(messages, message)
 	}
 	return
+}
+
+type esMsgQuery struct {
+	Query innergroupquery `json:"query"`
+	Sort  []interface{}   `json:"sort"`
 }
