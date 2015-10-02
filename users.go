@@ -25,12 +25,16 @@ func init() {
 	base.Handle("/user", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	//profile stuff
 	base.Handle("/profile/profile_image", timeHandler(api, authenticated(profileImageHandler))).Methods("POST")
+	base.Handle("/profile/profile_image", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/profile/profile_image", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/name", timeHandler(api, authenticated(changeNameHandler))).Methods("POST")
+	base.Handle("/profile/name", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/profile/name", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/tagline", timeHandler(api, authenticated(postProfileTagline))).Methods("POST")
+	base.Handle("/profile/tagline", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/profile/tagline", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/change_pass", timeHandler(api, authenticated(changePassHandler))).Methods("POST")
+	base.Handle("/profile/change_pass", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
 	base.Handle("/profile/change_pass", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/busy", timeHandler(api, authenticated(busyHandler))).Methods("POST", "GET")
 	base.Handle("/profile/busy", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
@@ -87,6 +91,7 @@ func changeNameHandler(userID gp.UserID, w http.ResponseWriter, r *http.Request)
 		jsonResponse(w, &EBADINPUT, 400)
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(204)
 }
 
@@ -152,18 +157,13 @@ func userAttending(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, events, 200)
 }
 
-/*
-
-Utilities - undocumented.
-
-*/
-
 func postProfileTagline(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	err := api.UserChangeTagline(userID, r.FormValue("tagline"))
 	if err != nil {
 		jsonErr(w, err, 500)
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(204)
 }
 
