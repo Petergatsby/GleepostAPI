@@ -139,7 +139,7 @@ func authenticated(next authedHandler) http.Handler {
 
 type authedHandler func(gp.UserID, http.ResponseWriter, *http.Request)
 
-var ids = regexp.MustCompile(`\.\d\.`)
+var ids = regexp.MustCompile(`\.\d+\.`)
 
 func statsdMetricName(r *http.Request) string {
 	metric := "gleepost." + strings.Replace(r.URL.Path, "/", ".", -1) + "." + strings.ToLower(r.Method)
