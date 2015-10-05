@@ -136,6 +136,7 @@ func parseIndividualResult(doc *goquery.Document) (result Member, err error) {
 	return
 }
 
+//Member represents someone in the berkeley campus directory. It may be a student, a staff member or even a faculty member.
 type Member struct {
 	ID                  string `json:"id"`
 	Name                string `json:"name"`

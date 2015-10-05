@@ -31,16 +31,19 @@ func (n NullDirectory) LookUpEmail(email string) (userType, userID string, err e
 //->ID() -> string
 //IsStudent() -> bool
 
+//Directory2 is the interface common to all university directories.
 type Directory2 interface {
 	Query(query string, filter string) (results []interface{}, err error)
 }
 
+//CachedDirectory allows indexing directory results in a local elasticsearch cache.
 type CachedDirectory interface {
 	Init(esURL string)
 	Index([]interface{}) (err error)
 	Query(query string)
 }
 
+//Member is a Directory entry. ID should return a university-unique ID string for that person; Type() should attempt to indicate if the person is student, staff or faculty.
 type Member interface {
 	ID() string
 	Type() string

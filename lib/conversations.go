@@ -385,7 +385,7 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 			return
 		default:
 			api.addSystemMessage(convID, participant, 0, "JOINED")
-			added += 1
+			added++
 		}
 	}
 	if added > 0 {
@@ -490,6 +490,7 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	return
 }
 
+//AlreadyParticipantErr occurs when trying to add someone to a conversation who is already in the conversation.
 var AlreadyParticipantErr = gp.APIerror{Reason: "User already in conversation"}
 
 //AddConversationParticipant adds this participant to convID, returning error AlreadyParticipantErr if they are already in the conversation

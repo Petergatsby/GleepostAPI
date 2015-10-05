@@ -853,6 +853,7 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, 
 	return
 }
 
+//AlreadyMember indicates you tried to add someone to a network but they were already in it.
 var AlreadyMember = gp.APIerror{Reason: "Already in network"}
 
 //SetNetwork makes userID a member of networkID, returning AlreadyMember instead if they were already in it.
