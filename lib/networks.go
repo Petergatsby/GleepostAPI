@@ -170,7 +170,10 @@ func (api *API) UserAddUserToGroup(adder, addee gp.UserID, group gp.NetworkID) (
 		return &ENOTALLOWED
 	default:
 		err = api.setNetwork(addee, group)
-		if err == nil {
+		switch {
+		case err == AlreadyMember:
+			err = nil
+		case err == nil:
 			api.notifObserver.Notify(addedGroupEvent{userID: adder, addeeID: addee, netID: group})
 			e := api.joinGroupConversation(addee, group)
 			if e != nil {
@@ -196,6 +199,9 @@ func (api *API) UserJoinGroup(userID gp.UserID, group gp.NetworkID) (err error) 
 	case canJoin:
 		err = api.setNetwork(userID, group)
 		if err != nil {
+			if err == AlreadyMember {
+				err = nil
+			}
 			return
 		}
 		err = api.joinGroupConversation(userID, group)
@@ -472,7 +478,11 @@ func (api *API) UserInviteEmail(userID gp.UserID, netID gp.NetworkID, email stri
 		//If the user already exists, add them straight into the group and don't email them.
 		invitee, e := api.userWithEmail(email)
 		if e == nil {
-			return api.setNetwork(invitee, netID)
+			err = api.setNetwork(invitee, netID)
+			if err == AlreadyMember {
+				err = nil
+			}
+			return
 		}
 		token, e := randomString()
 		if e != nil {
@@ -843,14 +853,22 @@ func (api *API) subjectiveMemberships(perspective, user gp.UserID, index int64, 
 	return
 }
 
-//SetNetwork idempotently makes userID a member of networkID
+var AlreadyMember = gp.APIerror{Reason: "Already in network"}
+
+//SetNetwork makes userID a member of networkID, returning AlreadyMember instead if they were already in it.
 func (api *API) setNetwork(userID gp.UserID, networkID gp.NetworkID) (err error) {
-	networkInsert := "REPLACE INTO user_network (user_id, network_id) VALUES (?, ?)"
+	networkInsert := "INSERT INTO user_network (user_id, network_id) VALUES (?, ?)"
 	s, err := api.sc.Prepare(networkInsert)
 	if err != nil {
 		return
 	}
 	_, err = s.Exec(userID, networkID)
+	if err, ok := err.(*mysql.MySQLError); ok {
+		if err.Number == 1062 {
+			//Drop duplicates silently
+			return AlreadyMember
+		}
+	}
 	return
 }
 
