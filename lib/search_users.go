@@ -10,8 +10,8 @@ import (
 
 //UserSearchUsersInNetwork returns all the users with names beginning with first, last in netId, or ENOTALLOWED if user isn't part of this network.
 //last may be omitted but first must be at least 2 characters.
-func (api *API) userSearchUsersInNetwork(user gp.UserID, query string, netID gp.NetworkID) (users []gp.FullNameUser, err error) {
-	users = make([]gp.FullNameUser, 0)
+func (api *API) userSearchUsersInNetwork(user gp.UserID, query string, netID gp.NetworkID) (users []gp.PublicProfile, err error) {
+	users = make([]gp.PublicProfile, 0)
 	in, err := api.UserInNetwork(user, netID)
 	switch {
 	case err != nil:
@@ -25,7 +25,7 @@ func (api *API) userSearchUsersInNetwork(user gp.UserID, query string, netID gp.
 
 //UserSearchUsersInPrimaryNetwork returns all the users with names beginning with first, last in netId, or ENOTALLOWED if user isn't part of this network.
 //last may be omitted but first must be at least 2 characters.
-func (api *API) UserSearchUsersInPrimaryNetwork(userID gp.UserID, query string) (users []gp.FullNameUser, err error) {
+func (api *API) UserSearchUsersInPrimaryNetwork(userID gp.UserID, query string) (users []gp.PublicProfile, err error) {
 	primary, err := api.getUserUniversity(userID)
 	if err != nil {
 		return
@@ -48,8 +48,8 @@ func userQuery(query string, netID gp.NetworkID) (esQuery esquery) {
 }
 
 //SearchUsersInNetwork returns users whose name begins with first and last within netId.
-func (api *API) searchUsersInNetwork(query string, netID gp.NetworkID) (users []gp.FullNameUser, err error) {
-	users = make([]gp.FullNameUser, 0)
+func (api *API) searchUsersInNetwork(query string, netID gp.NetworkID) (users []gp.PublicProfile, err error) {
+	users = make([]gp.PublicProfile, 0)
 	c := elastigo.NewConn()
 	c.Domain = api.Config.ElasticSearch
 	esQuery := userQuery(query, netID)
@@ -58,7 +58,7 @@ func (api *API) searchUsersInNetwork(query string, netID gp.NetworkID) (users []
 		return
 	}
 	for _, hit := range results.Hits.Hits {
-		var user gp.FullNameUser
+		var user gp.PublicProfile
 		err = json.Unmarshal(*hit.Source, &user)
 		if err != nil {
 			return

@@ -38,6 +38,18 @@ type Profile struct {
 	InstitutionID string          `json:"institution_id,omitempty"` //nb. institutionID is their university-given ID, not the ID of their university.
 }
 
+//PublicProfile contains all the fields about a user which are visible to all users (and are not subjective, like post_count)
+type PublicProfile struct {
+	User
+	Desc          string          `json:"tagline"`
+	Network       GroupSubjective `json:"network"`
+	Course        string          `json:"course"`
+	FullName      string          `json:"full_name"`
+	Type          string          `json:"type,omitempty"`
+	FBID          uint64          `json:"fb_id,omitempty"`
+	InstitutionID string          `json:"institution_id,omitempty"` //nb. institutionID is their university-given ID, not the ID of their university.
+}
+
 //UserRole represents a user and their role within a particular network
 type UserRole struct {
 	User
