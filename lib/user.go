@@ -30,12 +30,12 @@ func (u Users) byID(id gp.UserID) (user gp.User, err error) {
 		return
 	}
 	defer u.statter.Time(time.Now(), "gleepost.users.byID.db")
-	var av sql.NullString
-	s, err := u.sc.Prepare("SELECT id, avatar, firstname, official FROM users WHERE id=?")
+	var av, lastName sql.NullString
+	s, err := u.sc.Prepare("SELECT id, avatar, firstname, lastname, official FROM users WHERE id=?")
 	if err != nil {
 		return
 	}
-	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &user.Official)
+	err = s.QueryRow(id).Scan(&user.ID, &av, &user.Name, &lastName, &user.Official)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = &gp.ENOSUCHUSER
@@ -44,6 +44,9 @@ func (u Users) byID(id gp.UserID) (user gp.User, err error) {
 	}
 	if av.Valid {
 		user.Avatar = av.String
+	}
+	if lastName.Valid {
+		user.Name = user.Name + " " + lastName.String
 	}
 	u.cache(user)
 	return
