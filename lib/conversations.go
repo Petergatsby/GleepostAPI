@@ -9,6 +9,7 @@ import (
 
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/go-sql-driver/mysql"
 )
 
 //ENOTALLOWED is returned when a user attempts an action that they shouldn't.
@@ -373,17 +374,27 @@ func (api *API) UserAddParticipants(userID gp.UserID, convID gp.ConversationID, 
 	if err != nil {
 		return
 	}
-	err = api.addConversationParticipants(userID, addable, convID)
-	if err != nil {
-		return
+	var added = 0
+	for _, participant := range addable {
+		err = api.addConversationParticipant(userID, participant, convID)
+		switch {
+		case err == AlreadyParticipantErr:
+			//nothing to do
+		case err != nil:
+			log.Println("adding err:", err)
+			return
+		default:
+			api.addSystemMessage(convID, participant, 0, "JOINED")
+			added += 1
+		}
 	}
-	conv, err := api.GetConversation(userID, convID)
-	if err != nil {
-		return
-	}
-	go api.conversationChangedEvent(conv.Conversation)
-	for _, p := range addable {
-		api.addSystemMessage(convID, p, 0, "JOINED")
+	if added > 0 {
+		var conv gp.ConversationAndMessages
+		conv, err = api.GetConversation(userID, convID)
+		if err != nil {
+			return
+		}
+		go api.conversationChangedEvent(conv.Conversation)
 	}
 	updatedParticipants, err = api.getParticipants(convID, false)
 	return
@@ -462,15 +473,11 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	if err != nil {
 		return
 	}
-	var pids []gp.UserID
 	for _, u := range participants {
-		pids = append(pids, u.ID)
-	}
-	err = api.addConversationParticipants(id, pids, conversation.ID)
-	if err != nil {
-		return
-	}
-	for _, u := range participants {
+		err = api.addConversationParticipant(id, u.ID, conversation.ID)
+		if err != nil {
+			return
+		}
 		presence, err := api.Presences.getPresence(u.ID)
 		userPresence := gp.UserPresence{User: u}
 		if err == nil {
@@ -483,19 +490,21 @@ func (api *API) _createConversation(id gp.UserID, participants []gp.User, primar
 	return
 }
 
-//AddConversationParticipants adds these participants to convID, or does nothing if they are already members.
-func (api *API) addConversationParticipants(adder gp.UserID, participants []gp.UserID, convID gp.ConversationID) (err error) {
-	s, err := api.sc.Prepare("REPLACE INTO conversation_participants (conversation_id, participant_id, deleted) VALUES (?, ?, 0)")
+var AlreadyParticipantErr = gp.APIerror{Reason: "User already in conversation"}
+
+//AddConversationParticipant adds this participant to convID, returning error AlreadyParticipantErr if they are already in the conversation
+func (api *API) addConversationParticipant(adder gp.UserID, participant gp.UserID, convID gp.ConversationID) (err error) {
+	s, err := api.sc.Prepare("INSERT INTO conversation_participants (conversation_id, participant_id, deleted) VALUES (?, ?, 0)")
 	if err != nil {
 		return
 	}
-	for _, u := range participants {
-		_, err = s.Exec(convID, u)
-		if err != nil {
-			return
+	_, err = s.Exec(convID, participant)
+	if err, ok := err.(*mysql.MySQLError); ok {
+		if err.Number == 1062 {
+			return AlreadyParticipantErr
 		}
 	}
-	return nil
+	return
 }
 
 //GetConversations returns this user's conversations;

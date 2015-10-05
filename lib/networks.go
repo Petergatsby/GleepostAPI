@@ -212,8 +212,11 @@ func (api *API) joinGroupConversation(userID gp.UserID, group gp.NetworkID) (err
 	if err != nil {
 		return
 	}
-	err = api.addConversationParticipants(userID, []gp.UserID{userID}, convID)
+	err = api.addConversationParticipant(userID, userID, convID)
 	if err != nil {
+		if err == AlreadyParticipantErr {
+			err = nil
+		}
 		return
 	}
 	conv, err := api.GetConversation(userID, convID)
