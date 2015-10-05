@@ -42,7 +42,7 @@ type Profile struct {
 type PublicProfile struct {
 	User
 	Desc          string          `json:"tagline"`
-	Network       GroupSubjective `json:"network"`
+	Network       GroupSubjective `json:"network"` //This isn't actually subjective in this context, but that's dependent on the behaviour of getUserUniversity(). Should probably change types here.
 	Course        string          `json:"course"`
 	FullName      string          `json:"full_name"`
 	Type          string          `json:"type,omitempty"`
