@@ -14,12 +14,6 @@ type User struct {
 	Official bool   `json:"official,omitempty"`
 }
 
-//FullNameUser is a User with a full name also.
-type FullNameUser struct {
-	User
-	FullName string `json:"full_name,omitempty"`
-}
-
 //Profile is the fuller representation of a user, containing their tagline, their primary network, their course and their full name (where available)
 type Profile struct {
 	User
