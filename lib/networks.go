@@ -299,10 +299,12 @@ func (api *API) UserGetNetwork(userID gp.UserID, netID gp.NetworkID) (network gp
 			//LastActivity
 			var lastActivity time.Time
 			lastActivity, err = api.networkLastActivity(userID, netID)
-			if err != nil {
+			switch {
+			case err != nil:
 				log.Println("last activity error:", err)
-			} else {
+			case !lastActivity.IsZero():
 				network.LastActivity = &lastActivity
+			default:
 			}
 			network.NewPosts, err = api.groupNewPosts(userID, netID)
 			if err != nil {
@@ -728,7 +730,7 @@ func (api *API) networkLastActivity(perspective gp.UserID, netID gp.NetworkID) (
 	if err != nil {
 		return
 	}
-	lastActivity, err = time.Parse(mysqlTime, _time)
+	lastActivity, _ = time.Parse(mysqlTime, _time)
 	return
 }
 
