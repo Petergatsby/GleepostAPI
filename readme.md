@@ -2513,21 +2513,29 @@ If there is a user called "Jonathan Smith", all the searches "Jon" "jonathan" "J
 
 A user may optionally have a `full_name`.
 
+Where available, `fb_id` is their facebook profile ID; `institution_id` is the unique ID granted to them by their university.
+
 Example response: (HTTP 200)
 ```json
 [
-	{
-		"id":9, 
-		"name":"Steph", 
-		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
-		"full_name":"Steph Smith"
-	},
-	{
-		"id":23, 
-		"name":"Steve", 
-		"profile_image":"https://gleepost.com/uploads/35da2ca95be101a655961e37cc875b7b.png",
-		"full_name":"Steve Smith"
-	}
+  {
+    "id": 2909,
+    "name": "Patrick",
+    "profile_image": "https://d2tc2ce3464r63.cloudfront.net/ea9eb3aa99abc68332ad1d380594062a26e648407629eb645c34d995f7a261c6.png",
+    "tagline": "",
+    "network": {
+      "id": 2099,
+      "name": "Stanford University",
+      "description": "This is not the real Stanford University.",
+      "their_role": {
+        "name": "member",
+        "level": 1
+      }
+    },
+    "course": "",
+    "full_name": "Patrick Molgaard",
+    "type": "student"
+  }
 ]
 ```
 
