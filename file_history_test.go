@@ -44,6 +44,10 @@ func TestFileHistory(t *testing.T) {
 		t.Fatal("Error getting files list:", err)
 	}
 	if resp.StatusCode != 200 {
+		var errResp gp.APIerror
+		dec := json.NewDecoder(resp.Body)
+		dec.Decode(&errResp)
+		log.Println(errResp)
 		t.Fatal("Expected status 200 but got:", resp.StatusCode)
 	}
 	dec := json.NewDecoder(resp.Body)
@@ -73,7 +77,7 @@ func createConversation(token gp.Token) (conv gp.ConversationAndMessages, err er
 	data := make(url.Values)
 	data["id"] = []string{fmt.Sprintf("%d", token.UserID)}
 	data["token"] = []string{token.Token}
-	data["participants"] = []string{"1,2"}
+	data["participants"] = []string{"2"}
 	req, _ := http.NewRequest("POST", baseURL+"conversations", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
