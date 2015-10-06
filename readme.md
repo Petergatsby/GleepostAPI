@@ -1672,6 +1672,7 @@ A list of files shared in this conversation.
   {
     "url": "https://file.host",
     "type": "pdf",
+    "caption": "health-and-safety.pdf",
     "message": {
       "id": 1,
       "by": {

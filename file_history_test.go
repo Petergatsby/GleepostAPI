@@ -34,7 +34,8 @@ func TestFileHistory(t *testing.T) {
 	URL := "https://file.host"
 	filetype := "pdf"
 	msg := "hey here's a file"
-	msgText := fileMessage(msg, URL, filetype)
+	caption := "awesome.pdf"
+	msgText := fileMessage(msg, URL, filetype, caption)
 	msgID, err := sendMessage(token, conv.ID, msgText)
 	if err != nil {
 		t.Fatal("Error sending file:", err)
@@ -120,7 +121,7 @@ func sendMessage(token gp.Token, conv gp.ConversationID, msg string) (id gp.Mess
 	return
 }
 
-func fileMessage(msg, URL, filetype string) (composed string) {
-	composed = fmt.Sprintf("%s: <%s|%s>", msg, URL, filetype)
+func fileMessage(msg, URL, filetype, caption string) (composed string) {
+	composed = fmt.Sprintf("%s: <%s|%s|%s>", msg, URL, filetype, caption)
 	return
 }

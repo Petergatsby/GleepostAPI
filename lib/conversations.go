@@ -1034,21 +1034,21 @@ func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID, mo
 	var q string
 	switch {
 	case mode == ByOffsetDescending:
-		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url`, `caption` " +
 			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"ORDER BY `timestamp` DESC LIMIT ?, ?"
 	case mode == ChronologicallyAfterID:
-		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url`, `caption` " +
 			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
 			"AND id > ? " +
 			"ORDER BY `timestamp` ASC LIMIT ?"
-		q = fmt.Sprintf("SELECT `id`, `from`, `text`, `timestamp`, `system`, `type`, `url` FROM ( %s ) AS `fi` ORDER BY `timestamp` DESC, `id` DESC", q)
+		q = fmt.Sprintf("SELECT `id`, `from`, `text`, `timestamp`, `system`, `type`, `url`, `caption` FROM ( %s ) AS `fi` ORDER BY `timestamp` DESC, `id` DESC", q)
 	case mode == ChronologicallyBeforeID:
-		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url` " +
+		q = "SELECT id, `from`, text, `timestamp`, `system`, `type`, `url`, `caption` " +
 			"FROM chat_messages JOIN conversation_files ON chat_messages.id = conversation_files.message_id " +
 			"WHERE chat_messages.conversation_id = ? " +
 			"AND chat_messages.id > (SELECT deletion_threshold FROM conversation_participants WHERE participant_id = ? AND conversation_id = ?) " +
@@ -1070,7 +1070,8 @@ func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID, mo
 		var message gp.Message
 		var timeString string
 		var by gp.UserID
-		err = rows.Scan(&message.ID, &by, &message.Text, &timeString, &message.System, &file.Type, &file.URL)
+		var caption sql.NullString
+		err = rows.Scan(&message.ID, &by, &message.Text, &timeString, &message.System, &file.Type, &file.URL, &caption)
 		if err != nil {
 			log.Println("Error getting message in conversation:", convID, err)
 			continue
@@ -1085,23 +1086,30 @@ func (api *API) ConversationFiles(userID gp.UserID, convID gp.ConversationID, mo
 			log.Println("Error getting this message's sender:", err)
 			continue
 		}
+		if caption.Valid {
+			file.Caption = caption.String
+		}
 		file.Message = message
 		files = append(files, file)
 	}
 	return
 }
 
-var fileRegex = regexp.MustCompile(`<(https?\:\/\/.*)\|(\w+)>`)
+var fileRegex = regexp.MustCompile(`<(https?\:\/\/.*)\|(\w+)(?:\|(.*))?>`)
 
 func (api *API) spotFiles(msg gp.Message) {
-	s, err := api.sc.Prepare("INSERT INTO conversation_files (message_id, `type`, `url`) VALUES (?, ?, ?)")
+	s, err := api.sc.Prepare("INSERT INTO conversation_files (message_id, `type`, `url`, `caption`) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	files := fileRegex.FindAllStringSubmatch(msg.Text, -1)
 	for _, file := range files {
-		_, err := s.Exec(msg.ID, file[2], file[1])
+		caption := ""
+		if len(file) > 3 {
+			caption = file[3]
+		}
+		_, err := s.Exec(msg.ID, file[2], file[1], caption)
 		if err != nil {
 			log.Println(err)
 			return
