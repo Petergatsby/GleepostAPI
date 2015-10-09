@@ -30,6 +30,7 @@ type Profile struct {
 	GroupsBadge   int             `json:"group_badge,omitempty"`
 	FBID          uint64          `json:"fb_id,omitempty"`
 	InstitutionID string          `json:"institution_id,omitempty"` //nb. institutionID is their university-given ID, not the ID of their university.
+	TutorialState []string        `json:"tutorial_state,omitempty"`
 }
 
 //PublicProfile contains all the fields about a user which are visible to all users (and are not subjective, like post_count)

@@ -145,6 +145,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /profile/tagline [[POST]](#post-profiletagline)
 
+/profile/tutorial_state [[POST]](#post-profiletutorialstate)
+
 /profile/change_pass [[POST]](#post-profilechange_pass)
 
 /profile/busy [[POST]](#post-profilebusy) [[GET]](#get-profilebusy)
@@ -1722,6 +1724,8 @@ If you are looking at your own user resource, some more fields will be available
 
 `fb_id` is your associated facebook account, where available.
 
+`tutorial_state` is the list of app tutorials the user has cleared.
+
 example responses:
 ```json
 {
@@ -1740,7 +1744,8 @@ example responses:
 	"unread":1234,
 	"notification_count":4567,
 	"group_badge":5678,
-	"fb_id":251251352345234553
+	"fb_id":251251352345234553,
+        "tutorial_state": [ "tutorial_1", "tutorial_2" ]
 }
 ```
 
@@ -2073,6 +2078,18 @@ On success, it will return HTTP 204.
 required parameters: id, token, tagline
 
 /tagline allows the user to set their tagline.
+
+On success, it will return HTTP 204.
+
+##POST /profile/tutorial_state
+
+Required parameters: `id`, `token`, `tutorial_state`
+
+`tutorial_state` must be a comma-delimited list of the tutorials the user has cleared, eg:
+
+`tutorial_state` = `tutorial_1,tutorial_2`
+
+This state is then visible on your user resource as `tutorial_state`.
 
 On success, it will return HTTP 204.
 

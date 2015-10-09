@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/draaglom/GleepostAPI/lib/dir"
@@ -135,6 +136,10 @@ func (api *API) getProfile(perspective, otherID gp.UserID) (user gp.Profile, err
 		user.FBID, err = api.fbUser(otherID)
 		if err != nil && err != NoSuchUser {
 			log.Println(err)
+		}
+		user.TutorialState, err = api.tutorialState(otherID)
+		if err != nil {
+			log.Println("tutorial state err:", err)
 		}
 	}
 	go api.esIndexUser(otherID)
@@ -443,4 +448,30 @@ func (api *API) lookUpDirectory(user gp.UserID) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func (api *API) SetTutorialState(user gp.UserID, tutorials ...string) (err error) {
+	s, err := api.sc.Prepare("UPDATE users SET tutorial_state = ? WHERE id = ?")
+	if err != nil {
+		return
+	}
+	ts := strings.Join(tutorials, ",")
+	_, err = s.Exec(ts, user)
+	return
+}
+
+func (api *API) tutorialState(user gp.UserID) (tutorialsDone []string, err error) {
+	s, err := api.sc.Prepare("SELECT tutorial_state FROM users WHERE id = ?")
+	if err != nil {
+		return
+	}
+	var ts sql.NullString
+	err = s.QueryRow(user).Scan(&ts)
+	if err != nil {
+		return
+	}
+	if ts.Valid {
+		tutorialsDone = strings.Split(ts.String, ",")
+	}
+	return
 }
