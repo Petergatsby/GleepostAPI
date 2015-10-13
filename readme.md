@@ -173,6 +173,8 @@ This may be sent in a query string "?id=1234&token=foobar" (where "1234" and "fo
 
 /reports [[POST]](#post-reports)
 
+/campuspal_greet [[POST]](#post-campuspal_greet)
+
 ###Statistics endpoints
 
 ####Stat endpoints are currently in development. This means they may change in any way at any time for any reason.
@@ -2625,6 +2627,24 @@ GET https://dev.gleepost.com/api/v0.34/stats/user/2395/posts/rsvps/week/2013-01-
 	}
 }
 ```
+
+##POST /campuspal_greet
+
+`preset` = `n`
+
+Where `n` corresponds to the number of one in a preset list of messages.
+
+The available messages are:
+
+`0`: `Welcome to CampusPal, <name>!`
+
+`1`: `Lorem ipsum dolor sit`
+
+`2`: `A Elbereth Gilthoniel`
+
+Triggers a message from campuspal-bot to you, one time.
+
+On success, will be a 204.
 
 ##GET /stats/posts/[post-id]/[stat-type]/[period]/[start]/[finish]
 required parameters: id, token
