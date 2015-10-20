@@ -130,7 +130,7 @@ func authenticated(next authedHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, err := authenticate(r)
 		if err != nil {
-			jsonResponse(w, &EBADTOKEN, 400)
+			jsonResponse(w, &EBADTOKEN, 401)
 			return
 		}
 		next(userID, w, r)
