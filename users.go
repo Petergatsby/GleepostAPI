@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/draaglom/GleepostAPI/lib"
 	"github.com/draaglom/GleepostAPI/lib/gp"
@@ -41,9 +40,6 @@ func init() {
 	base.Handle("/profile/busy", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	base.Handle("/profile/attending", timeHandler(api, authenticated(userAttending))).Methods("GET")
 	base.Handle("/profile/attending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
-	base.Handle("/profile/tutorial_state", timeHandler(api, authenticated(postProfileTutorialState))).Methods("POST")
-	base.Handle("/profile/tutorial_state", timeHandler(api, http.HandlerFunc(optionsHandler))).Methods("OPTIONS")
-	base.Handle("/profile/tutorial_state", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
 	//Approval
 	base.Handle("/profile/pending", timeHandler(api, authenticated(pendingPosts))).Methods("GET")
 	base.Handle("/profile/pending", timeHandler(api, http.HandlerFunc(unsupportedHandler)))
@@ -178,15 +174,4 @@ func pendingPosts(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonResponse(w, pending, 200)
-}
-
-func postProfileTutorialState(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
-	ts := strings.Split(r.FormValue("tutorial_state"), ",")
-	err := api.SetTutorialState(userID, ts...)
-	if err != nil {
-		jsonErr(w, err, 500)
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(204)
 }
