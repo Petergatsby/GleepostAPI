@@ -111,7 +111,7 @@ func (api *API) CreateConversationWith(initiator gp.UserID, with []gp.UserID) (c
 		}
 	}
 	for _, id := range with {
-		canContact, e := api.sameUniversity(initiator, id)
+		canContact, e := api.shareNetwork(initiator, id)
 		if e != nil {
 			log.Println("Error determining contactability:", initiator, id, e)
 			return conversation, e

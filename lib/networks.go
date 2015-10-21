@@ -390,6 +390,15 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy, category
 	}
 }
 
+func (api *API) shareNetwork(a, b gp.UserID) (shared bool, err error) {
+	s, err := api.sc.Prepare("SELECT COUNT(*) FROM user_network WHERE user_id = ? AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?")
+	if err != nil {
+		return
+	}
+	err = s.QueryRow(a, b).Scan(&shared)
+	return
+}
+
 //sameUniversity returns true if both users a and b are in the same university.
 func (api *API) sameUniversity(a, b gp.UserID) (shared bool, err error) {
 	unia, err := api.getUserUniversity(a)
