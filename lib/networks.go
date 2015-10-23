@@ -391,7 +391,7 @@ func (api *API) CreateGroup(userID gp.UserID, name, url, desc, privacy, category
 }
 
 func (api *API) shareNetwork(a, b gp.UserID) (shared bool, err error) {
-	s, err := api.sc.Prepare("SELECT COUNT(*) FROM user_network WHERE user_id = ? AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?)")
+	s, err := api.sc.Prepare("SELECT COUNT(*) > 0 FROM user_network WHERE user_id = ? AND network_id IN (SELECT network_id FROM user_network WHERE user_id = ?)")
 	if err != nil {
 		return
 	}
