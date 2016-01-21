@@ -1668,6 +1668,10 @@ In addition, this will trigger a "system" message in this conversation indicatin
 
 ##GET /conversations/[conversation-id]/files
 
+optional arguments:
+`count` = (default 20) number of results to return per page
+`start` / `before` / `after` - pagination, as with /posts
+
 A list of files shared in this conversation.
 (http 200)
 

@@ -309,7 +309,12 @@ func getFiles(userID gp.UserID, w http.ResponseWriter, r *http.Request) {
 	_convID, _ := strconv.ParseInt(vars["id"], 10, 64)
 	mode, index := interpretPagination(r)
 	convID := gp.ConversationID(_convID)
-	files, err := api.ConversationFiles(userID, convID, mode, index, api.Config.MessagePageSize)
+	var count = api.Config.MessagePageSize
+	c, _ := strconv.ParseInt(r.FormValue("count"), 10, 64)
+	if c > 0 {
+		count = int(c)
+	}
+	files, err := api.ConversationFiles(userID, convID, mode, index, count)
 	switch {
 	case err == lib.ENOTALLOWED:
 		jsonErr(w, err, 403)
