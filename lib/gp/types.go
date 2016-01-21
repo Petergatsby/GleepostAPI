@@ -120,6 +120,12 @@ type QueueCommand struct {
 	Value   []string
 }
 
+//WrappedEvent adds some stuff around an Event so that certain shitty javascript websocket can consume it OK.
+type WrappedEvent struct {
+	Event string `json:"event"`
+	Data  Event  `json:"data"`
+}
+
 //Event represents something that happened which a consumer of a MsgQueue wants to hear about in real time.
 //It has a type, a location (typically a resource) and a json payload.
 type Event struct {

@@ -38,15 +38,15 @@ func TestSendPresence(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error writing status to ws:", err)
 	}
-	evt := gp.Event{}
+	evt := gp.WrappedEvent{}
 	err = ws.ReadJSON(&evt)
 	if err != nil {
 		t.Fatal("Couldn't read from websocket:", err)
 	}
-	if evt.Type != "presence" {
-		t.Fatal("Expected `presence` but got:", evt.Type)
+	if evt.Data.Type != "presence" {
+		t.Fatal("Expected `presence` but got:", evt.Data.Type)
 	}
-	if evt.Location != fmt.Sprintf("/user/%d", token.UserID) {
-		t.Fatal("Unexpected location, got:", evt.Location)
+	if evt.Data.Location != fmt.Sprintf("/user/%d", token.UserID) {
+		t.Fatal("Unexpected location, got:", evt.Data.Location)
 	}
 }

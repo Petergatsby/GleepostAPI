@@ -36,8 +36,11 @@ func GetDialer(conf conf.RedisConfig) func() (redis.Conn, error) {
 func (b *Broker) PublishEvent(etype string, where string, data interface{}, channels []string) {
 	conn := b.pool.Get()
 	defer conn.Close()
+
 	event := gp.Event{Type: etype, Location: where, Data: data}
-	JSONEvent, _ := json.Marshal(event)
+	//Wrap the event in another layer to appease
+	message := gp.WrappedEvent{Event: "message", Data: event}
+	JSONEvent, _ := json.Marshal(message)
 	for _, channel := range channels {
 		conn.Send("PUBLISH", channel, JSONEvent)
 	}
