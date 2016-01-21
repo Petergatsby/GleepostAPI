@@ -33,7 +33,8 @@ func TestSendPresence(t *testing.T) {
 		t.Fatal("Didn't get", http.StatusSwitchingProtocols)
 	}
 	action := action{Action: "presence", Form: "desktop"}
-	err = ws.WriteJSON(action)
+	message := wrappedAction{Data: action}
+	err = ws.WriteJSON(message)
 	if err != nil {
 		t.Fatal("Error writing status to ws:", err)
 	}

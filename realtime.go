@@ -24,6 +24,11 @@ type action struct {
 	Typing          bool              `json:"typing"`
 }
 
+type wrappedAction struct {
+	Event string `json:"event"`
+	Data  action `json:"data"`
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -82,12 +87,12 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
-	var c action
+	var d wrappedAction
 	for {
 		if ws == nil {
 			return
 		}
-		err := ws.ReadJSON(&c)
+		err := ws.ReadJSON(&d)
 		if err != nil {
 			if err != io.EOF {
 				log.Println("Error reading from websocket:", err)
@@ -95,6 +100,7 @@ func wsReader(ws *websocket.Conn, messages gp.MsgQueue, userID gp.UserID) {
 			ws.Close()
 			return
 		}
+		c := d.Data
 		switch {
 		case c.Action == "presence":
 			err := api.Presences.Broadcast(userID, c.Form)
