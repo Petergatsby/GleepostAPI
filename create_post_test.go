@@ -50,13 +50,13 @@ func TestCreatePost(t *testing.T) {
 	badToken := createPostTest{
 		Text:               "Hey my name is Patrick, what up?",
 		UserID:             token.UserID,
-		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedStatusCode: http.StatusUnauthorized,
 		ExpectedError:      "Invalid credentials",
 	}
 	badID := createPostTest{
 		Text:               "Yo yo me name's Pat, sup?",
 		Token:              token.Token,
-		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedStatusCode: http.StatusUnauthorized,
 		ExpectedError:      "Invalid credentials",
 	}
 	badImage := createPostTest{

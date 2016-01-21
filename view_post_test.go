@@ -45,19 +45,19 @@ func TestViewPost(t *testing.T) {
 	}
 	badTest := viewPostTest{
 		ExpectedPostIndex:  0,
-		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedStatusCode: http.StatusUnauthorized,
 		ExpectedError:      "Invalid credentials",
 	}
 	badToken := viewPostTest{
 		ExpectedPostIndex:  0,
 		UserID:             token.UserID,
-		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedStatusCode: http.StatusUnauthorized,
 		ExpectedError:      "Invalid credentials",
 	}
 	badID := viewPostTest{
 		ExpectedPostIndex:  0,
 		Token:              token.Token,
-		ExpectedStatusCode: http.StatusBadRequest,
+		ExpectedStatusCode: http.StatusUnauthorized,
 		ExpectedError:      "Invalid credentials",
 	}
 	tests := []viewPostTest{goodTest, goodTestVideo, badTest, badToken, badID}
@@ -120,7 +120,7 @@ func TestViewPost(t *testing.T) {
 				t.Fatalf("Test%v: %v", testNumber, err)
 			}
 
-		case vpt.ExpectedStatusCode == http.StatusBadRequest:
+		case vpt.ExpectedStatusCode == http.StatusBadRequest || vpt.ExpectedStatusCode == http.StatusUnauthorized:
 			dec := json.NewDecoder(resp.Body)
 			errorValue := gp.APIerror{}
 			err = dec.Decode(&errorValue)
