@@ -8,10 +8,10 @@ import (
 	"time"
 	"unicode"
 
-	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/GleepostAPI/lib/psc"
 	"github.com/garyburd/redigo/redis"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (

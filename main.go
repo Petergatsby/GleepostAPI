@@ -28,7 +28,6 @@ func main() {
 	log.Println("Starting API")
 	api.Start()
 	log.Println("Starting APNS feedback daemons")
-	go api.FeedbackDaemon(60)
 	if !config.DevelopmentMode {
 		log.Println("Starting stats summary email daemon")
 		api.PeriodicSummary(time.Date(2014, time.April, 9, 8, 0, 0, 0, time.UTC), time.Duration(24*time.Hour))

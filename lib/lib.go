@@ -85,7 +85,7 @@ func (api *API) Start() {
 		log.Println("No pushers configured. Are you sure this is right?")
 	}
 	for _, psh := range api.Config.Pushers {
-		api.pushers[psh.AppName] = push.New(psh)
+		api.pushers[psh.AppName] = push.NewFake()
 	}
 	gp, ok := api.pushers["gleepost"]
 	if ok {
