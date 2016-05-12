@@ -5,4 +5,5 @@ type Device struct {
 	User UserID `json:"user"`
 	Type string `json:"type"`
 	ID   string `json:"id"`
+	ARN  string `json:"arn"`
 }
