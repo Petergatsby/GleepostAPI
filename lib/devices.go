@@ -14,6 +14,18 @@ import (
 	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
+func platformFor(deviceType string) (platform string, err error) {
+	switch {
+	case deviceType == "ios":
+		platform = "APNS_SANDBOX"
+	case deviceType == "android":
+		platform = "GCM"
+	default:
+		err = errors.New("what?")
+	}
+	return
+}
+
 //AddDevice records this user's device for the purpose of sending them push notifications.
 func (api *API) AddDevice(user gp.UserID, deviceType, deviceID, application string) (device gp.Device, err error) {
 	err = api.setDevice(user, deviceType, deviceID, application, "")
@@ -26,13 +38,8 @@ func (api *API) AddDevice(user gp.UserID, deviceType, deviceID, application stri
 	}
 	if device.ARN == "" {
 		platform := ""
-		switch {
-		case deviceType == "ios":
-			platform = "APNS_SANDBOX"
-		case deviceType == "android":
-			platform = "GCM"
-		default:
-			err = errors.New("what?")
+		platform, err = platformFor(deviceType)
+		if err != nil {
 			return
 		}
 		device.ARN, err = api.createEndpoint(deviceID, platform, user)

@@ -1,17 +1,80 @@
 package lib
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/draaglom/GleepostAPI/lib/gp"
 	"github.com/draaglom/apns"
 	"github.com/draaglom/gcm"
 )
 
+var normRegex = regexp.MustCompile(`<@[\w:]+\|(@\w+)>`)
+
+func normalizeMessage(message string) (textified string) {
+	return normRegex.ReplaceAllString(message, "$1")
+}
+
+type Push struct {
+	Alert   *string     `json:"alert,omitempty"`
+	Sound   *string     `json:"sound,omitempty"`
+	Message *string     `json:"message,omitempty"`
+	Data    interface{} `json:"custom_data"`
+	Badge   *int        `json:"badge,omitempty"`
+}
+
+type wrapper struct {
+	APNS        string `json:"APNS"`
+	APNSSandbox string `json:"APNS_SANDBOX"`
+	GCM         string `json:"GCM"`
+	Default     string `json:"default"`
+}
+
+type pushContainer struct {
+	APS  Push `json:"aps,omitempty"`
+	Data Push `json:"data,omitempty"`
+}
+
+func publishToEndpoint(device gp.Device, data *Push) (err error) {
+	svc := sns.New(session.New(), &aws.Config{Region: aws.String("us-west-2")})
+
+	// arn is arn:aws:sns:us-west-2:807138844328:endpoint/{service_type}/CampusWire-GP-API-Dev/{uuid} where {service_type} is either APNS_SANDBOX or GCM (depending on the type of token received) and {uuid} is the uuid that aws returned in the createplatformendpoint call
+
+	arn := device.ARN
+
+	msg := wrapper{}
+	ios := pushContainer{
+		APS:  *data,
+		Data: *data,
+	}
+	b, err := json.Marshal(ios)
+	if err != nil {
+		return err
+	}
+	msg.APNS = string(b[:])
+	msg.APNSSandbox = msg.APNS
+	msg.Default = msg.Default
+	pushData, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	m := string(pushData[:])
+
+	params := &sns.PublishInput{
+		Message:          aws.String(m),
+		MessageStructure: aws.String("json"),
+		TargetArn:        aws.String(arn),
+	}
+	_, err = svc.Publish(params)
+	return
+}
 func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 	devices, err := api.pushableDevices(convID)
 	if err != nil {
@@ -38,18 +101,12 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 			mentioned = true
 		}
 		if device.User != message.By.ID && (!muted || mentioned) {
-			switch {
-			case device.Type == "ios":
-				err = api.iosPushMessage(device.ID, message, convID, device.User, mentioned)
-				if err != nil {
-					log.Println("Error sending iOS push message", err)
-				}
-			case device.Type == "android":
-				err = api.androidPushMessage(device.ID, message, convID, device.User, mentioned)
-				if err != nil {
-					log.Println("Error sending android push message", err)
-				}
-			}
+			// TODO: Send push notifications here
+			// At this point you have a bunch of gp.Device, which have a device.ARN on each of them.
+			// You probably want to use (a) normalizeMessage to make our attachment/embed syntax nicer for the notification and
+			// (b) use api.badgeCount() to work out what your badge should be
+			// You have a profile image available in message.By.Avatar
+			// You may have a group ID at message.Group, that's probably important to send if it's there
 		}
 	}
 }
@@ -75,12 +132,6 @@ func (api *API) pushableDevices(convID gp.ConversationID) (devices []gp.Device, 
 		devices = append(devices, device)
 	}
 	return
-}
-
-var normRegex = regexp.MustCompile(`<@[\w:]+\|(@\w+)>`)
-
-func normalizeMessage(message string) (textified string) {
-	return normRegex.ReplaceAllString(message, "$1")
 }
 
 func (api *API) iosPushMessage(device string, message gp.Message, convID gp.ConversationID, user gp.UserID, mentioned bool) (err error) {
@@ -109,10 +160,6 @@ func (api *API) iosPushMessage(device string, message gp.Message, convID gp.Conv
 		pn.Set("group", message.Group)
 	}
 	pn.Set("profile_image", message.By.Avatar)
-	pusher, ok := api.pushers["gleepost"]
-	if ok {
-		err = pusher.IOSPush(pn)
-	}
 	return
 }
 
