@@ -111,28 +111,31 @@ func (api *API) messagePush(message gp.Message, convID gp.ConversationID) {
 		log.Println("Device", device)
 		log.Println("Message", message)
 		// if device.User != message.By.ID && (!muted || mentioned) {
-		// TODO: Send push notifications here
-		// At this point you have a bunch of gp.Device, which have a device.ARN on each of them.
-		// You probably want to use (a) normalizeMessage to make our attachment/embed syntax nicer for the notification and
-		// (b) use api.badgeCount() to work out what your badge should be
-		// You have a profile image available in message.By.Avatar
-		// You may have a group ID at message.Group, that's probably important to send if it's there
-		normalized := normalizeMessage(message.Text)
-		badgeCount, badgeErr := api.badgeCount(device.User)
-		if badgeErr != nil {
-			log.Println("Error when getting users badge count", badgeErr)
+		if device.User != message.By.ID {
+			// TODO: Send push notifications here
+			// At this point you have a bunch of gp.Device, which have a device.ARN on each of them.
+			// You probably want to use (a) normalizeMessage to make our attachment/embed syntax nicer for the notification and
+			// (b) use api.badgeCount() to work out what your badge should be
+			// You have a profile image available in message.By.Avatar
+			// You may have a group ID at message.Group, that's probably important to send if it's there
+			normalized := normalizeMessage(message.Text)
+			badgeCount, badgeErr := api.badgeCount(device.User)
+			if badgeErr != nil {
+				log.Println("Error when getting users badge count", badgeErr)
+			}
+			alertString := fmt.Sprintf("%s: %s", message.By.Name, normalized)
+			sound := "default"
+			pushObj := &Push{
+				Alert: &alertString,
+				Badge: &badgeCount,
+				Sound: &sound,
+			}
+			snsErr := publishToEndpoint(device, pushObj)
+			if snsErr != nil {
+				log.Println("Error when pushing to SNS", snsErr)
+			}
+			log.Println("Pushed to SNS!!!")
 		}
-		alertString := fmt.Sprintf("%s: %s", message.By.Name, normalized)
-		pushObj := &Push{
-			Alert: &alertString,
-			Badge: &badgeCount,
-		}
-		snsErr := publishToEndpoint(device, pushObj)
-		if snsErr != nil {
-			log.Println("Error when pushing to SNS", snsErr)
-		}
-		log.Println("Pushed to SNS!!!")
-		// }
 	}
 }
 
