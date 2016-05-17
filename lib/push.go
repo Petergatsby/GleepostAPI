@@ -45,7 +45,7 @@ type pushContainer struct {
 func publishToEndpoint(device gp.Device, data *Push) (err error) {
 	svc := sns.New(session.New(), &aws.Config{Region: aws.String("us-west-2")})
 
-	// arn is arn:aws:sns:us-west-2:807138844328:endpoint/{service_type}/CampusWire-GP-API-Dev/{uuid} where {service_type} is either APNS_SANDBOX or GCM (depending on the type of token received) and {uuid} is the uuid that aws returned in the createplatformendpoint call
+	// arn is arn:aws:sns:us-west-2:807138844328:endpoint/{service_type}/CampusWire-GP-API-Prod/{uuid} where {service_type} is either APNS or GCM (depending on the type of token received) and {uuid} is the uuid that aws returned in the createplatformendpoint call
 
 	log.Println("Device", device)
 
@@ -60,8 +60,8 @@ func publishToEndpoint(device gp.Device, data *Push) (err error) {
 		log.Println("Publishing error", err)
 		return err
 	}
-	// msg.APNS = string(b[:])
-	msg.APNSSandbox = string(b[:])
+	msg.APNS = string(b[:])
+	// msg.APNSSandbox = string(b[:])
 	// msg.Default = msg.Default
 	pushData, err := json.Marshal(msg)
 	if err != nil {

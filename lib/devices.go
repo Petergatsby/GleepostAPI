@@ -17,7 +17,7 @@ import (
 func platformFor(deviceType string) (platform string, err error) {
 	switch {
 	case deviceType == "ios":
-		platform = "APNS_SANDBOX"
+		platform = "APNS"
 	case deviceType == "android":
 		platform = "GCM"
 	default:
@@ -111,9 +111,9 @@ func (api *API) createEndpoint(token, platform string, user gp.UserID) (arn stri
 	svc := sns.New(session.New(), &aws.Config{Region: aws.String("us-west-2")})
 
 	// token is the push token we got off the device
-	// application arn is arn:aws:sns:us-west-2:807138844328:app/{service_type}/CampusWire-GP-API-Dev where {service_type} is either APNS_SANDBOX or GCM (depending on the type of token received)
+	// application arn is arn:aws:sns:us-west-2:807138844328:app/{service_type}/CampusWire-GP-API-Prod where {service_type} is either APNS or GCM (depending on the type of token received)
 
-	applicationARN := fmt.Sprintf("arn:aws:sns:us-west-2:807138844328:app/%s/CampusWire-GP-API-Dev", platform)
+	applicationARN := fmt.Sprintf("arn:aws:sns:us-west-2:807138844328:app/%s/CampusWire-GP-API-Prod", platform)
 
 	params := &sns.CreatePlatformEndpointInput{
 		PlatformApplicationArn: aws.String(applicationARN),
