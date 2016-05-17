@@ -30,15 +30,21 @@ func platformFor(deviceType string) (platform string, err error) {
 func (api *API) AddDevice(user gp.UserID, deviceType, deviceID, application string) (device gp.Device, err error) {
 	device, err = getDevice(api.sc, user, deviceID)
 	if err != nil {
-		return
+		log.Println("Error when getting device when trying to add device", err)
+		// return
 	}
 	if device.ARN == "" {
 		platform := ""
 		platform, err = platformFor(deviceType)
 		if err != nil {
+			log.Println("Error when getting platform for device type when trying to add device", err)
 			return
 		}
 		device.ARN, err = api.createEndpoint(deviceID, platform, user)
+		if err != nil {
+			log.Println("Error when creating SNS endpoint when trying to add device", err)
+			return
+		}
 		api.setDevice(user, deviceType, deviceID, application, device.ARN)
 	}
 	return
