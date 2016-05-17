@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 	"github.com/go-sql-driver/mysql"
 )
 

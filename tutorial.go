@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func init() {

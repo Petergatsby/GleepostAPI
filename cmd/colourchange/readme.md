@@ -2,7 +2,7 @@
 
 ###installation
 
-`go install github.com/draaglom/GleepostAPI/cmd/colourchange`
+`go install github.com/Petergatsby/GleepostAPI/cmd/colourchange`
 
 ###usage
 

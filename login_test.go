@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 var baseURL = "http://localhost:8083/api/v1/"

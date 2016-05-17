@@ -3,7 +3,7 @@ package lib
 import (
 	"strings"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 var messages = []string{"Welcome to {app}, {firstname}!"}

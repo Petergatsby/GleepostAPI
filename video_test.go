@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func TestVideo(t *testing.T) {

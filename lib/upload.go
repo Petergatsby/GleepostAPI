@@ -13,7 +13,7 @@ import (
 
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 	"github.com/mitchellh/goamz/s3"
 )
 

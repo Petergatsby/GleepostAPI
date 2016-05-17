@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/dir"
-	"github.com/draaglom/GleepostAPI/lib/dir/berkeley"
-	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/Petergatsby/GleepostAPI/lib/dir"
+	"github.com/Petergatsby/GleepostAPI/lib/dir/berkeley"
+	"github.com/Petergatsby/GleepostAPI/lib/dir/stanford"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/psc"
 	"github.com/garyburd/redigo/redis"
 	"github.com/go-sql-driver/mysql"
 )

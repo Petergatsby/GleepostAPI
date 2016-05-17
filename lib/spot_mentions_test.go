@@ -3,8 +3,8 @@ package lib
 import (
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func TestSpotMentions(t *testing.T) {

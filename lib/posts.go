@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/psc"
 )
 
 const (

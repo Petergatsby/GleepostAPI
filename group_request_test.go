@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func TestRequestAccess(t *testing.T) {

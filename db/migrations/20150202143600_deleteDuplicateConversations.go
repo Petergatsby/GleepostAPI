@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 //Up20150202143600 is executed when this migration is applied

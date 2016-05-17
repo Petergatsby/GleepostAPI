@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func TestGetNotifications(t *testing.T) {

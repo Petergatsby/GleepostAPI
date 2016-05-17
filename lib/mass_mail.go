@@ -3,7 +3,7 @@ package lib
 import (
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 //Massmail sends a standard email to all users. Probably just use MailChimp instead, though.

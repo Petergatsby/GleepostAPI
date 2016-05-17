@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func TestCreatePoll(t *testing.T) {

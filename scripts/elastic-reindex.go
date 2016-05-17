@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
 )
 
 func main() {

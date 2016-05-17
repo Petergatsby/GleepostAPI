@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/draaglom/GleepostAPI/lib"
+	"github.com/Petergatsby/GleepostAPI/lib"
 )
 
 func init() {

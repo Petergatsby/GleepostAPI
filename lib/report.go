@@ -3,7 +3,7 @@ package lib
 import (
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 //ReportPost records that this user reported this post, with this (optional) reason.

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func TestRegister(t *testing.T) {

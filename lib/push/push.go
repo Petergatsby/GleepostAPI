@@ -1,24 +1,20 @@
 package push
 
 import (
-	"encoding/json"
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
 	"github.com/draaglom/apns"
-	"github.com/draaglom/gcm"
 )
 
 //Pusher is able to push notifications to iOS and android devices.
 type Pusher interface {
 	CheckFeedbackService(Feedbacker)
-	AndroidPush(*gcm.Message) error
 	IOSPush(*apns.PushNotification) error
 }
 
 type realPusher struct {
 	APNSconfig conf.APNSConfig
-	GCMconfig  conf.GCMConfig
 	Connection *apns.Connection
 }
 
@@ -50,10 +46,6 @@ func (f *fakePusher) CheckFeedbackService(feed Feedbacker) {
 	return
 }
 
-func (f *fakePusher) AndroidPush(*gcm.Message) error {
-	return nil
-}
-
 func (f *fakePusher) IOSPush(*apns.PushNotification) error {
 	return nil
 }
@@ -63,7 +55,6 @@ func New(conf conf.PusherConfig) (pusher Pusher) {
 	log.Println("Building pusher")
 	p := new(realPusher)
 	p.APNSconfig = conf.APNS
-	p.GCMconfig = conf.GCM
 	url := "gateway.sandbox.push.apple.com:2195"
 	if p.APNSconfig.Production {
 		url = "gateway.push.apple.com:2195"
@@ -92,16 +83,6 @@ func NewFake() Pusher {
 	return &fakePusher{}
 }
 
-//AndroidPush sends a gcm.Message to its recipient.
-func (pusher *realPusher) AndroidPush(msg *gcm.Message) (err error) {
-	m, _ := json.Marshal(msg)
-	log.Printf("%s\n", m)
-	sender := &gcm.Sender{ApiKey: pusher.GCMconfig.APIKey}
-	response, err := sender.SendNoRetry(msg)
-	log.Println(response)
-	return
-}
-
 //IOSPush sends an apns notification to its recipient.
 func (pusher *realPusher) IOSPush(pn *apns.PushNotification) (err error) {
 	if pusher != nil {
@@ -113,5 +94,4 @@ func (pusher *realPusher) IOSPush(pn *apns.PushNotification) (err error) {
 //Pushable represents something which can turn itself into a push notification.
 type Pushable interface {
 	IOSNotification() *apns.PushNotification
-	AndroidNotification() *gcm.Message
 }

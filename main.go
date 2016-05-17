@@ -8,8 +8,8 @@ import (
 
 	"runtime"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
-	"github.com/draaglom/GleepostAPI/lib/dir/stanford"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/dir/stanford"
 	"github.com/gorilla/mux"
 
 	_ "net/http/pprof"

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
 )
 
 //Up20150306153027 is executed when this migration is applied

@@ -7,7 +7,7 @@ import (
 
 	"strings"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 //AdminCreateTemplateFromPost saves a Post as a Template, so it can be used again.

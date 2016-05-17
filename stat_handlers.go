@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib"
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
 )
 

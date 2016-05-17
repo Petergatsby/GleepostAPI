@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
 	_ "github.com/go-sql-driver/mysql"
 )
 

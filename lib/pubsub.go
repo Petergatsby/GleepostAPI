@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 //EventSubscribe subscribes to all the subscriptions, returning a MsgQueue of their contents.

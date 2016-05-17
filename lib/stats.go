@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 //View represents a series of statistics about something over time.

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 func liveInit() error {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
 )
 

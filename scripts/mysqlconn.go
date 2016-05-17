@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/draaglom/GleepostAPI/lib/conf"
+	"github.com/Petergatsby/GleepostAPI/lib/conf"
 )
 
 func main() {

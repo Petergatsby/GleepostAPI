@@ -7,7 +7,7 @@ import (
 
 // Up is executed when this migration is applied
 func Up20160516144811(txn *sql.Tx) {
-	_, err := txn.Query("ALTER TABLE devices ADD arn VARCHAR(100) NULL")
+	_, err := txn.Query("ALTER TABLE devices ADD arn VARCHAR(300) NULL")
 	if err != nil {
 		log.Println(err)
 		txn.Rollback()

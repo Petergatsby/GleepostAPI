@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/draaglom/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
 )
 
 type groupListTest struct {

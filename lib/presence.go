@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/events"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/psc"
+	"github.com/Petergatsby/GleepostAPI/lib/events"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/psc"
 	"github.com/garyburd/redigo/redis"
 )
 
