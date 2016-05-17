@@ -7,11 +7,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/psc"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/psc"
 )
 
 func platformFor(deviceType string) (platform string, err error) {
@@ -28,10 +28,6 @@ func platformFor(deviceType string) (platform string, err error) {
 
 //AddDevice records this user's device for the purpose of sending them push notifications.
 func (api *API) AddDevice(user gp.UserID, deviceType, deviceID, application string) (device gp.Device, err error) {
-	err = api.setDevice(user, deviceType, deviceID, application, "")
-	if err != nil {
-		return
-	}
 	device, err = getDevice(api.sc, user, deviceID)
 	if err != nil {
 		return
@@ -53,11 +49,12 @@ func getDevice(sc *psc.StatementCache, user gp.UserID, deviceID string) (device 
 	if err != nil {
 		return
 	}
-	var arn *sql.NullString
+	var arn sql.NullString
 	err = s.QueryRow(user, deviceID).Scan(&device.User, &device.Type, &device.ID, &arn)
 	if err != nil {
 		return
 	}
+	log.Println("ARN", arn)
 	if arn.Valid {
 		device.ARN = arn.String
 	}
@@ -129,6 +126,7 @@ func (api *API) createEndpoint(token, platform string, user gp.UserID) (arn stri
 		CustomUserData: aws.String(fmt.Sprintf("%d", user)),
 	}
 	resp, err := svc.CreatePlatformEndpoint(params)
+	log.Println("Resp from AWS", resp)
 	if err != nil {
 		return "", err
 	} else {

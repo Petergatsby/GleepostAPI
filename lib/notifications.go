@@ -7,12 +7,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/draaglom/GleepostAPI/lib/events"
-	"github.com/draaglom/GleepostAPI/lib/gp"
-	"github.com/draaglom/GleepostAPI/lib/psc"
-	"github.com/draaglom/GleepostAPI/lib/push"
+	"github.com/Petergatsby/GleepostAPI/lib/events"
+	"github.com/Petergatsby/GleepostAPI/lib/gp"
+	"github.com/Petergatsby/GleepostAPI/lib/psc"
+	"github.com/Petergatsby/GleepostAPI/lib/push"
 	"github.com/draaglom/apns"
-	"github.com/draaglom/gcm"
 )
 
 func toLocKey(notificationType string) (locKey string) {
@@ -336,7 +335,7 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 		log.Println("Error getting user presence:", err)
 	}
 	if presence.Form == "desktop" && presence.At.Add(30*time.Second).After(time.Now()) {
-		log.Println("Not pushing to this user (they're active on the desktop in the last 30s)")
+		log.Println("Not pushing to this user (they're active on the desktop in the last 30s) (notifications.go)")
 		return
 	}
 	devices, err := getDevices(n.sc, recipient, "gleepost")
@@ -353,17 +352,6 @@ func (n NotificationObserver) push(notification gp.Notification, recipient gp.Us
 				log.Println("Error generating push notification:", err)
 			}
 			err = n.pusher.IOSPush(pn)
-			if err != nil {
-				log.Println("Error sending push notification:", err)
-			} else {
-				count++
-			}
-		case device.Type == "android":
-			pn, err := n.toAndroid(notification, recipient, device.ID)
-			if err != nil {
-				log.Println("Error generating push notification:", err)
-			}
-			err = n.pusher.AndroidPush(pn)
 			if err != nil {
 				log.Println("Error sending push notification:", err)
 			} else {
@@ -443,38 +431,6 @@ var collapseKeys = map[string]string{
 	"poll_vote":     "Someone voted in your poll.",
 	"approved_post": "Someone approved your post.",
 	"rejected_post": "Someone rejected your post.",
-}
-
-func (n NotificationObserver) toAndroid(notification gp.Notification, recipient gp.UserID, device string) (msg *gcm.Message, err error) {
-	data := make(map[string]interface{})
-	data["type"] = toLocKey(notification.Type)
-	data["for"] = recipient
-	if notification.Group > 0 {
-		var name string
-		name, err = groupName(n.sc, notification.Group)
-		if err != nil {
-			return
-		}
-		data["group-id"] = notification.Group
-		data["group-name"] = name
-	}
-	if notification.Post > 0 {
-		data["post-id"] = notification.Post
-	}
-	CollapseKey, ok := collapseKeys[notification.Type]
-	if !ok {
-		return nil, errors.New("Unknown notification type")
-	}
-	noun, ok := nouns[notification.Type]
-	if !ok {
-		return nil, errors.New("Unknown notification type")
-	}
-	data[noun] = notification.By.ID
-	data[noun[:len(noun)-3]] = notification.By.Name
-	msg = gcm.NewMessage(data, device)
-	msg.CollapseKey = CollapseKey
-	msg.TimeToLive = 0
-	return
 }
 
 func (n NotificationObserver) badgeCount(user gp.UserID) (count int, err error) {
