@@ -7,7 +7,6 @@ import (
 	"github.com/Petergatsby/GleepostAPI/lib/dir/stanford"
 	"github.com/Petergatsby/GleepostAPI/lib/gp"
 	"github.com/gorilla/mux"
-	"github.com/hashicorp/consul/api"
 )
 
 func init() {
